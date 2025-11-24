@@ -751,16 +751,445 @@ git push
 
 ---
 
-## Phase 4-9: Fortsetzung
+## Phase 4: Step 2 - Conditional Date Fields
 
-Die weiteren Phasen folgen demselben Muster:
-1. UI Tests schreiben (fehlschlagen)
-2. Feature implementieren
-3. Tests validieren (grün)
-4. mypy + ruff
-5. Commit + Push
+**Ziel:** Datumsfelder in Step 2 mit bedingter Logik basierend auf ItemType
 
-Jede Phase baut auf der vorherigen auf und folgt strikt dem TDD-Ansatz.
+### 4.1 Validation Logic erweitern
+
+**Datei:** `app/ui/validation/wizard_validation.py`
+
+```python
+from datetime import date
+
+
+def validate_best_before_date(best_before: date | None) -> str | None:
+    """Validate best before date."""
+    if best_before is None:
+        return "Datum erforderlich"
+    # Could add future date validation if needed
+    return None
+
+
+def validate_freeze_date(
+    freeze_date: date | None,
+    item_type: Any,
+    best_before: date | None,
+) -> str | None:
+    """Validate freeze date for frozen items."""
+    from ...models.freeze_time_config import ItemType
+
+    frozen_types = {
+        ItemType.PURCHASED_FROZEN,
+        ItemType.PURCHASED_THEN_FROZEN,
+        ItemType.HOMEMADE_FROZEN,
+    }
+
+    if item_type in frozen_types:
+        if freeze_date is None:
+            return "Einfrierdatum erforderlich für TK-Artikel"
+        # Freeze date should not be before best_before
+        if best_before and freeze_date < best_before:
+            return "Einfrierdatum kann nicht vor Produktionsdatum liegen"
+
+    return None
+
+
+def validate_step2(
+    item_type: Any,
+    best_before: date | None,
+    freeze_date: date | None,
+) -> dict[str, str]:
+    """Validate all Step 2 fields."""
+    errors: dict[str, str] = {}
+
+    if error := validate_best_before_date(best_before):
+        errors["best_before"] = error
+
+    if error := validate_freeze_date(freeze_date, item_type, best_before):
+        errors["freeze_date"] = error
+
+    return errors
+```
+
+### 4.2 Unit Tests für Step 2 Validation
+
+**Datei:** `tests/test_ui/test_wizard_validation.py` (erweitern)
+
+```python
+from datetime import date, timedelta
+
+
+def test_validate_best_before_date_valid() -> None:
+    """Test valid best before dates."""
+    assert validate_best_before_date(date.today()) is None
+    assert validate_best_before_date(date.today() + timedelta(days=30)) is None
+
+
+def test_validate_best_before_date_none() -> None:
+    """Test best before date is None."""
+    assert validate_best_before_date(None) == "Datum erforderlich"
+
+
+def test_validate_freeze_date_required_for_frozen() -> None:
+    """Test freeze date required for frozen types."""
+    error = validate_freeze_date(None, ItemType.PURCHASED_FROZEN, date.today())
+    assert error == "Einfrierdatum erforderlich für TK-Artikel"
+
+
+def test_validate_freeze_date_not_required_for_fresh() -> None:
+    """Test freeze date not required for fresh types."""
+    error = validate_freeze_date(None, ItemType.PURCHASED_FRESH, date.today())
+    assert error is None
+
+
+def test_validate_freeze_date_cannot_be_before_best_before() -> None:
+    """Test freeze date validation against best_before."""
+    best_before = date(2024, 1, 1)
+    freeze_date_val = date(2023, 12, 1)  # Before best_before
+
+    error = validate_freeze_date(
+        freeze_date_val, ItemType.PURCHASED_THEN_FROZEN, best_before
+    )
+    assert "vor Produktionsdatum" in error
+```
+
+### 4.3 Step 2 UI implementieren
+
+**Datei:** `app/ui/pages/add_item.py` - `show_step2()` erweitern
+
+```python
+from datetime import date as date_type
+
+def show_step2() -> None:
+    """Navigate to Step 2."""
+    # ... validation check ...
+
+    form_data["current_step"] = 2
+    content_container.clear()
+    with content_container:
+        # Progress Indicator
+        ui.label("Schritt 2 von 3").classes("text-sm text-gray-600 mb-4")
+
+        # Step 2: Date Information
+        ui.label("Datumsangaben").classes("text-h6 font-semibold mb-3")
+
+        # Summary from Step 1
+        with ui.card().classes("w-full bg-gray-50 p-3 mb-4"):
+            ui.label("Zusammenfassung:").classes("text-sm font-medium mb-2")
+            item_type_labels = {
+                ItemType.PURCHASED_FRESH: "Frisch eingekauft",
+                ItemType.PURCHASED_FROZEN: "TK-Ware gekauft",
+                # ... all types
+            }
+            type_label = item_type_labels.get(form_data["item_type"], "")
+            ui.label(
+                f"{form_data['product_name']} • {form_data['quantity']} {form_data['unit']} • {type_label}"
+            ).classes("text-sm")
+
+        # Best Before / Production Date (always shown)
+        date_label = "Produktionsdatum" if form_data["item_type"] in {
+            ItemType.HOMEMADE_FROZEN, ItemType.HOMEMADE_PRESERVED
+        } else "Einkaufsdatum"
+
+        ui.label(f"{date_label} *").classes("text-sm font-medium mb-1")
+        best_before_input = ui.date(value=date_type.today()).classes("w-full")
+        best_before_input.bind_value(form_data, "best_before_date")
+        best_before_input.on("update:model-value", update_step2_validation)
+
+        # Freeze Date (conditional - only for frozen types)
+        frozen_types = {
+            ItemType.PURCHASED_FROZEN,
+            ItemType.PURCHASED_THEN_FROZEN,
+            ItemType.HOMEMADE_FROZEN,
+        }
+
+        if form_data["item_type"] in frozen_types:
+            ui.label("Einfrierdatum *").classes("text-sm font-medium mb-1 mt-4")
+            freeze_date_input = ui.date(value=date_type.today()).classes("w-full")
+            freeze_date_input.bind_value(form_data, "freeze_date")
+            freeze_date_input.on("update:model-value", update_step2_validation)
+
+        # Notes (optional)
+        ui.label("Notizen (optional)").classes("text-sm font-medium mb-1 mt-4")
+        notes_input = ui.textarea(placeholder="z.B. blanchiert").classes("w-full")
+        notes_input.bind_value(form_data, "notes")
+
+        # Navigation
+        with ui.row().classes("w-full justify-between mt-6 gap-2"):
+            ui.button("Zurück", icon="arrow_back", on_click=show_step1).props(
+                "flat color=gray-7 size=lg"
+            ).style("min-height: 48px")
+
+            step2_next_button = ui.button(
+                "Weiter", icon="arrow_forward", on_click=show_step3
+            ).props("color=primary size=lg disabled").style("min-height: 48px")
+```
+
+### 4.4 Commit
+
+```bash
+git add app/ui/validation/wizard_validation.py app/ui/pages/add_item.py tests/test_ui/test_wizard_validation.py
+git commit -m "feat: add step 2 conditional date fields
+
+Implemented Step 2 with conditional date fields:
+- Best before/production date (all types)
+- Freeze date (only frozen types: PURCHASED_FROZEN, PURCHASED_THEN_FROZEN, HOMEMADE_FROZEN)
+- Notes field (optional)
+- Validation logic with date comparison
+- Smart default: today's date
+- Mobile-first date pickers
+
+All tests passing, mypy + ruff clean.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>"
+git push
+```
+
+---
+
+## Phase 5: Step 3 - Location & Categories
+
+**Ziel:** Lagerort-Auswahl + Kategorien-Auswahl
+
+### 5.1 Step 3 Validation Logic
+
+**Datei:** `app/ui/validation/wizard_validation.py` (erweitern)
+
+```python
+def validate_location(location_id: int | None) -> str | None:
+    """Validate location selection."""
+    if location_id is None:
+        return "Bitte Lagerort auswählen"
+    return None
+
+
+def validate_step3(location_id: int | None) -> dict[str, str]:
+    """Validate Step 3 fields."""
+    errors: dict[str, str] = {}
+
+    if error := validate_location(location_id):
+        errors["location"] = error
+
+    # Categories are optional, no validation needed
+
+    return errors
+```
+
+### 5.2 Step 3 UI implementieren
+
+- Location Select (Dropdown mit allen aktiven Locations)
+- Category Multi-Select (optional)
+- Summary aus Step 1 + 2
+- Zurück + Speichern Buttons
+
+### 5.3 Commit
+
+---
+
+## Phase 6: Save Integration
+
+**Ziel:** "Speichern" Button funktional - Item in DB speichern
+
+### 6.1 Save Handler implementieren
+
+**Datei:** `app/ui/pages/add_item.py`
+
+```python
+def save_item() -> None:
+    """Save item to database."""
+    from ...services import item_service
+    from ...database import get_engine
+    from sqlmodel import Session
+
+    # Final validation
+    errors = {}
+    errors.update(validate_step1(...))
+    errors.update(validate_step2(...))
+    errors.update(validate_step3(...))
+
+    if errors:
+        ui.notify("Bitte alle Pflichtfelder ausfüllen", type="warning")
+        return
+
+    # Get current user from session
+    user_id = app.storage.user.get("id")
+
+    # Save to database
+    with Session(get_engine()) as session:
+        item = item_service.create_item(
+            session=session,
+            product_name=form_data["product_name"],
+            best_before_date=form_data["best_before_date"],
+            freeze_date=form_data.get("freeze_date"),
+            quantity=form_data["quantity"],
+            unit=form_data["unit"],
+            item_type=form_data["item_type"],
+            location_id=form_data["location_id"],
+            created_by=user_id,
+            category_ids=form_data.get("category_ids", []),
+            notes=form_data.get("notes"),
+        )
+
+    ui.notify(f"✅ {form_data['product_name']} gespeichert!", type="positive")
+    ui.navigate.to("/dashboard")
+```
+
+### 6.2 Tests für Save Integration
+
+- Integration test: Save item and verify in DB
+- Test error handling
+
+### 6.3 Commit
+
+---
+
+## Phase 7: "Speichern & Nächster" Flow
+
+**Ziel:** Item speichern + Wizard zurücksetzen mit Smart Defaults
+
+### 7.1 Save & Next Handler
+
+```python
+def save_and_next() -> None:
+    """Save item and prepare for next entry."""
+    # Save item (reuse save_item logic)
+    save_item_to_db()
+
+    # Store smart defaults in browser storage
+    app.storage.user["last_item_entry"] = {
+        "timestamp": datetime.now().isoformat(),
+        "item_type": form_data["item_type"],
+        "unit": form_data["unit"],
+        "location_id": form_data["location_id"],
+        "category_ids": form_data.get("category_ids", []),
+        "best_before_date": form_data["best_before_date"].isoformat(),
+    }
+
+    # Reset wizard but keep smart defaults
+    ui.notify(f"✅ {form_data['product_name']} gespeichert!", type="positive")
+    reset_wizard_with_smart_defaults()
+```
+
+### 7.2 Commit
+
+---
+
+## Phase 8: Smart Defaults (Browser Storage)
+
+**Ziel:** Letzte Eingaben als Defaults vorauswählen (30 Min Zeitfenster)
+
+### 8.1 Smart Defaults Logic
+
+```python
+def load_smart_defaults() -> None:
+    """Load smart defaults from browser storage."""
+    last_entry = app.storage.user.get("last_item_entry")
+
+    if not last_entry:
+        return
+
+    timestamp = datetime.fromisoformat(last_entry["timestamp"])
+    time_diff = (datetime.now() - timestamp).total_seconds() / 60  # minutes
+
+    # Item type + categories: 30 min window
+    if time_diff < 30:
+        form_data["item_type"] = last_entry.get("item_type")
+        form_data["category_ids"] = last_entry.get("category_ids", [])
+        form_data["best_before_date"] = date_type.fromisoformat(
+            last_entry.get("best_before_date", date_type.today().isoformat())
+        )
+
+    # Unit: always
+    form_data["unit"] = last_entry.get("unit", "g")
+
+    # Location: always
+    form_data["location_id"] = last_entry.get("location_id")
+```
+
+### 8.2 Tests für Smart Defaults
+
+- Test 30-min time window
+- Test location always pre-filled
+- Test unit always pre-filled
+
+### 8.3 Commit
+
+---
+
+## Phase 9: UI Polish & Mobile Optimization
+
+**Ziel:** Final touches, Accessibility, Mobile UX
+
+### 9.1 Features
+
+- Loading states für Save
+- Error messages inline (validation)
+- Progress bar animation
+- Swipe gestures (optional)
+- Keyboard navigation
+- Screen reader labels (ARIA)
+
+### 9.2 Accessibility
+
+```python
+# Add ARIA labels
+product_name_input.props("aria-label='Produktname eingeben'")
+next_button.props("aria-label='Weiter zu Schritt 2'")
+```
+
+### 9.3 Performance
+
+- Debounce validation (avoid too frequent updates)
+- Optimize re-renders
+
+### 9.4 Final Testing
+
+```bash
+uv run pytest tests/ -v --cov=app/ui
+uv run mypy app/
+uv run ruff check app/
+```
+
+### 9.5 Commit
+
+```bash
+git commit -m "feat: ui polish and mobile optimization
+
+Final touches for Item Capture Wizard:
+- Loading states and error handling
+- Accessibility improvements (ARIA labels)
+- Mobile UX optimizations
+- Performance improvements
+- Full test coverage
+
+Wizard MVP complete! 🎉
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>"
+```
+
+---
+
+## Zusammenfassung Phase 4-9
+
+Jede Phase folgt dem TDD-Muster:
+1. ✅ Tests schreiben (rot)
+2. ✅ Feature implementieren (grün)
+3. ✅ mypy + ruff
+4. ✅ Commit + Push
+
+**Gesamtfortschritt nach Phase 9:**
+- ✅ 3-Schritt-Wizard vollständig funktional
+- ✅ Conditional Logic (Datumsfelder je nach ItemType)
+- ✅ Save Integration mit DB
+- ✅ "Speichern & Nächster" Workflow
+- ✅ Smart Defaults (30 Min Zeitfenster)
+- ✅ Mobile-First UX
+- ✅ Vollständige Test-Coverage
 
 ---
 
