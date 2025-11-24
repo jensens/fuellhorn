@@ -1,5 +1,7 @@
 # Füllhorn
 
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
+
 **Lebensmittelvorrats-Verwaltung** - Self-hosted inventory management for food storage
 
 Füllhorn ist eine moderne, mobile-first Web-Anwendung zur Verwaltung von Lebensmittelvorräten. Die Anwendung hilft Familien dabei, den Überblick über eingefrorene, eingemachte und gekaufte Lebensmittel zu behalten und Lebensmittelverschwendung zu vermeiden.
@@ -192,7 +194,11 @@ Siehe [CLAUDE.md](CLAUDE.md) für vollständige Roadmap.
 
 ## Lizenz
 
-MIT License - siehe [LICENSE](LICENSE)
+Füllhorn ist lizenziert unter der **GNU Affero General Public License v3.0 oder später (AGPL-3.0-or-later)**.
+
+Die AGPL-3.0 ist eine Copyleft-Lizenz, die speziell für netzwerkbasierte Software entwickelt wurde. Sie stellt sicher, dass Änderungen am Code auch dann mit der Community geteilt werden müssen, wenn die Software nur als Webservice gehostet wird (ohne Weitergabe von Binärdateien).
+
+Siehe [LICENSE](LICENSE) für den vollständigen Lizenztext.
 
 ## Contributing
 

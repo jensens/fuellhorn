@@ -2,7 +2,20 @@
 name = "fuellhorn"
 version = "0.1.0"
 description = "Lebensmittelvorrats-Verwaltung - Self-hosted inventory management for food storage"
+license = {text = "AGPL-3.0-or-later"}
+authors = [
+    {name = "Jens W. Klein", email = "jk@kleinundpartner.at"}
+]
 requires-python = ">=3.14"
+classifiers = [
+    "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: End Users/Desktop",
+    "Environment :: Web Environment",
+    "Framework :: FastAPI",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.14",
+]
 dependencies = [
     "alembic>=1.14.0",
     "bcrypt>=5.0.0",
