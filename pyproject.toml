@@ -1,0 +1,70 @@
+[project]
+name = "fuellhorn"
+version = "0.1.0"
+description = "Lebensmittelvorrats-Verwaltung - Self-hosted inventory management for food storage"
+requires-python = ">=3.14"
+dependencies = [
+    "alembic>=1.14.0",
+    "bcrypt>=5.0.0",
+    "nicegui>=3.3.1",
+    "psycopg2-binary>=2.9.11",
+    "pydantic>=2.12.4",
+    "python-dateutil>=2.9.0.post0",
+    "python-dotenv>=1.2.1",
+    "sqlmodel>=0.0.27",
+]
+
+[dependency-groups]
+dev = [
+    "mypy>=1.18.2",
+    "pyupgrade>=3.19.0",
+    "pytest>=9.0.1",
+    "pytest-asyncio>=1.3.0",
+    "pytest-cov>=7.0.0",
+    "ruff>=0.14.5",
+    "types-python-dateutil>=2.9.0.20251115",
+    "pre-commit>=4.4.0",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+main_file = "main.py"
+
+[tool.mypy]
+python_version = "3.14"
+warn_return_any = true
+warn_unused_ignores = true
+disallow_untyped_defs = true
+plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+module = ["nicegui.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "alembic.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "main"
+disallow_untyped_defs = false
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_defs = false
+disable_error_code = ["arg-type", "union-attr", "attr-defined"]
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+extend-select = ["I"]
+
+[tool.ruff.lint.isort]
+known-local-folder = ["app/"]
+force-single-line = true
+force-sort-within-sections = true
+case-sensitive = false
+lines-after-imports = 2
+no-sections = true
