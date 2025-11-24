@@ -23,7 +23,7 @@ def test_create_item(session: Session, test_admin: User) -> None:
     )
     freeze_time_service.create_freeze_time_config(
         session=session,
-        item_type=ItemType.FROZEN,
+        item_type=ItemType.PURCHASED_FROZEN,
         freeze_time_months=12,
         created_by=test_admin.id,
     )
@@ -35,7 +35,7 @@ def test_create_item(session: Session, test_admin: User) -> None:
         freeze_date=date(2024, 6, 1),
         quantity=1.5,
         unit="kg",
-        item_type=ItemType.FROZEN,
+        item_type=ItemType.PURCHASED_FROZEN,
         location_id=location.id,
         created_by=test_admin.id,
     )
@@ -74,7 +74,7 @@ def test_create_item_with_categories(session: Session, test_admin: User) -> None
         best_before_date=date(2024, 12, 1),
         quantity=0.5,
         unit="kg",
-        item_type=ItemType.CHILLED,
+        item_type=ItemType.PURCHASED_FRESH,
         location_id=location.id,
         created_by=test_admin.id,
         category_ids=[cat1.id, cat2.id],
@@ -102,7 +102,7 @@ def test_get_all_items(session: Session, test_admin: User) -> None:
         best_before_date=date(2025, 6, 1),
         quantity=6,
         unit="Stück",
-        item_type=ItemType.TINNED,
+        item_type=ItemType.HOMEMADE_PRESERVED,
         location_id=location.id,
         created_by=test_admin.id,
     )
@@ -112,7 +112,7 @@ def test_get_all_items(session: Session, test_admin: User) -> None:
         best_before_date=date(2025, 12, 1),
         quantity=4,
         unit="Dosen",
-        item_type=ItemType.TINNED,
+        item_type=ItemType.HOMEMADE_PRESERVED,
         location_id=location.id,
         created_by=test_admin.id,
     )
@@ -136,7 +136,7 @@ def test_get_item(session: Session, test_admin: User) -> None:
         best_before_date=date(2025, 3, 1),
         quantity=3,
         unit="Gläser",
-        item_type=ItemType.JARRED,
+        item_type=ItemType.HOMEMADE_PRESERVED,
         location_id=location.id,
         created_by=test_admin.id,
     )
@@ -168,7 +168,7 @@ def test_update_item(session: Session, test_admin: User) -> None:
         freeze_date=date(2024, 6, 1),
         quantity=1.0,
         unit="kg",
-        item_type=ItemType.FROZEN,
+        item_type=ItemType.PURCHASED_FROZEN,
         location_id=location.id,
         created_by=test_admin.id,
     )
@@ -199,7 +199,7 @@ def test_mark_item_consumed(session: Session, test_admin: User) -> None:
         best_before_date=date(2024, 12, 10),
         quantity=1.0,
         unit="L",
-        item_type=ItemType.CHILLED,
+        item_type=ItemType.PURCHASED_FRESH,
         location_id=location.id,
         created_by=test_admin.id,
     )
@@ -223,7 +223,7 @@ def test_delete_item(session: Session, test_admin: User) -> None:
         best_before_date=date(2020, 1, 1),
         quantity=1,
         unit="Dose",
-        item_type=ItemType.TINNED,
+        item_type=ItemType.HOMEMADE_PRESERVED,
         location_id=location.id,
         created_by=test_admin.id,
     )
@@ -256,7 +256,7 @@ def test_get_items_by_location(session: Session, test_admin: User) -> None:
         freeze_date=date(2024, 6, 1),
         quantity=1,
         unit="Packung",
-        item_type=ItemType.FROZEN,
+        item_type=ItemType.PURCHASED_FROZEN,
         location_id=location1.id,
         created_by=test_admin.id,
     )
@@ -266,7 +266,7 @@ def test_get_items_by_location(session: Session, test_admin: User) -> None:
         best_before_date=date(2024, 12, 10),
         quantity=1,
         unit="L",
-        item_type=ItemType.CHILLED,
+        item_type=ItemType.PURCHASED_FRESH,
         location_id=location2.id,
         created_by=test_admin.id,
     )
@@ -293,7 +293,7 @@ def test_get_items_expiring_soon(session: Session, test_admin: User) -> None:
         best_before_date=date.today() + timedelta(days=5),
         quantity=1,
         unit="Becher",
-        item_type=ItemType.CHILLED,
+        item_type=ItemType.PURCHASED_FRESH,
         location_id=location.id,
         created_by=test_admin.id,
     )
@@ -304,7 +304,7 @@ def test_get_items_expiring_soon(session: Session, test_admin: User) -> None:
         best_before_date=date.today() + timedelta(days=20),
         quantity=1,
         unit="Packung",
-        item_type=ItemType.CHILLED,
+        item_type=ItemType.PURCHASED_FRESH,
         location_id=location.id,
         created_by=test_admin.id,
     )

@@ -14,18 +14,18 @@ def calculate_expiry_date(
     """Calculate expiry date for an item.
 
     Expiry calculation rules by item type:
-    - TINNED: best_before_date + freeze_time_months
-    - JARRED: best_before_date + freeze_time_months
-    - FROZEN: freeze_date + freeze_time_months (requires freeze_date)
-    - CHILLED: best_before_date + freeze_time_months
-    - AMBIENT: best_before_date + freeze_time_months
+    - PURCHASED_FRESH: best_before_date + freeze_time_months
+    - HOMEMADE_PRESERVED: best_before_date + freeze_time_months
+    - PURCHASED_FROZEN: freeze_date + freeze_time_months (requires freeze_date)
+    - PURCHASED_THEN_FROZEN: freeze_date + freeze_time_months (requires freeze_date)
+    - HOMEMADE_FROZEN: freeze_date + freeze_time_months (requires freeze_date)
 
     If freeze_time_months is None, uses best_before_date as expiry.
 
     Args:
         item_type: Type of item
         best_before_date: Best before/manufacture date
-        freeze_date: Date when item was frozen (required for FROZEN items)
+        freeze_date: Date when item was frozen (required for frozen types)
         freeze_time_months: Storage time in months from config (optional)
 
     Returns:
@@ -39,7 +39,13 @@ def calculate_expiry_date(
         return best_before_date
 
     # Frozen items use freeze_date as base
-    if item_type == ItemType.FROZEN:
+    frozen_types = {
+        ItemType.PURCHASED_FROZEN,
+        ItemType.PURCHASED_THEN_FROZEN,
+        ItemType.HOMEMADE_FROZEN,
+    }
+
+    if item_type in frozen_types:
         if freeze_date is None:
             raise ValueError("Frozen items must have a freeze_date")
 

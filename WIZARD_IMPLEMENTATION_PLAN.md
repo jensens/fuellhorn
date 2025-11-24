@@ -811,7 +811,12 @@ Alle müssen grün sein ✅ vor dem Push!
   - NiceGUI testing plugin integration
   - 58 tests passing (3 DB isolation + 51 services + 4 UI)
   - Production DB never touched
-- [ ] Phase 1: ItemType Enum Update
+- [x] **Phase 1: ItemType Enum Update** ✅ (2025-11-24)
+  - Updated ItemType enum: TINNED/JARRED/FROZEN/CHILLED/AMBIENT → PURCHASED_FRESH/PURCHASED_FROZEN/PURCHASED_THEN_FROZEN/HOMEMADE_FROZEN/HOMEMADE_PRESERVED
+  - Updated expiry_calculator to handle 3 frozen types
+  - Updated all test files with new enum values
+  - Created Alembic migration (no-op for SQLite)
+  - All 58 tests passing, mypy + ruff clean
 - [ ] Phase 2: Wizard Grundstruktur
 - [ ] Phase 3: Step 1 Validation
 - [ ] Phase 4: Step 2 Implementation

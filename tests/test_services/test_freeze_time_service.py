@@ -12,14 +12,14 @@ def test_create_global_freeze_time_config(session: Session, test_admin: User) ->
     """Test creating a global freeze time config (no category)."""
     config = freeze_time_service.create_freeze_time_config(
         session=session,
-        item_type=ItemType.FROZEN,
+        item_type=ItemType.PURCHASED_FROZEN,
         freeze_time_months=12,
         created_by=test_admin.id,
     )
 
     assert config.id is not None
     assert config.category_id is None
-    assert config.item_type == ItemType.FROZEN
+    assert config.item_type == ItemType.PURCHASED_FROZEN
     assert config.freeze_time_months == 12
     assert config.created_by == test_admin.id
 
@@ -36,7 +36,7 @@ def test_create_category_specific_freeze_time_config(
 
     config = freeze_time_service.create_freeze_time_config(
         session=session,
-        item_type=ItemType.FROZEN,
+        item_type=ItemType.PURCHASED_FROZEN,
         freeze_time_months=6,
         created_by=test_admin.id,
         category_id=category.id,
@@ -44,7 +44,7 @@ def test_create_category_specific_freeze_time_config(
 
     assert config.id is not None
     assert config.category_id == category.id
-    assert config.item_type == ItemType.FROZEN
+    assert config.item_type == ItemType.PURCHASED_FROZEN
     assert config.freeze_time_months == 6
 
 
@@ -54,18 +54,18 @@ def test_create_freeze_time_config_duplicate_fails(
     """Test that duplicate (category_id, item_type) fails."""
     freeze_time_service.create_freeze_time_config(
         session=session,
-        item_type=ItemType.TINNED,
+        item_type=ItemType.HOMEMADE_PRESERVED,
         freeze_time_months=24,
         created_by=test_admin.id,
     )
 
     with pytest.raises(
         ValueError,
-        match="Freeze time config for category_id=None and item_type=TINNED already exists",
+        match="Freeze time config for category_id=None and item_type=HOMEMADE_PRESERVED already exists",
     ):
         freeze_time_service.create_freeze_time_config(
             session=session,
-            item_type=ItemType.TINNED,
+            item_type=ItemType.HOMEMADE_PRESERVED,
             freeze_time_months=18,
             created_by=test_admin.id,
         )
@@ -83,7 +83,7 @@ def test_create_freeze_time_config_category_duplicate_fails(
 
     freeze_time_service.create_freeze_time_config(
         session=session,
-        item_type=ItemType.CHILLED,
+        item_type=ItemType.PURCHASED_FRESH,
         freeze_time_months=3,
         created_by=test_admin.id,
         category_id=category.id,
@@ -91,11 +91,11 @@ def test_create_freeze_time_config_category_duplicate_fails(
 
     with pytest.raises(
         ValueError,
-        match=f"Freeze time config for category_id={category.id} and item_type=CHILLED already exists",
+        match=f"Freeze time config for category_id={category.id} and item_type=PURCHASED_FRESH already exists",
     ):
         freeze_time_service.create_freeze_time_config(
             session=session,
-            item_type=ItemType.CHILLED,
+            item_type=ItemType.PURCHASED_FRESH,
             freeze_time_months=5,
             created_by=test_admin.id,
             category_id=category.id,
@@ -106,13 +106,13 @@ def test_get_all_freeze_time_configs(session: Session, test_admin: User) -> None
     """Test getting all freeze time configs."""
     freeze_time_service.create_freeze_time_config(
         session=session,
-        item_type=ItemType.FROZEN,
+        item_type=ItemType.PURCHASED_FROZEN,
         freeze_time_months=12,
         created_by=test_admin.id,
     )
     freeze_time_service.create_freeze_time_config(
         session=session,
-        item_type=ItemType.TINNED,
+        item_type=ItemType.HOMEMADE_PRESERVED,
         freeze_time_months=24,
         created_by=test_admin.id,
     )
@@ -126,7 +126,7 @@ def test_get_freeze_time_config(session: Session, test_admin: User) -> None:
     """Test getting a freeze time config by ID."""
     created = freeze_time_service.create_freeze_time_config(
         session=session,
-        item_type=ItemType.AMBIENT,
+        item_type=ItemType.PURCHASED_FRESH,
         freeze_time_months=6,
         created_by=test_admin.id,
     )
@@ -134,7 +134,7 @@ def test_get_freeze_time_config(session: Session, test_admin: User) -> None:
     config = freeze_time_service.get_freeze_time_config(session, created.id)
 
     assert config.id == created.id
-    assert config.item_type == ItemType.AMBIENT
+    assert config.item_type == ItemType.PURCHASED_FRESH
 
 
 def test_get_freeze_time_config_not_found_fails(session: Session) -> None:
@@ -149,7 +149,7 @@ def test_update_freeze_time_config(session: Session, test_admin: User) -> None:
     """Test updating a freeze time config."""
     created = freeze_time_service.create_freeze_time_config(
         session=session,
-        item_type=ItemType.JARRED,
+        item_type=ItemType.HOMEMADE_PRESERVED,
         freeze_time_months=12,
         created_by=test_admin.id,
     )
@@ -161,7 +161,7 @@ def test_update_freeze_time_config(session: Session, test_admin: User) -> None:
     )
 
     assert updated.freeze_time_months == 18
-    assert updated.item_type == ItemType.JARRED  # Unchanged
+    assert updated.item_type == ItemType.HOMEMADE_PRESERVED  # Unchanged
 
 
 def test_update_freeze_time_config_to_duplicate_fails(
@@ -176,14 +176,14 @@ def test_update_freeze_time_config_to_duplicate_fails(
 
     freeze_time_service.create_freeze_time_config(
         session=session,
-        item_type=ItemType.FROZEN,
+        item_type=ItemType.PURCHASED_FROZEN,
         freeze_time_months=12,
         created_by=test_admin.id,
         category_id=category.id,
     )
     second = freeze_time_service.create_freeze_time_config(
         session=session,
-        item_type=ItemType.CHILLED,
+        item_type=ItemType.PURCHASED_FRESH,
         freeze_time_months=3,
         created_by=test_admin.id,
         category_id=category.id,
@@ -191,12 +191,12 @@ def test_update_freeze_time_config_to_duplicate_fails(
 
     with pytest.raises(
         ValueError,
-        match=f"Freeze time config for category_id={category.id} and item_type=FROZEN already exists",
+        match=f"Freeze time config for category_id={category.id} and item_type=PURCHASED_FROZEN already exists",
     ):
         freeze_time_service.update_freeze_time_config(
             session=session,
             id=second.id,
-            item_type=ItemType.FROZEN,
+            item_type=ItemType.PURCHASED_FROZEN,
         )
 
 
@@ -204,7 +204,7 @@ def test_delete_freeze_time_config(session: Session, test_admin: User) -> None:
     """Test deleting a freeze time config."""
     created = freeze_time_service.create_freeze_time_config(
         session=session,
-        item_type=ItemType.AMBIENT,
+        item_type=ItemType.PURCHASED_FRESH,
         freeze_time_months=6,
         created_by=test_admin.id,
     )
@@ -228,7 +228,7 @@ def test_get_freeze_time_for_item(session: Session, test_admin: User) -> None:
     # Global default
     freeze_time_service.create_freeze_time_config(
         session=session,
-        item_type=ItemType.FROZEN,
+        item_type=ItemType.PURCHASED_FROZEN,
         freeze_time_months=12,
         created_by=test_admin.id,
     )
@@ -236,7 +236,7 @@ def test_get_freeze_time_for_item(session: Session, test_admin: User) -> None:
     # Category-specific override
     freeze_time_service.create_freeze_time_config(
         session=session,
-        item_type=ItemType.FROZEN,
+        item_type=ItemType.PURCHASED_FROZEN,
         freeze_time_months=6,
         created_by=test_admin.id,
         category_id=category.id,
@@ -245,7 +245,7 @@ def test_get_freeze_time_for_item(session: Session, test_admin: User) -> None:
     # Should return category-specific config (6 months)
     months = freeze_time_service.get_freeze_time_for_item(
         session=session,
-        item_type=ItemType.FROZEN,
+        item_type=ItemType.PURCHASED_FROZEN,
         category_id=category.id,
     )
 
@@ -265,7 +265,7 @@ def test_get_freeze_time_for_item_falls_back_to_global(
     # Only global default
     freeze_time_service.create_freeze_time_config(
         session=session,
-        item_type=ItemType.CHILLED,
+        item_type=ItemType.PURCHASED_FRESH,
         freeze_time_months=3,
         created_by=test_admin.id,
     )
@@ -273,7 +273,7 @@ def test_get_freeze_time_for_item_falls_back_to_global(
     # Should return global config (3 months)
     months = freeze_time_service.get_freeze_time_for_item(
         session=session,
-        item_type=ItemType.CHILLED,
+        item_type=ItemType.PURCHASED_FRESH,
         category_id=category.id,
     )
 
@@ -292,7 +292,7 @@ def test_get_freeze_time_for_item_no_config_returns_none(
 
     months = freeze_time_service.get_freeze_time_for_item(
         session=session,
-        item_type=ItemType.AMBIENT,
+        item_type=ItemType.PURCHASED_FRESH,
         category_id=category.id,
     )
 
