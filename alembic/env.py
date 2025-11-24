@@ -11,6 +11,7 @@ from sqlmodel import SQLModel
 
 
 # Import all models to ensure they're registered with SQLModel.metadata
+from app.models import Category  # noqa: F401
 from app.models import User  # noqa: F401
 
 # this is the Alembic Config object, which provides

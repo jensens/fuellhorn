@@ -6,6 +6,7 @@ Stellt Funktionen für Datenbank-Verbindung und Session-Management bereit.
 from .config import config
 
 # Alle Models werden hier importiert damit SQLModel sie kennt
+from .models import Category  # noqa: F401
 from .models import User  # noqa: F401
 from collections.abc import Generator
 from sqlalchemy import Engine
@@ -16,7 +17,6 @@ from sqlmodel import create_engine
 
 # Weitere Models werden später hinzugefügt:
 # from .models import Item  # noqa: F401
-# from .models import Category  # noqa: F401
 # from .models import Location  # noqa: F401
 # from .models import FreezeTimeConfig  # noqa: F401
 # from .models import AuditLog  # noqa: F401
