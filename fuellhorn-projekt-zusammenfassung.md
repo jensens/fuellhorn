@@ -186,7 +186,7 @@ Noch zu entscheiden, mögliche Optionen:
 
 ### Beitragende
 
-- **Lead Developer:** Jensens (Klein & Partner KG)
+- **Lead Developer:** Jens W. Klein (Klein & Partner KG)
 - **Contributors:** TBD (Open for contributions!)
 
 ### Repository (geplant)

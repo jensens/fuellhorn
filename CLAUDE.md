@@ -2,6 +2,30 @@
 
 Diese Datei enthält wichtige Regeln und Richtlinien für die Entwicklung dieses Projekts.
 
+## Lizenz
+
+**Füllhorn ist lizenziert unter AGPL-3.0-or-later (GNU Affero General Public License v3.0 oder später).**
+
+### Warum AGPLv3?
+
+Die AGPLv3 wurde gewählt, weil:
+
+1. **Self-Hosted Web Application**: Füllhorn ist eine netzwerkbasierte Anwendung, die als Webservice gehostet wird. Die AGPL stellt sicher, dass Änderungen am Code mit der Community geteilt werden müssen, auch wenn die Software nur als SaaS bereitgestellt wird (ohne Binär-Distribution).
+
+2. **Community-getriebene Entwicklung**: Die Copyleft-Lizenz fördert Beiträge zurück zur Community und verhindert proprietäre Forks.
+
+3. **Dependency-Kompatibilität**: Alle verwendeten Dependencies (MIT, Apache 2.0, BSD, LGPL) sind mit AGPLv3 kompatibel.
+
+### Was bedeutet das für Entwickler?
+
+- **Eigene Änderungen**: Wenn du Füllhorn modifizierst und die modifizierte Version als Webservice hostest, musst du den Quellcode deiner Änderungen verfügbar machen.
+- **Beiträge zum Projekt**: Alle Contributions zu diesem Repository werden automatisch unter AGPLv3 lizenziert.
+- **Private Nutzung**: Du kannst Füllhorn für private/interne Zwecke nutzen, ohne den Code teilen zu müssen, solange du es nicht als Service für Dritte anbietest.
+
+Siehe [LICENSE](LICENSE) für den vollständigen Lizenztext.
+
+---
+
 ## Grundprinzipien
 
 ### 1. Test-Driven Development (TDD)

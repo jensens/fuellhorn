@@ -172,7 +172,7 @@ name = "fuellhorn"
 version = "0.1.0"
 description = "Lebensmittelvorrats-Verwaltung"
 authors = [
-    { name = "Jens Jensens", email = "jens@example.com" }
+    { name = "Jens W. Klein", email = "jk@kleinundpartner.at" }
 ]
 requires-python = ">=3.14"
 dependencies = [
