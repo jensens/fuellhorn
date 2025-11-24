@@ -796,53 +796,8 @@ Diese Patterns von VellenBase lernen und adaptieren:
 
 ---
 
-## Post-MVP Features (Roadmap)
+## Produkt-Anforderungen & Roadmap
 
-### Phase 2: Automatisierung & Komfort
-- ❌ **Barcode-Scanner Integration** (Produktdatenbank-Anbindung z.B. Open Food Facts)
-- ❌ OCR für MHD-Erkennung
-- ❌ OCR für Einkaufszettel-Scan
-- ❌ Bulk-Import / CSV-Import
+Alle funktionalen und nicht-funktionalen Anforderungen, Use Cases, User Stories und die Post-MVP Roadmap sind in **[requirements.md](requirements.md)** dokumentiert.
 
-### Phase 3: Performance & UX
-- ❌ **Infinite Scroll Optimierung** (Lazy Loading, Virtualisierung)
-- ❌ **PWA Features** (nur wenn einfach umzusetzen: Service Worker, Add to Home Screen, Offline-Modus)
-- ❌ Push Notifications für ablaufende Artikel
-
-### Phase 4: Analytics & Advanced
-- ❌ Archiv-Ansicht (entnommene Artikel anzeigen)
-- ❌ Statistiken (Verbrauchsrate, häufigste Artikel)
-- ❌ Einkaufslisten-Generator
-- ❌ Rezept-Integration
-
-### Phase 5: Production Hardening & CI/CD
-- ❌ **GitHub Actions CI/CD Pipeline** (statt GitLab CI wie bei VellenBase)
-  - Automatische Tests bei Pull Requests
-  - Linting & Type Checking
-  - Docker Image Build & Push
-  - Automatisches Deployment
-- ❌ **Docker Multi-Stage Builds** (Image-Optimierung)
-- ❌ **Security Hardening** (non-root user, read-only filesystem, etc.)
-- ❌ **Kubernetes Deployment mit CDK8s** (analog zu VellenBase)
-  - TypeScript CDK8s Charts
-  - Deployment, Service, IngressRoute
-  - PostgreSQL (CloudNativePG)
-  - Secrets Management (External Secrets Operator)
-  - Init Container für Alembic Migrations
-- ❌ Performance-Monitoring
-- ❌ Backup-Strategien
-
-### Phase 6: Internationalisierung (i18n)
-- ❌ **Language Switcher** (UI-Komponente, vermutlich in Settings/Navigation)
-- ❌ **Deutsch & Englisch** als initiale Sprachen
-- ❌ **Weitere Sprachen** (später erweiterbar)
-- ❌ **NiceGUI i18n Support** (Python gettext-basiert)
-  - `.po`/`.pot` Translation Files
-  - Übersetzbare Strings mit `_("text")` markieren
-  - Compile zu `.mo` Files
-- ❌ **Language Preference** in Browser Storage speichern
-- ❌ **Übersetzungen für**:
-  - UI-Texte (Buttons, Labels, Navigation)
-  - Fehlermeldungen & Notifications
-  - Item-Typen & Status-Labels
-  - Validierungsmeldungen
+**CLAUDE.md fokussiert sich auf Entwicklungsregeln und Prozesse, nicht auf Produkt-Features.**

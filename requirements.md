@@ -448,6 +448,68 @@ Die Haltbarkeitsberechnung hängt vom Artikel-Typ ab:
 - ❌ Hierarchische Kategorien
 - ❌ Fotos von Artikeln
 
+#### Phase 5: Performance & UX Optimierung
+- ❌ **Infinite Scroll Optimierung** (Lazy Loading, Virtualisierung für lange Listen)
+- ❌ **PWA Features** (nur wenn einfach umzusetzen)
+  - Service Worker
+  - Add to Home Screen
+  - Offline-Modus (Basis-Funktionalität)
+- ❌ Push Notifications für ablaufende Artikel
+
+#### Phase 6: Real-time Collaboration (Multi-User Synchronisation)
+- ❌ **Real-time Updates ohne manuellen Reload**
+  - Wenn ein Benutzer einen Artikel hinzufügt/ändert/entnimmt, soll die Änderung bei anderen aktiven Benutzern sofort sichtbar werden
+  - Keine F5/Reload-Notwendigkeit
+- ❌ **WebSocket-basierte Implementierung** (oder ähnliche Technologie)
+  - Server pushed Updates an verbundene Clients
+  - Effiziente Synchronisation nur bei tatsächlichen Änderungen
+- ❌ **Conflict Resolution** (falls zwei Benutzer gleichzeitig denselben Artikel bearbeiten)
+  - Last-Write-Wins oder optimistisches Locking
+  - Benutzer-Feedback bei Konflikten
+- ❌ **Live-Indikator** (optional): "Benutzer XY bearbeitet gerade Artikel Z"
+- ❌ **Performance-Optimierung**: Nur relevante Updates pushen (z.B. nicht bei jedem Tastendruck)
+
+**Wichtige Design-Überlegungen (noch auszuarbeiten):**
+- Wie werden Updates aggregiert/gebatched?
+- Wie wird die WebSocket-Verbindung bei Netzwerk-Problemen gehandhabt (Reconnect)?
+- Wie wird verhindert, dass der Browser bei vielen gleichzeitigen Updates überlastet wird?
+- Braucht es eine "Offline-Queue" für Änderungen?
+
+#### Phase 7: Internationalisierung (i18n)
+- ❌ **Language Switcher** (UI-Komponente in Settings/Navigation)
+- ❌ **Deutsch & Englisch** als initiale Sprachen
+- ❌ **Weitere Sprachen** (später erweiterbar)
+- ❌ **NiceGUI i18n Support** (Python gettext-basiert)
+  - `.po`/`.pot` Translation Files
+  - Übersetzbare Strings mit `_("text")` markieren
+  - Compile zu `.mo` Files
+- ❌ **Language Preference** in Browser Storage speichern
+- ❌ **Übersetzungen für**:
+  - UI-Texte (Buttons, Labels, Navigation)
+  - Fehlermeldungen & Notifications
+  - Item-Typen & Status-Labels (z.B. "Gekauft", "Selbst hergestellt")
+  - Validierungsmeldungen
+
+#### Phase 8: Production Hardening & CI/CD
+- ❌ **GitHub Actions CI/CD Pipeline**
+  - Automatische Tests bei Pull Requests
+  - Linting & Type Checking
+  - Docker Image Build & Push
+  - Automatisches Deployment
+- ❌ **Docker Multi-Stage Builds** (Image-Optimierung)
+- ❌ **Security Hardening**
+  - Non-root user im Container
+  - Read-only filesystem (wo möglich)
+  - Security Scanning (Trivy, Snyk)
+- ❌ **Kubernetes Deployment mit CDK8s** (optional)
+  - TypeScript CDK8s Charts
+  - Deployment, Service, IngressRoute (Traefik)
+  - PostgreSQL (CloudNativePG Operator)
+  - Secrets Management (External Secrets Operator)
+  - Init Container für Alembic Migrations
+- ❌ Performance-Monitoring (Prometheus/Grafana)
+- ❌ Backup-Strategien (PostgreSQL Backups)
+
 ---
 
 ## MVP-Scope-Zusammenfassung
