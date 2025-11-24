@@ -1262,7 +1262,17 @@ Alle müssen grün sein ✅ vor dem Push!
   - Navigation to Step 2 with form data summary
   - Step 2 basic structure (placeholder for Phase 4)
   - All 75 tests passing, mypy + ruff clean
-- [ ] Phase 4: Step 2 Implementation
+- [x] **Phase 4: Step 2 - Conditional Date Fields** ✅ (2025-11-24)
+  - Step 2 validation logic (validate_best_before_date, validate_freeze_date, validate_step2)
+  - 12 new unit tests for Step 2 validation (all passing)
+  - Conditional date fields based on ItemType:
+    * Best before/production date (all types)
+    * Freeze date (only frozen types: PURCHASED_FROZEN, PURCHASED_THEN_FROZEN, HOMEMADE_FROZEN)
+    * Notes field (optional)
+  - Smart default: today's date
+  - Date comparison validation (freeze_date not before best_before)
+  - Reactive form state with Step 2 validation
+  - All 87 tests passing (1 unrelated login test failure), mypy + ruff clean
 - [ ] Phase 5: Step 3 Implementation
 - [ ] Phase 6: Save Integration
 - [ ] Phase 7: Save & Next Flow

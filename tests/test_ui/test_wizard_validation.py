@@ -158,3 +158,171 @@ def test_is_step1_valid_returns_false_with_one_error() -> None:
         )
         is False
     )
+
+
+# Step 2 Validation Tests
+
+
+def test_validate_best_before_date_valid() -> None:
+    """Test valid best before dates."""
+    from app.ui.validation import validate_best_before_date
+    from datetime import date
+    from datetime import timedelta
+
+    assert validate_best_before_date(date.today()) is None
+    assert validate_best_before_date(date.today() + timedelta(days=30)) is None
+    assert validate_best_before_date(date.today() - timedelta(days=7)) is None
+
+
+def test_validate_best_before_date_none() -> None:
+    """Test best before date is None."""
+    from app.ui.validation import validate_best_before_date
+
+    assert validate_best_before_date(None) == "Datum erforderlich"
+
+
+def test_validate_freeze_date_required_for_frozen() -> None:
+    """Test freeze date required for frozen types."""
+    from app.ui.validation import validate_freeze_date
+    from datetime import date
+
+    error = validate_freeze_date(None, ItemType.PURCHASED_FROZEN, date.today())
+    assert error == "Einfrierdatum erforderlich für TK-Artikel"
+
+    error = validate_freeze_date(None, ItemType.PURCHASED_THEN_FROZEN, date.today())
+    assert error == "Einfrierdatum erforderlich für TK-Artikel"
+
+    error = validate_freeze_date(None, ItemType.HOMEMADE_FROZEN, date.today())
+    assert error == "Einfrierdatum erforderlich für TK-Artikel"
+
+
+def test_validate_freeze_date_not_required_for_fresh() -> None:
+    """Test freeze date not required for fresh types."""
+    from app.ui.validation import validate_freeze_date
+    from datetime import date
+
+    error = validate_freeze_date(None, ItemType.PURCHASED_FRESH, date.today())
+    assert error is None
+
+    error = validate_freeze_date(None, ItemType.HOMEMADE_PRESERVED, date.today())
+    assert error is None
+
+
+def test_validate_freeze_date_cannot_be_before_best_before() -> None:
+    """Test freeze date validation against best_before."""
+    from app.ui.validation import validate_freeze_date
+    from datetime import date
+
+    best_before = date(2024, 1, 1)
+    freeze_date_val = date(2023, 12, 1)  # Before best_before
+
+    error = validate_freeze_date(
+        freeze_date_val, ItemType.PURCHASED_THEN_FROZEN, best_before
+    )
+    assert error is not None
+    assert "vor Produktionsdatum" in error
+
+
+def test_validate_freeze_date_valid_after_best_before() -> None:
+    """Test valid freeze date after best_before."""
+    from app.ui.validation import validate_freeze_date
+    from datetime import date
+
+    best_before = date(2024, 1, 1)
+    freeze_date_val = date(2024, 1, 15)  # After best_before
+
+    error = validate_freeze_date(
+        freeze_date_val, ItemType.PURCHASED_FROZEN, best_before
+    )
+    assert error is None
+
+
+def test_validate_step2_all_valid_non_frozen() -> None:
+    """Test Step 2 validation with all valid fields for non-frozen item."""
+    from app.ui.validation import validate_step2
+    from datetime import date
+
+    errors = validate_step2(
+        item_type=ItemType.PURCHASED_FRESH,
+        best_before=date.today(),
+        freeze_date=None,
+    )
+    assert errors == {}
+
+
+def test_validate_step2_all_valid_frozen() -> None:
+    """Test Step 2 validation with all valid fields for frozen item."""
+    from app.ui.validation import validate_step2
+    from datetime import date
+
+    errors = validate_step2(
+        item_type=ItemType.PURCHASED_FROZEN,
+        best_before=date(2024, 1, 1),
+        freeze_date=date(2024, 1, 15),
+    )
+    assert errors == {}
+
+
+def test_validate_step2_missing_best_before() -> None:
+    """Test Step 2 validation with missing best_before."""
+    from app.ui.validation import validate_step2
+
+    errors = validate_step2(
+        item_type=ItemType.PURCHASED_FRESH,
+        best_before=None,
+        freeze_date=None,
+    )
+    assert "best_before" in errors
+    assert errors["best_before"] == "Datum erforderlich"
+
+
+def test_validate_step2_frozen_missing_freeze_date() -> None:
+    """Test Step 2 validation with frozen type but missing freeze_date."""
+    from app.ui.validation import validate_step2
+    from datetime import date
+
+    errors = validate_step2(
+        item_type=ItemType.HOMEMADE_FROZEN,
+        best_before=date.today(),
+        freeze_date=None,
+    )
+    assert "freeze_date" in errors
+    assert "erforderlich" in errors["freeze_date"]
+
+
+def test_is_step2_valid_returns_true_when_valid() -> None:
+    """Test is_step2_valid returns True for valid inputs."""
+    from app.ui.validation import is_step2_valid
+    from datetime import date
+
+    assert (
+        is_step2_valid(
+            item_type=ItemType.PURCHASED_FRESH,
+            best_before=date.today(),
+            freeze_date=None,
+        )
+        is True
+    )
+
+    assert (
+        is_step2_valid(
+            item_type=ItemType.PURCHASED_FROZEN,
+            best_before=date(2024, 1, 1),
+            freeze_date=date(2024, 1, 15),
+        )
+        is True
+    )
+
+
+def test_is_step2_valid_returns_false_when_invalid() -> None:
+    """Test is_step2_valid returns False for invalid inputs."""
+    from app.ui.validation import is_step2_valid
+
+    assert (
+        is_step2_valid(
+            item_type=ItemType.PURCHASED_FROZEN,
+            best_before=None,
+            freeze_date=None,
+        )
+        is False
+    )

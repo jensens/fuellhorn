@@ -1,7 +1,23 @@
 {
   "permissions": {
     "allow": [
-      "Bash(tree:*)"
+      "Bash(tree:*)",
+      "Bash(git worktree add:*)",
+      "Bash(curl:*)",
+      "Bash(uv run alembic:*)",
+      "Bash(uv run pytest:*)",
+      "Bash(uv run ruff:*)",
+      "Bash(uv run:*)",
+      "Bash(git checkout:*)",
+      "Bash(git merge:*)",
+      "Bash(git worktree remove:*)",
+      "Bash(git branch:*)",
+      "Bash(git worktree:*)",
+      "Bash(git push)",
+      "Bash(cat:*)",
+      "Bash(uv sync:*)",
+      "Bash(tests/test_ui/__init__.py)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []

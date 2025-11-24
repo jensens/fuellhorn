@@ -5,6 +5,8 @@ from ...models.freeze_time_config import ItemType
 from ..components import create_bottom_nav
 from ..components import create_mobile_page_container
 from ..validation import is_step1_valid
+from ..validation import is_step2_valid
+from datetime import date as date_type
 from nicegui import ui
 from typing import Any
 
@@ -20,8 +22,14 @@ def add_item() -> None:
         "item_type": None,
         "quantity": 0.0,
         "unit": "g",
+        "best_before_date": date_type.today(),
+        "freeze_date": None,
+        "notes": "",
         "current_step": 1,
     }
+
+    # Button references (will be assigned when created)
+    step2_next_button: Any = None
 
     def update_validation() -> None:
         """Update next button state based on validation."""
@@ -31,6 +39,21 @@ def add_item() -> None:
             quantity=form_data["quantity"],
         )
         next_button.props(remove="disabled" if is_valid else "", add="disabled" if not is_valid else "")
+
+    def update_step2_validation() -> None:
+        """Update Step 2 next button state based on validation."""
+        is_valid = is_step2_valid(
+            item_type=form_data["item_type"],
+            best_before=form_data["best_before_date"],
+            freeze_date=form_data.get("freeze_date"),
+        )
+        step2_next_button.props(remove="disabled" if is_valid else "", add="disabled" if not is_valid else "")
+
+    def show_step1() -> None:
+        """Navigate back to Step 1."""
+        form_data["current_step"] = 1
+        # Reload page to reset to Step 1
+        ui.navigate.to("/items/add")
 
     def show_step2() -> None:
         """Navigate to Step 2."""
@@ -51,23 +74,68 @@ def add_item() -> None:
             ui.label("Datumsangaben").classes("text-h6 font-semibold mb-3")
 
             # Summary from Step 1
+            item_type_labels = {
+                ItemType.PURCHASED_FRESH: "Frisch eingekauft",
+                ItemType.PURCHASED_FROZEN: "TK-Ware gekauft",
+                ItemType.PURCHASED_THEN_FROZEN: "Frisch gekauft → eingefroren",
+                ItemType.HOMEMADE_FROZEN: "Selbst eingefroren",
+                ItemType.HOMEMADE_PRESERVED: "Selbst eingemacht",
+            }
+            type_label = item_type_labels.get(form_data["item_type"], "")
+
             with ui.card().classes("w-full bg-gray-50 p-3 mb-4"):
                 ui.label("Zusammenfassung:").classes("text-sm font-medium mb-2")
                 ui.label(
-                    f"{form_data['product_name']} • {form_data['quantity']} {form_data['unit']}"
+                    f"{form_data['product_name']} • {form_data['quantity']} {form_data['unit']} • {type_label}"
                 ).classes("text-sm")
 
-            # Placeholder for Step 2 fields (Phase 4)
-            ui.label("Datumsfelder folgen in Phase 4").classes("text-sm text-gray-500")
+            # Best Before / Production Date (always shown)
+            homemade_types = {ItemType.HOMEMADE_FROZEN, ItemType.HOMEMADE_PRESERVED}
+            date_label = (
+                "Produktionsdatum"
+                if form_data["item_type"] in homemade_types
+                else "Einkaufsdatum"
+            )
+
+            ui.label(f"{date_label} *").classes("text-sm font-medium mb-1")
+            best_before_input = ui.date(value=form_data["best_before_date"]).classes(
+                "w-full"
+            ).props("outlined")
+            best_before_input.bind_value(form_data, "best_before_date")
+            best_before_input.on("update:model-value", update_step2_validation)
+
+            # Freeze Date (conditional - only for frozen types)
+            frozen_types = {
+                ItemType.PURCHASED_FROZEN,
+                ItemType.PURCHASED_THEN_FROZEN,
+                ItemType.HOMEMADE_FROZEN,
+            }
+
+            if form_data["item_type"] in frozen_types:
+                ui.label("Einfrierdatum *").classes("text-sm font-medium mb-1 mt-4")
+                freeze_date_input = ui.date(
+                    value=form_data.get("freeze_date") or date_type.today()  # type: ignore[arg-type]
+                ).classes("w-full").props("outlined")
+                freeze_date_input.bind_value(form_data, "freeze_date")
+                freeze_date_input.on("update:model-value", update_step2_validation)
+
+            # Notes (optional)
+            ui.label("Notizen (optional)").classes("text-sm font-medium mb-1 mt-4")
+            notes_input = ui.textarea(placeholder="z.B. blanchiert").classes("w-full").props("outlined")
+            notes_input.bind_value(form_data, "notes")
 
             # Navigation
             with ui.row().classes("w-full justify-between mt-6 gap-2"):
-                ui.button("Zurück", icon="arrow_back", on_click=lambda: ui.navigate.to("/items/add")).props(
+                ui.button("Zurück", icon="arrow_back", on_click=show_step1).props(
                     "flat color=gray-7 size=lg"
                 ).style("min-height: 48px")
-                ui.button("Weiter", icon="arrow_forward").props(
-                    "color=primary size=lg disabled"
-                ).style("min-height: 48px")
+
+                nonlocal step2_next_button
+                step2_next_button = ui.button(
+                    "Weiter", icon="arrow_forward"
+                ).props("color=primary size=lg disabled").style("min-height: 48px")
+                # Initial validation
+                update_step2_validation()
 
     # Header with title and close button
     with ui.row().classes(

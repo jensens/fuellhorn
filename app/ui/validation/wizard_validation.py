@@ -1,5 +1,6 @@
 """Validation logic for Item Capture Wizard."""
 
+from datetime import date
 from typing import Any
 
 
@@ -90,3 +91,98 @@ def is_step1_valid(
         True if all fields are valid
     """
     return len(validate_step1(product_name, item_type, quantity)) == 0
+
+
+# Step 2 Validation Functions
+
+
+def validate_best_before_date(best_before: date | None) -> str | None:
+    """Validate best before date.
+
+    Args:
+        best_before: Best before/production date to validate
+
+    Returns:
+        Error message if invalid, None if valid
+    """
+    if best_before is None:
+        return "Datum erforderlich"
+    return None
+
+
+def validate_freeze_date(
+    freeze_date: date | None,
+    item_type: Any,
+    best_before: date | None,
+) -> str | None:
+    """Validate freeze date for frozen items.
+
+    Args:
+        freeze_date: Freeze date to validate
+        item_type: Selected item type
+        best_before: Best before date for comparison
+
+    Returns:
+        Error message if invalid, None if valid
+    """
+    # Import here to avoid circular dependency
+    from ...models.freeze_time_config import ItemType
+
+    frozen_types = {
+        ItemType.PURCHASED_FROZEN,
+        ItemType.PURCHASED_THEN_FROZEN,
+        ItemType.HOMEMADE_FROZEN,
+    }
+
+    if item_type in frozen_types:
+        if freeze_date is None:
+            return "Einfrierdatum erforderlich für TK-Artikel"
+        # Freeze date should not be before best_before
+        if best_before and freeze_date < best_before:
+            return "Einfrierdatum kann nicht vor Produktionsdatum liegen"
+
+    return None
+
+
+def validate_step2(
+    item_type: Any,
+    best_before: date | None,
+    freeze_date: date | None,
+) -> dict[str, str]:
+    """Validate all Step 2 fields.
+
+    Args:
+        item_type: Selected item type
+        best_before: Best before/production date
+        freeze_date: Freeze date (optional, required for frozen types)
+
+    Returns:
+        Dictionary of field errors (empty if all valid)
+    """
+    errors: dict[str, str] = {}
+
+    if error := validate_best_before_date(best_before):
+        errors["best_before"] = error
+
+    if error := validate_freeze_date(freeze_date, item_type, best_before):
+        errors["freeze_date"] = error
+
+    return errors
+
+
+def is_step2_valid(
+    item_type: Any,
+    best_before: date | None,
+    freeze_date: date | None,
+) -> bool:
+    """Check if Step 2 is valid.
+
+    Args:
+        item_type: Selected item type
+        best_before: Best before/production date
+        freeze_date: Freeze date
+
+    Returns:
+        True if all fields are valid
+    """
+    return len(validate_step2(item_type, best_before, freeze_date)) == 0
