@@ -13,6 +13,8 @@ from sqlmodel import SQLModel
 # Import all models to ensure they're registered with SQLModel.metadata
 from app.models import Category  # noqa: F401
 from app.models import FreezeTimeConfig  # noqa: F401
+from app.models import Item  # noqa: F401
+from app.models import ItemCategory  # noqa: F401
 from app.models import Location  # noqa: F401
 from app.models import User  # noqa: F401
 
