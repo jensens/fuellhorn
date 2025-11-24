@@ -52,7 +52,7 @@ def show_login_page() -> None:
                 ui.icon("kitchen", size="64px").classes("text-primary")
 
             # Titel
-            ui.label("Fuellhorn").classes("text-h4 text-center w-full mb-2")
+            ui.label("Füllhorn").classes("text-h4 text-center w-full mb-2")
             ui.label("Lebensmittelvorrats-Verwaltung").classes("text-subtitle2 text-center w-full mb-6 text-gray-600")
 
             # Formular

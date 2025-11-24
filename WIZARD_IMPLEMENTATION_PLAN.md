@@ -825,7 +825,14 @@ Alle müssen grün sein ✅ vor dem Push!
   - Bottom navigation integration
   - UI test: auth requirement verified
   - Note: Full interaction tests deferred to Phase 3 (need login flow)
-- [ ] Phase 3: Step 1 Validation
+- [x] **Phase 3: Step 1 Validation + Navigation** ✅ (2025-11-24)
+  - Created validation module (app/ui/validation/wizard_validation.py)
+  - 16 unit tests for validation logic (all passing)
+  - Reactive form state with bind_value()
+  - "Weiter" button enabled/disabled based on validation
+  - Navigation to Step 2 with form data summary
+  - Step 2 basic structure (placeholder for Phase 4)
+  - All 75 tests passing, mypy + ruff clean
 - [ ] Phase 4: Step 2 Implementation
 - [ ] Phase 5: Step 3 Implementation
 - [ ] Phase 6: Save Integration
