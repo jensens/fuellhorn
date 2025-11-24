@@ -4,13 +4,18 @@ from ...auth import require_auth
 from ...database import get_session
 from ...models.freeze_time_config import ItemType
 from ...services import category_service
+from ...services import item_service
 from ...services import location_service
 from ..components import create_bottom_nav
 from ..components import create_mobile_page_container
 from ..validation import is_step1_valid
 from ..validation import is_step2_valid
 from ..validation import is_step3_valid
+from ..validation import validate_step1
+from ..validation import validate_step2
+from ..validation import validate_step3
 from datetime import date as date_type
+from nicegui import app
 from nicegui import ui
 from typing import Any
 
@@ -239,10 +244,69 @@ def add_item() -> None:
 
                 nonlocal step3_submit_button
                 step3_submit_button = ui.button(
-                    "Speichern", icon="save"
+                    "Speichern", icon="save", on_click=save_item
                 ).props("color=primary size=lg disabled").style("min-height: 48px")
                 # Initial validation
                 update_step3_validation()
+
+    def save_item() -> None:
+        """Save item to database and navigate to dashboard."""
+        # Final validation across all steps
+        errors = {}
+        errors.update(
+            validate_step1(
+                form_data["product_name"],
+                form_data["item_type"],
+                form_data["quantity"],
+            )
+        )
+        errors.update(
+            validate_step2(
+                form_data["item_type"],
+                form_data["best_before_date"],
+                form_data.get("freeze_date"),
+            )
+        )
+        errors.update(
+            validate_step3(
+                form_data.get("location_id"),
+                form_data.get("category_ids"),
+            )
+        )
+
+        if errors:
+            ui.notify("Bitte alle Pflichtfelder ausfüllen", type="warning")
+            return
+
+        # Get current user from session
+        user_id = app.storage.user.get("user_id")
+
+        if not user_id:
+            ui.notify("Keine Berechtigung - bitte neu anmelden", type="negative")
+            ui.navigate.to("/login")
+            return
+
+        # Save to database
+        try:
+            with next(get_session()) as session:
+                item_service.create_item(
+                    session=session,
+                    product_name=form_data["product_name"],
+                    best_before_date=form_data["best_before_date"],
+                    freeze_date=form_data.get("freeze_date"),
+                    quantity=form_data["quantity"],
+                    unit=form_data["unit"],
+                    item_type=form_data["item_type"],
+                    location_id=form_data["location_id"],
+                    created_by=user_id,
+                    category_ids=form_data.get("category_ids"),
+                    notes=form_data.get("notes"),
+                )
+
+            ui.notify(f"✅ {form_data['product_name']} gespeichert!", type="positive")
+            ui.navigate.to("/dashboard")
+        except Exception as e:
+            ui.notify(f"Fehler beim Speichern: {str(e)}", type="negative")
 
     # Header with title and close button
     with ui.row().classes(
