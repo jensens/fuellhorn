@@ -186,3 +186,73 @@ def is_step2_valid(
         True if all fields are valid
     """
     return len(validate_step2(item_type, best_before, freeze_date)) == 0
+
+
+# Step 3 Validation Functions
+
+
+def validate_location(location_id: int | None) -> str | None:
+    """Validate location selection.
+
+    Args:
+        location_id: Selected location ID
+
+    Returns:
+        Error message if invalid, None if valid
+    """
+    if location_id is None:
+        return "Bitte Lagerort auswählen"
+    return None
+
+
+def validate_categories(category_ids: list[int] | None) -> str | None:
+    """Validate category selection.
+
+    Args:
+        category_ids: Selected category IDs
+
+    Returns:
+        Error message if invalid, None if valid (categories are optional)
+    """
+    # Categories are optional, so always valid
+    return None
+
+
+def validate_step3(
+    location_id: int | None,
+    category_ids: list[int] | None,
+) -> dict[str, str]:
+    """Validate all Step 3 fields.
+
+    Args:
+        location_id: Selected location ID
+        category_ids: Selected category IDs (optional)
+
+    Returns:
+        Dictionary of field errors (empty if all valid)
+    """
+    errors: dict[str, str] = {}
+
+    if error := validate_location(location_id):
+        errors["location"] = error
+
+    if error := validate_categories(category_ids):
+        errors["categories"] = error
+
+    return errors
+
+
+def is_step3_valid(
+    location_id: int | None,
+    category_ids: list[int] | None,
+) -> bool:
+    """Check if Step 3 is valid.
+
+    Args:
+        location_id: Selected location ID
+        category_ids: Selected category IDs
+
+    Returns:
+        True if all fields are valid
+    """
+    return len(validate_step3(location_id, category_ids)) == 0

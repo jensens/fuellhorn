@@ -326,3 +326,71 @@ def test_is_step2_valid_returns_false_when_invalid() -> None:
         )
         is False
     )
+
+
+# Step 3 Validation Tests
+
+
+def test_validate_location_valid() -> None:
+    """Test valid location ID."""
+    from app.ui.validation import validate_location
+
+    assert validate_location(1) is None
+    assert validate_location(42) is None
+
+
+def test_validate_location_none() -> None:
+    """Test location is None."""
+    from app.ui.validation import validate_location
+
+    assert validate_location(None) == "Bitte Lagerort auswählen"
+
+
+def test_validate_categories_always_valid() -> None:
+    """Test categories are always valid (optional field)."""
+    from app.ui.validation import validate_categories
+
+    assert validate_categories(None) is None
+    assert validate_categories([]) is None
+    assert validate_categories([1, 2, 3]) is None
+
+
+def test_validate_step3_all_valid_no_categories() -> None:
+    """Test Step 3 validation with location only."""
+    from app.ui.validation import validate_step3
+
+    errors = validate_step3(location_id=1, category_ids=None)
+    assert errors == {}
+
+
+def test_validate_step3_all_valid_with_categories() -> None:
+    """Test Step 3 validation with location and categories."""
+    from app.ui.validation import validate_step3
+
+    errors = validate_step3(location_id=1, category_ids=[1, 2, 3])
+    assert errors == {}
+
+
+def test_validate_step3_missing_location() -> None:
+    """Test Step 3 validation with missing location."""
+    from app.ui.validation import validate_step3
+
+    errors = validate_step3(location_id=None, category_ids=[1, 2])
+    assert "location" in errors
+    assert errors["location"] == "Bitte Lagerort auswählen"
+
+
+def test_is_step3_valid_returns_true_when_valid() -> None:
+    """Test is_step3_valid returns True for valid inputs."""
+    from app.ui.validation import is_step3_valid
+
+    assert is_step3_valid(location_id=1, category_ids=None) is True
+    assert is_step3_valid(location_id=5, category_ids=[1, 2, 3]) is True
+
+
+def test_is_step3_valid_returns_false_when_invalid() -> None:
+    """Test is_step3_valid returns False for invalid inputs."""
+    from app.ui.validation import is_step3_valid
+
+    assert is_step3_valid(location_id=None, category_ids=None) is False
+    assert is_step3_valid(location_id=None, category_ids=[1, 2]) is False

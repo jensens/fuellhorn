@@ -1,11 +1,15 @@
 """Item Capture Wizard - 3-Step Mobile-First Form."""
 
 from ...auth import require_auth
+from ...database import get_session
 from ...models.freeze_time_config import ItemType
+from ...services import category_service
+from ...services import location_service
 from ..components import create_bottom_nav
 from ..components import create_mobile_page_container
 from ..validation import is_step1_valid
 from ..validation import is_step2_valid
+from ..validation import is_step3_valid
 from datetime import date as date_type
 from nicegui import ui
 from typing import Any
@@ -25,11 +29,14 @@ def add_item() -> None:
         "best_before_date": date_type.today(),
         "freeze_date": None,
         "notes": "",
+        "location_id": None,
+        "category_ids": [],
         "current_step": 1,
     }
 
     # Button references (will be assigned when created)
     step2_next_button: Any = None
+    step3_submit_button: Any = None
 
     def update_validation() -> None:
         """Update next button state based on validation."""
@@ -48,6 +55,14 @@ def add_item() -> None:
             freeze_date=form_data.get("freeze_date"),
         )
         step2_next_button.props(remove="disabled" if is_valid else "", add="disabled" if not is_valid else "")
+
+    def update_step3_validation() -> None:
+        """Update Step 3 submit button state based on validation."""
+        is_valid = is_step3_valid(
+            location_id=form_data.get("location_id"),
+            category_ids=form_data.get("category_ids"),
+        )
+        step3_submit_button.props(remove="disabled" if is_valid else "", add="disabled" if not is_valid else "")
 
     def show_step1() -> None:
         """Navigate back to Step 1."""
@@ -132,10 +147,102 @@ def add_item() -> None:
 
                 nonlocal step2_next_button
                 step2_next_button = ui.button(
-                    "Weiter", icon="arrow_forward"
+                    "Weiter", icon="arrow_forward", on_click=lambda: show_step3()
                 ).props("color=primary size=lg disabled").style("min-height: 48px")
                 # Initial validation
                 update_step2_validation()
+
+    def show_step3() -> None:
+        """Navigate to Step 3."""
+        if not is_step2_valid(
+            form_data["item_type"], form_data["best_before_date"], form_data.get("freeze_date")
+        ):
+            ui.notify("Bitte alle Pflichtfelder ausfüllen", type="warning")
+            return
+
+        form_data["current_step"] = 3
+        # Clear and rebuild UI for Step 3
+        content_container.clear()
+        with content_container:
+            # Progress Indicator
+            ui.label("Schritt 3 von 3").classes("text-sm text-gray-600 mb-4")
+
+            # Step 3: Location & Categories
+            ui.label("Lagerort & Kategorien").classes("text-h6 font-semibold mb-3")
+
+            # Summary from Steps 1-2
+            item_type_labels = {
+                ItemType.PURCHASED_FRESH: "Frisch eingekauft",
+                ItemType.PURCHASED_FROZEN: "TK-Ware gekauft",
+                ItemType.PURCHASED_THEN_FROZEN: "Frisch gekauft → eingefroren",
+                ItemType.HOMEMADE_FROZEN: "Selbst eingefroren",
+                ItemType.HOMEMADE_PRESERVED: "Selbst eingemacht",
+            }
+            type_label = item_type_labels.get(form_data["item_type"], "")
+
+            with ui.card().classes("w-full bg-gray-50 p-3 mb-4"):
+                ui.label("Zusammenfassung:").classes("text-sm font-medium mb-2")
+                ui.label(
+                    f"{form_data['product_name']} • {form_data['quantity']} {form_data['unit']} • {type_label}"
+                ).classes("text-sm")
+
+                # Date info
+                best_before_str = form_data["best_before_date"].strftime("%d.%m.%Y")
+                date_info = f"Datum: {best_before_str}"
+                if form_data.get("freeze_date"):
+                    freeze_str = form_data["freeze_date"].strftime("%d.%m.%Y")
+                    date_info += f" • Eingefroren: {freeze_str}"
+                ui.label(date_info).classes("text-sm")
+
+            # Fetch locations and categories from database
+            with next(get_session()) as session:
+                locations = location_service.get_all_locations(session)
+                categories = category_service.get_all_categories(session)
+
+            # Location Selection (required)
+            ui.label("Lagerort *").classes("text-sm font-medium mb-1")
+            location_options = {loc.id: loc.name for loc in locations}
+            location_select = ui.select(
+                options=location_options,
+                value=form_data.get("location_id"),
+            ).classes("w-full").props("outlined")
+            location_select.bind_value(form_data, "location_id")
+            location_select.on("update:model-value", update_step3_validation)
+
+            # Category Selection (optional multi-select)
+            if categories:
+                ui.label("Kategorien (optional)").classes("text-sm font-medium mb-1 mt-4")
+                ui.label("Mehrfachauswahl möglich").classes("text-xs text-gray-600 mb-2")
+
+                # Create checkbox group for categories
+                for category in categories:
+                    category_checkbox = ui.checkbox(category.name).classes("mb-2")
+
+                    def make_toggle_handler(cat_id: int) -> Any:
+                        def toggle_category(e: Any) -> None:
+                            if e.value:
+                                if cat_id not in form_data["category_ids"]:
+                                    form_data["category_ids"].append(cat_id)
+                            else:
+                                if cat_id in form_data["category_ids"]:
+                                    form_data["category_ids"].remove(cat_id)
+                            update_step3_validation()
+                        return toggle_category
+
+                    category_checkbox.on("update:model-value", make_toggle_handler(category.id))  # type: ignore[arg-type]
+
+            # Navigation
+            with ui.row().classes("w-full justify-between mt-6 gap-2"):
+                ui.button("Zurück", icon="arrow_back", on_click=show_step2).props(
+                    "flat color=gray-7 size=lg"
+                ).style("min-height: 48px")
+
+                nonlocal step3_submit_button
+                step3_submit_button = ui.button(
+                    "Speichern", icon="save"
+                ).props("color=primary size=lg disabled").style("min-height: 48px")
+                # Initial validation
+                update_step3_validation()
 
     # Header with title and close button
     with ui.row().classes(
