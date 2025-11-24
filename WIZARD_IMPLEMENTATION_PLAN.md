@@ -817,7 +817,14 @@ Alle müssen grün sein ✅ vor dem Push!
   - Updated all test files with new enum values
   - Created Alembic migration (no-op for SQLite)
   - All 58 tests passing, mypy + ruff clean
-- [ ] Phase 2: Wizard Grundstruktur
+- [x] **Phase 2: Wizard Grundstruktur + Step 1 Basis** ✅ (2025-11-24)
+  - Created /items/add route with @require_auth
+  - Step 1 UI: product name, item type (5 radios), quantity, unit
+  - Progress indicator (Schritt 1 von 3)
+  - Mobile-first layout with 48x48px touch targets
+  - Bottom navigation integration
+  - UI test: auth requirement verified
+  - Note: Full interaction tests deferred to Phase 3 (need login flow)
 - [ ] Phase 3: Step 1 Validation
 - [ ] Phase 4: Step 2 Implementation
 - [ ] Phase 5: Step 3 Implementation
