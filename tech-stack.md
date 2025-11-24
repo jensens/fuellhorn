@@ -275,25 +275,40 @@ DATABASE_URL=sqlite:///data/fuellhorn.db
 
 ---
 
-## UI Design Principles (von VellenBase übernehmen)
+## UI Design Principles (Mobile-First)
 
-**Gleiche Patterns wie VellenBase:**
-- Left Sidebar Navigation (immer sichtbar)
-- Hauptbereich mit Breadcrumb
-- Tabellen mit Filter/Suche/Sortierung
-- Modals/Dialogs für Create/Edit
-- Notifications (Success/Error Toast)
-- Farbcodierung für Status (rot/gelb/grün)
+**⚠️ WICHTIG:** Fuellhorn verwendet ein **komplett anderes UI-Konzept** als VellenBase!
 
-**NiceGUI First Approach:**
+**Siehe detaillierte UI-Spezifikation: [UI_KONZEPT.md](./UI_KONZEPT.md)**
+
+### Hauptunterschiede zu VellenBase:
+
+| Aspekt | VellenBase | Fuellhorn |
+|--------|-----------|-----------|
+| **Plattform** | Desktop-First | **Mobile-First** |
+| **Navigation** | Left Sidebar | **Bottom Navigation Bar** |
+| **Layout** | Multi-Column | **Single Column (Mobile)** |
+| **Touch-Targets** | 36px Buttons | **48px Buttons (Touch)** |
+| **Forms** | Multi-Column | **Wizard (3 Schritte)** |
+| **Modals** | Center Modal | **Bottom Sheet** |
+| **Interaktion** | Click/Hover | **Swipe-Gesten** |
+
+### Core Principles:
+- **Mobile First**: Primär für Smartphone optimiert
+- **Schnelligkeit**: Häufige Aktionen in 1-2 Taps
+- **Touch-Optimiert**: Große Buttons, Swipe-Gesten
+- **Smart Defaults**: Session-Storage für schnelle Bulk-Erfassung
+- **Bottom Navigation**: Immer erreichbar (Daumen-Zone)
+
+**NiceGUI First Approach** (bleibt gleich):
 1. Soviele NiceGUI Core-Komponenten wie möglich verwenden
 2. Wenn etwas fehlt: Erst recherchieren, ob es ein gepflegtes Plugin gibt
 3. Nur wenn nichts existiert: Selbst machen
 
-**Design:**
-- Mit NiceGUI Standard-Theme starten (Quasar/Material Design)
-- **Funktion zuerst, angepasstes Design später**
-- Keine vorzeitige Design-Arbeit
+**Responsive Strategie:**
+- **Mobile (< 640px)**: Bottom Nav, Single Column, Cards
+- **Tablet (640-1024px)**: Optionale Sidebar, 2-Column Layout
+- **Desktop (> 1024px)**: Left Sidebar (wie VellenBase), Tabellen
 
 ---
 
