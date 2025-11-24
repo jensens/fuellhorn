@@ -1273,7 +1273,17 @@ Alle müssen grün sein ✅ vor dem Push!
   - Date comparison validation (freeze_date not before best_before)
   - Reactive form state with Step 2 validation
   - All 87 tests passing (1 unrelated login test failure), mypy + ruff clean
-- [ ] Phase 5: Step 3 Implementation
+- [x] **Phase 5: Step 3 - Location & Categories** ✅ (2025-11-24)
+  - Step 3 validation logic (validate_location, validate_categories, validate_step3)
+  - 8 new unit tests for Step 3 validation (all passing)
+  - All 36 validation tests passing (16 Step 1 + 12 Step 2 + 8 Step 3)
+  - Location dropdown (required, from database)
+  - Category checkboxes (optional, multi-select)
+  - Summary from Steps 1-2 with formatted dates
+  - Database integration with location_service and category_service
+  - Reactive validation with location selection
+  - Mobile-first UI with 48x48px touch targets
+  - All 95 tests passing (1 unrelated login test failure), mypy + ruff clean
 - [ ] Phase 6: Save Integration
 - [ ] Phase 7: Save & Next Flow
 - [ ] Phase 8: Smart Defaults
