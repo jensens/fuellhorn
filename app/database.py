@@ -7,6 +7,7 @@ from .config import config
 
 # Alle Models werden hier importiert damit SQLModel sie kennt
 from .models import Category  # noqa: F401
+from .models import FreezeTimeConfig  # noqa: F401
 from .models import Location  # noqa: F401
 from .models import User  # noqa: F401
 from collections.abc import Generator
