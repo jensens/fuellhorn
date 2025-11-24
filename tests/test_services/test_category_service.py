@@ -1,12 +1,11 @@
 """Tests for category_service."""
 
-import pytest
-from sqlmodel import Session
-from sqlmodel import select
-
 from app.models import Category
 from app.models import User
 from app.services import category_service
+import pytest
+from sqlmodel import Session
+from sqlmodel import select
 
 
 def test_create_category(session: Session, test_admin: User) -> None:

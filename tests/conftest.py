@@ -1,14 +1,12 @@
 """Pytest configuration and fixtures for Fuellhorn tests."""
 
+from app.models import User
 from collections.abc import Generator
-
 import pytest
 from sqlalchemy.pool import StaticPool
 from sqlmodel import Session
 from sqlmodel import SQLModel
 from sqlmodel import create_engine
-
-from app.models import User
 
 
 @pytest.fixture(name="session")
