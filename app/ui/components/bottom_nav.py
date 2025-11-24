@@ -35,7 +35,7 @@ def create_bottom_nav(current_page: str = "dashboard") -> None:
 
             # Navigation button - 48x48px touch target
             with ui.column().classes(
-                "items-center justify-center cursor-pointer flex-1"
+                "items-center justify-center cursor-pointer flex-1 py-2 gap-0.5"
             ).style("min-width: 48px; min-height: 48px").on("click", lambda route=item["route"]: ui.navigate.to(route)):
                 # Icon with active state
                 icon_color = "text-primary" if is_active else "text-gray-600"
