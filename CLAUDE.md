@@ -831,3 +831,18 @@ Diese Patterns von VellenBase lernen und adaptieren:
   - Init Container für Alembic Migrations
 - ❌ Performance-Monitoring
 - ❌ Backup-Strategien
+
+### Phase 6: Internationalisierung (i18n)
+- ❌ **Language Switcher** (UI-Komponente, vermutlich in Settings/Navigation)
+- ❌ **Deutsch & Englisch** als initiale Sprachen
+- ❌ **Weitere Sprachen** (später erweiterbar)
+- ❌ **NiceGUI i18n Support** (Python gettext-basiert)
+  - `.po`/`.pot` Translation Files
+  - Übersetzbare Strings mit `_("text")` markieren
+  - Compile zu `.mo` Files
+- ❌ **Language Preference** in Browser Storage speichern
+- ❌ **Übersetzungen für**:
+  - UI-Texte (Buttons, Labels, Navigation)
+  - Fehlermeldungen & Notifications
+  - Item-Typen & Status-Labels
+  - Validierungsmeldungen
