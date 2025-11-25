@@ -386,9 +386,9 @@ def add_item() -> None:
         # Unit
         ui.label("Einheit *").classes("text-sm font-medium mb-1 mt-4")
         unit_toggle = ui.toggle(
-            options=["g", "kg", "ml", "L", "Stück", "Packung"],
+            options=["g", "kg", "ml", "l", "Stück", "Packung"],
             value=None,
-        ).classes("w-full").style("text-transform: none")
+        ).classes("w-full").style("text-transform: none !important")
         unit_toggle.bind_value(form_data, "unit")
         unit_toggle.on("update:model-value", update_validation)
 
