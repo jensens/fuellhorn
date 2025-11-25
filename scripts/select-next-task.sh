@@ -45,6 +45,11 @@ get_ready_issues() {
         jq '[.[] | select(.labels | map(.name) | index("status/blocked") | not)]'
 }
 
+# Funktion: Alle in-progress Issues laden
+get_inprogress_issues() {
+    gh issue list --repo "$REPO" --label "status/in-progress" --state open --json number,title --limit 20
+}
+
 # Funktion: Issue-Details anzeigen
 show_issue_details() {
     local issue_num=$1
@@ -170,20 +175,38 @@ main_menu() {
             exit 0
         fi
 
-        echo -e "${BOLD}Verfügbare Issues (${count} Stück):${NC}\n"
+        # In-Progress Issues laden und anzeigen
+        local inprogress_json
+        inprogress_json=$(get_inprogress_issues)
+        local inprogress_count
+        inprogress_count=$(echo "$inprogress_json" | jq 'length')
+
+        if [ "$inprogress_count" -gt 0 ]; then
+            echo -e "${BOLD}${YELLOW}⏳ In Bearbeitung (${inprogress_count}):${NC}\n"
+            printf "${BOLD}%-6s %-60s${NC}\n" "#" "Titel"
+            printf "%-6s %-60s\n" "------" "------------------------------------------------------------"
+            echo "$inprogress_json" | jq -r '.[] | "#\(.number)\t\(.title)"' | while read -r line; do
+                num=$(echo "$line" | cut -d'#' -f2 | cut -f1)
+                title=$(echo "$line" | cut -f2)
+                printf "${YELLOW}%-6s${NC} %-60s\n" "#$num" "$title"
+            done
+            echo ""
+        fi
+
+        echo -e "${BOLD}${GREEN}✅ Verfügbar (${count}):${NC}\n"
 
         # Issues als Tabelle anzeigen
         printf "${BOLD}%-6s %-60s${NC}\n" "#" "Titel"
         printf "%-6s %-60s\n" "------" "------------------------------------------------------------"
 
-        echo "$issues_json" | jq -r '.[] | "#\(.number)\t\(.title)"' | while read line; do
+        echo "$issues_json" | jq -r '.[] | "#\(.number)\t\(.title)"' | while read -r line; do
             num=$(echo "$line" | cut -d'#' -f2 | cut -f1)
             title=$(echo "$line" | cut -f2)
             printf "${GREEN}%-6s${NC} %-60s\n" "#$num" "$title"
         done
 
         echo ""
-        echo -e "Eingabe: ${BOLD}Issue-Nummer${NC} zum Anzeigen, ${BOLD}q${NC} zum Beenden"
+        echo -e "Eingabe: ${BOLD}Issue-Nummer${NC} (nur grüne auswählbar), ${BOLD}q${NC} zum Beenden"
         read -p "> " selection
 
         # Beenden
