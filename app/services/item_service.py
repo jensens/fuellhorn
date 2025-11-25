@@ -104,6 +104,24 @@ def get_all_items(session: Session) -> list[Item]:
     return list(session.exec(select(Item)).all())
 
 
+def get_active_items(session: Session) -> list[Item]:
+    """Get all non-consumed (active) items.
+
+    Args:
+        session: Database session
+
+    Returns:
+        List of active items sorted by expiry date
+    """
+    return list(
+        session.exec(
+            select(Item)
+            .where(Item.is_consumed.is_(False))  # type: ignore
+            .order_by(Item.expiry_date)  # type: ignore[arg-type]
+        ).all()
+    )
+
+
 def get_item(session: Session, id: int) -> Item:
     """Get item by ID.
 
