@@ -1,11 +1,13 @@
 """Locations Page - Admin page for managing storage locations (Mobile-First).
 
 Based on Issue #24: Locations Page - Liste aller Lagerorte
+Issue #26: Locations Page - Lagerort bearbeiten
 """
 
 from ...auth import Permission
 from ...auth import require_permissions
 from ...database import get_session
+from ...models.location import Location
 from ...models.location import LocationType
 from ...services import location_service
 from ..components import create_mobile_page_container
@@ -73,7 +75,7 @@ def locations_page() -> None:
                                 ).classes(f"text-{_get_location_type_color(location.location_type)}")
                                 # Location name
                                 ui.label(location.name).classes("font-medium text-lg")
-                            # Type badge and status
+                            # Type badge, status and edit button
                             with ui.row().classes("items-center gap-2"):
                                 # Type badge
                                 ui.badge(
@@ -83,6 +85,11 @@ def locations_page() -> None:
                                 # Inactive badge (if not active)
                                 if not location.is_active:
                                     ui.badge("Inaktiv", color="red").classes("text-xs")
+                                # Edit button
+                                ui.button(
+                                    icon="edit",
+                                    on_click=lambda loc=location: _open_edit_dialog(loc),
+                                ).props("flat round size=sm").classes("min-w-0")
             else:
                 # Empty state
                 with ui.card().classes("w-full"):
@@ -92,3 +99,107 @@ def locations_page() -> None:
                         ui.label("Lagerorte helfen beim Organisieren des Vorrats.").classes(
                             "text-sm text-gray-500 text-center"
                         )
+
+
+def _open_edit_dialog(location: Location) -> None:
+    """Open dialog to edit an existing location."""
+    # Location type options
+    type_options = {
+        LocationType.FROZEN: "Gefroren",
+        LocationType.CHILLED: "Gekühlt",
+        LocationType.AMBIENT: "Raumtemperatur",
+    }
+
+    with ui.dialog() as dialog, ui.card().classes("w-full max-w-md"):
+        ui.label("Lagerort bearbeiten").classes("text-h6 font-semibold mb-4")
+
+        # Name input (required, pre-filled)
+        name_input = (
+            ui.input(
+                label="Name",
+                value=location.name,
+            )
+            .classes("w-full mb-2")
+            .props("outlined")
+            .mark("name-input")
+        )
+
+        # Location type select (pre-filled)
+        type_select = (
+            ui.select(
+                label="Typ",
+                options=type_options,
+                value=location.location_type,
+            )
+            .classes("w-full mb-2")
+            .props("outlined")
+        )
+
+        # Description input (optional, pre-filled)
+        description_input = (
+            ui.input(
+                label="Beschreibung",
+                value=location.description or "",
+            )
+            .classes("w-full mb-2")
+            .props("outlined")
+        )
+
+        # Active status checkbox (pre-filled)
+        is_active_checkbox = ui.checkbox(
+            "Aktiv",
+            value=location.is_active,
+        ).classes("mb-4")
+
+        # Error label (hidden by default)
+        error_label = ui.label("").classes("text-red-600 text-sm mb-2")
+        error_label.set_visibility(False)
+
+        # Buttons
+        with ui.row().classes("w-full justify-end gap-2"):
+            ui.button("Abbrechen", on_click=dialog.close).props("flat")
+
+            def save_location() -> None:
+                """Validate and save the location changes."""
+                name = name_input.value.strip() if name_input.value else ""
+                location_type = type_select.value
+                description = description_input.value.strip() if description_input.value else None
+                is_active = is_active_checkbox.value
+
+                # Validation: name is required
+                if not name:
+                    error_label.set_text("Name ist erforderlich")
+                    error_label.set_visibility(True)
+                    return
+
+                # Safety check - location should always have an id from DB
+                if location.id is None:
+                    error_label.set_text("Ungültige Lagerort-ID")
+                    error_label.set_visibility(True)
+                    return
+
+                try:
+                    with next(get_session()) as session:
+                        location_service.update_location(
+                            session=session,
+                            id=location.id,
+                            name=name,
+                            location_type=location_type,
+                            description=description,
+                            is_active=is_active,
+                        )
+                    ui.notify(f"Lagerort '{name}' aktualisiert", type="positive")
+                    dialog.close()
+                    ui.navigate.to("/admin/locations")
+                except ValueError as e:
+                    # Handle duplicate name error
+                    error_msg = str(e)
+                    if "already exists" in error_msg:
+                        error_label.set_text(f"Lagerort '{name}' bereits vorhanden")
+                    else:
+                        error_label.set_text(error_msg)
+                    error_label.set_visibility(True)
+
+            ui.button("Speichern", on_click=save_location).props("color=primary")
+
+    dialog.open()

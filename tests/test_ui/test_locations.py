@@ -160,3 +160,170 @@ async def test_locations_page_shows_active_status(
     await logged_in_user.should_see("Inaktiver Lagerort")
     # Inactive location should show "Inaktiv" badge
     await logged_in_user.should_see("Inaktiv")
+
+
+# === Issue #26: Edit Location Tests ===
+
+
+async def test_locations_page_shows_edit_button(
+    logged_in_user: TestUser,
+    isolated_test_database,
+) -> None:
+    """Test that each location has an edit button."""
+    # Create a test location
+    with Session(isolated_test_database) as session:
+        loc = Location(
+            name="Tiefkühltruhe",
+            location_type=LocationType.FROZEN,
+            created_by=1,
+        )
+        session.add(loc)
+        session.commit()
+
+    # Navigate to locations page
+    await logged_in_user.open("/admin/locations")
+
+    # Should see the location
+    await logged_in_user.should_see("Tiefkühltruhe")
+
+    # Should have an edit button (icon button with 'edit' icon)
+    edit_button = logged_in_user.find("edit")
+    assert edit_button is not None
+
+
+async def test_edit_dialog_opens_with_prefilled_form(
+    logged_in_user: TestUser,
+    isolated_test_database,
+) -> None:
+    """Test that clicking edit opens dialog with pre-filled form."""
+    # Create a test location
+    with Session(isolated_test_database) as session:
+        loc = Location(
+            name="Kühlschrank",
+            location_type=LocationType.CHILLED,
+            description="Hauptkühlschrank",
+            created_by=1,
+        )
+        session.add(loc)
+        session.commit()
+
+    # Navigate to locations page
+    await logged_in_user.open("/admin/locations")
+
+    # Click the edit button
+    logged_in_user.find("edit").click()
+
+    # Should see the edit dialog with pre-filled data
+    await logged_in_user.should_see("Lagerort bearbeiten")
+    await logged_in_user.should_see("Kühlschrank")
+
+
+async def test_edit_location_validation_empty_name(
+    logged_in_user: TestUser,
+    isolated_test_database,
+) -> None:
+    """Test that empty name shows validation error."""
+    # Create a test location
+    with Session(isolated_test_database) as session:
+        loc = Location(
+            name="Speisekammer",
+            location_type=LocationType.AMBIENT,
+            created_by=1,
+        )
+        session.add(loc)
+        session.commit()
+
+    # Navigate to locations page
+    await logged_in_user.open("/admin/locations")
+
+    # Click the edit button
+    logged_in_user.find("edit").click()
+
+    # Wait for dialog
+    await logged_in_user.should_see("Lagerort bearbeiten")
+
+    # Clear the name input using marker
+    logged_in_user.find(marker="name-input").clear()
+
+    # Click save
+    logged_in_user.find("Speichern").click()
+
+    # Should show validation error
+    await logged_in_user.should_see("Name ist erforderlich")
+
+
+async def test_edit_location_validation_duplicate_name(
+    logged_in_user: TestUser,
+    isolated_test_database,
+) -> None:
+    """Test that duplicate name shows validation error."""
+    # Create two test locations
+    with Session(isolated_test_database) as session:
+        loc1 = Location(
+            name="Gefrierschrank",
+            location_type=LocationType.FROZEN,
+            created_by=1,
+        )
+        loc2 = Location(
+            name="Kühlschrank",
+            location_type=LocationType.CHILLED,
+            created_by=1,
+        )
+        session.add(loc1)
+        session.add(loc2)
+        session.commit()
+
+    # Navigate to locations page
+    await logged_in_user.open("/admin/locations")
+
+    # Click the first edit button (for Gefrierschrank)
+    logged_in_user.find("edit").click()
+
+    # Wait for dialog
+    await logged_in_user.should_see("Lagerort bearbeiten")
+
+    # Clear and try to change name to existing name (Kühlschrank)
+    logged_in_user.find(marker="name-input").clear()
+    logged_in_user.find(marker="name-input").type("Kühlschrank")
+
+    # Click save
+    logged_in_user.find("Speichern").click()
+
+    # Should show duplicate error
+    await logged_in_user.should_see("bereits vorhanden")
+
+
+async def test_edit_location_success(
+    logged_in_user: TestUser,
+    isolated_test_database,
+) -> None:
+    """Test successful location edit."""
+    # Create a test location
+    with Session(isolated_test_database) as session:
+        loc = Location(
+            name="Alter Name",
+            location_type=LocationType.FROZEN,
+            created_by=1,
+        )
+        session.add(loc)
+        session.commit()
+
+    # Navigate to locations page
+    await logged_in_user.open("/admin/locations")
+
+    # Click the edit button
+    logged_in_user.find("edit").click()
+
+    # Wait for dialog
+    await logged_in_user.should_see("Lagerort bearbeiten")
+
+    # Clear and set new name using marker
+    logged_in_user.find(marker="name-input").clear()
+    logged_in_user.find(marker="name-input").type("Neuer Name")
+
+    # Click save
+    logged_in_user.find("Speichern").click()
+
+    # Should navigate back to locations page and show the new name
+    await logged_in_user.should_see("Neuer Name")
+    await logged_in_user.should_not_see("Alter Name")
