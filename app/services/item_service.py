@@ -279,3 +279,53 @@ def get_items_expiring_soon(session: Session, days: int = 7) -> list[Item]:
             )
         ).all()
     )
+
+
+def withdraw_partial(
+    session: Session,
+    item_id: int,
+    withdraw_quantity: float,
+) -> Item:
+    """Withdraw a partial quantity from an item.
+
+    Args:
+        session: Database session
+        item_id: Item ID
+        withdraw_quantity: Quantity to withdraw
+
+    Returns:
+        Updated item
+
+    Raises:
+        ValueError: If item not found, already consumed, withdraw_quantity <= 0,
+                   or withdraw_quantity > available quantity
+    """
+    # Validate withdraw quantity is positive
+    if withdraw_quantity <= 0:
+        raise ValueError("Withdraw quantity must be positive")
+
+    # Get the item (raises ValueError if not found)
+    item = get_item(session, item_id)
+
+    # Check if item is already consumed
+    if item.is_consumed:
+        raise ValueError("Item is already consumed")
+
+    # Validate withdraw quantity doesn't exceed available
+    if withdraw_quantity > item.quantity:
+        raise ValueError(
+            f"Cannot withdraw more than available. Requested: {withdraw_quantity}, Available: {item.quantity}"
+        )
+
+    # Update quantity
+    item.quantity = item.quantity - withdraw_quantity
+
+    # Mark as consumed if quantity reaches zero
+    if item.quantity == 0:
+        item.is_consumed = True
+
+    session.add(item)
+    session.commit()
+    session.refresh(item)
+
+    return item

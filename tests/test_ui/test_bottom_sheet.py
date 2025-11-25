@@ -3,6 +3,7 @@
 from datetime import date
 from datetime import timedelta
 
+from nicegui import ui
 from nicegui.testing import User
 from sqlmodel import Session
 from sqlmodel import select
@@ -258,3 +259,147 @@ async def test_bottom_sheet_consume_button_present(user: User) -> None:
     # Verify consume button is present
     await user.should_see("Entnommen")
     await user.should_see("Brokkoli")
+
+
+# =============================================================================
+# Partial Withdrawal Tests (Issue #16)
+# =============================================================================
+
+
+async def test_bottom_sheet_withdraw_shows_quantity_dialog(user: User) -> None:
+    """Test that clicking 'Entnehmen' shows quantity input dialog."""
+    from app.database import get_session
+
+    with next(get_session()) as session:
+        location = Location(
+            name="Tiefkühltruhe",
+            location_type=LocationType.FROZEN,
+            created_by=1,
+        )
+        session.add(location)
+        session.commit()
+        session.refresh(location)
+
+        item = Item(
+            product_name="Erbsen",
+            item_type=ItemType.PURCHASED_FROZEN,
+            quantity=500,
+            unit="g",
+            location_id=location.id,
+            best_before_date=date.today() + timedelta(days=180),
+            freeze_date=date.today(),
+            expiry_date=date.today() + timedelta(days=180),
+            created_by=1,
+        )
+        session.add(item)
+        session.commit()
+        session.refresh(item)
+        item_id = item.id
+
+    await user.open(f"/test/bottom-sheet/{item_id}")
+
+    # Click on "Entnehmen" button
+    user.find("Entnehmen").click()
+
+    # Verify quantity dialog appears with input field
+    await user.should_see("Menge entnehmen")
+    await user.should_see("Verfügbar: 500 g")
+
+
+async def test_bottom_sheet_withdraw_validates_max_quantity(user: User) -> None:
+    """Test that validation prevents withdrawing more than available."""
+    from app.database import get_session
+
+    with next(get_session()) as session:
+        location = Location(
+            name="Tiefkühltruhe",
+            location_type=LocationType.FROZEN,
+            created_by=1,
+        )
+        session.add(location)
+        session.commit()
+        session.refresh(location)
+
+        item = Item(
+            product_name="Erbsen",
+            item_type=ItemType.PURCHASED_FROZEN,
+            quantity=500,
+            unit="g",
+            location_id=location.id,
+            best_before_date=date.today() + timedelta(days=180),
+            freeze_date=date.today(),
+            expiry_date=date.today() + timedelta(days=180),
+            created_by=1,
+        )
+        session.add(item)
+        session.commit()
+        session.refresh(item)
+        item_id = item.id
+
+    await user.open(f"/test/bottom-sheet/{item_id}")
+
+    # Click on "Entnehmen" button to open dialog
+    user.find("Entnehmen").click()
+
+    # Enter quantity exceeding available - set value directly on the number input
+    number_input = list(user.find(kind=ui.number).elements)[0]
+    number_input.value = 600
+
+    # Try to confirm - should show error
+    user.find("Bestätigen").click()
+
+    # Verify error message
+    await user.should_see("Nicht mehr als 500 verfügbar")
+
+
+async def test_bottom_sheet_withdraw_partial_success(user: User) -> None:
+    """Test successful partial withdrawal updates quantity."""
+    from app.database import get_session
+
+    with next(get_session()) as session:
+        location = Location(
+            name="Tiefkühltruhe",
+            location_type=LocationType.FROZEN,
+            created_by=1,
+        )
+        session.add(location)
+        session.commit()
+        session.refresh(location)
+
+        item = Item(
+            product_name="Erbsen",
+            item_type=ItemType.PURCHASED_FROZEN,
+            quantity=500,
+            unit="g",
+            location_id=location.id,
+            best_before_date=date.today() + timedelta(days=180),
+            freeze_date=date.today(),
+            expiry_date=date.today() + timedelta(days=180),
+            created_by=1,
+        )
+        session.add(item)
+        session.commit()
+        session.refresh(item)
+        item_id = item.id
+
+    await user.open(f"/test/bottom-sheet/{item_id}")
+
+    # Click on "Entnehmen" button to open dialog
+    user.find("Entnehmen").click()
+
+    # Enter valid quantity - set value directly on the number input
+    number_input = list(user.find(kind=ui.number).elements)[0]
+    number_input.value = 200
+
+    # Confirm
+    user.find("Bestätigen").click()
+
+    # Verify success notification
+    await user.should_see("200 g entnommen")
+
+    # Verify item quantity was updated in database
+    with next(get_session()) as session:
+        updated_item = session.get(Item, item_id)
+        assert updated_item is not None
+        assert updated_item.quantity == 300
+        assert updated_item.is_consumed is False

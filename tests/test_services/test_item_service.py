@@ -313,3 +313,193 @@ def test_get_items_expiring_soon(session: Session, test_admin: User) -> None:
 
     assert len(items) == 1
     assert items[0].product_name == "Joghurt"
+
+
+# =============================================================================
+# Partial Withdrawal Tests (Issue #16)
+# =============================================================================
+
+
+def test_withdraw_partial_reduces_quantity(session: Session, test_admin: User) -> None:
+    """Test: Partial withdrawal reduces item quantity."""
+    location = location_service.create_location(
+        session=session,
+        name="Gefrierschrank",
+        location_type=LocationType.FROZEN,
+        created_by=test_admin.id,
+    )
+    item = item_service.create_item(
+        session=session,
+        product_name="Erbsen",
+        best_before_date=date(2025, 1, 1),
+        freeze_date=date(2024, 6, 1),
+        quantity=500,
+        unit="g",
+        item_type=ItemType.PURCHASED_FROZEN,
+        location_id=location.id,
+        created_by=test_admin.id,
+    )
+
+    updated = item_service.withdraw_partial(
+        session=session,
+        item_id=item.id,
+        withdraw_quantity=200,
+    )
+
+    assert updated.quantity == 300
+    assert updated.is_consumed is False
+
+
+def test_withdraw_partial_complete_marks_consumed(session: Session, test_admin: User) -> None:
+    """Test: Withdrawing all quantity marks item as consumed."""
+    location = location_service.create_location(
+        session=session,
+        name="Gefrierschrank",
+        location_type=LocationType.FROZEN,
+        created_by=test_admin.id,
+    )
+    item = item_service.create_item(
+        session=session,
+        product_name="Erbsen",
+        best_before_date=date(2025, 1, 1),
+        freeze_date=date(2024, 6, 1),
+        quantity=500,
+        unit="g",
+        item_type=ItemType.PURCHASED_FROZEN,
+        location_id=location.id,
+        created_by=test_admin.id,
+    )
+
+    updated = item_service.withdraw_partial(
+        session=session,
+        item_id=item.id,
+        withdraw_quantity=500,
+    )
+
+    assert updated.quantity == 0
+    assert updated.is_consumed is True
+
+
+def test_withdraw_partial_exceeds_quantity_fails(session: Session, test_admin: User) -> None:
+    """Test: Withdrawing more than available quantity fails."""
+    location = location_service.create_location(
+        session=session,
+        name="Gefrierschrank",
+        location_type=LocationType.FROZEN,
+        created_by=test_admin.id,
+    )
+    item = item_service.create_item(
+        session=session,
+        product_name="Erbsen",
+        best_before_date=date(2025, 1, 1),
+        freeze_date=date(2024, 6, 1),
+        quantity=500,
+        unit="g",
+        item_type=ItemType.PURCHASED_FROZEN,
+        location_id=location.id,
+        created_by=test_admin.id,
+    )
+
+    with pytest.raises(ValueError, match="Cannot withdraw more than available"):
+        item_service.withdraw_partial(
+            session=session,
+            item_id=item.id,
+            withdraw_quantity=600,
+        )
+
+
+def test_withdraw_partial_zero_quantity_fails(session: Session, test_admin: User) -> None:
+    """Test: Withdrawing zero quantity fails."""
+    location = location_service.create_location(
+        session=session,
+        name="Gefrierschrank",
+        location_type=LocationType.FROZEN,
+        created_by=test_admin.id,
+    )
+    item = item_service.create_item(
+        session=session,
+        product_name="Erbsen",
+        best_before_date=date(2025, 1, 1),
+        freeze_date=date(2024, 6, 1),
+        quantity=500,
+        unit="g",
+        item_type=ItemType.PURCHASED_FROZEN,
+        location_id=location.id,
+        created_by=test_admin.id,
+    )
+
+    with pytest.raises(ValueError, match="Withdraw quantity must be positive"):
+        item_service.withdraw_partial(
+            session=session,
+            item_id=item.id,
+            withdraw_quantity=0,
+        )
+
+
+def test_withdraw_partial_negative_quantity_fails(session: Session, test_admin: User) -> None:
+    """Test: Withdrawing negative quantity fails."""
+    location = location_service.create_location(
+        session=session,
+        name="Gefrierschrank",
+        location_type=LocationType.FROZEN,
+        created_by=test_admin.id,
+    )
+    item = item_service.create_item(
+        session=session,
+        product_name="Erbsen",
+        best_before_date=date(2025, 1, 1),
+        freeze_date=date(2024, 6, 1),
+        quantity=500,
+        unit="g",
+        item_type=ItemType.PURCHASED_FROZEN,
+        location_id=location.id,
+        created_by=test_admin.id,
+    )
+
+    with pytest.raises(ValueError, match="Withdraw quantity must be positive"):
+        item_service.withdraw_partial(
+            session=session,
+            item_id=item.id,
+            withdraw_quantity=-100,
+        )
+
+
+def test_withdraw_partial_item_not_found_fails(session: Session) -> None:
+    """Test: Withdrawing from non-existent item fails."""
+    with pytest.raises(ValueError, match="Item with id 999 not found"):
+        item_service.withdraw_partial(
+            session=session,
+            item_id=999,
+            withdraw_quantity=100,
+        )
+
+
+def test_withdraw_partial_consumed_item_fails(session: Session, test_admin: User) -> None:
+    """Test: Withdrawing from already consumed item fails."""
+    location = location_service.create_location(
+        session=session,
+        name="Gefrierschrank",
+        location_type=LocationType.FROZEN,
+        created_by=test_admin.id,
+    )
+    item = item_service.create_item(
+        session=session,
+        product_name="Erbsen",
+        best_before_date=date(2025, 1, 1),
+        freeze_date=date(2024, 6, 1),
+        quantity=500,
+        unit="g",
+        item_type=ItemType.PURCHASED_FROZEN,
+        location_id=location.id,
+        created_by=test_admin.id,
+    )
+
+    # Mark as consumed first
+    item_service.mark_item_consumed(session, item.id)
+
+    with pytest.raises(ValueError, match="Item is already consumed"):
+        item_service.withdraw_partial(
+            session=session,
+            item_id=item.id,
+            withdraw_quantity=200,
+        )
