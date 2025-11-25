@@ -120,7 +120,7 @@ def add_item() -> None:
             ui.label(f"{date_label} *").classes("text-sm font-medium mb-1")
             best_before_input = ui.date(value=form_data["best_before_date"]).classes(
                 "w-full"
-            ).props("outlined")
+            ).props("outlined").style("max-width: 500px")
             best_before_input.bind_value(form_data, "best_before_date")
             best_before_input.on("update:model-value", update_step2_validation)
 
@@ -135,7 +135,7 @@ def add_item() -> None:
                 ui.label("Einfrierdatum *").classes("text-sm font-medium mb-1 mt-4")
                 freeze_date_input = ui.date(
                     value=form_data.get("freeze_date") or date_type.today()  # type: ignore[arg-type]
-                ).classes("w-full").props("outlined")
+                ).classes("w-full").props("outlined").style("max-width: 500px")
                 freeze_date_input.bind_value(form_data, "freeze_date")
                 freeze_date_input.on("update:model-value", update_step2_validation)
 
@@ -317,8 +317,9 @@ def add_item() -> None:
             "flat round color=gray-7"
         )
 
-    # Main content container
-    content_container = create_mobile_page_container()
+    # Main content container with max-width for desktop
+    with ui.column().classes("w-full mx-auto").style("max-width: 800px"):
+        content_container = create_mobile_page_container()
     with content_container:
         # Progress Indicator
         ui.label("Schritt 1 von 3").classes("text-sm text-gray-600 mb-4")
