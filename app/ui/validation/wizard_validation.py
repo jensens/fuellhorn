@@ -46,10 +46,25 @@ def validate_item_type(item_type: Any) -> str | None:
     return None
 
 
+def validate_unit(unit: str | None) -> str | None:
+    """Validate unit selection.
+
+    Args:
+        unit: Selected unit
+
+    Returns:
+        Error message if invalid, None if valid
+    """
+    if unit is None:
+        return "Bitte Einheit auswählen"
+    return None
+
+
 def validate_step1(
     product_name: str | None,
     item_type: Any,
     quantity: float | None,
+    unit: str | None = None,
 ) -> dict[str, str]:
     """Validate all Step 1 fields.
 
@@ -57,6 +72,7 @@ def validate_step1(
         product_name: Product name input
         item_type: Selected item type
         quantity: Quantity input
+        unit: Selected unit
 
     Returns:
         Dictionary of field errors (empty if all valid)
@@ -72,6 +88,9 @@ def validate_step1(
     if error := validate_quantity(quantity):
         errors["quantity"] = error
 
+    if error := validate_unit(unit):
+        errors["unit"] = error
+
     return errors
 
 
@@ -79,6 +98,7 @@ def is_step1_valid(
     product_name: str | None,
     item_type: Any,
     quantity: float | None,
+    unit: str | None = None,
 ) -> bool:
     """Check if Step 1 is valid.
 
@@ -86,11 +106,12 @@ def is_step1_valid(
         product_name: Product name input
         item_type: Selected item type
         quantity: Quantity input
+        unit: Selected unit
 
     Returns:
         True if all fields are valid
     """
-    return len(validate_step1(product_name, item_type, quantity)) == 0
+    return len(validate_step1(product_name, item_type, quantity, unit)) == 0
 
 
 # Step 2 Validation Functions

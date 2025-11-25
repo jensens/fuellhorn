@@ -30,7 +30,7 @@ def add_item() -> None:
         "product_name": "",
         "item_type": None,
         "quantity": None,
-        "unit": "g",
+        "unit": None,
         "best_before_date": date_type.today(),
         "freeze_date": None,
         "notes": "",
@@ -49,6 +49,7 @@ def add_item() -> None:
             product_name=form_data["product_name"],
             item_type=form_data["item_type"],
             quantity=form_data["quantity"],
+            unit=form_data["unit"],
         )
         next_button.props(remove="disabled" if is_valid else "", add="disabled" if not is_valid else "")
 
@@ -78,7 +79,7 @@ def add_item() -> None:
     def show_step2() -> None:
         """Navigate to Step 2."""
         if not is_step1_valid(
-            form_data["product_name"], form_data["item_type"], form_data["quantity"]
+            form_data["product_name"], form_data["item_type"], form_data["quantity"], form_data["unit"]
         ):
             ui.notify("Bitte alle Pflichtfelder ausfüllen", type="warning")
             return
@@ -279,6 +280,7 @@ def add_item() -> None:
                 form_data["product_name"],
                 form_data["item_type"],
                 form_data["quantity"],
+                form_data["unit"],
             )
         )
         errors.update(
@@ -383,11 +385,12 @@ def add_item() -> None:
 
         # Unit
         ui.label("Einheit *").classes("text-sm font-medium mb-1 mt-4")
-        unit_radio = ui.radio(
+        unit_toggle = ui.toggle(
             options=["g", "kg", "ml", "L", "Stück", "Packung"],
-            value="g",
-        ).props("inline").classes("w-full")
-        unit_radio.bind_value(form_data, "unit")
+            value=None,
+        ).classes("w-full")
+        unit_toggle.bind_value(form_data, "unit")
+        unit_toggle.on("update:model-value", update_validation)
 
         # Navigation
         with ui.row().classes("w-full justify-end mt-6 gap-2"):
