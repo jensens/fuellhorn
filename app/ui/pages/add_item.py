@@ -118,11 +118,21 @@ def add_item() -> None:
             )
 
             ui.label(f"{date_label} *").classes("text-sm font-medium mb-1")
-            best_before_input = ui.date(value=form_data["best_before_date"]).classes(
-                "w-full"
-            ).props('outlined mask="DD.MM.YYYY" hint="TT.MM.JJJJ"').style("max-width: 500px")
-            best_before_input.bind_value(form_data, "best_before_date")
-            best_before_input.on("update:model-value", update_step2_validation)
+            with (
+                ui.input(
+                    value=form_data["best_before_date"].strftime("%d.%m.%Y")
+                )
+                .classes("w-full")
+                .props('outlined mask="##.##.####"')
+                .style("max-width: 500px") as best_before_input
+            ):
+                with best_before_input.add_slot("append"):
+                    with ui.icon("event").classes("cursor-pointer"):
+                        with ui.menu() as best_before_menu:
+                            ui.date(on_change=lambda: best_before_menu.close()).bind_value(
+                                best_before_input
+                            ).props('locale="de" mask="DD.MM.YYYY"')
+            best_before_input.on("blur", update_step2_validation)
 
             # Freeze Date (conditional - only for frozen types)
             frozen_types = {
@@ -133,11 +143,22 @@ def add_item() -> None:
 
             if form_data["item_type"] in frozen_types:
                 ui.label("Einfrierdatum *").classes("text-sm font-medium mb-1 mt-4")
-                freeze_date_input = ui.date(
-                    value=form_data.get("freeze_date") or date_type.today()  # type: ignore[arg-type]
-                ).classes("w-full").props('outlined mask="DD.MM.YYYY" hint="TT.MM.JJJJ"').style("max-width: 500px")
-                freeze_date_input.bind_value(form_data, "freeze_date")
-                freeze_date_input.on("update:model-value", update_step2_validation)
+                freeze_date_value = form_data.get("freeze_date") or date_type.today()
+                with (
+                    ui.input(
+                        value=freeze_date_value.strftime("%d.%m.%Y")
+                    )
+                    .classes("w-full")
+                    .props('outlined mask="##.##.####"')
+                    .style("max-width: 500px") as freeze_date_input
+                ):
+                    with freeze_date_input.add_slot("append"):
+                        with ui.icon("event").classes("cursor-pointer"):
+                            with ui.menu() as freeze_date_menu:
+                                ui.date(on_change=lambda: freeze_date_menu.close()).bind_value(
+                                    freeze_date_input
+                                ).props('locale="de" mask="DD.MM.YYYY"')
+                freeze_date_input.on("blur", update_step2_validation)
 
             # Notes (optional)
             ui.label("Notizen (optional)").classes("text-sm font-medium mb-1 mt-4")
