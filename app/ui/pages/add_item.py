@@ -369,7 +369,7 @@ def add_item() -> None:
                 ItemType.HOMEMADE_PRESERVED: "Selbst eingemacht",
             },
             value=None,
-        ).classes("w-full").props("no-caps")
+        ).classes("w-full").props("no-caps stack")
         item_type_toggle.bind_value(form_data, "item_type")
         item_type_toggle.on("update:model-value", update_validation)
 
