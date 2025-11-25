@@ -25,9 +25,7 @@ def dashboard() -> None:
         with ui.row().classes("items-center gap-2"):
             username = app.storage.user.get("username", "User")
             ui.label(f"@{username}").classes("text-sm text-gray-600")
-            ui.button(icon="settings", on_click=lambda: ui.navigate.to("/settings")).props(
-                "flat round color=gray-7"
-            )
+            ui.button(icon="settings", on_click=lambda: ui.navigate.to("/settings")).props("flat round color=gray-7")
 
     # Main content with bottom nav spacing
     with create_mobile_page_container():
@@ -51,7 +49,9 @@ def dashboard() -> None:
                     elif days_until_expiry <= 3:
                         status_color = "red-500"
                         status_icon = "🔴"
-                        status_text = f"Läuft ab: {'Morgen' if days_until_expiry == 1 else f'in {days_until_expiry} Tagen'}"
+                        status_text = (
+                            f"Läuft ab: {'Morgen' if days_until_expiry == 1 else f'in {days_until_expiry} Tagen'}"
+                        )
                     else:
                         status_color = "orange-500"
                         status_icon = "🟡"

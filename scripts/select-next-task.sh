@@ -57,9 +57,11 @@ print_section() {
     echo -e "\n${BOLD}${YELLOW}─── $1 ───${NC}\n"
 }
 
-# Funktion: Alle agent-ready Issues laden
+# Funktion: Alle agent-ready Issues laden (ohne blockierte!)
 get_ready_issues() {
-    gh issue list --repo "$REPO" --label "status/agent-ready" --state open --json number,title,labels --limit 50
+    # Hole agent-ready Issues und filtere blockierte heraus
+    gh issue list --repo "$REPO" --label "status/agent-ready" --state open --json number,title,labels --limit 50 | \
+        jq '[.[] | select(.labels | map(.name) | index("status/blocked") | not)]'
 }
 
 # Funktion: Issue-Details anzeigen
@@ -90,27 +92,43 @@ show_dependents() {
 generate_briefing() {
     local issue_num=$1
     local issue_title=$2
-    local issue_body=$(gh issue view "$issue_num" --repo "$REPO" --json body -q .body 2>/dev/null)
+    local branch_suffix
+    branch_suffix=$(echo "$issue_title" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g' | sed 's/--*/-/g' | head -c 20)
+    # Absoluter Pfad zum Worktree
+    local repo_parent
+    repo_parent=$(dirname "$(pwd)")
+    local worktree_abs="$repo_parent/fuellhorn-issue-$issue_num"
+    local branch_name="feature/issue-$issue_num-$branch_suffix"
+    local issue_body
+    issue_body=$(gh issue view "$issue_num" --repo "$REPO" --json body -q .body 2>/dev/null)
 
-    print_section "Briefing-Prompt für Agent"
+    print_section "Briefing-Prompt für Agent (in Zwischenablage kopieren!)"
 
     echo -e "${BOLD}────────────────────────────────────────────────────────────────${NC}"
     cat << EOF
 Bitte implementiere Issue #$issue_num: $issue_title
 
+WICHTIG - Arbeitsverzeichnis:
+- Absoluter Pfad: $worktree_abs
+- Branch: $branch_name
+- Prüfe mit 'pwd' dass du im richtigen Verzeichnis bist!
+- Erstelle KEINEN eigenen Worktree - du bist bereits im richtigen!
+
 Kontext:
 - Repository: $REPO
-- Branch: feature/issue-$issue_num-$(echo "$issue_title" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g' | sed 's/--*/-/g' | head -c 30)
+- Issue: https://github.com/$REPO/issues/$issue_num
 
-Wichtig:
-1. Lies zuerst CLAUDE.md und TESTING.md
-2. TDD: Tests zuerst schreiben
-3. Qualitätsprüfung vor Commit:
+Arbeitsschritte:
+1. Prüfe: pwd sollte "$worktree_abs" zeigen
+2. Lies CLAUDE.md und TESTING.md
+3. TDD: Tests zuerst schreiben
+4. Qualitätsprüfung vor Commit:
    uv run pytest
    uv run mypy app/
    uv run ruff check app/
    uv run ruff format app/
-4. PR erstellen mit "closes #$issue_num" im Body
+5. PR erstellen mit "closes #$issue_num" im Body:
+   gh pr create --title "feat: $issue_title" --body "closes #$issue_num"
 
 Issue-Beschreibung:
 $issue_body
@@ -138,11 +156,28 @@ update_labels() {
 show_worktree_command() {
     local issue_num=$1
     local issue_title=$2
-    local branch_suffix=$(echo "$issue_title" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g' | sed 's/--*/-/g' | head -c 20)
+    local branch_suffix
+    branch_suffix=$(echo "$issue_title" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g' | sed 's/--*/-/g' | head -c 20)
+    local repo_parent
+    repo_parent=$(dirname "$(pwd)")
+    local worktree_abs="$repo_parent/fuellhorn-issue-$issue_num"
 
-    print_section "Worktree erstellen"
-    echo -e "${CYAN}git worktree add ../fuellhorn-issue-$issue_num -b feature/issue-$issue_num-$branch_suffix${NC}"
-    echo -e "${CYAN}cd ../fuellhorn-issue-$issue_num${NC}"
+    print_section "Worktree erstellen (falls noch nicht vorhanden)"
+
+    # Prüfe ob Worktree bereits existiert
+    if [ -d "$worktree_abs" ]; then
+        echo -e "${GREEN}✓ Worktree existiert bereits: $worktree_abs${NC}"
+    else
+        echo -e "${CYAN}git worktree add $worktree_abs -b feature/issue-$issue_num-$branch_suffix${NC}"
+    fi
+
+    echo ""
+    print_section "Agent starten (WICHTIG: im Worktree-Verzeichnis!)"
+    echo -e "${BOLD}Option 1: Claude Code im Worktree starten${NC}"
+    echo -e "${CYAN}cd $worktree_abs && claude${NC}"
+    echo ""
+    echo -e "${BOLD}Option 2: VSCode im Worktree öffnen${NC}"
+    echo -e "${CYAN}code $worktree_abs${NC}"
 }
 
 # Hauptmenü
