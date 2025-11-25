@@ -149,8 +149,9 @@ def validate_freeze_date(
     # Import here to avoid circular dependency
     from ...models.freeze_time_config import ItemType
 
+    # Only self-frozen items require freeze_date
+    # PURCHASED_FROZEN has MHD on package, no freeze_date needed
     frozen_types = {
-        ItemType.PURCHASED_FROZEN,
         ItemType.PURCHASED_THEN_FROZEN,
         ItemType.HOMEMADE_FROZEN,
     }
