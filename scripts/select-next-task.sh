@@ -10,7 +10,7 @@
 #   2. Erlaubt Auswahl und zeigt Details
 #   3. Fragt ob Issue zugewiesen werden soll
 #   4. Aktualisiert Labels (agent-ready → in-progress)
-#   5. Gibt Briefing-Prompt für Agent aus
+#   5. Gibt Briefing-Prompt für Agent aus (Agent erstellt Worktree selbst!)
 #   6. Zeigt abhängige Issues die danach freigeschaltet werden
 #
 
@@ -108,18 +108,25 @@ generate_briefing() {
     cat << EOF
 Bitte implementiere Issue #$issue_num: $issue_title
 
-WICHTIG - Arbeitsverzeichnis:
-- Absoluter Pfad: $worktree_abs
-- Branch: $branch_name
-- Prüfe mit 'pwd' dass du im richtigen Verzeichnis bist!
-- Erstelle KEINEN eigenen Worktree - du bist bereits im richtigen!
+WICHTIG - Worktree selbst erstellen:
+Du musst zuerst einen Git Worktree erstellen um isoliert zu arbeiten.
+
+1. Worktree erstellen (vom Hauptrepo aus):
+   git worktree add $worktree_abs -b $branch_name
+
+2. In Worktree wechseln:
+   cd $worktree_abs
+
+3. Prüfen mit 'pwd' dass du im richtigen Verzeichnis bist!
 
 Kontext:
 - Repository: $REPO
 - Issue: https://github.com/$REPO/issues/$issue_num
+- Branch: $branch_name
+- Worktree: $worktree_abs
 
 Arbeitsschritte:
-1. Prüfe: pwd sollte "$worktree_abs" zeigen
+1. Worktree erstellen (siehe oben)
 2. Lies CLAUDE.md und TESTING.md
 3. TDD: Tests zuerst schreiben
 4. Qualitätsprüfung vor Commit:
@@ -129,6 +136,8 @@ Arbeitsschritte:
    uv run ruff format app/
 5. PR erstellen mit "closes #$issue_num" im Body:
    gh pr create --title "feat: $issue_title" --body "closes #$issue_num"
+6. Nach PR-Merge: Worktree aufräumen (vom Hauptrepo aus):
+   git worktree remove $worktree_abs
 
 Issue-Beschreibung:
 $issue_body
@@ -150,34 +159,6 @@ update_labels() {
 
     echo -e "${GREEN}✓ Label 'status/agent-ready' entfernt${NC}"
     echo -e "${GREEN}✓ Label 'status/in-progress' hinzugefügt${NC}"
-}
-
-# Funktion: Worktree-Befehl anzeigen
-show_worktree_command() {
-    local issue_num=$1
-    local issue_title=$2
-    local branch_suffix
-    branch_suffix=$(echo "$issue_title" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g' | sed 's/--*/-/g' | head -c 20)
-    local repo_parent
-    repo_parent=$(dirname "$(pwd)")
-    local worktree_abs="$repo_parent/fuellhorn-issue-$issue_num"
-
-    print_section "Worktree erstellen (falls noch nicht vorhanden)"
-
-    # Prüfe ob Worktree bereits existiert
-    if [ -d "$worktree_abs" ]; then
-        echo -e "${GREEN}✓ Worktree existiert bereits: $worktree_abs${NC}"
-    else
-        echo -e "${CYAN}git worktree add $worktree_abs -b feature/issue-$issue_num-$branch_suffix${NC}"
-    fi
-
-    echo ""
-    print_section "Agent starten (WICHTIG: im Worktree-Verzeichnis!)"
-    echo -e "${BOLD}Option 1: Claude Code im Worktree starten${NC}"
-    echo -e "${CYAN}cd $worktree_abs && claude${NC}"
-    echo ""
-    echo -e "${BOLD}Option 2: VSCode im Worktree öffnen${NC}"
-    echo -e "${CYAN}code $worktree_abs${NC}"
 }
 
 # Hauptmenü
@@ -261,11 +242,14 @@ main_menu() {
                 # Labels aktualisieren
                 update_labels "$selection"
 
-                # Worktree-Befehl
-                show_worktree_command "$selection" "$issue_title"
-
-                # Briefing generieren
+                # Briefing generieren (Agent erstellt Worktree selbst)
                 generate_briefing "$selection" "$issue_title"
+
+                print_section "Nächster Schritt"
+                echo -e "1. ${CYAN}Starte einen neuen Agent (z.B. in VSCode oder Terminal)${NC}"
+                echo -e "2. ${CYAN}Kopiere das Briefing oben und gib es dem Agent${NC}"
+                echo -e "3. ${CYAN}Der Agent erstellt seinen Worktree selbst und räumt ihn nach dem PR auf${NC}"
+                echo ""
 
                 # Abhängige Issues nochmal zeigen
                 show_dependents "$selection"
