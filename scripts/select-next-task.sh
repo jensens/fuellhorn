@@ -153,12 +153,15 @@ update_labels() {
 
     # agent-ready entfernen
     gh issue edit "$issue_num" --repo "$REPO" --remove-label "status/agent-ready" 2>/dev/null || true
-
-    # in-progress hinzufügen
-    gh issue edit "$issue_num" --repo "$REPO" --add-label "status/in-progress" 2>/dev/null || true
-
     echo -e "${GREEN}✓ Label 'status/agent-ready' entfernt${NC}"
-    echo -e "${GREEN}✓ Label 'status/in-progress' hinzugefügt${NC}"
+
+    # in-progress hinzufügen (mit Fehlerprüfung)
+    if gh issue edit "$issue_num" --repo "$REPO" --add-label "status/in-progress" 2>/dev/null; then
+        echo -e "${GREEN}✓ Label 'status/in-progress' hinzugefügt${NC}"
+    else
+        echo -e "${RED}✗ FEHLER: Label 'status/in-progress' konnte nicht gesetzt werden!${NC}"
+        echo -e "${YELLOW}  Bitte manuell erstellen: gh label create 'status/in-progress' --color 'FBCA04'${NC}"
+    fi
 }
 
 # Hauptmenü
