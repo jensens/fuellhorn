@@ -149,6 +149,31 @@ git worktree add ../fuellhorn-agent2 -b fix/bug-123
 - Nutze separate Branches für verschiedene Tasks
 - Merge später über Pull Requests zusammen
 
+#### GitHub Issues als Aufgabenverwaltung
+
+**Alle Aufgaben werden über GitHub Issues verwaltet!**
+
+- **Issues ansehen:** https://github.com/jensens/fuellhorn/issues
+- **Milestones:** Alpha → Beta → v1.0
+- **Agent-ready Issues:** Label `status/agent-ready` zeigt sofort bearbeitbare Tasks
+
+**Workflow für Agents:**
+```bash
+# 1. Issue auswählen
+gh issue list --label "status/agent-ready"
+
+# 2. Worktree für Issue erstellen
+git worktree add ../fuellhorn-issue-<number> -b feature/issue-<number>-<kurzbeschreibung>
+
+# 3. Implementieren (TDD!)
+
+# 4. PR erstellen mit "closes #<number>"
+gh pr create --title "feat: <Beschreibung> (closes #<number>)"
+
+# 5. Nach Merge aufräumen
+git worktree remove ../fuellhorn-issue-<number>
+```
+
 ---
 
 #### Häufige, kleine Commits
