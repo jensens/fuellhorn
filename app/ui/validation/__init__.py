@@ -11,9 +11,9 @@ from .wizard_validation import validate_location
 from .wizard_validation import validate_product_name
 from .wizard_validation import validate_quantity
 from .wizard_validation import validate_step1
-from .wizard_validation import validate_unit
 from .wizard_validation import validate_step2
 from .wizard_validation import validate_step3
+from .wizard_validation import validate_unit
 
 
 __all__ = [
