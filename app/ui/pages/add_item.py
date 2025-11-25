@@ -25,6 +25,17 @@ from typing import Any
 def add_item() -> None:
     """3-Schritt-Wizard für schnelle Artikel-Erfassung."""
 
+    # Custom CSS for vertical toggle buttons
+    ui.add_head_html("""
+        <style>
+            .q-btn-toggle--vertical .q-btn {
+                width: 100%;
+                justify-content: flex-start !important;
+                margin-bottom: 8px;
+            }
+        </style>
+    """)
+
     # Form state
     form_data: dict[str, Any] = {
         "product_name": "",
@@ -369,7 +380,7 @@ def add_item() -> None:
                 ItemType.HOMEMADE_PRESERVED: "Selbst eingemacht",
             },
             value=None,
-        ).classes("w-full").props("no-caps align=left").style("flex-direction: column; gap: 8px")
+        ).classes("w-full q-btn-toggle--vertical").props("no-caps").style("flex-direction: column")
         item_type_toggle.bind_value(form_data, "item_type")
         item_type_toggle.on("update:model-value", update_validation)
 
