@@ -463,6 +463,113 @@ git rebase origin/main
 
 ---
 
+##### Issue-Abhängigkeiten & Reihenfolge
+
+**Wie finde ich das nächste Issue?**
+
+```bash
+# Alle sofort bearbeitbaren Issues anzeigen
+gh issue list --label "status/agent-ready" --state open
+
+# Nach Merge: Folge-Issues prüfen
+gh issue view <number>  # Schau in "Blocked by" Sektion
+```
+
+**Regel:** Ein Issue ist `agent-ready` wenn alle "Blocked by" Issues geschlossen sind.
+
+---
+
+**Dependency-Graph (Übersicht):**
+
+```
+Sprint 1: Kern-UI
+═══════════════════════════════════════════════════════════════
+
+  #7 Item Card ─────┐
+                    ├──▶ #9 Items Page ──▶ #10 Suche
+  #8 Expiry Badge ──┘         │            #11 Filter Kat.
+                              │            #12 Filter Ort
+                              │            #13 Sortierung
+                              │
+  #18 Logout Button ──▶ #19 Session Cleanup
+
+Sprint 2: Entnahme
+═══════════════════════════════════════════════════════════════
+
+  #14 Bottom Sheet ──┬──▶ #15 Komplett entnehmen ──▶ #17 Ausblenden
+                     │
+                     └──▶ #16 Teilentnahme
+
+Sprint 3: Admin Pages (parallel!)
+═══════════════════════════════════════════════════════════════
+
+  #20 Categories Liste ──▶ #21 Erstellen
+                           #22 Bearbeiten
+                           #23 Löschen
+
+  #24 Locations Liste ──▶ #25 Erstellen
+                          #26 Bearbeiten
+                          #27 Löschen
+
+  #28 Users Liste ──▶ #29 Erstellen
+                      #30 Bearbeiten
+                      #31 Löschen
+
+  #32 Settings Liste ──▶ #33 Gefrierzeit Edit
+                         #34 Smart Defaults
+
+Sprint 4: Finalisierung
+═══════════════════════════════════════════════════════════════
+
+  #35 Rate-Limiting (standalone)
+  #36 Audit-Logging (standalone)
+
+  #37 Dockerfile ──▶ #38 docker-compose ──▶ #39 Docs
+```
+
+---
+
+**Start-Issues (sofort bearbeitbar):**
+
+| # | Titel | Parallel mit |
+|---|-------|--------------|
+| **#7** | Item Card Komponente | #8, #14, #18 |
+| **#8** | Expiry Badge Komponente | #7, #14, #18 |
+| **#14** | Bottom Sheet Komponente | #7, #8, #18 |
+| **#18** | Logout-Button | #7, #8, #14 |
+| **#20** | Categories Liste | #24, #28, #32 |
+| **#24** | Locations Liste | #20, #28, #32 |
+| **#28** | Users Liste | #20, #24, #32 |
+| **#32** | Settings Liste | #20, #24, #28 |
+| **#35** | Rate-Limiting | #36, #37 |
+| **#36** | Audit-Logging | #35, #37 |
+| **#37** | Dockerfile | #35, #36 |
+
+---
+
+**Nach Issue-Abschluss - Was kommt als nächstes?**
+
+| Wenn erledigt | Dann freigeben | Label setzen |
+|---------------|----------------|--------------|
+| #7 + #8 | #9 | `status/agent-ready` |
+| #9 | #10, #11, #12, #13 | alle `status/agent-ready` |
+| #14 | #15, #16 | beide `status/agent-ready` |
+| #15 | #17 | `status/agent-ready` |
+| #18 | #19 | `status/agent-ready` |
+| #20 | #21, #22, #23 | alle `status/agent-ready` |
+| #24 | #25, #26, #27 | alle `status/agent-ready` |
+| #28 | #29, #30, #31 | alle `status/agent-ready` |
+| #32 | #33, #34 | beide `status/agent-ready` |
+| #37 | #38 | `status/agent-ready` |
+| #38 | #39 | `status/agent-ready` |
+
+**Befehl zum Freigeben:**
+```bash
+gh issue edit <number> --add-label "status/agent-ready"
+```
+
+---
+
 #### Häufige, kleine Commits
 
 - **Commit oft** - lieber zu viele als zu wenige Commits
