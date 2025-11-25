@@ -38,6 +38,24 @@ def _create_test_location(session: Session) -> Location:
     return new_location
 
 
+def _create_second_location(session: Session) -> Location:
+    """Create a second test location (Kühlschrank)."""
+    location = session.get(Location, 2)
+    if location:
+        return location
+
+    new_location = Location(
+        id=2,
+        name="Kühlschrank",
+        location_type=LocationType.CHILLED,
+        created_by=1,
+    )
+    session.add(new_location)
+    session.commit()
+    session.refresh(new_location)
+    return new_location
+
+
 def _create_test_category(session: Session, name: str = "Gemüse", id: int = 1) -> Category:
     """Create a test category."""
     category = session.get(Category, id)
@@ -77,6 +95,32 @@ def _create_test_item(
         location_id=location.id,
         created_by=1,
         is_consumed=is_consumed,
+    )
+    session.add(item)
+    session.commit()
+    session.refresh(item)
+    return item
+
+
+def _create_test_item_with_type(
+    session: Session,
+    location: Location,
+    product_name: str,
+    item_type: ItemType,
+    expiry_days_from_now: int = 30,
+) -> Item:
+    """Create a test item with specific item type."""
+    expiry_date = date.today() + timedelta(days=expiry_days_from_now)
+    item = Item(
+        product_name=product_name,
+        best_before_date=date.today(),
+        expiry_date=expiry_date,
+        quantity=500,
+        unit="g",
+        item_type=item_type,
+        location_id=location.id,
+        created_by=1,
+        is_consumed=False,
     )
     session.add(item)
     session.commit()
@@ -391,6 +435,9 @@ def page_items_with_consumed_toggle_on() -> None:
     create_bottom_nav(current_page="items")
 
 
+# Category filter test page (Issue #11)
+
+
 @ui.page("/test-items-page-with-categories")
 def page_items_with_categories() -> None:
     """Test page with category filter functionality for items."""
@@ -524,5 +571,155 @@ def page_items_with_categories() -> None:
 
             # Initial render
             update_items_display()
+
+    create_bottom_nav(current_page="items")
+
+
+# Location and item type filter test pages (Issue #12)
+
+
+@ui.page("/test-items-page-with-filters")
+def page_items_with_filters() -> None:
+    """Test page with location and item type filter dropdowns."""
+    _set_test_session()
+
+    with next(get_session()) as session:
+        location1 = _create_test_location(session)
+        location2 = _create_second_location(session)
+
+        # Create items in different locations
+        _create_test_item(
+            session,
+            location1,
+            product_name="Gefrorene Tomaten",
+            expiry_days_from_now=30,
+        )
+        _create_test_item(
+            session,
+            location2,
+            product_name="Frische Milch",
+            expiry_days_from_now=7,
+        )
+
+        locations = [location1, location2]
+
+        with ui.column().classes("w-full"):
+            ui.label("Vorrat").classes("text-h5")
+
+            # Filter row
+            with ui.row().classes("w-full gap-2"):
+                # Location filter
+                ui.select(
+                    label="Lagerort",
+                    options={0: "Alle Lagerorte"} | {loc.id: loc.name for loc in locations},
+                    value=0,
+                ).classes("flex-1")
+
+                # Item type filter
+                ui.select(
+                    label="Artikel-Typ",
+                    options={
+                        "": "Alle Typen",
+                        ItemType.PURCHASED_FRESH.value: "Frisch gekauft",
+                        ItemType.PURCHASED_FROZEN.value: "TK-Ware gekauft",
+                        ItemType.PURCHASED_THEN_FROZEN.value: "Gekauft → eingefroren",
+                        ItemType.HOMEMADE_FROZEN.value: "Selbst eingefroren",
+                        ItemType.HOMEMADE_PRESERVED.value: "Eingemacht",
+                    },
+                    value="",
+                ).classes("flex-1")
+
+            # Get all items
+            items = list(
+                session.exec(
+                    select(Item).where(Item.is_consumed.is_(False))  # type: ignore
+                ).all()
+            )
+
+            for item in items:
+                create_item_card(item, session)
+
+    create_bottom_nav(current_page="items")
+
+
+@ui.page("/test-items-page-with-location-filter")
+def page_items_with_location_filter() -> None:
+    """Test page with location filter pre-selected to Tiefkühltruhe."""
+    _set_test_session()
+
+    with next(get_session()) as session:
+        location1 = _create_test_location(session)  # Tiefkühltruhe
+        location2 = _create_second_location(session)  # Kühlschrank
+
+        # Create items in different locations
+        _create_test_item(
+            session,
+            location1,
+            product_name="Gefrorene Tomaten",
+            expiry_days_from_now=30,
+        )
+        _create_test_item(
+            session,
+            location2,
+            product_name="Frische Milch",
+            expiry_days_from_now=7,
+        )
+
+        with ui.column().classes("w-full"):
+            ui.label("Vorrat").classes("text-h5")
+
+            # Get items filtered by location (Tiefkühltruhe only)
+            items = list(
+                session.exec(
+                    select(Item).where(
+                        Item.is_consumed.is_(False),  # type: ignore
+                        Item.location_id == location1.id,
+                    )
+                ).all()
+            )
+
+            for item in items:
+                create_item_card(item, session)
+
+    create_bottom_nav(current_page="items")
+
+
+@ui.page("/test-items-page-with-type-filter")
+def page_items_with_type_filter() -> None:
+    """Test page with item type filter pre-selected to HOMEMADE_FROZEN."""
+    _set_test_session()
+
+    with next(get_session()) as session:
+        location = _create_test_location(session)
+
+        # Create items with different types
+        _create_test_item_with_type(
+            session,
+            location,
+            product_name="Selbst Eingefrorenes",
+            item_type=ItemType.HOMEMADE_FROZEN,
+        )
+        _create_test_item_with_type(
+            session,
+            location,
+            product_name="Frisch Gekauftes",
+            item_type=ItemType.PURCHASED_FRESH,
+        )
+
+        with ui.column().classes("w-full"):
+            ui.label("Vorrat").classes("text-h5")
+
+            # Get items filtered by type (HOMEMADE_FROZEN only)
+            items = list(
+                session.exec(
+                    select(Item).where(
+                        Item.is_consumed.is_(False),  # type: ignore
+                        Item.item_type == ItemType.HOMEMADE_FROZEN,
+                    )
+                ).all()
+            )
+
+            for item in items:
+                create_item_card(item, session)
 
     create_bottom_nav(current_page="items")

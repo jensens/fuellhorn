@@ -224,3 +224,48 @@ async def test_items_page_category_filter_no_results(user: TestUser) -> None:
     # Search for something that doesn't exist in Gemüse
     user.find("Suchen").type("xyz-nicht-vorhanden")
     await user.should_see("Keine Artikel")
+
+
+# Filter by location and item type tests (Issue #12)
+
+
+async def test_items_page_has_location_filter(user: TestUser) -> None:
+    """Test that items page has a location filter dropdown."""
+    await user.open("/test-items-page-with-filters")
+    await user.should_see("Lagerort")
+
+
+async def test_items_page_has_item_type_filter(user: TestUser) -> None:
+    """Test that items page has an item type filter dropdown."""
+    await user.open("/test-items-page-with-filters")
+    await user.should_see("Artikel-Typ")
+
+
+async def test_items_page_location_filter_shows_all_option(user: TestUser) -> None:
+    """Test that location filter has 'Alle' option."""
+    await user.open("/test-items-page-with-filters")
+    await user.should_see("Alle Lagerorte")
+
+
+async def test_items_page_item_type_filter_shows_all_option(user: TestUser) -> None:
+    """Test that item type filter has 'Alle' option."""
+    await user.open("/test-items-page-with-filters")
+    await user.should_see("Alle Typen")
+
+
+async def test_items_page_location_filter_filters_items(user: TestUser) -> None:
+    """Test that selecting a location filters items."""
+    await user.open("/test-items-page-with-location-filter")
+    # Should see item from Tiefkühltruhe
+    await user.should_see("Gefrorene Tomaten")
+    # Should NOT see item from Kühlschrank
+    await user.should_not_see("Frische Milch")
+
+
+async def test_items_page_item_type_filter_filters_items(user: TestUser) -> None:
+    """Test that selecting an item type filters items."""
+    await user.open("/test-items-page-with-type-filter")
+    # Should see homemade frozen item
+    await user.should_see("Selbst Eingefrorenes")
+    # Should NOT see purchased fresh item
+    await user.should_not_see("Frisch Gekauftes")
