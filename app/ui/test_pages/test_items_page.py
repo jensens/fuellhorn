@@ -278,3 +278,107 @@ def page_items_with_search() -> None:
             update_items("")
 
     create_bottom_nav(current_page="items")
+
+
+@ui.page("/test-items-page-with-consumed-toggle")
+def page_items_with_consumed_toggle() -> None:
+    """Test page with consumed toggle (default: OFF)."""
+    _set_test_session()
+    # Set browser storage to default (show_consumed = False)
+    app.storage.browser["show_consumed_items"] = False
+
+    with next(get_session()) as session:
+        location = _create_test_location(session)
+
+        # Create active item
+        _create_test_item(
+            session,
+            location,
+            product_name="Aktiver Artikel",
+            expiry_days_from_now=30,
+            is_consumed=False,
+        )
+
+        # Create consumed item (should not be shown by default)
+        _create_test_item(
+            session,
+            location,
+            product_name="Entnommener Artikel",
+            expiry_days_from_now=30,
+            is_consumed=True,
+        )
+
+        show_consumed = app.storage.browser.get("show_consumed_items", False)
+
+        with ui.column().classes("w-full"):
+            ui.label("Vorrat").classes("text-h5")
+
+            # Toggle for showing consumed items
+            ui.switch("Entnommene anzeigen", value=show_consumed)
+
+            # Get items based on filter
+            if show_consumed:
+                items = list(session.exec(select(Item)).all())
+            else:
+                items = list(
+                    session.exec(
+                        select(Item).where(Item.is_consumed.is_(False))  # type: ignore
+                    ).all()
+                )
+
+            for item in items:
+                create_item_card(item, session)
+
+    create_bottom_nav(current_page="items")
+
+
+@ui.page("/test-items-page-with-consumed-toggle-on")
+def page_items_with_consumed_toggle_on() -> None:
+    """Test page with consumed toggle enabled (show all items)."""
+    _set_test_session()
+    # Set browser storage to show consumed items
+    app.storage.browser["show_consumed_items"] = True
+
+    with next(get_session()) as session:
+        location = _create_test_location(session)
+
+        # Create active item
+        _create_test_item(
+            session,
+            location,
+            product_name="Aktiver Artikel",
+            expiry_days_from_now=30,
+            is_consumed=False,
+        )
+
+        # Create consumed item (should be shown when toggle is ON)
+        _create_test_item(
+            session,
+            location,
+            product_name="Entnommener Artikel",
+            expiry_days_from_now=30,
+            is_consumed=True,
+        )
+
+        show_consumed = app.storage.browser.get("show_consumed_items", False)
+
+        with ui.column().classes("w-full"):
+            ui.label("Vorrat").classes("text-h5")
+
+            # Toggle for showing consumed items
+            ui.switch("Entnommene anzeigen", value=show_consumed)
+
+            # Get items based on filter (show_consumed = True means show all)
+            if show_consumed:
+                items = list(session.exec(select(Item)).all())
+            else:
+                items = list(
+                    session.exec(
+                        select(Item).where(Item.is_consumed.is_(False))  # type: ignore
+                    ).all()
+                )
+
+            for item in items:
+                create_item_card(item, session)
+
+    create_bottom_nav(current_page="items")
