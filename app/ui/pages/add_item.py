@@ -352,7 +352,7 @@ def add_item() -> None:
         ui.label("Produktname *").classes("text-sm font-medium mb-1")
         product_name_input = ui.input(placeholder="z.B. Tomaten aus Garten").classes(
             "w-full"
-        ).props("outlined")
+        ).props("outlined autofocus")
         product_name_input.bind_value(form_data, "product_name")
         product_name_input.on("blur", update_validation)
 
