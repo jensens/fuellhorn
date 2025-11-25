@@ -242,8 +242,8 @@ def add_item() -> None:
                 with best_before_input.add_slot("append"):
                     with ui.icon("event").classes("cursor-pointer"):
                         with ui.menu() as best_before_menu:
-                            best_before_date_picker = ui.date().bind_value(best_before_input).props(
-                                'locale="de" mask="DD.MM.YYYY"'
+                            best_before_date_picker = (
+                                ui.date().bind_value(best_before_input).props('locale="de" mask="DD.MM.YYYY"')
                             )
 
                             def on_best_before_change(e: Any) -> None:
@@ -278,8 +278,8 @@ def add_item() -> None:
                     with freeze_date_input.add_slot("append"):
                         with ui.icon("event").classes("cursor-pointer"):
                             with ui.menu() as freeze_date_menu:
-                                freeze_date_picker = ui.date().bind_value(freeze_date_input).props(
-                                    'locale="de" mask="DD.MM.YYYY"'
+                                freeze_date_picker = (
+                                    ui.date().bind_value(freeze_date_input).props('locale="de" mask="DD.MM.YYYY"')
                                 )
 
                                 def on_freeze_date_change(e: Any) -> None:
