@@ -1,0 +1,67 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv
+venv/
+ENV/
+env/
+.eggs/
+*.egg-info/
+*.egg
+dist/
+build/
+
+# Testing
+.pytest_cache
+.coverage
+htmlcov/
+tests/
+
+# Development
+.env
+.env.local
+*.md
+!README.md
+.pre-commit-config.yaml
+.ruff_cache
+.mypy_cache
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Data (will be mounted as volume)
+data/
+*.db
+
+# Documentation and project files
+requirements.md
+data-model.md
+tech-stack.md
+fuellhorn-projekt-zusammenfassung.md
+UI_KONZEPT.md
+TESTING.md
+artwork/
+
+# Scripts
+scripts/
+create_admin.py
+
+# Claude
+.claude/
+CLAUDE.md
+
+# GitHub
+.github/
+
+# Worktrees
+worktrees/

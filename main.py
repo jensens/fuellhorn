@@ -12,8 +12,8 @@ import os
 if os.environ.get("TESTING") == "true":
     import app.ui.test_pages as _test_pages  # noqa: F401
 
-# Import API routes to register endpoints (wird spaeter erstellt)
-# import app.api.routes as _api_routes  # noqa: F401
+# Import API routes to register endpoints
+import app.api.health as _api_health  # noqa: F401
 from nicegui import ui
 
 

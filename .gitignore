@@ -56,7 +56,7 @@ alembic/versions/*.pyc
 Thumbs.db
 
 # Docker
-.dockerignore
+# (keine Dateien ignoriert - Dockerfile und .dockerignore werden committet)
 
 # Temporary files
 *.tmp
