@@ -82,6 +82,7 @@ def test_validate_step1_all_valid() -> None:
         product_name="Tomaten",
         item_type=ItemType.PURCHASED_FRESH,
         quantity=500.0,
+        unit="g",
     )
     assert errors == {}
     assert len(errors) == 0
@@ -93,11 +94,13 @@ def test_validate_step1_all_invalid() -> None:
         product_name="",
         item_type=None,
         quantity=0,
+        unit=None,
     )
-    assert len(errors) == 3
+    assert len(errors) == 4
     assert "product_name" in errors
     assert "item_type" in errors
     assert "quantity" in errors
+    assert "unit" in errors
 
 
 def test_validate_step1_product_name_invalid() -> None:
@@ -106,6 +109,7 @@ def test_validate_step1_product_name_invalid() -> None:
         product_name="A",
         item_type=ItemType.PURCHASED_FROZEN,
         quantity=100.0,
+        unit="kg",
     )
     assert len(errors) == 1
     assert "product_name" in errors
@@ -118,6 +122,7 @@ def test_validate_step1_quantity_invalid() -> None:
         product_name="Erbsen",
         item_type=ItemType.HOMEMADE_FROZEN,
         quantity=-5.0,
+        unit="L",
     )
     assert len(errors) == 1
     assert "quantity" in errors
@@ -131,6 +136,7 @@ def test_is_step1_valid_returns_true_when_valid() -> None:
             product_name="Kartoffeln",
             item_type=ItemType.PURCHASED_FRESH,
             quantity=2000.0,
+            unit="kg",
         )
         is True
     )
