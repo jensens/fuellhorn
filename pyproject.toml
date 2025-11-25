@@ -38,6 +38,7 @@ dev = [
     "selenium>=4.0.0",
     "types-python-dateutil>=2.9.0.20251115",
     "pre-commit>=4.4.0",
+    "pytest-xdist>=3.8.0",
 ]
 
 [tool.pytest.ini_options]

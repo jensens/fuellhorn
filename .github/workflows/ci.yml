@@ -9,6 +9,7 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
       - name: Checkout code
@@ -16,6 +17,8 @@ jobs:
 
       - name: Install uv
         uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
 
       - name: Set up Python
         run: uv python install 3.14
@@ -23,14 +26,21 @@ jobs:
       - name: Install dependencies
         run: uv sync
 
-      - name: Run tests
-        run: uv run pytest
+      - name: Run service tests (parallel)
+        run: uv run pytest tests/test_services tests/test_api tests/test_database_isolation.py -n auto
+        env:
+          SECRET_KEY: test-secret-key-for-ci-only
+          FUELLHORN_SECRET: test-fuellhorn-secret-for-ci-only
+
+      - name: Run UI tests (sequential)
+        run: uv run pytest tests/test_ui
         env:
           SECRET_KEY: test-secret-key-for-ci-only
           FUELLHORN_SECRET: test-fuellhorn-secret-for-ci-only
 
   lint:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
 
     steps:
       - name: Checkout code
@@ -38,6 +48,8 @@ jobs:
 
       - name: Install uv
         uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
 
       - name: Set up Python
         run: uv python install 3.14
