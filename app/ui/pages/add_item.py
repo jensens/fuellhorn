@@ -339,7 +339,7 @@ def add_item() -> None:
         )
 
     # Main content container with max-width for desktop
-    with ui.column().classes("w-full mx-auto").style("max-width: 800px; cursor: default;"):
+    with ui.column().classes("w-full mx-auto").style("max-width: 800px; cursor: default !important;"):
         content_container = create_mobile_page_container()
     with content_container:
         # Progress Indicator
@@ -352,7 +352,7 @@ def add_item() -> None:
         ui.label("Produktname *").classes("text-sm font-medium mb-1")
         product_name_input = ui.input(placeholder="z.B. Tomaten aus Garten").classes(
             "w-full"
-        ).props("outlined autofocus")
+        ).props("outlined")
         product_name_input.bind_value(form_data, "product_name")
         product_name_input.on("blur", update_validation)
 
