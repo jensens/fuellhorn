@@ -72,3 +72,49 @@ async def test_items_page_shows_quantity(user: TestUser) -> None:
     """Test that item quantity and unit are displayed."""
     await user.open("/test-items-page-with-items")
     await user.should_see("500 g")
+
+
+# Search functionality tests (Issue #10)
+
+
+async def test_items_page_shows_search_field(user: TestUser) -> None:
+    """Test that search field is displayed at top of items page."""
+    await user.open("/test-items-page-with-search")
+    await user.should_see("Suchen")
+
+
+async def test_items_page_search_filters_by_name(user: TestUser) -> None:
+    """Test that search filters items by product name."""
+    await user.open("/test-items-page-with-search")
+    # Should see both items initially
+    await user.should_see("Tomaten")
+    await user.should_see("Hackfleisch")
+    # Type in search
+    user.find("Suchen").type("Tomat")
+    await user.should_see("Tomaten")
+    await user.should_not_see("Hackfleisch")
+
+
+async def test_items_page_search_case_insensitive(user: TestUser) -> None:
+    """Test that search is case-insensitive."""
+    await user.open("/test-items-page-with-search")
+    # Search with lowercase
+    user.find("Suchen").type("tomaten")
+    await user.should_see("Tomaten")
+
+
+async def test_items_page_search_empty_shows_all(user: TestUser) -> None:
+    """Test that empty search shows all items."""
+    await user.open("/test-items-page-with-search")
+    # Initially empty search shows all
+    await user.should_see("Tomaten")
+    await user.should_see("Hackfleisch")
+
+
+async def test_items_page_search_no_results(user: TestUser) -> None:
+    """Test that search with no matches shows appropriate message."""
+    await user.open("/test-items-page-with-search")
+    user.find("Suchen").type("xyz-nicht-vorhanden")
+    await user.should_not_see("Tomaten")
+    await user.should_not_see("Hackfleisch")
+    await user.should_see("Keine Artikel")

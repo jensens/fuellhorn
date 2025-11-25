@@ -211,3 +211,70 @@ def page_items_empty() -> None:
         ui.label("Keine Artikel vorhanden")
 
     create_bottom_nav(current_page="items")
+
+
+@ui.page("/test-items-page-with-search")
+def page_items_with_search() -> None:
+    """Test page with search functionality for items."""
+    _set_test_session()
+
+    with next(get_session()) as session:
+        location = _create_test_location(session)
+
+        # Create multiple test items for search testing
+        _create_test_item(
+            session,
+            location,
+            product_name="Tomaten",
+            expiry_days_from_now=30,
+            quantity=500,
+            unit="g",
+        )
+        _create_test_item(
+            session,
+            location,
+            product_name="Hackfleisch",
+            expiry_days_from_now=10,
+            quantity=750,
+            unit="g",
+        )
+
+        # Get all items for search
+        all_items = list(
+            session.exec(
+                select(Item).where(Item.is_consumed.is_(False))  # type: ignore
+            ).all()
+        )
+
+        # Create page layout with search
+        with ui.column().classes("w-full"):
+            ui.label("Vorrat").classes("text-h5")
+
+            # Container for items
+            items_container = ui.column().classes("w-full")
+
+            def update_items(query: str) -> None:
+                """Update displayed items based on search query."""
+                items_container.clear()
+                search_term = query.lower() if query else ""
+
+                filtered_items = [item for item in all_items if search_term in item.product_name.lower()]
+
+                with items_container:
+                    if filtered_items:
+                        for item in filtered_items:
+                            create_item_card(item, session)
+                    else:
+                        ui.label("Keine Artikel gefunden").classes("text-gray-500")
+
+            # Search input with on_change callback for live filtering
+            ui.input(
+                label="Suchen",
+                placeholder="Produktname...",
+                on_change=lambda e: update_items(e.value),
+            ).classes("w-full")
+
+            # Initial render with empty query
+            update_items("")
+
+    create_bottom_nav(current_page="items")
