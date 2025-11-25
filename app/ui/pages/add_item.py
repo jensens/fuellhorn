@@ -339,7 +339,7 @@ def add_item() -> None:
         )
 
     # Main content container with max-width for desktop
-    with ui.column().classes("w-full mx-auto").style("max-width: 800px; cursor: default !important;"):
+    with ui.column().classes("w-full mx-auto").style("max-width: 800px"):
         content_container = create_mobile_page_container()
     with content_container:
         # Progress Indicator
