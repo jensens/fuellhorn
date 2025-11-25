@@ -41,9 +41,7 @@ def test_create_location_with_description(session: Session, test_admin: User) ->
     assert location.is_active is True
 
 
-def test_create_location_duplicate_name_fails(
-    session: Session, test_admin: User
-) -> None:
+def test_create_location_duplicate_name_fails(session: Session, test_admin: User) -> None:
     """Test that duplicate location names fail."""
     location_service.create_location(
         session=session,
@@ -52,9 +50,7 @@ def test_create_location_duplicate_name_fails(
         created_by=test_admin.id,
     )
 
-    with pytest.raises(
-        ValueError, match="Location with name 'Vorratsraum' already exists"
-    ):
+    with pytest.raises(ValueError, match="Location with name 'Vorratsraum' already exists"):
         location_service.create_location(
             session=session,
             name="vorratsraum",  # Case-insensitive check
@@ -125,9 +121,7 @@ def test_update_location_name(session: Session, test_admin: User) -> None:
     assert updated.location_type == LocationType.FROZEN  # Unchanged
 
 
-def test_update_location_duplicate_name_fails(
-    session: Session, test_admin: User
-) -> None:
+def test_update_location_duplicate_name_fails(session: Session, test_admin: User) -> None:
     """Test that updating to duplicate name fails."""
     location_service.create_location(
         session=session,
@@ -142,9 +136,7 @@ def test_update_location_duplicate_name_fails(
         created_by=test_admin.id,
     )
 
-    with pytest.raises(
-        ValueError, match="Location with name 'Gefrierschrank' already exists"
-    ):
+    with pytest.raises(ValueError, match="Location with name 'Gefrierschrank' already exists"):
         location_service.update_location(
             session=session,
             id=second.id,

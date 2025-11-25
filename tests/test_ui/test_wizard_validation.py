@@ -222,9 +222,7 @@ def test_validate_freeze_date_cannot_be_before_best_before() -> None:
     best_before = date(2024, 1, 1)
     freeze_date_val = date(2023, 12, 1)  # Before best_before
 
-    error = validate_freeze_date(
-        freeze_date_val, ItemType.PURCHASED_THEN_FROZEN, best_before
-    )
+    error = validate_freeze_date(freeze_date_val, ItemType.PURCHASED_THEN_FROZEN, best_before)
     assert error is not None
     assert "vor Produktionsdatum" in error
 
@@ -237,9 +235,7 @@ def test_validate_freeze_date_valid_after_best_before() -> None:
     best_before = date(2024, 1, 1)
     freeze_date_val = date(2024, 1, 15)  # After best_before
 
-    error = validate_freeze_date(
-        freeze_date_val, ItemType.PURCHASED_FROZEN, best_before
-    )
+    error = validate_freeze_date(freeze_date_val, ItemType.PURCHASED_FROZEN, best_before)
     assert error is None
 
 
