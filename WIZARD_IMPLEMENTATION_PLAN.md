@@ -1284,7 +1284,15 @@ Alle müssen grün sein ✅ vor dem Push!
   - Reactive validation with location selection
   - Mobile-first UI with 48x48px touch targets
   - All 95 tests passing (1 unrelated login test failure), mypy + ruff clean
-- [ ] Phase 6: Save Integration
+- [x] **Phase 6: Save Integration** ✅ (2025-11-25)
+  - Implemented save_item() handler
+  - Final validation across all 3 steps before saving
+  - User authentication check (app.storage.user)
+  - Database integration with item_service.create_item()
+  - Success notification with checkmark emoji
+  - Automatic navigation to dashboard after save
+  - Error handling with user-friendly messages
+  - All 94 tests passing (1 unrelated login test failure), mypy + ruff clean
 - [ ] Phase 7: Save & Next Flow
 - [ ] Phase 8: Smart Defaults
 - [ ] Phase 9: UI Polish
