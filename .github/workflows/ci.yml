@@ -29,6 +29,22 @@ jobs:
           SECRET_KEY: test-secret-key-for-ci-only
           FUELLHORN_SECRET: test-fuellhorn-secret-for-ci-only
 
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+
+      - name: Set up Python
+        run: uv python install 3.14
+
+      - name: Install dependencies
+        run: uv sync
+
       - name: Type check
         run: uv run mypy app/
 
