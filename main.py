@@ -17,7 +17,7 @@ if __name__ in {"__main__", "__mp_main__"}:
 
     # NiceGUI starten
     ui.run(
-        title="Fuellhorn - Lebensmittelvorrats-Verwaltung",
+        title="Füllhorn - Lebensmittelvorrats-Verwaltung",
         storage_secret=get_storage_secret(),
         reload=True,  # Auto-Reload waehrend Entwicklung
         show=False,  # Browser nicht automatisch oeffnen
