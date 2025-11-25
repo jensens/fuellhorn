@@ -2,12 +2,17 @@
 
 from app.models import User
 from collections.abc import Generator
+import os
 import pytest
 from sqlalchemy.pool import StaticPool
 from sqlmodel import Session
 from sqlmodel import SQLModel
 from sqlmodel import create_engine
 import sys
+
+
+# Set TESTING environment variable so main.py imports test pages
+os.environ["TESTING"] = "true"
 
 
 # ============================================================================

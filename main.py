@@ -5,6 +5,12 @@ from app.database import create_db_and_tables
 
 # Import pages to register routes
 import app.ui.pages as _pages  # noqa: F401
+import os
+
+
+# Import test pages only during testing (for component tests)
+if os.environ.get("TESTING") == "true":
+    import app.ui.test_pages as _test_pages  # noqa: F401
 
 # Import API routes to register endpoints (wird spaeter erstellt)
 # import app.api.routes as _api_routes  # noqa: F401
