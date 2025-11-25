@@ -17,9 +17,7 @@ async def test_settings_page_renders_for_admin(logged_in_user: User) -> None:
     await logged_in_user.should_see("Gefrierzeit-Konfiguration")
 
 
-async def test_settings_page_shows_freeze_time_configs(
-    logged_in_user: User, isolated_test_database
-) -> None:
+async def test_settings_page_shows_freeze_time_configs(logged_in_user: User, isolated_test_database) -> None:
     """Test that settings page shows freeze time configurations."""
     # Create test freeze time config
     with Session(isolated_test_database) as session:
@@ -38,9 +36,7 @@ async def test_settings_page_shows_freeze_time_configs(
     await logged_in_user.should_see("12 Monate")
 
 
-async def test_settings_page_groups_by_item_type(
-    logged_in_user: User, isolated_test_database
-) -> None:
+async def test_settings_page_groups_by_item_type(logged_in_user: User, isolated_test_database) -> None:
     """Test that freeze time configs are grouped by item type."""
     # Create test freeze time configs for different item types
     with Session(isolated_test_database) as session:
@@ -68,9 +64,7 @@ async def test_settings_page_groups_by_item_type(
     await logged_in_user.should_see("Frisch gekauft, eingefroren")  # PURCHASED_THEN_FROZEN
 
 
-async def test_settings_page_shows_category_specific_configs(
-    logged_in_user: User, isolated_test_database
-) -> None:
+async def test_settings_page_shows_category_specific_configs(logged_in_user: User, isolated_test_database) -> None:
     """Test that category-specific configs are displayed with category name."""
     # Create test category and config
     with Session(isolated_test_database) as session:
@@ -162,9 +156,7 @@ async def test_config_card_has_delete_button(logged_in_user: User, isolated_test
     await logged_in_user.should_see("delete")
 
 
-async def test_delete_button_opens_confirmation_dialog(
-    logged_in_user: User, isolated_test_database
-) -> None:
+async def test_delete_button_opens_confirmation_dialog(logged_in_user: User, isolated_test_database) -> None:
     """Test that clicking delete button opens confirmation dialog."""
     with Session(isolated_test_database) as session:
         config = FreezeTimeConfig(

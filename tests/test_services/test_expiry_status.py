@@ -4,9 +4,9 @@ Tests the get_expiry_status function which determines
 whether an item is critical (red), warning (yellow), or ok (green).
 """
 
-from datetime import date, timedelta
-
 from app.services import expiry_calculator
+from datetime import date
+from datetime import timedelta
 
 
 class TestGetExpiryStatus:

@@ -57,9 +57,7 @@ def _render_no_filter_results() -> None:
     with ui.card().classes("w-full p-6 text-center"):
         ui.icon("search_off").classes("text-6xl text-gray-300 mb-4")
         ui.label("Keine Artikel gefunden").classes("text-lg text-gray-600 mb-2")
-        ui.label("Versuche andere Filter oder Suchbegriffe").classes(
-            "text-sm text-gray-500"
-        )
+        ui.label("Versuche andere Filter oder Suchbegriffe").classes("text-sm text-gray-500")
 
 
 def _build_item_category_map(session: Session, items: list[Item]) -> dict[int, set[int]]:
@@ -75,9 +73,7 @@ def _build_item_category_map(session: Session, items: list[Item]) -> dict[int, s
     item_category_map: dict[int, set[int]] = {}
     for item in items:
         if item.id is not None:
-            item_cats = session.exec(
-                select(ItemCategory).where(ItemCategory.item_id == item.id)
-            ).all()
+            item_cats = session.exec(select(ItemCategory).where(ItemCategory.item_id == item.id)).all()
             item_category_map[item.id] = {ic.category_id for ic in item_cats}
     return item_category_map
 
@@ -136,10 +132,7 @@ def _filter_items_by_categories(
         return items
 
     return [
-        item
-        for item in items
-        if item.id is not None
-        and item_category_map.get(item.id, set()) & selected_categories
+        item for item in items if item.id is not None and item_category_map.get(item.id, set()) & selected_categories
     ]
 
 
@@ -167,9 +160,7 @@ def items_page() -> None:
     with next(get_session()) as session:
         locations = location_service.get_all_locations(session)
         location_options: dict[int, str] = {0: "Alle Lagerorte"}
-        location_options.update(
-            {loc.id: loc.name for loc in locations if loc.id is not None}
-        )
+        location_options.update({loc.id: loc.name for loc in locations if loc.id is not None})
 
     def refresh_items() -> None:
         """Refresh items list based on current filter settings."""
@@ -200,9 +191,7 @@ def items_page() -> None:
                 )
 
                 # Apply category filter
-                filtered_items = _filter_items_by_categories(
-                    filtered_items, selected_categories, item_category_map
-                )
+                filtered_items = _filter_items_by_categories(filtered_items, selected_categories, item_category_map)
 
                 if not all_items:
                     # No items at all - show empty state with CTA
@@ -260,14 +249,10 @@ def items_page() -> None:
         refresh_items()
 
     # Header with toggle
-    with ui.row().classes(
-        "w-full items-center justify-between p-4 bg-white border-b border-gray-200"
-    ):
+    with ui.row().classes("w-full items-center justify-between p-4 bg-white border-b border-gray-200"):
         ui.label("Vorrat").classes("text-h5 font-bold text-primary")
         # Toggle for showing consumed items
-        ui.switch(
-            "Entnommene anzeigen", value=show_consumed, on_change=on_toggle_change
-        ).classes("text-sm")
+        ui.switch("Entnommene anzeigen", value=show_consumed, on_change=on_toggle_change).classes("text-sm")
 
     # Main content with bottom nav spacing
     with create_mobile_page_container():
@@ -308,9 +293,7 @@ def items_page() -> None:
                         chip = ui.button(
                             cat.name,
                             on_click=lambda _, cid=cat.id: toggle_category(cid),
-                        ).classes(
-                            "bg-gray-200 text-gray-800 rounded-full px-4 py-1 text-sm"
-                        )
+                        ).classes("bg-gray-200 text-gray-800 rounded-full px-4 py-1 text-sm")
                         chip_elements[cat.id] = chip
 
         items_container = ui.column().classes("w-full gap-2")

@@ -15,8 +15,8 @@ which was causing a full page reload and data loss.
 from app.models import Location
 from app.models.location import LocationType
 from nicegui.testing import User
-from sqlmodel import Session
 import pytest
+from sqlmodel import Session
 
 
 @pytest.fixture(name="location_in_db")
@@ -55,9 +55,7 @@ async def test_wizard_shows_weiter_button(logged_in_user: User, location_in_db: 
     "Fix verified manually: show_step1() now uses content_container.clear() "
     "instead of ui.navigate.to() to preserve form data."
 )
-async def test_back_button_preserves_product_name(
-    logged_in_user: User, location_in_db: Location
-) -> None:
+async def test_back_button_preserves_product_name(logged_in_user: User, location_in_db: Location) -> None:
     """Test that product name is preserved when going back from Step 2.
 
     Issue #48: Going back from Step 2 to Step 1 should preserve all inputs.
@@ -74,9 +72,7 @@ async def test_back_button_preserves_product_name(
     "Fix verified manually: show_step1() now uses content_container.clear() "
     "instead of ui.navigate.to() to preserve form data."
 )
-async def test_back_button_preserves_summary_after_roundtrip(
-    logged_in_user: User, location_in_db: Location
-) -> None:
+async def test_back_button_preserves_summary_after_roundtrip(logged_in_user: User, location_in_db: Location) -> None:
     """Test that going back and forward preserves all data in summary.
 
     This roundtrip test requires navigating between steps, which requires
