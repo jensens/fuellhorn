@@ -1,17 +1,13 @@
 """UI Tests for Bottom Sheet component."""
 
-from datetime import date
-from datetime import timedelta
-
-from nicegui import ui
-from nicegui.testing import User
-from sqlmodel import Session
-from sqlmodel import select
-
 from app.models.freeze_time_config import ItemType
 from app.models.item import Item
 from app.models.location import Location
 from app.models.location import LocationType
+from datetime import date
+from datetime import timedelta
+from nicegui import ui
+from nicegui.testing import User
 
 
 async def test_bottom_sheet_shows_item_details(user: User) -> None:

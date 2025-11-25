@@ -124,9 +124,7 @@ def cleanup_ui_packages():
     yield  # Run test first
 
     # Cleanup after test
-    modules_to_remove = [
-        key for key in sys.modules.keys() if key.startswith("app.ui") or key.startswith("app.api")
-    ]
+    modules_to_remove = [key for key in sys.modules.keys() if key.startswith("app.ui") or key.startswith("app.api")]
 
     for module in modules_to_remove:
         del sys.modules[module]

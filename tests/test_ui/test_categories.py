@@ -181,9 +181,7 @@ async def test_create_category_validation_name_required(user: TestUser) -> None:
     await user.should_see("Name ist erforderlich")
 
 
-async def test_create_category_validation_unique_name(
-    user: TestUser, isolated_test_database
-) -> None:
+async def test_create_category_validation_unique_name(user: TestUser, isolated_test_database) -> None:
     """Test that duplicate category names are rejected."""
     # Create a category first
     with Session(isolated_test_database) as session:
