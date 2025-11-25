@@ -383,11 +383,11 @@ def add_item() -> None:
 
         # Unit
         ui.label("Einheit *").classes("text-sm font-medium mb-1 mt-4")
-        unit_select = ui.select(
+        unit_radio = ui.radio(
             options=["g", "kg", "ml", "L", "Stück", "Packung"],
             value="g",
-        ).classes("w-full").props("outlined")
-        unit_select.bind_value(form_data, "unit")
+        ).props("inline").classes("w-full")
+        unit_radio.bind_value(form_data, "unit")
 
         # Navigation
         with ui.row().classes("w-full justify-end mt-6 gap-2"):
