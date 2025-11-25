@@ -71,6 +71,21 @@ module = "tests.*"
 disallow_untyped_defs = false
 disable_error_code = ["arg-type", "union-attr", "attr-defined"]
 
+[tool.coverage.run]
+parallel = true
+branch = true
+source = ["app"]
+relative_files = true
+
+[tool.coverage.report]
+skip_covered = true
+skip_empty = true
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "if __name__ == .__main__.:",
+]
+
 [tool.ruff]
 line-length = 120
 
