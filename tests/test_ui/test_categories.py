@@ -1,4 +1,8 @@
-"""UI Tests for Categories Page (Admin)."""
+"""UI Tests for Categories Page (Admin).
+
+Issue #20: Categories Liste
+Issue #21: Kategorie erstellen
+"""
 
 from app.models.category import Category
 from app.models.user import User
@@ -109,3 +113,120 @@ async def test_categories_page_requires_admin_permission(
     # Regular user should be redirected to dashboard (should not see "Kategorien" header)
     # They should see the dashboard or a permission error
     await user.should_not_see("Kategorien verwalten")
+
+
+# =============================================================================
+# Issue #21: Category Creation Tests
+# =============================================================================
+
+
+async def test_categories_page_has_new_category_button(user: TestUser) -> None:
+    """Test that categories page has 'Neue Kategorie' button."""
+    # Login as admin
+    await user.open("/login")
+    user.find("Benutzername").type("admin")
+    user.find("Passwort").type("password123")
+    user.find("Anmelden").click()
+
+    # Navigate to categories page
+    await user.open("/admin/categories")
+
+    # Should see "Neue Kategorie" button
+    await user.should_see("Neue Kategorie")
+
+
+async def test_new_category_button_opens_dialog(user: TestUser) -> None:
+    """Test that clicking 'Neue Kategorie' opens a dialog with form."""
+    # Login as admin
+    await user.open("/login")
+    user.find("Benutzername").type("admin")
+    user.find("Passwort").type("password123")
+    user.find("Anmelden").click()
+
+    # Navigate to categories page
+    await user.open("/admin/categories")
+
+    # Click the "Neue Kategorie" button
+    user.find("Neue Kategorie").click()
+
+    # Should see dialog with form fields
+    await user.should_see("Neue Kategorie erstellen")
+    await user.should_see("Name")
+
+
+async def test_create_category_success(user: TestUser, isolated_test_database) -> None:
+    """Test that creating a category works correctly."""
+    # Login as admin
+    await user.open("/login")
+    user.find("Benutzername").type("admin")
+    user.find("Passwort").type("password123")
+    user.find("Anmelden").click()
+
+    # Navigate to categories page
+    await user.open("/admin/categories")
+
+    # Click the "Neue Kategorie" button
+    user.find("Neue Kategorie").click()
+
+    # Fill in the form
+    user.find("Name").type("Gemüse")
+
+    # Click save
+    user.find("Speichern").click()
+
+    # Should see success notification and category in list
+    await user.should_see("Gemüse")
+
+
+async def test_create_category_validation_name_required(user: TestUser) -> None:
+    """Test that category name is required."""
+    # Login as admin
+    await user.open("/login")
+    user.find("Benutzername").type("admin")
+    user.find("Passwort").type("password123")
+    user.find("Anmelden").click()
+
+    # Navigate to categories page
+    await user.open("/admin/categories")
+
+    # Click the "Neue Kategorie" button
+    user.find("Neue Kategorie").click()
+
+    # Try to save without entering name
+    user.find("Speichern").click()
+
+    # Should see error message
+    await user.should_see("Name ist erforderlich")
+
+
+async def test_create_category_validation_unique_name(
+    user: TestUser, isolated_test_database
+) -> None:
+    """Test that duplicate category names are rejected."""
+    # Create a category first
+    with Session(isolated_test_database) as session:
+        cat = Category(
+            name="Fleisch",
+            created_by=1,  # admin user from fixture
+        )
+        session.add(cat)
+        session.commit()
+
+    # Login as admin
+    await user.open("/login")
+    user.find("Benutzername").type("admin")
+    user.find("Passwort").type("password123")
+    user.find("Anmelden").click()
+
+    # Navigate to categories page
+    await user.open("/admin/categories")
+
+    # Click the "Neue Kategorie" button
+    user.find("Neue Kategorie").click()
+
+    # Try to create category with duplicate name
+    user.find("Name").type("Fleisch")
+    user.find("Speichern").click()
+
+    # Should see error message about duplicate
+    await user.should_see("bereits vorhanden")
