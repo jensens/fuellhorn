@@ -327,3 +327,102 @@ async def test_edit_location_success(
     # Should navigate back to locations page and show the new name
     await logged_in_user.should_see("Neuer Name")
     await logged_in_user.should_not_see("Alter Name")
+
+
+# === Issue #25: Create Location Tests ===
+
+
+async def test_locations_page_shows_create_button(logged_in_user: TestUser) -> None:
+    """Test that the 'Neuer Lagerort' button is displayed."""
+    # Navigate to locations page
+    await logged_in_user.open("/admin/locations")
+
+    # Should see the create button
+    await logged_in_user.should_see("Neuer Lagerort")
+
+
+async def test_create_dialog_opens(logged_in_user: TestUser) -> None:
+    """Test that clicking 'Neuer Lagerort' opens the create dialog."""
+    # Navigate to locations page
+    await logged_in_user.open("/admin/locations")
+
+    # Click the create button
+    logged_in_user.find("Neuer Lagerort").click()
+
+    # Should see the create dialog
+    await logged_in_user.should_see("Neuen Lagerort erstellen")
+    await logged_in_user.should_see("Name")
+    await logged_in_user.should_see("Typ")
+
+
+async def test_create_location_validation_empty_name(logged_in_user: TestUser) -> None:
+    """Test that empty name shows validation error."""
+    # Navigate to locations page
+    await logged_in_user.open("/admin/locations")
+
+    # Click the create button
+    logged_in_user.find("Neuer Lagerort").click()
+
+    # Wait for dialog
+    await logged_in_user.should_see("Neuen Lagerort erstellen")
+
+    # Click save without entering a name
+    logged_in_user.find("Speichern").click()
+
+    # Should show validation error
+    await logged_in_user.should_see("Name ist erforderlich")
+
+
+async def test_create_location_validation_duplicate_name(
+    logged_in_user: TestUser,
+    isolated_test_database,
+) -> None:
+    """Test that duplicate name shows validation error."""
+    # Create an existing location
+    with Session(isolated_test_database) as session:
+        loc = Location(
+            name="Gefrierschrank",
+            location_type=LocationType.FROZEN,
+            created_by=1,
+        )
+        session.add(loc)
+        session.commit()
+
+    # Navigate to locations page
+    await logged_in_user.open("/admin/locations")
+
+    # Click the create button
+    logged_in_user.find("Neuer Lagerort").click()
+
+    # Wait for dialog
+    await logged_in_user.should_see("Neuen Lagerort erstellen")
+
+    # Enter duplicate name
+    logged_in_user.find(marker="create-name-input").type("Gefrierschrank")
+
+    # Click save
+    logged_in_user.find("Speichern").click()
+
+    # Should show duplicate error
+    await logged_in_user.should_see("bereits vorhanden")
+
+
+async def test_create_location_success(logged_in_user: TestUser) -> None:
+    """Test successful location creation."""
+    # Navigate to locations page
+    await logged_in_user.open("/admin/locations")
+
+    # Click the create button
+    logged_in_user.find("Neuer Lagerort").click()
+
+    # Wait for dialog
+    await logged_in_user.should_see("Neuen Lagerort erstellen")
+
+    # Enter location details
+    logged_in_user.find(marker="create-name-input").type("Neuer Gefrierschrank")
+
+    # Click save
+    logged_in_user.find("Speichern").click()
+
+    # Should navigate back to locations page and show the new location
+    await logged_in_user.should_see("Neuer Gefrierschrank")
