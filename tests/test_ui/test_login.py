@@ -8,7 +8,7 @@ async def test_login_page_renders(user: User) -> None:
     await user.open("/login")
 
     # Check page elements
-    await user.should_see("Fuellhorn")
+    await user.should_see("Füllhorn")
     await user.should_see("Lebensmittelvorrats-Verwaltung")
     await user.should_see("Benutzername")
     await user.should_see("Passwort")
