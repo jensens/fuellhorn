@@ -4,6 +4,8 @@ from ..database import get_session
 from ..services.auth_service import AuthenticationError
 from ..services.auth_service import authenticate_user
 from ..services.auth_service import generate_remember_token
+from ..services.auth_service import get_user
+from ..services.auth_service import revoke_remember_token
 from nicegui import app
 from nicegui import ui
 
@@ -83,9 +85,27 @@ def show_login_page() -> None:
 
 
 def logout() -> None:
-    """Logout und Session loeschen."""
-    # TODO: Remember-Token in DB invalidieren wenn vorhanden
-    # (wird spaeter implementiert mit revoke_remember_token)
+    """Logout und Session loeschen.
+
+    Fuehrt folgende Schritte aus:
+    1. Remember-Token in DB invalidieren (falls vorhanden)
+    2. app.storage.user leeren
+    3. Redirect zur Login-Seite
+    """
+    # Remember-Token in DB invalidieren wenn User eingeloggt ist
+    user_id = app.storage.user.get("user_id")
+    if user_id:
+        try:
+            with next(get_session()) as session:
+                user = get_user(session, user_id)
+                if user.remember_token:
+                    revoke_remember_token(session, user)
+        except Exception:
+            # Fehler beim Token-Revoke ignorieren - Session wird trotzdem geloescht
+            pass
+
+    # Session vollstaendig leeren
     app.storage.user.clear()
+
     ui.notify("Erfolgreich abgemeldet", type="positive")
     ui.navigate.to("/login")

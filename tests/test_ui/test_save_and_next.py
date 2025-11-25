@@ -1,12 +1,8 @@
 """Unit tests for Save & Next flow logic (Phase 7)."""
 
+from app.models.freeze_time_config import ItemType
 from datetime import datetime
 from datetime import timedelta
-from typing import Any
-
-import pytest
-
-from app.models.freeze_time_config import ItemType
 
 
 # Test for Smart Defaults Storage Format

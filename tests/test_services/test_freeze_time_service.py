@@ -24,9 +24,7 @@ def test_create_global_freeze_time_config(session: Session, test_admin: User) ->
     assert config.created_by == test_admin.id
 
 
-def test_create_category_specific_freeze_time_config(
-    session: Session, test_admin: User
-) -> None:
+def test_create_category_specific_freeze_time_config(session: Session, test_admin: User) -> None:
     """Test creating a category-specific freeze time config."""
     category = category_service.create_category(
         session=session,
@@ -48,9 +46,7 @@ def test_create_category_specific_freeze_time_config(
     assert config.freeze_time_months == 6
 
 
-def test_create_freeze_time_config_duplicate_fails(
-    session: Session, test_admin: User
-) -> None:
+def test_create_freeze_time_config_duplicate_fails(session: Session, test_admin: User) -> None:
     """Test that duplicate (category_id, item_type) fails."""
     freeze_time_service.create_freeze_time_config(
         session=session,
@@ -71,9 +67,7 @@ def test_create_freeze_time_config_duplicate_fails(
         )
 
 
-def test_create_freeze_time_config_category_duplicate_fails(
-    session: Session, test_admin: User
-) -> None:
+def test_create_freeze_time_config_category_duplicate_fails(session: Session, test_admin: User) -> None:
     """Test that duplicate category-specific config fails."""
     category = category_service.create_category(
         session=session,
@@ -139,9 +133,7 @@ def test_get_freeze_time_config(session: Session, test_admin: User) -> None:
 
 def test_get_freeze_time_config_not_found_fails(session: Session) -> None:
     """Test that getting non-existent freeze time config fails."""
-    with pytest.raises(
-        ValueError, match="Freeze time config with id 999 not found"
-    ):
+    with pytest.raises(ValueError, match="Freeze time config with id 999 not found"):
         freeze_time_service.get_freeze_time_config(session, 999)
 
 
@@ -164,9 +156,7 @@ def test_update_freeze_time_config(session: Session, test_admin: User) -> None:
     assert updated.item_type == ItemType.HOMEMADE_PRESERVED  # Unchanged
 
 
-def test_update_freeze_time_config_to_duplicate_fails(
-    session: Session, test_admin: User
-) -> None:
+def test_update_freeze_time_config_to_duplicate_fails(session: Session, test_admin: User) -> None:
     """Test that updating to duplicate (category_id, item_type) fails."""
     category = category_service.create_category(
         session=session,
@@ -211,9 +201,7 @@ def test_delete_freeze_time_config(session: Session, test_admin: User) -> None:
 
     freeze_time_service.delete_freeze_time_config(session, created.id)
 
-    with pytest.raises(
-        ValueError, match="Freeze time config with id .* not found"
-    ):
+    with pytest.raises(ValueError, match="Freeze time config with id .* not found"):
         freeze_time_service.get_freeze_time_config(session, created.id)
 
 
@@ -252,9 +240,7 @@ def test_get_freeze_time_for_item(session: Session, test_admin: User) -> None:
     assert months == 6
 
 
-def test_get_freeze_time_for_item_falls_back_to_global(
-    session: Session, test_admin: User
-) -> None:
+def test_get_freeze_time_for_item_falls_back_to_global(session: Session, test_admin: User) -> None:
     """Test that freeze time falls back to global if no category-specific config."""
     category = category_service.create_category(
         session=session,
@@ -280,9 +266,7 @@ def test_get_freeze_time_for_item_falls_back_to_global(
     assert months == 3
 
 
-def test_get_freeze_time_for_item_no_config_returns_none(
-    session: Session, test_admin: User
-) -> None:
+def test_get_freeze_time_for_item_no_config_returns_none(session: Session, test_admin: User) -> None:
     """Test that freeze time returns None if no config found."""
     category = category_service.create_category(
         session=session,
