@@ -15,100 +15,83 @@ jobs:
             const closedIssue = context.payload.issue.number;
             console.log(`Issue #${closedIssue} was closed`);
 
-            // Dependency map: closed issue -> issues to potentially unlock
-            const dependencies = {
-              7: [9],           // Item Card -> Items Page
-              8: [9],           // Expiry Badge -> Items Page
-              9: [10, 11, 12, 13], // Items Page -> Suche, Filter, Sortierung
-              14: [15, 16],     // Bottom Sheet -> Entnehmen, Teilentnahme
-              15: [17],         // Komplett entnehmen -> Ausblenden
-              18: [19],         // Logout Button -> Session Cleanup
-              20: [21, 22, 23], // Categories Liste -> CRUD
-              24: [25, 26, 27], // Locations Liste -> CRUD
-              28: [29, 30, 31], // Users Liste -> CRUD
-              32: [33, 34],     // Settings Liste -> Gefrierzeit, Smart Defaults
-              37: [38],         // Dockerfile -> docker-compose
-              38: [39],         // docker-compose -> Docs
-            };
+            // Find all open issues that might be blocked by the closed issue
+            const { data: allIssues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              per_page: 100
+            });
 
-            // Combined dependencies: issue -> ALL required blockers
-            const combinedDeps = {
-              9: [7, 8],  // Items Page needs BOTH Item Card AND Expiry Badge
-            };
+            // Pattern to find "Blocked by #X" in issue body
+            const blockedByPattern = /[Bb]locked\s+by\s+#(\d+)/g;
 
-            const dependents = dependencies[closedIssue];
-            if (!dependents || dependents.length === 0) {
-              console.log('No dependent issues to unlock');
-              return;
-            }
+            for (const issue of allIssues) {
+              if (!issue.body) continue;
 
-            console.log(`Checking dependents: ${dependents.join(', ')}`);
+              // Find all blockers mentioned in this issue
+              const blockers = [];
+              let match;
+              while ((match = blockedByPattern.exec(issue.body)) !== null) {
+                blockers.push(parseInt(match[1]));
+              }
+              // Reset regex lastIndex for next iteration
+              blockedByPattern.lastIndex = 0;
 
-            for (const depIssue of dependents) {
-              // Check if this issue has combined dependencies
-              const requiredBlockers = combinedDeps[depIssue];
+              // Skip if this issue doesn't reference the closed issue as blocker
+              if (!blockers.includes(closedIssue)) continue;
 
-              if (requiredBlockers) {
-                // Check if ALL blockers are closed
-                let allClosed = true;
-                for (const blocker of requiredBlockers) {
-                  if (blocker === closedIssue) continue; // Skip the one we just closed
+              console.log(`#${issue.number} was blocked by #${closedIssue}, checking other blockers...`);
 
-                  const { data: blockerIssue } = await github.rest.issues.get({
-                    owner: context.repo.owner,
-                    repo: context.repo.repo,
-                    issue_number: blocker
-                  });
+              // Check if all blockers are now closed
+              let allBlockersClosed = true;
+              for (const blockerId of blockers) {
+                if (blockerId === closedIssue) continue;
 
-                  if (blockerIssue.state !== 'closed') {
-                    console.log(`#${depIssue} still blocked by open #${blocker}`);
-                    allClosed = false;
-                    break;
-                  }
+                const { data: blockerIssue } = await github.rest.issues.get({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: blockerId
+                });
+
+                if (blockerIssue.state !== 'closed') {
+                  console.log(`  Still blocked by open #${blockerId}`);
+                  allBlockersClosed = false;
+                  break;
                 }
-
-                if (!allClosed) continue;
               }
 
-              // Get current labels
-              const { data: issue } = await github.rest.issues.get({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: depIssue
-              });
+              if (!allBlockersClosed) continue;
 
-              if (issue.state === 'closed') {
-                console.log(`#${depIssue} is already closed, skipping`);
-                continue;
-              }
-
+              // All blockers are closed - unlock this issue!
               const labels = issue.labels.map(l => l.name);
               const hasBlocked = labels.includes('status/blocked');
               const hasAgentReady = labels.includes('status/agent-ready');
 
-              // Remove blocked, ensure agent-ready
-              const newLabels = labels.filter(l => l !== 'status/blocked');
-              if (!hasAgentReady) {
-                newLabels.push('status/agent-ready');
-              }
-
               if (hasBlocked || !hasAgentReady) {
+                const newLabels = labels.filter(l => l !== 'status/blocked');
+                if (!hasAgentReady) {
+                  newLabels.push('status/agent-ready');
+                }
+
                 await github.rest.issues.update({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
-                  issue_number: depIssue,
+                  issue_number: issue.number,
                   labels: newLabels
                 });
-                console.log(`✓ Unlocked #${depIssue}`);
 
-                // Add comment
                 await github.rest.issues.createComment({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
-                  issue_number: depIssue,
+                  issue_number: issue.number,
                   body: `🔓 Automatisch freigeschaltet durch Abschluss von #${closedIssue}`
                 });
+
+                console.log(`✓ Unlocked #${issue.number}`);
               } else {
-                console.log(`#${depIssue} was already unlocked`);
+                console.log(`#${issue.number} was already unlocked`);
               }
             }
+
+            console.log('Done!');
