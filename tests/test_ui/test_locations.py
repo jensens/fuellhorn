@@ -7,38 +7,26 @@ from nicegui.testing import User as TestUser
 from sqlmodel import Session
 
 
-async def test_locations_page_renders_for_admin(user: TestUser) -> None:
+async def test_locations_page_renders_for_admin(logged_in_user: TestUser) -> None:
     """Test that locations page renders for admin users."""
-    # Login as admin (created by isolated_test_database fixture)
-    await user.open("/login")
-    user.find("Benutzername").type("admin")
-    user.find("Passwort").type("password123")
-    user.find("Anmelden").click()
-
-    # Navigate to locations page
-    await user.open("/admin/locations")
+    # Navigate to locations page (already logged in via fixture)
+    await logged_in_user.open("/admin/locations")
 
     # Check page elements
-    await user.should_see("Lagerorte")
+    await logged_in_user.should_see("Lagerorte")
 
 
-async def test_locations_page_shows_empty_state(user: TestUser) -> None:
+async def test_locations_page_shows_empty_state(logged_in_user: TestUser) -> None:
     """Test that locations page shows empty state when no locations exist."""
-    # Login as admin
-    await user.open("/login")
-    user.find("Benutzername").type("admin")
-    user.find("Passwort").type("password123")
-    user.find("Anmelden").click()
-
-    # Navigate to locations page
-    await user.open("/admin/locations")
+    # Navigate to locations page (already logged in via fixture)
+    await logged_in_user.open("/admin/locations")
 
     # Should show empty state message
-    await user.should_see("Keine Lagerorte vorhanden")
+    await logged_in_user.should_see("Keine Lagerorte vorhanden")
 
 
 async def test_locations_page_displays_locations(
-    user: TestUser,
+    logged_in_user: TestUser,
     isolated_test_database,
 ) -> None:
     """Test that locations page displays locations with name and type."""
@@ -64,23 +52,17 @@ async def test_locations_page_displays_locations(
         session.add(loc3)
         session.commit()
 
-    # Login as admin
-    await user.open("/login")
-    user.find("Benutzername").type("admin")
-    user.find("Passwort").type("password123")
-    user.find("Anmelden").click()
-
-    # Navigate to locations page
-    await user.open("/admin/locations")
+    # Navigate to locations page (already logged in via fixture)
+    await logged_in_user.open("/admin/locations")
 
     # Should see locations
-    await user.should_see("Tiefkühltruhe")
-    await user.should_see("Kühlschrank")
-    await user.should_see("Speisekammer")
+    await logged_in_user.should_see("Tiefkühltruhe")
+    await logged_in_user.should_see("Kühlschrank")
+    await logged_in_user.should_see("Speisekammer")
 
 
 async def test_locations_page_shows_location_types(
-    user: TestUser,
+    logged_in_user: TestUser,
     isolated_test_database,
 ) -> None:
     """Test that locations page displays location type badges."""
@@ -100,18 +82,12 @@ async def test_locations_page_shows_location_types(
         session.add(loc2)
         session.commit()
 
-    # Login as admin
-    await user.open("/login")
-    user.find("Benutzername").type("admin")
-    user.find("Passwort").type("password123")
-    user.find("Anmelden").click()
-
-    # Navigate to locations page
-    await user.open("/admin/locations")
+    # Navigate to locations page (already logged in via fixture)
+    await logged_in_user.open("/admin/locations")
 
     # Should see type badges (German labels)
-    await user.should_see("Gefroren")
-    await user.should_see("Gekühlt")
+    await logged_in_user.should_see("Gefroren")
+    await logged_in_user.should_see("Gekühlt")
 
 
 async def test_locations_page_requires_auth(user: TestUser) -> None:
@@ -140,7 +116,7 @@ async def test_locations_page_requires_admin_permission(
         session.add(regular_user)
         session.commit()
 
-    # Login as regular user
+    # Login as regular user (manual login needed for non-admin user)
     await user.open("/login")
     user.find("Benutzername").type("testuser")
     user.find("Passwort").type("password123")
@@ -154,7 +130,7 @@ async def test_locations_page_requires_admin_permission(
 
 
 async def test_locations_page_shows_active_status(
-    user: TestUser,
+    logged_in_user: TestUser,
     isolated_test_database,
 ) -> None:
     """Test that locations page shows active/inactive status."""
@@ -176,17 +152,11 @@ async def test_locations_page_shows_active_status(
         session.add(loc_inactive)
         session.commit()
 
-    # Login as admin
-    await user.open("/login")
-    user.find("Benutzername").type("admin")
-    user.find("Passwort").type("password123")
-    user.find("Anmelden").click()
-
-    # Navigate to locations page
-    await user.open("/admin/locations")
+    # Navigate to locations page (already logged in via fixture)
+    await logged_in_user.open("/admin/locations")
 
     # Should see both locations
-    await user.should_see("Aktiver Lagerort")
-    await user.should_see("Inaktiver Lagerort")
+    await logged_in_user.should_see("Aktiver Lagerort")
+    await logged_in_user.should_see("Inaktiver Lagerort")
     # Inactive location should show "Inaktiv" badge
-    await user.should_see("Inaktiv")
+    await logged_in_user.should_see("Inaktiv")

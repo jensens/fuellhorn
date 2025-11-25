@@ -335,6 +335,62 @@ async def test_login_with_remember_me(user: User) -> None:
     # ... Login-Flow testen
 ```
 
+#### Pre-Authenticated Tests (Performance-Optimierung)
+
+**WICHTIG:** Für schnellere UI-Tests die `logged_in_user` Fixture nutzen!
+
+Die meisten UI-Tests benötigen einen eingeloggten Admin-User. Statt manuell
+einzuloggen (4 Aktionen, ~3 Sekunden langsamer), nutze eine der folgenden Optionen:
+
+**Option 1: `logged_in_user` Fixture (empfohlen)**
+
+```python
+async def test_items_page(logged_in_user: User) -> None:
+    """Test mit bereits eingeloggtem User."""
+    # User ist bereits eingeloggt via /test-login-admin
+    await logged_in_user.open("/items")
+    await logged_in_user.should_see("Vorrat")
+```
+
+**Option 2: Test-Route mit Redirect**
+
+```python
+async def test_items_page_direct(user: User) -> None:
+    """Test mit direktem Login + Redirect."""
+    # Login UND Navigation in einem Schritt
+    await user.open("/test-login-admin?next=/items")
+    await user.should_see("Vorrat")
+```
+
+**Wann manuellen Login nutzen?**
+
+Nur für Tests die explizit den Login-Flow oder nicht-Admin User testen:
+
+```python
+async def test_regular_user_access(user: User, isolated_test_database) -> None:
+    """Test: Regulärer User hat keinen Admin-Zugriff."""
+    # Regulären User anlegen
+    with Session(isolated_test_database) as session:
+        regular_user = User(username="testuser", role="user", ...)
+        session.add(regular_user)
+        session.commit()
+
+    # Manueller Login mit anderem User
+    await user.open("/login")
+    user.find("Benutzername").type("testuser")
+    user.find("Passwort").type("password123")
+    user.find("Anmelden").click()
+    # ...
+```
+
+**Performance-Vergleich:**
+
+| Methode | Aktionen | Zeit |
+|---------|----------|------|
+| Manueller Login | 4 (open, type, type, click) | ~3s |
+| `logged_in_user` Fixture | 1 (open) | ~0.5s |
+| `/test-login-admin?next=` | 1 (open) | ~0.5s |
+
 #### NiceGUI Testing Setup
 
 **pytest-Konfiguration** in `pyproject.toml`:

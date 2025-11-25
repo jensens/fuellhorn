@@ -7,23 +7,19 @@ from nicegui.testing import User
 from sqlmodel import Session
 
 
-async def test_settings_page_renders_for_admin(user: User) -> None:
+async def test_settings_page_renders_for_admin(logged_in_user: User) -> None:
     """Test that settings page renders correctly for admin users."""
-    # Login as admin (created by isolated_test_database fixture)
-    await user.open("/login")
-    user.find("Benutzername").type("admin")
-    user.find("Passwort").type("password123")
-    user.find("Anmelden").click()
-
-    # Navigate to settings
-    await user.open("/admin/settings")
+    # Navigate to settings (already logged in via fixture)
+    await logged_in_user.open("/admin/settings")
 
     # Check page elements
-    await user.should_see("Einstellungen")
-    await user.should_see("Gefrierzeit-Konfiguration")
+    await logged_in_user.should_see("Einstellungen")
+    await logged_in_user.should_see("Gefrierzeit-Konfiguration")
 
 
-async def test_settings_page_shows_freeze_time_configs(user: User, isolated_test_database) -> None:
+async def test_settings_page_shows_freeze_time_configs(
+    logged_in_user: User, isolated_test_database
+) -> None:
     """Test that settings page shows freeze time configurations."""
     # Create test freeze time config
     with Session(isolated_test_database) as session:
@@ -35,20 +31,16 @@ async def test_settings_page_shows_freeze_time_configs(user: User, isolated_test
         session.add(config)
         session.commit()
 
-    # Login as admin
-    await user.open("/login")
-    user.find("Benutzername").type("admin")
-    user.find("Passwort").type("password123")
-    user.find("Anmelden").click()
-
-    # Navigate to settings
-    await user.open("/admin/settings")
+    # Navigate to settings (already logged in via fixture)
+    await logged_in_user.open("/admin/settings")
 
     # Should see the config
-    await user.should_see("12 Monate")
+    await logged_in_user.should_see("12 Monate")
 
 
-async def test_settings_page_groups_by_item_type(user: User, isolated_test_database) -> None:
+async def test_settings_page_groups_by_item_type(
+    logged_in_user: User, isolated_test_database
+) -> None:
     """Test that freeze time configs are grouped by item type."""
     # Create test freeze time configs for different item types
     with Session(isolated_test_database) as session:
@@ -68,21 +60,17 @@ async def test_settings_page_groups_by_item_type(user: User, isolated_test_datab
         session.add(config2)
         session.commit()
 
-    # Login as admin
-    await user.open("/login")
-    user.find("Benutzername").type("admin")
-    user.find("Passwort").type("password123")
-    user.find("Anmelden").click()
-
-    # Navigate to settings
-    await user.open("/admin/settings")
+    # Navigate to settings (already logged in via fixture)
+    await logged_in_user.open("/admin/settings")
 
     # Should see item type headers (German labels)
-    await user.should_see("Selbst eingefroren")  # HOMEMADE_FROZEN
-    await user.should_see("Frisch gekauft, eingefroren")  # PURCHASED_THEN_FROZEN
+    await logged_in_user.should_see("Selbst eingefroren")  # HOMEMADE_FROZEN
+    await logged_in_user.should_see("Frisch gekauft, eingefroren")  # PURCHASED_THEN_FROZEN
 
 
-async def test_settings_page_shows_category_specific_configs(user: User, isolated_test_database) -> None:
+async def test_settings_page_shows_category_specific_configs(
+    logged_in_user: User, isolated_test_database
+) -> None:
     """Test that category-specific configs are displayed with category name."""
     # Create test category and config
     with Session(isolated_test_database) as session:
@@ -103,18 +91,12 @@ async def test_settings_page_shows_category_specific_configs(user: User, isolate
         session.add(config)
         session.commit()
 
-    # Login as admin
-    await user.open("/login")
-    user.find("Benutzername").type("admin")
-    user.find("Passwort").type("password123")
-    user.find("Anmelden").click()
-
-    # Navigate to settings
-    await user.open("/admin/settings")
+    # Navigate to settings (already logged in via fixture)
+    await logged_in_user.open("/admin/settings")
 
     # Should see category name
-    await user.should_see("Fleisch")
-    await user.should_see("6 Monate")
+    await logged_in_user.should_see("Fleisch")
+    await logged_in_user.should_see("6 Monate")
 
 
 async def test_settings_page_requires_auth(user: User) -> None:
@@ -125,19 +107,13 @@ async def test_settings_page_requires_auth(user: User) -> None:
     await user.should_see("Anmelden")
 
 
-async def test_settings_page_shows_empty_state(user: User) -> None:
+async def test_settings_page_shows_empty_state(logged_in_user: User) -> None:
     """Test that settings page shows message when no configs exist."""
-    # Login as admin (no configs created)
-    await user.open("/login")
-    user.find("Benutzername").type("admin")
-    user.find("Passwort").type("password123")
-    user.find("Anmelden").click()
-
-    # Navigate to settings
-    await user.open("/admin/settings")
+    # Navigate to settings (already logged in, no configs created)
+    await logged_in_user.open("/admin/settings")
 
     # Should see empty state message
-    await user.should_see("Keine Gefrierzeit-Konfigurationen vorhanden")
+    await logged_in_user.should_see("Keine Gefrierzeit-Konfigurationen vorhanden")
 
 
 # =============================================================================
@@ -145,28 +121,20 @@ async def test_settings_page_shows_empty_state(user: User) -> None:
 # =============================================================================
 
 
-async def test_settings_page_has_add_button(user: User) -> None:
+async def test_settings_page_has_add_button(logged_in_user: User) -> None:
     """Test that settings page has a 'Neu' button for creating new configs."""
-    await user.open("/login")
-    user.find("Benutzername").type("admin")
-    user.find("Passwort").type("password123")
-    user.find("Anmelden").click()
-    await user.open("/admin/settings")
-    await user.should_see("Neu")
+    await logged_in_user.open("/admin/settings")
+    await logged_in_user.should_see("Neu")
 
 
-async def test_add_button_opens_create_dialog(user: User) -> None:
+async def test_add_button_opens_create_dialog(logged_in_user: User) -> None:
     """Test that clicking 'Neu' button opens a create dialog."""
-    await user.open("/login")
-    user.find("Benutzername").type("admin")
-    user.find("Passwort").type("password123")
-    user.find("Anmelden").click()
-    await user.open("/admin/settings")
-    user.find("Neu").click()
-    await user.should_see("Neue Gefrierzeit-Konfiguration")
+    await logged_in_user.open("/admin/settings")
+    logged_in_user.find("Neu").click()
+    await logged_in_user.should_see("Neue Gefrierzeit-Konfiguration")
 
 
-async def test_config_card_has_edit_button(user: User, isolated_test_database) -> None:
+async def test_config_card_has_edit_button(logged_in_user: User, isolated_test_database) -> None:
     """Test that config cards have edit buttons."""
     with Session(isolated_test_database) as session:
         config = FreezeTimeConfig(
@@ -176,15 +144,11 @@ async def test_config_card_has_edit_button(user: User, isolated_test_database) -
         )
         session.add(config)
         session.commit()
-    await user.open("/login")
-    user.find("Benutzername").type("admin")
-    user.find("Passwort").type("password123")
-    user.find("Anmelden").click()
-    await user.open("/admin/settings")
-    await user.should_see("edit")
+    await logged_in_user.open("/admin/settings")
+    await logged_in_user.should_see("edit")
 
 
-async def test_config_card_has_delete_button(user: User, isolated_test_database) -> None:
+async def test_config_card_has_delete_button(logged_in_user: User, isolated_test_database) -> None:
     """Test that config cards have delete buttons."""
     with Session(isolated_test_database) as session:
         config = FreezeTimeConfig(
@@ -194,15 +158,13 @@ async def test_config_card_has_delete_button(user: User, isolated_test_database)
         )
         session.add(config)
         session.commit()
-    await user.open("/login")
-    user.find("Benutzername").type("admin")
-    user.find("Passwort").type("password123")
-    user.find("Anmelden").click()
-    await user.open("/admin/settings")
-    await user.should_see("delete")
+    await logged_in_user.open("/admin/settings")
+    await logged_in_user.should_see("delete")
 
 
-async def test_delete_button_opens_confirmation_dialog(user: User, isolated_test_database) -> None:
+async def test_delete_button_opens_confirmation_dialog(
+    logged_in_user: User, isolated_test_database
+) -> None:
     """Test that clicking delete button opens confirmation dialog."""
     with Session(isolated_test_database) as session:
         config = FreezeTimeConfig(
@@ -212,10 +174,6 @@ async def test_delete_button_opens_confirmation_dialog(user: User, isolated_test
         )
         session.add(config)
         session.commit()
-    await user.open("/login")
-    user.find("Benutzername").type("admin")
-    user.find("Passwort").type("password123")
-    user.find("Anmelden").click()
-    await user.open("/admin/settings")
-    user.find("delete").click()
-    await user.should_see("Löschen bestätigen")
+    await logged_in_user.open("/admin/settings")
+    logged_in_user.find("delete").click()
+    await logged_in_user.should_see("Löschen bestätigen")
