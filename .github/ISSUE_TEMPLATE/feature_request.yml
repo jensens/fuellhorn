@@ -1,0 +1,64 @@
+name: Feature Request
+description: Neues Feature vorschlagen
+title: "feat: "
+labels: ["type/feature"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Was soll implementiert werden?
+      description: Kurze Beschreibung des Features
+      placeholder: "Ein Button zum Exportieren der Vorratsliste..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Akzeptanzkriterien
+      description: Wann ist das Feature fertig?
+      placeholder: |
+        - [ ] Button ist sichtbar auf Items Page
+        - [ ] Export als CSV funktioniert
+        - [ ] Tests vorhanden
+    validations:
+      required: true
+
+  - type: textarea
+    id: location
+    attributes:
+      label: Betroffene Datei(en)
+      description: Falls bekannt - wo sollte implementiert werden?
+      placeholder: "app/ui/pages/items.py"
+    validations:
+      required: false
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priorität
+      options:
+        - high
+        - medium
+        - low
+      default: 1
+    validations:
+      required: true
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Scope
+      options:
+        - MVP (Alpha/Beta)
+        - Post-MVP
+      default: 0
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: blocked
+    attributes:
+      label: Abhängigkeiten
+      options:
+        - label: "Blockiert durch anderes Issue (bitte # in Beschreibung angeben)"

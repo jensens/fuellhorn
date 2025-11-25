@@ -1,0 +1,71 @@
+name: Bug Report
+description: Fehler melden
+title: "fix: "
+labels: ["type/bug", "status/agent-ready"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Was passiert?
+      description: Kurze Beschreibung des Fehlers
+      placeholder: "Beim Speichern eines Items erscheint ein Fehler..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Erwartetes Verhalten
+      description: Was sollte stattdessen passieren?
+      placeholder: "Das Item sollte gespeichert werden"
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Schritte zum Reproduzieren
+      description: Wie kann der Bug reproduziert werden?
+      placeholder: |
+        1. Gehe zu /add-item
+        2. Fülle Formular aus
+        3. Klicke Speichern
+    validations:
+      required: false
+
+  - type: textarea
+    id: location
+    attributes:
+      label: Betroffene Datei(en)
+      description: Falls bekannt - hilft dem Agent beim Finden
+      placeholder: "app/ui/pages/add_item.py"
+    validations:
+      required: false
+
+  - type: textarea
+    id: error
+    attributes:
+      label: Fehlermeldung / Stack Trace
+      description: Falls vorhanden
+      render: shell
+    validations:
+      required: false
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priorität
+      options:
+        - high (App nicht nutzbar)
+        - medium (Workaround möglich)
+        - low (Kosmetik)
+      default: 1
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: blocked
+    attributes:
+      label: Abhängigkeiten
+      options:
+        - label: "Blockiert durch anderes Issue (bitte # in Beschreibung angeben)"
