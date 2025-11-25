@@ -38,8 +38,7 @@ def create_freeze_time_config(
 
     if existing:
         raise ValueError(
-            f"Freeze time config for category_id={category_id} and "
-            f"item_type={item_type.value.upper()} already exists"
+            f"Freeze time config for category_id={category_id} and item_type={item_type.value.upper()} already exists"
         )
 
     config = FreezeTimeConfig(

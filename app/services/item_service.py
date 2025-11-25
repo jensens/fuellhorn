@@ -201,12 +201,8 @@ def delete_item(session: Session, id: int) -> None:
     item = get_item(session, id)
 
     # Delete category associations first
-    session.exec(
-        select(ItemCategory).where(ItemCategory.item_id == id)
-    ).all()
-    for item_category in session.exec(
-        select(ItemCategory).where(ItemCategory.item_id == id)
-    ).all():
+    session.exec(select(ItemCategory).where(ItemCategory.item_id == id)).all()
+    for item_category in session.exec(select(ItemCategory).where(ItemCategory.item_id == id)).all():
         session.delete(item_category)
 
     session.delete(item)
@@ -223,15 +219,12 @@ def get_item_categories(session: Session, item_id: int) -> list[Category]:
     Returns:
         List of categories
     """
-    item_categories = session.exec(
-        select(ItemCategory).where(ItemCategory.item_id == item_id)
-    ).all()
+    item_categories = session.exec(select(ItemCategory).where(ItemCategory.item_id == item_id)).all()
 
     category_ids = [ic.category_id for ic in item_categories]
 
     return list(
-        session.exec(select(Category).where(Category.id.in_(category_ids)))  # type: ignore
-        .all()
+        session.exec(select(Category).where(Category.id.in_(category_ids))).all()  # type: ignore
     )
 
 
@@ -245,9 +238,7 @@ def get_items_by_location(session: Session, location_id: int) -> list[Item]:
     Returns:
         List of items in the location
     """
-    return list(
-        session.exec(select(Item).where(Item.location_id == location_id)).all()
-    )
+    return list(session.exec(select(Item).where(Item.location_id == location_id)).all())
 
 
 def get_items_expiring_soon(session: Session, days: int = 7) -> list[Item]:
