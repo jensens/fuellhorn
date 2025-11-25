@@ -25,6 +25,8 @@ jobs:
 
       - name: Run tests
         run: uv run pytest
+        env:
+          SECRET_KEY: test-secret-key-for-ci-only
 
       - name: Type check
         run: uv run mypy app/
