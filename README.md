@@ -44,7 +44,7 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 ### 2. Projekt klonen
 
 ```bash
-git clone https://github.com/yourusername/fuellhorn.git
+git clone https://github.com/jensens/fuellhorn.git
 cd fuellhorn
 ```
 
@@ -174,6 +174,12 @@ docker-compose up -d
 Bitte lies vor der Entwicklung:
 - [CLAUDE.md](CLAUDE.md) - Entwicklungsregeln und Best Practices
 - [TESTING.md](TESTING.md) - Testing Strategy
+
+### Aufgabenverwaltung
+
+Alle Aufgaben werden über **GitHub Issues** verwaltet:
+- **[Issues](https://github.com/jensens/fuellhorn/issues)** - Offene Aufgaben
+- **[Milestones](https://github.com/jensens/fuellhorn/milestones)** - Alpha → Beta → v1.0
 
 ## Roadmap
 
