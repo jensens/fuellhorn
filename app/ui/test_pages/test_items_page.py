@@ -92,11 +92,19 @@ def _set_test_session() -> None:
 
 
 @ui.page("/test-login-admin")
-def page_test_login_admin() -> None:
-    """Test page to simulate admin login."""
+def page_test_login_admin(next: str = "") -> None:
+    """Test page to simulate admin login.
+
+    Args:
+        next: Optional URL to redirect to after login.
+              If not provided, shows a confirmation page.
+    """
     _set_test_session()
-    ui.label("Angemeldet als admin")
-    ui.label("Willkommen")
+    if next:
+        ui.navigate.to(next)
+    else:
+        ui.label("Angemeldet als admin")
+        ui.label("Willkommen")
 
 
 @ui.page("/test-items-page-with-items")

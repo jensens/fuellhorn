@@ -6,38 +6,26 @@ from nicegui.testing import User as TestUser
 from sqlmodel import Session
 
 
-async def test_categories_page_renders_for_admin(user: TestUser) -> None:
+async def test_categories_page_renders_for_admin(logged_in_user: TestUser) -> None:
     """Test that categories page renders for admin users."""
-    # Login as admin (created by isolated_test_database fixture)
-    await user.open("/login")
-    user.find("Benutzername").type("admin")
-    user.find("Passwort").type("password123")
-    user.find("Anmelden").click()
-
-    # Navigate to categories page
-    await user.open("/admin/categories")
+    # Navigate to categories page (already logged in via fixture)
+    await logged_in_user.open("/admin/categories")
 
     # Check page elements
-    await user.should_see("Kategorien")
+    await logged_in_user.should_see("Kategorien")
 
 
-async def test_categories_page_shows_empty_state(user: TestUser) -> None:
+async def test_categories_page_shows_empty_state(logged_in_user: TestUser) -> None:
     """Test that categories page shows empty state when no categories exist."""
-    # Login as admin
-    await user.open("/login")
-    user.find("Benutzername").type("admin")
-    user.find("Passwort").type("password123")
-    user.find("Anmelden").click()
-
-    # Navigate to categories page
-    await user.open("/admin/categories")
+    # Navigate to categories page (already logged in via fixture)
+    await logged_in_user.open("/admin/categories")
 
     # Should show empty state message
-    await user.should_see("Keine Kategorien vorhanden")
+    await logged_in_user.should_see("Keine Kategorien vorhanden")
 
 
 async def test_categories_page_displays_categories(
-    user: TestUser,
+    logged_in_user: TestUser,
     isolated_test_database,
 ) -> None:
     """Test that categories page displays categories with name and color."""
@@ -57,18 +45,12 @@ async def test_categories_page_displays_categories(
         session.add(cat2)
         session.commit()
 
-    # Login as admin
-    await user.open("/login")
-    user.find("Benutzername").type("admin")
-    user.find("Passwort").type("password123")
-    user.find("Anmelden").click()
-
-    # Navigate to categories page
-    await user.open("/admin/categories")
+    # Navigate to categories page (already logged in via fixture)
+    await logged_in_user.open("/admin/categories")
 
     # Should see categories
-    await user.should_see("Gemüse")
-    await user.should_see("Fleisch")
+    await logged_in_user.should_see("Gemüse")
+    await logged_in_user.should_see("Fleisch")
 
 
 async def test_categories_page_requires_auth(user: TestUser) -> None:
@@ -97,7 +79,7 @@ async def test_categories_page_requires_admin_permission(
         session.add(regular_user)
         session.commit()
 
-    # Login as regular user
+    # Login as regular user (manual login needed for non-admin user)
     await user.open("/login")
     user.find("Benutzername").type("testuser")
     user.find("Passwort").type("password123")

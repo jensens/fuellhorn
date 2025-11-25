@@ -133,6 +133,30 @@ def cleanup_ui_packages():
 
 
 # ============================================================================
+# Pre-Authenticated User Fixture (for faster UI tests)
+# ============================================================================
+
+
+@pytest.fixture
+async def logged_in_user(user):
+    """Return a pre-authenticated NiceGUI test user.
+
+    This fixture logs in the user via /test-login-admin before the test runs,
+    saving ~3 seconds per test compared to manual login (typing username/password).
+
+    Usage:
+        async def test_something(logged_in_user) -> None:
+            await logged_in_user.open("/items")
+            await logged_in_user.should_see("Vorrat")
+
+    For direct navigation with login, use the ?next= parameter:
+        await user.open("/test-login-admin?next=/items")
+    """
+    await user.open("/test-login-admin")
+    return user
+
+
+# ============================================================================
 # User Fixtures
 # ============================================================================
 

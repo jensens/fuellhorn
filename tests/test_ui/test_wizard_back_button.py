@@ -34,34 +34,20 @@ def location_in_db_fixture(isolated_test_database) -> Location:
         return location
 
 
-async def test_wizard_shows_step1_initially(user: User, location_in_db: Location) -> None:
+async def test_wizard_shows_step1_initially(logged_in_user: User, location_in_db: Location) -> None:
     """Test that wizard starts at Step 1."""
-    # Login first
-    await user.open("/login")
-    user.find("Benutzername").type("admin")
-    user.find("Passwort").type("password123")
-    user.find("Anmelden").click()
-    await user.should_see("Willkommen")
-
-    # Navigate to wizard
-    await user.open("/items/add")
-    await user.should_see("Schritt 1 von 3")
-    await user.should_see("Basisinformationen")
-    await user.should_see("Produktname")
+    # Navigate to wizard (already logged in via fixture)
+    await logged_in_user.open("/items/add")
+    await logged_in_user.should_see("Schritt 1 von 3")
+    await logged_in_user.should_see("Basisinformationen")
+    await logged_in_user.should_see("Produktname")
 
 
-async def test_wizard_shows_weiter_button(user: User, location_in_db: Location) -> None:
+async def test_wizard_shows_weiter_button(logged_in_user: User, location_in_db: Location) -> None:
     """Test that wizard shows Weiter button on Step 1."""
-    # Login first
-    await user.open("/login")
-    user.find("Benutzername").type("admin")
-    user.find("Passwort").type("password123")
-    user.find("Anmelden").click()
-    await user.should_see("Willkommen")
-
-    # Navigate to wizard
-    await user.open("/items/add")
-    await user.should_see("Weiter")
+    # Navigate to wizard (already logged in via fixture)
+    await logged_in_user.open("/items/add")
+    await logged_in_user.should_see("Weiter")
 
 
 @pytest.mark.skip(
@@ -69,7 +55,9 @@ async def test_wizard_shows_weiter_button(user: User, location_in_db: Location) 
     "Fix verified manually: show_step1() now uses content_container.clear() "
     "instead of ui.navigate.to() to preserve form data."
 )
-async def test_back_button_preserves_product_name(user: User, location_in_db: Location) -> None:
+async def test_back_button_preserves_product_name(
+    logged_in_user: User, location_in_db: Location
+) -> None:
     """Test that product name is preserved when going back from Step 2.
 
     Issue #48: Going back from Step 2 to Step 1 should preserve all inputs.
@@ -87,7 +75,7 @@ async def test_back_button_preserves_product_name(user: User, location_in_db: Lo
     "instead of ui.navigate.to() to preserve form data."
 )
 async def test_back_button_preserves_summary_after_roundtrip(
-    user: User, location_in_db: Location
+    logged_in_user: User, location_in_db: Location
 ) -> None:
     """Test that going back and forward preserves all data in summary.
 
