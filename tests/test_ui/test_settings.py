@@ -169,3 +169,32 @@ async def test_delete_button_opens_confirmation_dialog(logged_in_user: User, iso
     await logged_in_user.open("/admin/settings")
     logged_in_user.find("delete").click()
     await logged_in_user.should_see("Löschen bestätigen")
+
+
+# =============================================================================
+# Smart Default Zeitfenster Tests (Issue #34)
+# =============================================================================
+
+
+async def test_settings_page_shows_smart_defaults_section(logged_in_user: User) -> None:
+    """Test that settings page has a Smart Defaults section."""
+    await logged_in_user.open("/admin/settings")
+    await logged_in_user.should_see("Smart Default Einstellungen")
+
+
+async def test_settings_page_shows_item_type_time_window(logged_in_user: User) -> None:
+    """Test that settings page shows item type time window input."""
+    await logged_in_user.open("/admin/settings")
+    await logged_in_user.should_see("Artikel-Typ Zeitfenster")
+
+
+async def test_settings_page_shows_category_time_window(logged_in_user: User) -> None:
+    """Test that settings page shows category time window input."""
+    await logged_in_user.open("/admin/settings")
+    await logged_in_user.should_see("Kategorie Zeitfenster")
+
+
+async def test_settings_page_shows_location_time_window(logged_in_user: User) -> None:
+    """Test that settings page shows location time window input."""
+    await logged_in_user.open("/admin/settings")
+    await logged_in_user.should_see("Lagerort Zeitfenster")
