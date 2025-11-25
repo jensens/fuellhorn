@@ -90,7 +90,12 @@ show_dependents() {
 generate_briefing() {
     local issue_num=$1
     local issue_title=$2
-    local issue_body=$(gh issue view "$issue_num" --repo "$REPO" --json body -q .body 2>/dev/null)
+    local branch_suffix
+    branch_suffix=$(echo "$issue_title" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g' | sed 's/--*/-/g' | head -c 20)
+    local worktree_path="../fuellhorn-issue-$issue_num"
+    local branch_name="feature/issue-$issue_num-$branch_suffix"
+    local issue_body
+    issue_body=$(gh issue view "$issue_num" --repo "$REPO" --json body -q .body 2>/dev/null)
 
     print_section "Briefing-Prompt für Agent"
 
@@ -98,11 +103,16 @@ generate_briefing() {
     cat << EOF
 Bitte implementiere Issue #$issue_num: $issue_title
 
+WICHTIG - Arbeitsverzeichnis:
+- Worktree: $worktree_path
+- Branch: $branch_name
+- Du arbeitest bereits im richtigen Worktree! Erstelle KEINEN eigenen Worktree.
+
 Kontext:
 - Repository: $REPO
-- Branch: feature/issue-$issue_num-$(echo "$issue_title" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g' | sed 's/--*/-/g' | head -c 30)
+- Issue: https://github.com/$REPO/issues/$issue_num
 
-Wichtig:
+Arbeitsschritte:
 1. Lies zuerst CLAUDE.md und TESTING.md
 2. TDD: Tests zuerst schreiben
 3. Qualitätsprüfung vor Commit:
@@ -110,7 +120,8 @@ Wichtig:
    uv run mypy app/
    uv run ruff check app/
    uv run ruff format app/
-4. PR erstellen mit "closes #$issue_num" im Body
+4. PR erstellen mit "closes #$issue_num" im Body:
+   gh pr create --title "feat: $issue_title" --body "closes #$issue_num"
 
 Issue-Beschreibung:
 $issue_body
@@ -138,7 +149,8 @@ update_labels() {
 show_worktree_command() {
     local issue_num=$1
     local issue_title=$2
-    local branch_suffix=$(echo "$issue_title" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g' | sed 's/--*/-/g' | head -c 20)
+    local branch_suffix
+    branch_suffix=$(echo "$issue_title" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g' | sed 's/--*/-/g' | head -c 20)
 
     print_section "Worktree erstellen"
     echo -e "${CYAN}git worktree add ../fuellhorn-issue-$issue_num -b feature/issue-$issue_num-$branch_suffix${NC}"
