@@ -28,11 +28,12 @@ def test_create_item(session: Session, test_admin: User) -> None:
         created_by=test_admin.id,
     )
 
+    # PURCHASED_FROZEN (TK-Ware) doesn't need freeze_date (has MHD)
     item = item_service.create_item(
         session=session,
         product_name="Rindfleisch",
         best_before_date=date(2024, 1, 1),
-        freeze_date=date(2024, 6, 1),
+        freeze_date=None,  # Not needed for PURCHASED_FROZEN
         quantity=1.5,
         unit="kg",
         item_type=ItemType.PURCHASED_FROZEN,
@@ -42,7 +43,7 @@ def test_create_item(session: Session, test_admin: User) -> None:
 
     assert item.id is not None
     assert item.product_name == "Rindfleisch"
-    assert item.expiry_date == date(2025, 6, 1)  # freeze_date + 12 months
+    assert item.expiry_date == date(2025, 1, 1)  # best_before_date + 12 months
     assert item.is_consumed is False
 
 

@@ -188,13 +188,16 @@ def test_validate_best_before_date_none() -> None:
 
 
 def test_validate_freeze_date_required_for_frozen() -> None:
-    """Test freeze date required for frozen types."""
+    """Test freeze date required for self-frozen types only."""
     from app.ui.validation import validate_freeze_date
     from datetime import date
 
+    # PURCHASED_FROZEN (TK-Ware gekauft) should NOT require freeze_date
+    # It has MHD on the package, no freeze date needed
     error = validate_freeze_date(None, ItemType.PURCHASED_FROZEN, date.today())
-    assert error == "Einfrierdatum erforderlich für TK-Artikel"
+    assert error is None
 
+    # Only self-frozen items require freeze_date
     error = validate_freeze_date(None, ItemType.PURCHASED_THEN_FROZEN, date.today())
     assert error == "Einfrierdatum erforderlich für TK-Artikel"
 
@@ -203,13 +206,19 @@ def test_validate_freeze_date_required_for_frozen() -> None:
 
 
 def test_validate_freeze_date_not_required_for_fresh() -> None:
-    """Test freeze date not required for fresh types."""
+    """Test freeze date not required for non-self-frozen types."""
     from app.ui.validation import validate_freeze_date
     from datetime import date
 
+    # Fresh items don't need freeze date
     error = validate_freeze_date(None, ItemType.PURCHASED_FRESH, date.today())
     assert error is None
 
+    # Purchased frozen (TK-Ware) doesn't need freeze date - has MHD
+    error = validate_freeze_date(None, ItemType.PURCHASED_FROZEN, date.today())
+    assert error is None
+
+    # Preserved items don't need freeze date
     error = validate_freeze_date(None, ItemType.HOMEMADE_PRESERVED, date.today())
     assert error is None
 
