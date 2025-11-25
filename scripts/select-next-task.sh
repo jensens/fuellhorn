@@ -94,10 +94,9 @@ generate_briefing() {
     local issue_title=$2
     local branch_suffix
     branch_suffix=$(echo "$issue_title" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g' | sed 's/--*/-/g' | head -c 20)
-    # Absoluter Pfad zum Worktree
-    local repo_parent
-    repo_parent=$(dirname "$(pwd)")
-    local worktree_abs="$repo_parent/fuellhorn-issue-$issue_num"
+    # Worktree im Unterordner worktrees/ (gitignored)
+    local worktree_abs
+    worktree_abs="$(pwd)/worktrees/issue-$issue_num"
     local branch_name="feature/issue-$issue_num-$branch_suffix"
     local issue_body
     issue_body=$(gh issue view "$issue_num" --repo "$REPO" --json body -q .body 2>/dev/null)
