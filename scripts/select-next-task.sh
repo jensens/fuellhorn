@@ -57,9 +57,11 @@ print_section() {
     echo -e "\n${BOLD}${YELLOW}─── $1 ───${NC}\n"
 }
 
-# Funktion: Alle agent-ready Issues laden
+# Funktion: Alle agent-ready Issues laden (ohne blockierte!)
 get_ready_issues() {
-    gh issue list --repo "$REPO" --label "status/agent-ready" --state open --json number,title,labels --limit 50
+    # Hole agent-ready Issues und filtere blockierte heraus
+    gh issue list --repo "$REPO" --label "status/agent-ready" --state open --json number,title,labels --limit 50 | \
+        jq '[.[] | select(.labels | map(.name) | index("status/blocked") | not)]'
 }
 
 # Funktion: Issue-Details anzeigen
