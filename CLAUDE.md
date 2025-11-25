@@ -467,6 +467,19 @@ git rebase origin/main
 
 **Wie finde ich das nächste Issue?**
 
+**Empfohlen: Interaktives Script verwenden:**
+```bash
+./scripts/select-next-task.sh
+```
+
+Das Script bietet:
+- Liste aller agent-ready Issues
+- Issue-Details auf Knopfdruck
+- Automatische Label-Aktualisierung
+- Briefing-Prompt für Agent
+- Übersicht der abhängigen Issues
+
+**Alternativ manuell:**
 ```bash
 # Alle sofort bearbeitbaren Issues anzeigen
 gh issue list --label "status/agent-ready" --state open
