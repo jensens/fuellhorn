@@ -7,8 +7,10 @@ Based on UI_KONZEPT.md Section 7: Bottom Sheet
 - Mobile-optimized with 48px touch targets
 """
 
+from ...database import get_session
 from ...models.item import Item
 from ...models.location import Location
+from ...services import item_service
 from .item_card import get_expiry_status
 from datetime import date
 from nicegui import ui
@@ -169,12 +171,106 @@ def _handle_withdraw(
     on_withdraw: Callable[[Item], None] | None,
     on_close: Callable[[], None] | None,
 ) -> None:
-    """Handle withdraw button click."""
-    dialog.close()
-    if on_withdraw:
-        on_withdraw(item)
-    if on_close:
-        on_close()
+    """Handle withdraw button click - shows quantity input dialog."""
+    # Create the withdrawal dialog
+    withdraw_dialog = ui.dialog().props("persistent")
+
+    # State for validation error message
+    error_label: ui.label | None = None
+
+    def confirm_withdrawal() -> None:
+        """Validate and perform partial withdrawal."""
+        nonlocal error_label
+
+        # Get the input value
+        try:
+            withdraw_qty = float(quantity_input.value) if quantity_input.value else 0
+        except (ValueError, TypeError):
+            withdraw_qty = 0
+
+        # Validation: must be positive
+        if withdraw_qty <= 0:
+            if error_label:
+                error_label.set_text("Bitte eine gültige Menge eingeben")
+                error_label.set_visibility(True)
+            return
+
+        # Validation: not more than available
+        if withdraw_qty > item.quantity:
+            if error_label:
+                error_label.set_text(f"Nicht mehr als {int(item.quantity)} verfügbar")
+                error_label.set_visibility(True)
+            return
+
+        # Perform the withdrawal
+        try:
+            if item.id is None:
+                if error_label:
+                    error_label.set_text("Item-ID nicht gefunden")
+                    error_label.set_visibility(True)
+                return
+
+            with next(get_session()) as session:
+                item_service.withdraw_partial(
+                    session=session,
+                    item_id=item.id,
+                    withdraw_quantity=withdraw_qty,
+                )
+
+            # Show success notification
+            ui.notify(f"{int(withdraw_qty)} {item.unit} entnommen", type="positive")
+
+            # Close both dialogs
+            withdraw_dialog.close()
+            dialog.close()
+
+            # Call callbacks
+            if on_withdraw:
+                on_withdraw(item)
+            if on_close:
+                on_close()
+
+        except ValueError as e:
+            if error_label:
+                error_label.set_text(str(e))
+                error_label.set_visibility(True)
+
+    def cancel_withdrawal() -> None:
+        """Cancel the withdrawal dialog."""
+        withdraw_dialog.close()
+
+    with withdraw_dialog:
+        with ui.card().classes("p-4 min-w-[300px]"):
+            # Title
+            ui.label("Menge entnehmen").classes("text-lg font-semibold mb-2")
+
+            # Available quantity info
+            ui.label(f"Verfügbar: {int(item.quantity)} {item.unit}").classes("text-sm text-gray-600 mb-4")
+
+            # Quantity input
+            quantity_input = (
+                ui.number(
+                    label="Entnahmemenge",
+                    min=1,
+                    max=item.quantity,
+                    step=1,
+                    value=item.quantity,
+                )
+                .classes("w-full mb-2")
+                .props("outlined")
+            )
+
+            # Error message (hidden by default)
+            error_label = ui.label("").classes("text-red-600 text-sm mb-2")
+            error_label.set_visibility(False)
+
+            # Buttons
+            with ui.row().classes("w-full justify-end gap-2 mt-4"):
+                ui.button("Abbrechen", on_click=cancel_withdrawal).props("flat")
+                ui.button("Bestätigen", on_click=confirm_withdrawal).props("color=primary")
+
+    # Open the withdrawal dialog
+    withdraw_dialog.open()
 
 
 def _handle_edit(
