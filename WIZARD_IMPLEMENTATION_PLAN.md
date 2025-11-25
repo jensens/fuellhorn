@@ -1293,8 +1293,23 @@ Alle müssen grün sein ✅ vor dem Push!
   - Automatic navigation to dashboard after save
   - Error handling with user-friendly messages
   - All 94 tests passing (1 unrelated login test failure), mypy + ruff clean
-- [ ] Phase 7: Save & Next Flow
-- [ ] Phase 8: Smart Defaults
+- [x] **Phase 7: Save & Next Flow** ✅ (2025-11-25)
+  - Added "Speichern & Nächster" button in Step 3
+  - Implemented save_and_next() handler
+  - Refactored save_item() into save_item_to_db() (shared) + save_item() + save_and_next()
+  - Created smart_defaults.py module with time-windowed defaults logic
+  - Smart defaults stored in browser storage after each save
+  - Form pre-populated with smart defaults on wizard load
+  - 28 new unit tests for smart_defaults module
+  - All 123 tests passing, mypy + ruff clean
+- [x] **Phase 8: Smart Defaults** ✅ (2025-11-25)
+  - Implemented as part of Phase 7 (combined implementation)
+  - Time windows: item_type/categories 30 min, location/unit always
+  - Browser storage key: "last_item_entry"
+  - Default item type: None if outside window
+  - Default unit: last value or "g"
+  - Default location: last value or None
+  - Default categories: last value if within window, else empty
 - [ ] Phase 9: UI Polish
 
 ---
