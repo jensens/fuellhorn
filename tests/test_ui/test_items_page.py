@@ -143,3 +143,84 @@ async def test_items_page_toggle_hides_consumed_when_disabled(user: TestUser) ->
     # Should see only active item
     await user.should_see("Aktiver Artikel")
     # Consumed item should not be visible (checked via card count)
+
+
+# Category filter tests (Issue #11)
+
+
+async def test_items_page_shows_category_filter(user: TestUser) -> None:
+    """Test that category filter chips are displayed."""
+    await user.open("/test-items-page-with-categories")
+    # Should see category filter chips
+    await user.should_see("Gemüse")
+    await user.should_see("Fleisch")
+
+
+async def test_items_page_category_filter_shows_all_initially(user: TestUser) -> None:
+    """Test that all items are shown when no category is selected."""
+    await user.open("/test-items-page-with-categories")
+    # Should see all items initially
+    await user.should_see("Tomaten")
+    await user.should_see("Hackfleisch")
+    await user.should_see("Karotten")
+
+
+async def test_items_page_category_filter_filters_items(user: TestUser) -> None:
+    """Test that selecting a category filters items."""
+    await user.open("/test-items-page-with-categories")
+    # Click on Gemüse category chip
+    user.find("Gemüse").click()
+    # Should see items with Gemüse category
+    await user.should_see("Tomaten")
+    await user.should_see("Karotten")
+    # Should not see items without Gemüse category
+    await user.should_not_see("Hackfleisch")
+
+
+async def test_items_page_category_filter_multi_select(user: TestUser) -> None:
+    """Test that multiple categories can be selected."""
+    await user.open("/test-items-page-with-categories")
+    # Click on both categories
+    user.find("Gemüse").click()
+    user.find("Fleisch").click()
+    # Should see items from both categories
+    await user.should_see("Tomaten")
+    await user.should_see("Hackfleisch")
+    await user.should_see("Karotten")
+
+
+async def test_items_page_category_filter_deselect(user: TestUser) -> None:
+    """Test that deselecting a category shows all items again."""
+    await user.open("/test-items-page-with-categories")
+    # Click to select
+    user.find("Gemüse").click()
+    await user.should_not_see("Hackfleisch")
+    # Click again to deselect
+    user.find("Gemüse").click()
+    # Should see all items again
+    await user.should_see("Hackfleisch")
+
+
+async def test_items_page_category_filter_combined_with_search(user: TestUser) -> None:
+    """Test that category filter works together with search."""
+    await user.open("/test-items-page-with-categories")
+    # Select Gemüse category
+    user.find("Gemüse").click()
+    # Should see Tomaten and Karotten
+    await user.should_see("Tomaten")
+    await user.should_see("Karotten")
+    # Search for Tomaten
+    user.find("Suchen").type("Tomat")
+    # Should only see Tomaten (filtered by both category AND search)
+    await user.should_see("Tomaten")
+    await user.should_not_see("Karotten")
+
+
+async def test_items_page_category_filter_no_results(user: TestUser) -> None:
+    """Test that appropriate message is shown when filters yield no results."""
+    await user.open("/test-items-page-with-categories")
+    # Select Gemüse category
+    user.find("Gemüse").click()
+    # Search for something that doesn't exist in Gemüse
+    user.find("Suchen").type("xyz-nicht-vorhanden")
+    await user.should_see("Keine Artikel")

@@ -91,6 +91,13 @@ def _set_test_session() -> None:
     app.storage.user["username"] = "admin"
 
 
+def _add_item_category(session: Session, item_id: int, category_id: int) -> None:
+    """Add a category to an item."""
+    item_category = ItemCategory(item_id=item_id, category_id=category_id)
+    session.add(item_category)
+    session.commit()
+
+
 @ui.page("/test-login-admin")
 def page_test_login_admin(next: str = "") -> None:
     """Test page to simulate admin login.
@@ -380,5 +387,142 @@ def page_items_with_consumed_toggle_on() -> None:
 
             for item in items:
                 create_item_card(item, session)
+
+    create_bottom_nav(current_page="items")
+
+
+@ui.page("/test-items-page-with-categories")
+def page_items_with_categories() -> None:
+    """Test page with category filter functionality for items."""
+    _set_test_session()
+
+    with next(get_session()) as session:
+        location = _create_test_location(session)
+
+        # Create categories
+        cat_gemuese = _create_test_category(session, name="Gemüse", id=1)
+        cat_fleisch = _create_test_category(session, name="Fleisch", id=2)
+
+        # Create test items with different categories
+        item_tomaten = _create_test_item(
+            session,
+            location,
+            product_name="Tomaten",
+            expiry_days_from_now=30,
+            quantity=500,
+            unit="g",
+        )
+        _add_item_category(session, item_tomaten.id, cat_gemuese.id)  # type: ignore
+
+        item_hackfleisch = _create_test_item(
+            session,
+            location,
+            product_name="Hackfleisch",
+            expiry_days_from_now=10,
+            quantity=750,
+            unit="g",
+        )
+        _add_item_category(session, item_hackfleisch.id, cat_fleisch.id)  # type: ignore
+
+        item_karotten = _create_test_item(
+            session,
+            location,
+            product_name="Karotten",
+            expiry_days_from_now=20,
+            quantity=300,
+            unit="g",
+        )
+        _add_item_category(session, item_karotten.id, cat_gemuese.id)  # type: ignore
+
+        # Get all items and categories
+        all_items = list(
+            session.exec(
+                select(Item).where(Item.is_consumed.is_(False))  # type: ignore
+            ).all()
+        )
+        all_categories = list(session.exec(select(Category)).all())
+
+        # Build item-to-categories mapping
+        item_category_map: dict[int, set[int]] = {}
+        for item in all_items:
+            item_cats = session.exec(select(ItemCategory).where(ItemCategory.item_id == item.id)).all()
+            item_category_map[item.id] = {ic.category_id for ic in item_cats}  # type: ignore
+
+        # State for filters
+        selected_categories: set[int] = set()
+        chip_elements: dict[int, ui.button] = {}
+
+        # Create page layout
+        with ui.column().classes("w-full"):
+            ui.label("Vorrat").classes("text-h5")
+
+            # Search input (created first, connected later)
+            search_input = ui.input(
+                label="Suchen",
+                placeholder="Produktname...",
+            ).classes("w-full")
+
+            # Category filter chips
+            with ui.row().classes("w-full gap-2 flex-wrap my-2"):
+
+                def update_chip_style(cat_id: int) -> None:
+                    """Update chip appearance based on selection state."""
+                    chip = chip_elements.get(cat_id)
+                    if chip:
+                        if cat_id in selected_categories:
+                            chip.classes(remove="bg-gray-200", add="bg-primary text-white")
+                        else:
+                            chip.classes(remove="bg-primary text-white", add="bg-gray-200")
+
+                def toggle_category(cat_id: int) -> None:
+                    """Toggle category selection."""
+                    if cat_id in selected_categories:
+                        selected_categories.remove(cat_id)
+                    else:
+                        selected_categories.add(cat_id)
+                    update_chip_style(cat_id)
+                    update_items_display()
+
+                for cat in all_categories:
+                    chip = ui.button(
+                        cat.name,
+                        on_click=lambda _, cid=cat.id: toggle_category(cid),
+                    ).classes("bg-gray-200 text-gray-800 rounded-full px-4 py-1 text-sm")
+                    chip_elements[cat.id] = chip  # type: ignore
+
+            # Container for items
+            items_container = ui.column().classes("w-full")
+
+            def update_items_display() -> None:
+                """Update displayed items based on search and category filters."""
+                items_container.clear()
+                search_term = search_input.value.lower() if search_input.value else ""
+
+                filtered_items = list(all_items)
+
+                # Filter by search term
+                if search_term:
+                    filtered_items = [item for item in filtered_items if search_term in item.product_name.lower()]
+
+                # Filter by selected categories (OR logic: show if item has ANY selected category)
+                if selected_categories:
+                    filtered_items = [
+                        item
+                        for item in filtered_items
+                        if item_category_map.get(item.id, set()) & selected_categories  # type: ignore
+                    ]
+
+                with items_container:
+                    if filtered_items:
+                        for item in filtered_items:
+                            create_item_card(item, session)
+                    else:
+                        ui.label("Keine Artikel gefunden").classes("text-gray-500")
+
+            # Connect search input to update function (after update_items_display is defined)
+            search_input.on_value_change(lambda _: update_items_display())
+
+            # Initial render
+            update_items_display()
 
     create_bottom_nav(current_page="items")
