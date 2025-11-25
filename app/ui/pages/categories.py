@@ -1,10 +1,12 @@
 """Categories Page - Admin page for managing categories (Mobile-First).
 
 Based on Issue #20: Categories Page - Liste aller Kategorien
+Issue #21: Categories Page - Kategorie erstellen
 """
 
 from ...auth import Permission
 from ...auth import require_permissions
+from ...auth.dependencies import get_current_user
 from ...database import get_session
 from ...services import category_service
 from ..components import create_mobile_page_container
@@ -24,35 +26,105 @@ def categories_page() -> None:
 
     # Main content with bottom nav spacing
     with create_mobile_page_container():
-        ui.label("Kategorien verwalten").classes("text-h6 font-semibold mb-3")
+        # Section header with "Neue Kategorie" button
+        with ui.row().classes("w-full items-center justify-between mb-3"):
+            ui.label("Kategorien verwalten").classes("text-h6 font-semibold")
+            ui.button("Neue Kategorie", icon="add", on_click=_open_create_dialog).props("color=primary size=sm")
 
-        with next(get_session()) as session:
-            categories = category_service.get_all_categories(session)
+        _render_categories_list()
 
-            if categories:
-                # Display categories as cards
-                for category in categories:
-                    with ui.card().classes("w-full mb-2"):
-                        with ui.row().classes("w-full items-center justify-between"):
-                            with ui.row().classes("items-center gap-3"):
-                                # Color indicator
-                                if category.color:
-                                    ui.element("div").classes("w-6 h-6 rounded-full").style(
-                                        f"background-color: {category.color}"
-                                    )
-                                else:
-                                    ui.element("div").classes("w-6 h-6 rounded-full bg-gray-300")
-                                # Category name
-                                ui.label(category.name).classes("font-medium text-lg")
-                            # Freeze time info (if set)
-                            if category.freeze_time_months:
-                                ui.label(f"{category.freeze_time_months} Mon.").classes("text-sm text-gray-600")
-            else:
-                # Empty state
-                with ui.card().classes("w-full"):
-                    with ui.column().classes("w-full items-center py-8"):
-                        ui.icon("category", size="48px").classes("text-gray-400 mb-2")
-                        ui.label("Keine Kategorien vorhanden").classes("text-gray-600 text-center")
-                        ui.label("Kategorien helfen beim Organisieren des Vorrats.").classes(
-                            "text-sm text-gray-500 text-center"
+
+def _render_categories_list() -> None:
+    """Render the list of categories."""
+    with next(get_session()) as session:
+        categories = category_service.get_all_categories(session)
+
+        if categories:
+            # Display categories as cards
+            for category in categories:
+                with ui.card().classes("w-full mb-2"):
+                    with ui.row().classes("w-full items-center justify-between"):
+                        with ui.row().classes("items-center gap-3"):
+                            # Color indicator
+                            if category.color:
+                                ui.element("div").classes("w-6 h-6 rounded-full").style(
+                                    f"background-color: {category.color}"
+                                )
+                            else:
+                                ui.element("div").classes("w-6 h-6 rounded-full bg-gray-300")
+                            # Category name
+                            ui.label(category.name).classes("font-medium text-lg")
+                        # Freeze time info (if set)
+                        if category.freeze_time_months:
+                            ui.label(f"{category.freeze_time_months} Mon.").classes("text-sm text-gray-600")
+        else:
+            # Empty state
+            with ui.card().classes("w-full"):
+                with ui.column().classes("w-full items-center py-8"):
+                    ui.icon("category", size="48px").classes("text-gray-400 mb-2")
+                    ui.label("Keine Kategorien vorhanden").classes("text-gray-600 text-center")
+                    ui.label("Kategorien helfen beim Organisieren des Vorrats.").classes(
+                        "text-sm text-gray-500 text-center"
+                    )
+
+
+def _open_create_dialog() -> None:
+    """Open dialog to create a new category."""
+    with ui.dialog() as dialog, ui.card().classes("w-full max-w-md"):
+        ui.label("Neue Kategorie erstellen").classes("text-h6 font-semibold mb-4")
+
+        # Name input (required)
+        name_input = ui.input(label="Name", placeholder="z.B. Gemüse").classes("w-full mb-2").props("outlined")
+
+        # Color input (optional)
+        color_input = ui.color_input(label="Farbe").classes("w-full mb-4")
+
+        # Error label (hidden by default)
+        error_label = ui.label("").classes("text-red-600 text-sm mb-2")
+        error_label.set_visibility(False)
+
+        # Buttons
+        with ui.row().classes("w-full justify-end gap-2"):
+            ui.button("Abbrechen", on_click=dialog.close).props("flat")
+
+            def save_category() -> None:
+                """Validate and save the new category."""
+                name = name_input.value.strip() if name_input.value else ""
+                color = color_input.value if color_input.value else None
+
+                # Validation: name is required
+                if not name:
+                    error_label.set_text("Name ist erforderlich")
+                    error_label.set_visibility(True)
+                    return
+
+                # Get current user for created_by
+                current_user = get_current_user()
+                if current_user is None or current_user.id is None:
+                    error_label.set_text("Nicht angemeldet")
+                    error_label.set_visibility(True)
+                    return
+
+                try:
+                    with next(get_session()) as session:
+                        category_service.create_category(
+                            session=session,
+                            name=name,
+                            created_by=current_user.id,
+                            color=color,
                         )
+                    ui.notify(f"Kategorie '{name}' erstellt", type="positive")
+                    dialog.close()
+                    ui.navigate.to("/admin/categories")
+                except ValueError as e:
+                    # Handle duplicate name error
+                    error_msg = str(e)
+                    if "already exists" in error_msg:
+                        error_label.set_text(f"Kategorie '{name}' bereits vorhanden")
+                    else:
+                        error_label.set_text(error_msg)
+                    error_label.set_visibility(True)
+
+            ui.button("Speichern", on_click=save_category).props("color=primary")
+
+    dialog.open()
