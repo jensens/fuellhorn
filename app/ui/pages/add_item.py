@@ -82,7 +82,10 @@ def add_item() -> None:
             quantity=form_data["quantity"],
             unit=form_data["unit"],
         )
-        next_button.props(remove="disabled" if is_valid else "", add="disabled" if not is_valid else "")
+        if is_valid:
+            next_button.props(remove="disabled")
+        else:
+            next_button.props(add="disabled")
 
     def update_step2_validation() -> None:
         """Update Step 2 next button state based on validation."""
@@ -91,7 +94,10 @@ def add_item() -> None:
             best_before=form_data["best_before_date"],
             freeze_date=form_data.get("freeze_date"),
         )
-        step2_next_button.props(remove="disabled" if is_valid else "", add="disabled" if not is_valid else "")
+        if is_valid:
+            step2_next_button.props(remove="disabled")
+        else:
+            step2_next_button.props(add="disabled")
 
     def update_step3_validation() -> None:
         """Update Step 3 submit buttons state based on validation."""
@@ -99,8 +105,12 @@ def add_item() -> None:
             location_id=form_data.get("location_id"),
             category_ids=form_data.get("category_ids"),
         )
-        step3_submit_button.props(remove="disabled" if is_valid else "", add="disabled" if not is_valid else "")
-        step3_save_next_button.props(remove="disabled" if is_valid else "", add="disabled" if not is_valid else "")
+        if is_valid:
+            step3_submit_button.props(remove="disabled")
+            step3_save_next_button.props(remove="disabled")
+        else:
+            step3_submit_button.props(add="disabled")
+            step3_save_next_button.props(add="disabled")
 
     def show_step1() -> None:
         """Navigate back to Step 1 (preserves form data)."""
@@ -232,14 +242,24 @@ def add_item() -> None:
                 with best_before_input.add_slot("append"):
                     with ui.icon("event").classes("cursor-pointer"):
                         with ui.menu() as best_before_menu:
-                            ui.date(on_change=lambda: best_before_menu.close()).bind_value(best_before_input).props(
-                                'locale="de" mask="DD.MM.YYYY"'
+                            best_before_date_picker = (
+                                ui.date().bind_value(best_before_input).props('locale="de" mask="DD.MM.YYYY"')
                             )
+
+                            def on_best_before_change(e: Any) -> None:
+                                best_before_menu.close()
+                                # Update form_data when date changes
+                                if e.value:
+                                    # e.value is already a date object from ui.date
+                                    form_data["best_before_date"] = e.value
+                                update_step2_validation()
+
+                            best_before_date_picker.on("update:model-value", on_best_before_change)
             best_before_input.on("blur", update_step2_validation)
 
-            # Freeze Date (conditional - only for frozen types)
+            # Freeze Date (conditional - only for self-frozen types)
+            # PURCHASED_FROZEN has MHD on package, no freeze_date needed
             frozen_types = {
-                ItemType.PURCHASED_FROZEN,
                 ItemType.PURCHASED_THEN_FROZEN,
                 ItemType.HOMEMADE_FROZEN,
             }
@@ -247,6 +267,8 @@ def add_item() -> None:
             if form_data["item_type"] in frozen_types:
                 ui.label("Einfrierdatum *").classes("text-sm font-medium mb-1 mt-4")
                 freeze_date_value = form_data.get("freeze_date") or date_type.today()
+                # Initialize form_data with default if not set (fixes #51)
+                form_data["freeze_date"] = freeze_date_value
                 with (
                     ui.input(value=freeze_date_value.strftime("%d.%m.%Y"))
                     .classes("w-full")
@@ -256,9 +278,19 @@ def add_item() -> None:
                     with freeze_date_input.add_slot("append"):
                         with ui.icon("event").classes("cursor-pointer"):
                             with ui.menu() as freeze_date_menu:
-                                ui.date(on_change=lambda: freeze_date_menu.close()).bind_value(freeze_date_input).props(
-                                    'locale="de" mask="DD.MM.YYYY"'
+                                freeze_date_picker = (
+                                    ui.date().bind_value(freeze_date_input).props('locale="de" mask="DD.MM.YYYY"')
                                 )
+
+                                def on_freeze_date_change(e: Any) -> None:
+                                    freeze_date_menu.close()
+                                    # Update form_data when date changes
+                                    if e.value:
+                                        # e.value is already a date object from ui.date
+                                        form_data["freeze_date"] = e.value
+                                    update_step2_validation()
+
+                                freeze_date_picker.on("update:model-value", on_freeze_date_change)
                 freeze_date_input.on("blur", update_step2_validation)
 
             # Notes (optional)
