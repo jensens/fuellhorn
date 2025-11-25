@@ -388,7 +388,7 @@ def add_item() -> None:
         unit_toggle = ui.toggle(
             options=["g", "kg", "ml", "l", "Stück", "Packung"],
             value=None,
-        ).classes("w-full").style("text-transform: none !important")
+        ).classes("w-full").props("no-caps")
         unit_toggle.bind_value(form_data, "unit")
         unit_toggle.on("update:model-value", update_validation)
 
