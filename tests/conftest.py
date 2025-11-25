@@ -2,12 +2,17 @@
 
 from app.models import User
 from collections.abc import Generator
+import os
 import pytest
 from sqlalchemy.pool import StaticPool
 from sqlmodel import Session
 from sqlmodel import SQLModel
 from sqlmodel import create_engine
 import sys
+
+
+# Set TESTING environment variable so main.py imports test pages
+os.environ["TESTING"] = "true"
 
 
 # ============================================================================
@@ -33,6 +38,7 @@ def session_fixture() -> Generator[Session, None, None]:
 # ============================================================================
 # Database Isolation for UI Tests
 # ============================================================================
+
 
 @pytest.fixture(scope="function", autouse=True)
 def isolated_test_database(monkeypatch):
@@ -92,6 +98,7 @@ def isolated_test_database(monkeypatch):
 # UI Package Cleanup (Route Re-registration)
 # ============================================================================
 
+
 @pytest.fixture(scope="function", autouse=True)
 def cleanup_ui_packages():
     """Remove UI package modules after each test.
@@ -117,10 +124,7 @@ def cleanup_ui_packages():
     yield  # Run test first
 
     # Cleanup after test
-    modules_to_remove = [
-        key for key in sys.modules.keys()
-        if key.startswith("app.ui")
-    ]
+    modules_to_remove = [key for key in sys.modules.keys() if key.startswith("app.ui")]
 
     for module in modules_to_remove:
         del sys.modules[module]
@@ -129,6 +133,7 @@ def cleanup_ui_packages():
 # ============================================================================
 # User Fixtures
 # ============================================================================
+
 
 @pytest.fixture(name="test_admin")
 def test_admin_fixture(session: Session) -> User:
