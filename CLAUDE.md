@@ -174,6 +174,293 @@ gh pr create --title "feat: <Beschreibung> (closes #<number>)"
 git worktree remove ../fuellhorn-issue-<number>
 ```
 
+#### Mensch-Agent Workflow
+
+**Übersicht der Zusammenarbeit zwischen Projektmanager (Mensch) und implementierenden Agenten:**
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           PROJEKT-ZYKLUS                                     │
+│                                                                             │
+│   ┌─────────┐      ┌─────────┐      ┌─────────┐      ┌─────────┐           │
+│   │ PLANEN  │ ───▶ │ ZUWEISEN│ ───▶ │ARBEITEN │ ───▶ │ REVIEW  │ ───▶ ↻    │
+│   │ (Mensch)│      │ (Mensch)│      │ (Agent) │      │ (Mensch)│           │
+│   └─────────┘      └─────────┘      └─────────┘      └─────────┘           │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+##### Phase 1: Planung (Mensch/PM)
+
+**Wann:** Vor Beginn eines Sprints oder bei Bedarf
+
+**Aufgaben:**
+1. **Project Board prüfen:** https://github.com/users/jensens/projects/2
+2. **Prioritäten setzen:** Issues nach Wichtigkeit sortieren
+3. **Dependencies klären:** Welche Issues können parallel bearbeitet werden?
+4. **Milestones zuweisen:** Alpha → Beta → v1.0
+
+**Befehle:**
+```bash
+# Offene Issues nach Milestone anzeigen
+gh issue list --milestone "Alpha" --state open
+
+# Issue-Details ansehen
+gh issue view <number>
+
+# Priorität setzen (via Label)
+gh issue edit <number> --add-label "priority/high"
+```
+
+---
+
+##### Phase 2: Zuweisung (Mensch/PM)
+
+**Wann:** Wenn ein Agent bereit für neue Arbeit ist
+
+**Workflow:**
+1. **Issue auswählen** das keine Blocker hat
+2. **Label setzen:** `status/agent-ready` → `status/in-progress`
+3. **Agent briefen** mit Issue-Nummer und Kontext
+
+**Befehle:**
+```bash
+# Issue für Agent vorbereiten
+gh issue edit <number> --remove-label "status/agent-ready"
+gh issue edit <number> --add-label "status/in-progress"
+
+# Agent starten mit Issue-Kontext
+# (In neuem Terminal/Worktree)
+cd /path/to/fuellhorn
+git worktree add ../fuellhorn-issue-<number> -b feature/issue-<number>-<kurz>
+cd ../fuellhorn-issue-<number>
+```
+
+**Briefing-Template für Agent:**
+```
+Bitte implementiere Issue #<number>: <Titel>
+
+Kontext:
+- Beschreibung: <gh issue view <number>>
+- Abhängigkeiten: <falls vorhanden>
+- Akzeptanzkriterien: <aus Issue-Body>
+
+Wichtig:
+- Lies CLAUDE.md und TESTING.md
+- TDD: Tests zuerst
+- PR erstellen mit "closes #<number>"
+```
+
+---
+
+##### Phase 3: Implementierung (Agent)
+
+**Wann:** Nach Briefing durch PM
+
+**Agent-Workflow:**
+```bash
+# 1. Issue lesen und verstehen
+gh issue view <number>
+
+# 2. Worktree erstellen (falls nicht vom PM gemacht)
+git worktree add ../fuellhorn-issue-<number> -b feature/issue-<number>-<kurz>
+cd ../fuellhorn-issue-<number>
+
+# 3. TDD-Zyklus
+#    a) Test schreiben
+#    b) Test läuft rot
+#    c) Implementieren
+#    d) Test läuft grün
+#    e) Refactoring
+
+# 4. Qualitätsprüfung
+uv run pytest
+uv run mypy app/
+uv run ruff check app/
+uv run ruff format app/
+
+# 5. Commit(s) erstellen
+git add .
+git commit -m "feat: <Beschreibung>
+
+closes #<number>"
+
+# 6. Push und PR erstellen
+git push -u origin feature/issue-<number>-<kurz>
+gh pr create --title "feat: <Beschreibung>" --body "closes #<number>
+
+## Änderungen
+- ...
+
+## Tests
+- [ ] Unit Tests
+- [ ] UI Tests (falls relevant)"
+```
+
+**Agent-Regeln:**
+- ✅ Nur am zugewiesenen Issue arbeiten
+- ✅ Tests sind Pflicht
+- ✅ Kleine, häufige Commits
+- ✅ PR erstellen wenn fertig
+- ❌ Keine anderen Dateien ändern als nötig
+- ❌ Keine "Verbesserungen" ohne Issue
+- ❌ Nicht auf main pushen
+
+---
+
+##### Phase 4: Review (Mensch/PM)
+
+**Wann:** Nach PR-Erstellung durch Agent
+
+**Review-Workflow:**
+```bash
+# 1. PR ansehen
+gh pr view <pr-number>
+gh pr diff <pr-number>
+
+# 2. CI-Status prüfen
+gh pr checks <pr-number>
+
+# 3. Lokal testen (optional)
+gh pr checkout <pr-number>
+uv run pytest
+uv run python main.py  # Manueller Test
+
+# 4a. Wenn OK → Merge
+gh pr merge <pr-number> --squash --delete-branch
+
+# 4b. Wenn Änderungen nötig → Kommentar
+gh pr comment <pr-number> --body "Bitte folgende Änderungen:
+- ...
+- ..."
+```
+
+**Nach Merge:**
+```bash
+# Worktree aufräumen
+git worktree remove ../fuellhorn-issue-<number>
+
+# Project Board aktualisiert sich automatisch
+# (Issue wird geschlossen durch "closes #<number>")
+```
+
+---
+
+##### Parallele Agenten-Arbeit
+
+**Bis zu 4 Agenten können parallel arbeiten:**
+
+```
+Terminal 1 (PM):           fuellhorn/          (main, Übersicht)
+Terminal 2 (Agent 1):      fuellhorn-issue-7/  (feature/issue-7-item-card)
+Terminal 3 (Agent 2):      fuellhorn-issue-8/  (feature/issue-8-expiry-badge)
+Terminal 4 (Agent 3):      fuellhorn-issue-18/ (feature/issue-18-logout)
+```
+
+**Regeln für Parallelität:**
+1. **Unabhängige Issues wählen** - keine gemeinsamen Dateien
+2. **Ein Agent pro Issue** - keine Überschneidungen
+3. **PM koordiniert** - verhindert Konflikte
+4. **Sequentiell mergen** - einer nach dem anderen
+
+**Konflikt-Vermeidung:**
+```bash
+# Vor PR: main aktualisieren
+git fetch origin
+git rebase origin/main
+
+# Bei Konflikten: PM entscheidet Reihenfolge
+```
+
+---
+
+##### Kommunikation
+
+**PM → Agent:**
+- Issue-Nummer + Briefing
+- Review-Kommentare auf PR
+- Änderungswünsche via `gh pr comment`
+
+**Agent → PM:**
+- PR-Erstellung signalisiert "fertig"
+- Fragen als Kommentar auf Issue/PR
+- Blocker sofort melden
+
+**Asynchrone Kommunikation:**
+- Alles über GitHub (Issues, PRs, Comments)
+- Keine direkte Chat-Kommunikation nötig
+- Vollständige Nachvollziehbarkeit
+
+---
+
+##### Project Board Workflow
+
+**Board:** https://github.com/users/jensens/projects/2
+
+| Spalte | Bedeutung | Wer bewegt |
+|--------|-----------|------------|
+| **Todo** | Geplante Issues | PM |
+| **In Progress** | Agent arbeitet daran | PM (bei Zuweisung) |
+| **Done** | Implementiert & gemerged | Automatisch (via PR) |
+
+**PM-Aufgaben am Board:**
+```bash
+# Issue in "In Progress" verschieben (manuell im UI oder via API)
+# Nach Zuweisung an Agent
+
+# Spalten anpassen falls nötig (im UI):
+# - "Review" hinzufügen für PR-Phase
+# - "Blocked" für blockierte Issues
+```
+
+---
+
+##### Typischer Tagesablauf
+
+**Morgens (PM):**
+1. Project Board prüfen
+2. Gestrige PRs reviewen und mergen
+3. Neue Issues für Agents vorbereiten
+
+**Tagsüber (Agents):**
+1. Briefing vom PM erhalten
+2. Issue implementieren (TDD)
+3. PR erstellen
+4. Auf Review warten
+
+**Abends (PM):**
+1. PRs reviewen
+2. Feedback geben oder mergen
+3. Nächste Issues priorisieren
+
+---
+
+##### Checkliste für PM
+
+**Vor Agent-Start:**
+- [ ] Issue existiert und ist klar beschrieben
+- [ ] Dependencies sind erfüllt oder nicht vorhanden
+- [ ] Label `status/agent-ready` gesetzt
+- [ ] Milestone zugewiesen
+
+**Bei Zuweisung:**
+- [ ] Worktree erstellt oder Agent instruiert
+- [ ] Label auf `status/in-progress` geändert
+- [ ] Agent mit Issue-Nummer gebrieft
+
+**Nach PR:**
+- [ ] CI ist grün
+- [ ] Code-Review durchgeführt
+- [ ] Tests vorhanden und sinnvoll
+- [ ] PR gemerged oder Feedback gegeben
+
+**Nach Merge:**
+- [ ] Issue automatisch geschlossen (via "closes #X")
+- [ ] Worktree aufgeräumt
+- [ ] Nächstes Issue bereit?
+
 ---
 
 #### Häufige, kleine Commits
