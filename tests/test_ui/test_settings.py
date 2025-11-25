@@ -138,3 +138,84 @@ async def test_settings_page_shows_empty_state(user: User) -> None:
 
     # Should see empty state message
     await user.should_see("Keine Gefrierzeit-Konfigurationen vorhanden")
+
+
+# =============================================================================
+# CRUD Tests (Issue #33)
+# =============================================================================
+
+
+async def test_settings_page_has_add_button(user: User) -> None:
+    """Test that settings page has a 'Neu' button for creating new configs."""
+    await user.open("/login")
+    user.find("Benutzername").type("admin")
+    user.find("Passwort").type("password123")
+    user.find("Anmelden").click()
+    await user.open("/admin/settings")
+    await user.should_see("Neu")
+
+
+async def test_add_button_opens_create_dialog(user: User) -> None:
+    """Test that clicking 'Neu' button opens a create dialog."""
+    await user.open("/login")
+    user.find("Benutzername").type("admin")
+    user.find("Passwort").type("password123")
+    user.find("Anmelden").click()
+    await user.open("/admin/settings")
+    user.find("Neu").click()
+    await user.should_see("Neue Gefrierzeit-Konfiguration")
+
+
+async def test_config_card_has_edit_button(user: User, isolated_test_database) -> None:
+    """Test that config cards have edit buttons."""
+    with Session(isolated_test_database) as session:
+        config = FreezeTimeConfig(
+            item_type=ItemType.HOMEMADE_FROZEN,
+            freeze_time_months=12,
+            created_by=1,
+        )
+        session.add(config)
+        session.commit()
+    await user.open("/login")
+    user.find("Benutzername").type("admin")
+    user.find("Passwort").type("password123")
+    user.find("Anmelden").click()
+    await user.open("/admin/settings")
+    await user.should_see("edit")
+
+
+async def test_config_card_has_delete_button(user: User, isolated_test_database) -> None:
+    """Test that config cards have delete buttons."""
+    with Session(isolated_test_database) as session:
+        config = FreezeTimeConfig(
+            item_type=ItemType.HOMEMADE_FROZEN,
+            freeze_time_months=12,
+            created_by=1,
+        )
+        session.add(config)
+        session.commit()
+    await user.open("/login")
+    user.find("Benutzername").type("admin")
+    user.find("Passwort").type("password123")
+    user.find("Anmelden").click()
+    await user.open("/admin/settings")
+    await user.should_see("delete")
+
+
+async def test_delete_button_opens_confirmation_dialog(user: User, isolated_test_database) -> None:
+    """Test that clicking delete button opens confirmation dialog."""
+    with Session(isolated_test_database) as session:
+        config = FreezeTimeConfig(
+            item_type=ItemType.HOMEMADE_FROZEN,
+            freeze_time_months=12,
+            created_by=1,
+        )
+        session.add(config)
+        session.commit()
+    await user.open("/login")
+    user.find("Benutzername").type("admin")
+    user.find("Passwort").type("password123")
+    user.find("Anmelden").click()
+    await user.open("/admin/settings")
+    user.find("delete").click()
+    await user.should_see("Löschen bestätigen")
