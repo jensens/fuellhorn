@@ -39,27 +39,29 @@ def test_calculate_expiry_for_jarred_item() -> None:
 
 
 def test_calculate_expiry_for_frozen_item() -> None:
-    """Test expiry calculation for purchased frozen items."""
-    # Purchased frozen: freeze_date + X months
+    """Test expiry calculation for purchased frozen items (TK-Ware).
+
+    PURCHASED_FROZEN uses best_before_date (MHD on package), not freeze_date.
+    """
     best_before = date(2024, 1, 1)
-    freeze_date_val = date(2024, 6, 1)
     freeze_time_months = 12
 
+    # PURCHASED_FROZEN doesn't need freeze_date (MHD on package)
     expiry = expiry_calculator.calculate_expiry_date(
         item_type=ItemType.PURCHASED_FROZEN,
         best_before_date=best_before,
-        freeze_date=freeze_date_val,
+        freeze_date=None,
         freeze_time_months=freeze_time_months,
     )
 
-    assert expiry == date(2025, 6, 1)  # freeze_date + 12 months
+    assert expiry == date(2025, 1, 1)  # best_before_date + 12 months
 
 
 def test_calculate_expiry_for_frozen_item_without_freeze_date_fails() -> None:
-    """Test that frozen item without freeze_date raises error."""
-    with pytest.raises(ValueError, match="Frozen items must have a freeze_date"):
+    """Test that self-frozen item without freeze_date raises error."""
+    with pytest.raises(ValueError, match="Self-frozen items must have a freeze_date"):
         expiry_calculator.calculate_expiry_date(
-            item_type=ItemType.PURCHASED_FROZEN,
+            item_type=ItemType.PURCHASED_THEN_FROZEN,
             best_before_date=date(2024, 1, 1),
             freeze_date=None,
             freeze_time_months=12,

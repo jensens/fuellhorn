@@ -257,9 +257,9 @@ def add_item() -> None:
                             best_before_date_picker.on("update:model-value", on_best_before_change)
             best_before_input.on("blur", update_step2_validation)
 
-            # Freeze Date (conditional - only for frozen types)
+            # Freeze Date (conditional - only for self-frozen types)
+            # PURCHASED_FROZEN has MHD on package, no freeze_date needed
             frozen_types = {
-                ItemType.PURCHASED_FROZEN,
                 ItemType.PURCHASED_THEN_FROZEN,
                 ItemType.HOMEMADE_FROZEN,
             }
