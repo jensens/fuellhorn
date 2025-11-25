@@ -34,7 +34,9 @@
       "Bash(docker rm:*)",
       "Bash(docker logs:*)",
       "Bash(git check-ignore:*)",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "Bash(python -m pytest:*)",
+      "Bash(gh issue list:*)"
     ],
     "deny": [],
     "ask": []

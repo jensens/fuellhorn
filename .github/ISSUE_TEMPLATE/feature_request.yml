@@ -56,9 +56,16 @@ body:
     validations:
       required: true
 
-  - type: checkboxes
-    id: blocked
+  - type: textarea
+    id: blocked_by
     attributes:
-      label: Abhängigkeiten
-      options:
-        - label: "Blockiert durch anderes Issue (bitte # in Beschreibung angeben)"
+      label: Blockiert durch
+      description: |
+        Falls dieses Issue auf andere Issues warten muss.
+        Format: "Blocked by #XX" (eine Zeile pro Blocker)
+        Wird automatisch freigeschaltet wenn Blocker geschlossen werden.
+      placeholder: |
+        Blocked by #42
+        Blocked by #43
+    validations:
+      required: false

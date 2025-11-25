@@ -127,21 +127,21 @@ Git Worktrees erlauben es, mehrere Working Directories für das gleiche Reposito
 cd /path/to/fuellhorn
 
 # Worktree für Agent 1 erstellen (z.B. für Feature-Entwicklung)
-git worktree add ../fuellhorn-agent1 -b feature/new-feature
+git worktree add worktrees/agent1 -b feature/new-feature
 
 # Worktree für Agent 2 erstellen (z.B. für Bugfix)
-git worktree add ../fuellhorn-agent2 -b fix/bug-123
+git worktree add worktrees/agent2 -b fix/bug-123
 
 # Jeder Agent arbeitet in seinem eigenen Directory:
-# - fuellhorn/         (main branch)
-# - fuellhorn-agent1/  (feature/new-feature branch)
-# - fuellhorn-agent2/  (fix/bug-123 branch)
+# - fuellhorn/              (main branch)
+# - fuellhorn/worktrees/agent1/  (feature/new-feature branch)
+# - fuellhorn/worktrees/agent2/  (fix/bug-123 branch)
 ```
 
 **Best Practices:**
 - **Einen Worktree pro Agent/Task** erstellen
 - **Eigener Branch pro Worktree** (nicht main!)
-- **Worktree löschen** nach Merge: `git worktree remove ../fuellhorn-agent1`
+- **Worktree löschen** nach Merge: `git worktree remove worktrees/agent1`
 - **Worktrees auflisten**: `git worktree list`
 
 **Wichtig für Claude Code Agents:**
@@ -157,21 +157,50 @@ git worktree add ../fuellhorn-agent2 -b fix/bug-123
 - **Milestones:** Alpha → Beta → v1.0
 - **Agent-ready Issues:** Label `status/agent-ready` zeigt sofort bearbeitbare Tasks
 
+#### Issue-Abhängigkeiten (Blocked by)
+
+**Konvention für Issue-Dependencies:**
+
+Issues können auf andere Issues warten. Das Format im Issue-Body:
+```
+Blocked by #42
+Blocked by #43
+```
+
+**Automatische Freischaltung:**
+- GitHub Action `.github/workflows/unlock-issues.yml` überwacht Issue-Close-Events
+- Wenn ein Issue geschlossen wird, werden alle abhängigen Issues geprüft
+- Wenn alle Blocker geschlossen sind → `status/blocked` wird entfernt, `status/agent-ready` wird gesetzt
+- Ein Kommentar "🔓 Automatisch freigeschaltet durch Abschluss von #X" wird hinzugefügt
+
+**Labels für Status:**
+- `status/agent-ready` - Issue kann sofort bearbeitet werden
+- `status/in-progress` - Agent arbeitet gerade daran
+- `status/blocked` - Wartet auf andere Issues
+
+**Wichtig für neue Issues:**
+- Bei Features mit Dependencies: Im Issue-Template das "Blockiert durch" Feld ausfüllen
+- Format muss exakt sein: `Blocked by #XX` (case-insensitive)
+- Mehrere Blocker: Eine Zeile pro Blocker
+
 **Workflow für Agents:**
 ```bash
 # 1. Issue auswählen
 gh issue list --label "status/agent-ready"
 
-# 2. Worktree für Issue erstellen
-git worktree add ../fuellhorn-issue-<number> -b feature/issue-<number>-<kurzbeschreibung>
+# 2. Worktree für Issue erstellen (im worktrees/ Unterordner, gitignored)
+git worktree add worktrees/issue-<number> -b feature/issue-<number>-<kurzbeschreibung>
 
-# 3. Implementieren (TDD!)
+# 3. In Worktree wechseln
+cd worktrees/issue-<number>
 
-# 4. PR erstellen mit "closes #<number>"
-gh pr create --title "feat: <Beschreibung> (closes #<number>)"
+# 4. Implementieren (TDD!)
 
-# 5. Nach Merge aufräumen
-git worktree remove ../fuellhorn-issue-<number>
+# 5. PR erstellen mit "closes #<number>"
+gh pr create --title "feat: <Beschreibung>" --body "closes #<number>"
+
+# 6. Nach Merge aufräumen (vom Hauptrepo aus)
+git worktree remove worktrees/issue-<number>
 ```
 
 #### Mensch-Agent Workflow
@@ -234,8 +263,8 @@ gh issue edit <number> --add-label "status/in-progress"
 # Agent starten mit Issue-Kontext
 # (In neuem Terminal/Worktree)
 cd /path/to/fuellhorn
-git worktree add ../fuellhorn-issue-<number> -b feature/issue-<number>-<kurz>
-cd ../fuellhorn-issue-<number>
+git worktree add worktrees/issue-<number> -b feature/issue-<number>-<kurz>
+cd worktrees/issue-<number>
 ```
 
 **Briefing-Template für Agent:**
@@ -264,9 +293,9 @@ Wichtig:
 # 1. Issue lesen und verstehen
 gh issue view <number>
 
-# 2. Worktree erstellen (falls nicht vom PM gemacht)
-git worktree add ../fuellhorn-issue-<number> -b feature/issue-<number>-<kurz>
-cd ../fuellhorn-issue-<number>
+# 2. Worktree erstellen (im worktrees/ Unterordner)
+git worktree add worktrees/issue-<number> -b feature/issue-<number>-<kurz>
+cd worktrees/issue-<number>
 
 # 3. TDD-Zyklus
 #    a) Test schreiben
@@ -339,11 +368,12 @@ gh pr comment <pr-number> --body "Bitte folgende Änderungen:
 
 **Nach Merge:**
 ```bash
-# Worktree aufräumen
-git worktree remove ../fuellhorn-issue-<number>
+# Worktree aufräumen (vom Hauptrepo aus)
+git worktree remove worktrees/issue-<number>
 
 # Project Board aktualisiert sich automatisch
 # (Issue wird geschlossen durch "closes #<number>")
+# Abhängige Issues werden automatisch freigeschaltet (GitHub Action)
 ```
 
 ---
@@ -353,10 +383,10 @@ git worktree remove ../fuellhorn-issue-<number>
 **Bis zu 4 Agenten können parallel arbeiten:**
 
 ```
-Terminal 1 (PM):           fuellhorn/          (main, Übersicht)
-Terminal 2 (Agent 1):      fuellhorn-issue-7/  (feature/issue-7-item-card)
-Terminal 3 (Agent 2):      fuellhorn-issue-8/  (feature/issue-8-expiry-badge)
-Terminal 4 (Agent 3):      fuellhorn-issue-18/ (feature/issue-18-logout)
+Terminal 1 (PM):           fuellhorn/                    (main, Übersicht)
+Terminal 2 (Agent 1):      fuellhorn/worktrees/issue-7/  (feature/issue-7-...)
+Terminal 3 (Agent 2):      fuellhorn/worktrees/issue-8/  (feature/issue-8-...)
+Terminal 4 (Agent 3):      fuellhorn/worktrees/issue-18/ (feature/issue-18-...)
 ```
 
 **Regeln für Parallelität:**

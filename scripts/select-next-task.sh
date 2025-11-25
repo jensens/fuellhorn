@@ -28,25 +28,6 @@ NC='\033[0m' # No Color
 # Repository (kann angepasst werden)
 REPO="jensens/fuellhorn"
 
-# Dependency-Map: Issue → abhängige Issues
-declare -A DEPENDENCIES
-DEPENDENCIES[7]="9"           # Item Card → Items Page
-DEPENDENCIES[8]="9"           # Expiry Badge → Items Page
-DEPENDENCIES[9]="10 11 12 13" # Items Page → Suche, Filter, Sortierung
-DEPENDENCIES[14]="15 16"      # Bottom Sheet → Entnehmen, Teilentnahme
-DEPENDENCIES[15]="17"         # Komplett entnehmen → Ausblenden
-DEPENDENCIES[18]="19"         # Logout Button → Session Cleanup
-DEPENDENCIES[20]="21 22 23"   # Categories Liste → CRUD
-DEPENDENCIES[24]="25 26 27"   # Locations Liste → CRUD
-DEPENDENCIES[28]="29 30 31"   # Users Liste → CRUD
-DEPENDENCIES[32]="33 34"      # Settings Liste → Gefrierzeit, Smart Defaults
-DEPENDENCIES[37]="38"         # Dockerfile → docker-compose
-DEPENDENCIES[38]="39"         # docker-compose → Docs
-
-# Kombinierte Dependencies (beide müssen fertig sein)
-# #9 braucht sowohl #7 als auch #8
-COMBINED_DEPS_9="7 8"
-
 print_header() {
     echo -e "\n${BOLD}${CYAN}═══════════════════════════════════════════════════════════════${NC}"
     echo -e "${BOLD}${CYAN}  $1${NC}"
@@ -71,20 +52,30 @@ show_issue_details() {
     gh issue view "$issue_num" --repo "$REPO"
 }
 
+# Funktion: Abhängige Issues dynamisch finden (sucht "Blocked by #X" in Issue-Bodies)
+find_dependents() {
+    local issue_num=$1
+    # Suche alle offenen Issues die "Blocked by #<issue_num>" im Body haben
+    gh issue list --repo "$REPO" --state open --json number,title,body --limit 100 | \
+        jq -r --arg num "$issue_num" '.[] | select(.body != null) | select(.body | test("(?i)blocked\\s+by\\s+#" + $num + "\\b")) | "\(.number)\t\(.title)"'
+}
+
 # Funktion: Abhängige Issues anzeigen
 show_dependents() {
     local issue_num=$1
-    local deps="${DEPENDENCIES[$issue_num]}"
+
+    print_section "Abhängige Issues (werden nach Abschluss freigeschaltet)"
+
+    local deps
+    deps=$(find_dependents "$issue_num")
 
     if [ -n "$deps" ]; then
-        print_section "Abhängige Issues (werden nach Abschluss freigeschaltet)"
-        for dep in $deps; do
-            local title=$(gh issue view "$dep" --repo "$REPO" --json title -q .title 2>/dev/null || echo "?")
-            echo -e "  ${GREEN}→ #$dep${NC}: $title"
+        echo "$deps" | while IFS=$'\t' read -r dep_num dep_title; do
+            echo -e "  ${GREEN}→ #$dep_num${NC}: $dep_title"
         done
         echo ""
     else
-        echo -e "${YELLOW}Keine direkten abhängigen Issues.${NC}\n"
+        echo -e "${YELLOW}Keine abhängigen Issues gefunden.${NC}\n"
     fi
 }
 
@@ -258,20 +249,8 @@ main_menu() {
 
                 print_section "Nach Abschluss"
                 echo -e "Wenn das Issue fertig ist und der PR gemerged wurde:"
-
-                local deps="${DEPENDENCIES[$selection]}"
-                if [ -n "$deps" ]; then
-                    echo -e "\n${BOLD}Folgende Issues freigeben:${NC}"
-                    for dep in $deps; do
-                        # Spezialfall: #9 braucht sowohl #7 als auch #8
-                        if [ "$dep" = "9" ]; then
-                            echo -e "  ${YELLOW}#9 erst freigeben wenn BEIDE #7 und #8 erledigt sind!${NC}"
-                            echo -e "  ${CYAN}gh issue edit 9 --add-label 'status/agent-ready'${NC}"
-                        else
-                            echo -e "  ${CYAN}gh issue edit $dep --add-label 'status/agent-ready'${NC}"
-                        fi
-                    done
-                fi
+                echo -e "  ${GREEN}✓${NC} Abhängige Issues werden ${BOLD}automatisch${NC} freigeschaltet"
+                echo -e "    (GitHub Action: unlock-issues.yml)"
 
                 echo -e "\n${GREEN}Issue #$selection ist jetzt in Bearbeitung!${NC}"
                 echo -e "\nDrücke Enter um fortzufahren oder 'q' zum Beenden..."
