@@ -29,7 +29,7 @@ def add_item() -> None:
     form_data: dict[str, Any] = {
         "product_name": "",
         "item_type": None,
-        "quantity": 0.0,
+        "quantity": None,
         "unit": "g",
         "best_before_date": date_type.today(),
         "freeze_date": None,
@@ -374,10 +374,10 @@ def add_item() -> None:
         # Quantity
         ui.label("Menge *").classes("text-sm font-medium mb-1 mt-4")
         quantity_input = ui.number(
-            placeholder="0",
+            placeholder="z.B. 500",
             min=0,
             step=1,
-        ).classes("w-full").props("outlined")
+        ).classes("w-full").props("outlined clearable")
         quantity_input.bind_value(form_data, "quantity")
         quantity_input.on("blur", update_validation)
 
