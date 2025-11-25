@@ -232,9 +232,19 @@ def add_item() -> None:
                 with best_before_input.add_slot("append"):
                     with ui.icon("event").classes("cursor-pointer"):
                         with ui.menu() as best_before_menu:
-                            ui.date(on_change=lambda: best_before_menu.close()).bind_value(best_before_input).props(
+                            best_before_date_picker = ui.date().bind_value(best_before_input).props(
                                 'locale="de" mask="DD.MM.YYYY"'
                             )
+
+                            def on_best_before_change(e: Any) -> None:
+                                best_before_menu.close()
+                                # Update form_data when date changes
+                                if e.value:
+                                    # e.value is already a date object from ui.date
+                                    form_data["best_before_date"] = e.value
+                                update_step2_validation()
+
+                            best_before_date_picker.on("update:model-value", on_best_before_change)
             best_before_input.on("blur", update_step2_validation)
 
             # Freeze Date (conditional - only for frozen types)
@@ -258,9 +268,19 @@ def add_item() -> None:
                     with freeze_date_input.add_slot("append"):
                         with ui.icon("event").classes("cursor-pointer"):
                             with ui.menu() as freeze_date_menu:
-                                ui.date(on_change=lambda: freeze_date_menu.close()).bind_value(freeze_date_input).props(
+                                freeze_date_picker = ui.date().bind_value(freeze_date_input).props(
                                     'locale="de" mask="DD.MM.YYYY"'
                                 )
+
+                                def on_freeze_date_change(e: Any) -> None:
+                                    freeze_date_menu.close()
+                                    # Update form_data when date changes
+                                    if e.value:
+                                        # e.value is already a date object from ui.date
+                                        form_data["freeze_date"] = e.value
+                                    update_step2_validation()
+
+                                freeze_date_picker.on("update:model-value", on_freeze_date_change)
                 freeze_date_input.on("blur", update_step2_validation)
 
             # Notes (optional)
