@@ -82,7 +82,10 @@ def add_item() -> None:
             quantity=form_data["quantity"],
             unit=form_data["unit"],
         )
-        next_button.props(remove="disabled" if is_valid else "", add="disabled" if not is_valid else "")
+        if is_valid:
+            next_button.props(remove="disabled")
+        else:
+            next_button.props(add="disabled")
 
     def update_step2_validation() -> None:
         """Update Step 2 next button state based on validation."""
@@ -91,10 +94,6 @@ def add_item() -> None:
             best_before=form_data["best_before_date"],
             freeze_date=form_data.get("freeze_date"),
         )
-        # Debug: Show validation result
-        print(f"DEBUG Step2 Validation: is_valid={is_valid}, item_type={form_data['item_type']}, "
-              f"best_before={form_data['best_before_date']}, freeze_date={form_data.get('freeze_date')}")
-
         if is_valid:
             step2_next_button.props(remove="disabled")
         else:
@@ -106,8 +105,12 @@ def add_item() -> None:
             location_id=form_data.get("location_id"),
             category_ids=form_data.get("category_ids"),
         )
-        step3_submit_button.props(remove="disabled" if is_valid else "", add="disabled" if not is_valid else "")
-        step3_save_next_button.props(remove="disabled" if is_valid else "", add="disabled" if not is_valid else "")
+        if is_valid:
+            step3_submit_button.props(remove="disabled")
+            step3_save_next_button.props(remove="disabled")
+        else:
+            step3_submit_button.props(add="disabled")
+            step3_save_next_button.props(add="disabled")
 
     def show_step1() -> None:
         """Navigate back to Step 1 (preserves form data)."""
