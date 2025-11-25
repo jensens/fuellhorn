@@ -120,7 +120,7 @@ def add_item() -> None:
             ui.label(f"{date_label} *").classes("text-sm font-medium mb-1")
             best_before_input = ui.date(value=form_data["best_before_date"]).classes(
                 "w-full"
-            ).props("outlined").style("max-width: 500px")
+            ).props('outlined mask="DD.MM.YYYY" hint="TT.MM.JJJJ"').style("max-width: 500px")
             best_before_input.bind_value(form_data, "best_before_date")
             best_before_input.on("update:model-value", update_step2_validation)
 
@@ -135,7 +135,7 @@ def add_item() -> None:
                 ui.label("Einfrierdatum *").classes("text-sm font-medium mb-1 mt-4")
                 freeze_date_input = ui.date(
                     value=form_data.get("freeze_date") or date_type.today()  # type: ignore[arg-type]
-                ).classes("w-full").props("outlined").style("max-width: 500px")
+                ).classes("w-full").props('outlined mask="DD.MM.YYYY" hint="TT.MM.JJJJ"').style("max-width: 500px")
                 freeze_date_input.bind_value(form_data, "freeze_date")
                 freeze_date_input.on("update:model-value", update_step2_validation)
 
