@@ -118,3 +118,28 @@ async def test_items_page_search_no_results(user: TestUser) -> None:
     await user.should_not_see("Tomaten")
     await user.should_not_see("Hackfleisch")
     await user.should_see("Keine Artikel")
+
+
+# Consumed items toggle tests (Issue #17)
+
+
+async def test_items_page_has_consumed_toggle(user: TestUser) -> None:
+    """Test that items page has a toggle to show consumed items."""
+    await user.open("/test-items-page-with-consumed-toggle")
+    await user.should_see("Entnommene anzeigen")
+
+
+async def test_items_page_toggle_shows_consumed_when_enabled(user: TestUser) -> None:
+    """Test that consumed items are shown when toggle is enabled."""
+    await user.open("/test-items-page-with-consumed-toggle-on")
+    # Should see both active and consumed items
+    await user.should_see("Aktiver Artikel")
+    await user.should_see("Entnommener Artikel")
+
+
+async def test_items_page_toggle_hides_consumed_when_disabled(user: TestUser) -> None:
+    """Test that consumed items are hidden when toggle is disabled (default)."""
+    await user.open("/test-items-page-with-consumed-toggle")
+    # Should see only active item
+    await user.should_see("Aktiver Artikel")
+    # Consumed item should not be visible (checked via card count)
