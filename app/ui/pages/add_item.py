@@ -360,7 +360,7 @@ def add_item() -> None:
 
         # Item Type
         ui.label("Artikel-Typ *").classes("text-sm font-medium mb-2 mt-4")
-        item_type_radio = ui.radio(
+        item_type_toggle = ui.toggle(
             options={
                 ItemType.PURCHASED_FRESH: "Frisch eingekauft",
                 ItemType.PURCHASED_FROZEN: "TK-Ware gekauft",
@@ -369,9 +369,9 @@ def add_item() -> None:
                 ItemType.HOMEMADE_PRESERVED: "Selbst eingemacht",
             },
             value=None,
-        ).classes("w-full").props("size=lg")  # 48x48px touch targets
-        item_type_radio.bind_value(form_data, "item_type")
-        item_type_radio.on("update:model-value", update_validation)
+        ).classes("w-full").props("no-caps")
+        item_type_toggle.bind_value(form_data, "item_type")
+        item_type_toggle.on("update:model-value", update_validation)
 
         # Quantity
         ui.label("Menge *").classes("text-sm font-medium mb-1 mt-4")
