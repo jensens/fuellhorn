@@ -1,8 +1,13 @@
-"""Expiry calculator - Calculate expiry dates for different item types."""
+"""Expiry calculator - Calculate expiry dates and status for items."""
 
 from ..models.freeze_time_config import ItemType
 from datetime import date
 from dateutil.relativedelta import relativedelta
+from typing import Literal
+
+
+# Type alias for expiry status
+ExpiryStatus = Literal["critical", "warning", "ok"]
 
 
 def calculate_expiry_date(
@@ -53,3 +58,39 @@ def calculate_expiry_date(
 
     # All other types use best_before_date as base
     return best_before_date + relativedelta(months=freeze_time_months)
+
+
+def get_days_until_expiry(expiry_date: date) -> int:
+    """Calculate days until expiry from today.
+
+    Args:
+        expiry_date: The expiry date of the item
+
+    Returns:
+        Number of days until expiry (negative if expired)
+    """
+    return (expiry_date - date.today()).days
+
+
+def get_expiry_status(expiry_date: date) -> ExpiryStatus:
+    """Get expiry status based on days until expiry.
+
+    Status thresholds:
+    - critical (red): < 3 days until expiry
+    - warning (yellow): 3-7 days until expiry
+    - ok (green): > 7 days until expiry
+
+    Args:
+        expiry_date: The expiry date of the item
+
+    Returns:
+        ExpiryStatus: "critical", "warning", or "ok"
+    """
+    days = get_days_until_expiry(expiry_date)
+
+    if days < 3:
+        return "critical"
+    elif days <= 7:
+        return "warning"
+    else:
+        return "ok"
