@@ -13,11 +13,11 @@ class ItemType(str, Enum):
     Based on UI_KONZEPT.md - reflects actual user workflow for food storage.
     """
 
-    PURCHASED_FRESH = "purchased_fresh"              # Frisch eingekauft
-    PURCHASED_FROZEN = "purchased_frozen"            # TK-Ware gekauft
+    PURCHASED_FRESH = "purchased_fresh"  # Frisch eingekauft
+    PURCHASED_FROZEN = "purchased_frozen"  # TK-Ware gekauft
     PURCHASED_THEN_FROZEN = "purchased_then_frozen"  # Frisch gekauft → eingefroren
-    HOMEMADE_FROZEN = "homemade_frozen"              # Selbst eingefroren (Ernte/Reste)
-    HOMEMADE_PRESERVED = "homemade_preserved"        # Selbst eingemacht
+    HOMEMADE_FROZEN = "homemade_frozen"  # Selbst eingefroren (Ernte/Reste)
+    HOMEMADE_PRESERVED = "homemade_preserved"  # Selbst eingemacht
 
 
 class FreezeTimeConfig(SQLModel, table=True):
@@ -28,9 +28,7 @@ class FreezeTimeConfig(SQLModel, table=True):
     """
 
     __tablename__ = "freeze_time_config"
-    __table_args__ = (
-        UniqueConstraint("category_id", "item_type", name="uq_category_item_type"),
-    )
+    __table_args__ = (UniqueConstraint("category_id", "item_type", name="uq_category_item_type"),)
 
     id: int | None = Field(default=None, primary_key=True)
     category_id: int | None = Field(default=None, foreign_key="category.id")
