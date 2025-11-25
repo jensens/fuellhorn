@@ -247,6 +247,8 @@ def add_item() -> None:
             if form_data["item_type"] in frozen_types:
                 ui.label("Einfrierdatum *").classes("text-sm font-medium mb-1 mt-4")
                 freeze_date_value = form_data.get("freeze_date") or date_type.today()
+                # Initialize form_data with default if not set (fixes #51)
+                form_data["freeze_date"] = freeze_date_value
                 with (
                     ui.input(value=freeze_date_value.strftime("%d.%m.%Y"))
                     .classes("w-full")
