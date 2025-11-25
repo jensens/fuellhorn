@@ -67,6 +67,7 @@ def create_bottom_sheet(
     on_close: Callable[[], None] | None = None,
     on_withdraw: Callable[[Item], None] | None = None,
     on_edit: Callable[[Item], None] | None = None,
+    on_consume: Callable[[Item], None] | None = None,
 ) -> ui.dialog:
     """Create a bottom sheet dialog for item details.
 
@@ -76,6 +77,7 @@ def create_bottom_sheet(
         on_close: Optional callback when sheet is closed
         on_withdraw: Optional callback when withdraw button is clicked
         on_edit: Optional callback when edit button is clicked
+        on_consume: Optional callback when consume button is clicked
 
     Returns:
         The dialog element that can be opened with .open()
@@ -124,12 +126,19 @@ def create_bottom_sheet(
 
             # Action buttons
             with ui.row().classes("w-full p-4 gap-3 border-t"):
-                # Withdraw button - primary action
+                # Consume button - marks item as fully consumed
+                ui.button(
+                    "Entnommen",
+                    icon="check_circle",
+                    on_click=lambda: _handle_consume(dialog, item, on_consume, on_close),
+                ).classes("flex-1 min-h-[48px]").props("color=positive")
+
+                # Withdraw button - partial withdrawal
                 ui.button(
                     "Entnehmen",
                     icon="remove_circle_outline",
                     on_click=lambda: _handle_withdraw(dialog, item, on_withdraw, on_close),
-                ).classes("flex-1 min-h-[48px]").props("color=primary")
+                ).classes("flex-1 min-h-[48px]").props("color=primary outline")
 
                 # Edit button - secondary action
                 ui.button(
@@ -178,5 +187,19 @@ def _handle_edit(
     dialog.close()
     if on_edit:
         on_edit(item)
+    if on_close:
+        on_close()
+
+
+def _handle_consume(
+    dialog: ui.dialog,
+    item: Item,
+    on_consume: Callable[[Item], None] | None,
+    on_close: Callable[[], None] | None,
+) -> None:
+    """Handle consume button click."""
+    dialog.close()
+    if on_consume:
+        on_consume(item)
     if on_close:
         on_close()

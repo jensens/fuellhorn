@@ -63,6 +63,7 @@ def test_bottom_sheet_page(item_id: int) -> None:
         on_close=lambda: ui.notify("Bottom Sheet geschlossen"),
         on_withdraw=lambda i: ui.notify(f"Entnehmen: {i.product_name}"),
         on_edit=lambda i: ui.notify(f"Bearbeiten: {i.product_name}"),
+        on_consume=lambda i: ui.notify(f"Entnommen: {i.product_name}"),
     )
 
     # Automatically open the sheet for testing

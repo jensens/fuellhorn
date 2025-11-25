@@ -92,6 +92,7 @@ async def test_bottom_sheet_has_action_buttons(user: User) -> None:
     await user.open(f"/test/bottom-sheet/{item_id}")
 
     # Verify action buttons are present
+    await user.should_see("Entnommen")
     await user.should_see("Entnehmen")
     await user.should_see("Bearbeiten")
 
@@ -216,3 +217,44 @@ async def test_bottom_sheet_shows_notes(user: User) -> None:
     # Verify notes are shown
     await user.should_see("Rindergulasch")
     await user.should_see("Mit Paprika und Zwiebeln")
+
+
+async def test_bottom_sheet_consume_button_present(user: User) -> None:
+    """Test that bottom sheet has the consume button for marking items as fully consumed."""
+    # Setup: Create location and item in the database
+    from app.database import get_session
+
+    with next(get_session()) as session:
+        # Create location
+        location = Location(
+            name="Tiefkühltruhe",
+            location_type=LocationType.FROZEN,
+            created_by=1,
+        )
+        session.add(location)
+        session.commit()
+        session.refresh(location)
+
+        # Create test item
+        item = Item(
+            product_name="Brokkoli",
+            item_type=ItemType.HOMEMADE_FROZEN,
+            quantity=400,
+            unit="g",
+            location_id=location.id,
+            best_before_date=date.today() + timedelta(days=180),
+            freeze_date=date.today(),
+            expiry_date=date.today() + timedelta(days=180),
+            created_by=1,
+        )
+        session.add(item)
+        session.commit()
+        session.refresh(item)
+        item_id = item.id
+
+    # Open test page with bottom sheet
+    await user.open(f"/test/bottom-sheet/{item_id}")
+
+    # Verify consume button is present
+    await user.should_see("Entnommen")
+    await user.should_see("Brokkoli")
