@@ -26,8 +26,8 @@ jobs:
               per_page: 100
             });
 
-            // Pattern to find "Blocked by #X" in issue body
-            const blockedByPattern = /[Bb]locked\s+by\s+#(\d+)/g;
+            // Pattern to find "Blocked by #X" or "Blocked by: #X" in issue body
+            const blockedByPattern = /[Bb]locked\s+by:?\s*#(\d+)/g;
 
             for (const issue of allIssues) {
               if (!issue.body) continue;

@@ -62,7 +62,7 @@ find_dependents() {
     local issue_num=$1
     # Suche alle offenen Issues die "Blocked by #<issue_num>" im Body haben
     gh issue list --repo "$REPO" --state open --json number,title,body --limit 100 | \
-        jq -r --arg num "$issue_num" '.[] | select(.body != null) | select(.body | test("(?i)blocked\\s+by\\s+#" + $num + "\\b")) | "\(.number)\t\(.title)"'
+        jq -r --arg num "$issue_num" '.[] | select(.body != null) | select(.body | test("(?i)blocked\\s+by:?\\s*#" + $num + "\\b")) | "\(.number)\t\(.title)"'
 }
 
 # Funktion: Abhängige Issues anzeigen
