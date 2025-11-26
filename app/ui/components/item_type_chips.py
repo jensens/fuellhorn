@@ -44,22 +44,24 @@ def create_item_type_chip_group(
             dot = dot_refs[item_type]
 
             if is_selected:
-                # Selected state
+                # Selected state - white outer ring with colored inner dot
                 chip.classes(
                     remove="bg-gray-100 text-gray-700 hover:bg-gray-200",
                     add="bg-primary text-white",
                 )
                 dot.style(
-                    "background: white; border-color: white;"
+                    "width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; "
+                    "background: radial-gradient(circle, var(--q-primary, #1976d2) 35%, white 35%);"
                 )
             else:
-                # Default state
+                # Default state - empty ring
                 chip.classes(
                     remove="bg-primary text-white",
                     add="bg-gray-100 text-gray-700 hover:bg-gray-200",
                 )
                 dot.style(
-                    "background: transparent; border-color: #9ca3af;"
+                    "width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; "
+                    "background: transparent; border: 2px solid #9ca3af;"
                 )
 
     def select_item_type(item_type: ItemType) -> None:
@@ -80,27 +82,31 @@ def create_item_type_chip_group(
             chip = ui.button(
                 on_click=lambda _, it=item_type: select_item_type(it),
             ).classes(
-                "flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer "
+                "rounded-lg cursor-pointer "
                 "transition-all duration-150 ease-in-out select-none normal-case "
                 + ("bg-primary text-white" if is_selected else "bg-gray-100 text-gray-700 hover:bg-gray-200")
             ).style(
-                "min-height: 44px;"
+                "min-height: 44px; padding: 0.5rem 0.75rem;"
             ).props("flat no-caps")
 
             chip_refs[item_type] = chip
 
-            # Add content to button
+            # Add content to button with explicit flex container
             with chip:
-                # Ring-dot indicator
-                dot = ui.element("div").style(
-                    "width: 14px; height: 14px; border-radius: 50%; "
-                    "border: 2px solid; flex-shrink: 0; "
-                    + ("background: white; border-color: white;" if is_selected else "background: transparent; border-color: #9ca3af;")
-                )
-                dot_refs[item_type] = dot
+                with ui.row().classes("items-center gap-2").style("flex-wrap: nowrap;"):
+                    # Ring-dot indicator
+                    dot = ui.element("div").style(
+                        "width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; "
+                        + (
+                            "background: radial-gradient(circle, var(--q-primary, #1976d2) 35%, white 35%);"
+                            if is_selected
+                            else "background-color: transparent; border: 2px solid #9ca3af;"
+                        )
+                    )
+                    dot_refs[item_type] = dot
 
-                # Label
-                ui.label(label_text).classes("text-sm font-medium whitespace-nowrap")
+                    # Label
+                    ui.label(label_text).classes("text-sm font-medium whitespace-nowrap")
 
     return container
 
