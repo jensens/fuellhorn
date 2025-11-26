@@ -330,3 +330,223 @@ async def test_create_user_with_admin_role(
 
     # Should see the new admin in the list
     await logged_in_user.should_see("newadmin")
+
+
+# =============================================================================
+# Issue #30: User Edit Tests
+# =============================================================================
+
+
+async def test_users_page_has_edit_buttons(
+    logged_in_user: TestUser,
+    isolated_test_database,
+) -> None:
+    """Test that each user card has an edit button."""
+    # Create an additional user
+    with Session(isolated_test_database) as session:
+        test_user = User(
+            username="editableuser",
+            email="editable@example.com",
+            is_active=True,
+            role="user",
+        )
+        test_user.set_password("password123")
+        session.add(test_user)
+        session.commit()
+
+    await logged_in_user.open("/admin/users")
+
+    # Should see edit buttons (icon buttons with edit icon)
+    await logged_in_user.should_see("editableuser")
+
+
+async def test_edit_button_opens_dialog(
+    logged_in_user: TestUser,
+    isolated_test_database,
+) -> None:
+    """Test that clicking edit button opens dialog with pre-filled form."""
+    # Create a user to edit
+    with Session(isolated_test_database) as session:
+        test_user = User(
+            username="usertoedit",
+            email="usertoedit@example.com",
+            is_active=True,
+            role="user",
+        )
+        test_user.set_password("password123")
+        session.add(test_user)
+        session.commit()
+
+    await logged_in_user.open("/admin/users")
+
+    # Click the edit button for the user (using marker)
+    logged_in_user.find(marker="edit-usertoedit").click()
+
+    # Should see dialog with pre-filled values
+    await logged_in_user.should_see("Benutzer bearbeiten")
+    await logged_in_user.should_see("usertoedit")
+
+
+async def test_edit_user_change_username(
+    logged_in_user: TestUser,
+    isolated_test_database,
+) -> None:
+    """Test that username can be changed."""
+    # Create a user to edit
+    with Session(isolated_test_database) as session:
+        test_user = User(
+            username="oldname",
+            email="oldname@example.com",
+            is_active=True,
+            role="user",
+        )
+        test_user.set_password("password123")
+        session.add(test_user)
+        session.commit()
+
+    await logged_in_user.open("/admin/users")
+
+    # Click the edit button
+    logged_in_user.find(marker="edit-oldname").click()
+
+    # Clear and change username
+    logged_in_user.find(marker="edit-username").clear()
+    logged_in_user.find(marker="edit-username").type("newname")
+
+    # Save
+    logged_in_user.find("Speichern").click()
+
+    # Should see updated name in list
+    await logged_in_user.should_see("newname")
+    await logged_in_user.should_not_see("oldname")
+
+
+async def test_edit_user_change_role(
+    logged_in_user: TestUser,
+    isolated_test_database,
+) -> None:
+    """Test that role can be changed."""
+    # Create a regular user to edit
+    with Session(isolated_test_database) as session:
+        test_user = User(
+            username="roleuser",
+            email="roleuser@example.com",
+            is_active=True,
+            role="user",
+        )
+        test_user.set_password("password123")
+        session.add(test_user)
+        session.commit()
+
+    await logged_in_user.open("/admin/users")
+
+    # Click the edit button
+    logged_in_user.find(marker="edit-roleuser").click()
+
+    # Change role to Admin
+    logged_in_user.find(marker="edit-role").click()
+    logged_in_user.find("Admin").click()
+
+    # Save
+    logged_in_user.find("Speichern").click()
+
+    # Page should reload and show updated user
+    await logged_in_user.should_see("roleuser")
+
+
+async def test_edit_user_change_password(
+    logged_in_user: TestUser,
+    isolated_test_database,
+) -> None:
+    """Test that password can be changed optionally."""
+    # Create a user to edit
+    with Session(isolated_test_database) as session:
+        test_user = User(
+            username="pwduser",
+            email="pwduser@example.com",
+            is_active=True,
+            role="user",
+        )
+        test_user.set_password("oldpassword")
+        session.add(test_user)
+        session.commit()
+
+    await logged_in_user.open("/admin/users")
+
+    # Click the edit button
+    logged_in_user.find(marker="edit-pwduser").click()
+
+    # Enter new password
+    logged_in_user.find(marker="edit-password").type("newpassword123")
+    logged_in_user.find(marker="edit-password-confirm").type("newpassword123")
+
+    # Save
+    logged_in_user.find("Speichern").click()
+
+    # Should show success (user still visible)
+    await logged_in_user.should_see("pwduser")
+
+
+async def test_edit_user_password_mismatch(
+    logged_in_user: TestUser,
+    isolated_test_database,
+) -> None:
+    """Test that password change requires matching confirmation."""
+    # Create a user to edit
+    with Session(isolated_test_database) as session:
+        test_user = User(
+            username="pwdmismatch",
+            email="pwdmismatch@example.com",
+            is_active=True,
+            role="user",
+        )
+        test_user.set_password("password123")
+        session.add(test_user)
+        session.commit()
+
+    await logged_in_user.open("/admin/users")
+
+    # Click the edit button
+    logged_in_user.find(marker="edit-pwdmismatch").click()
+
+    # Enter mismatched passwords
+    logged_in_user.find(marker="edit-password").type("newpassword123")
+    logged_in_user.find(marker="edit-password-confirm").type("differentpassword")
+
+    # Try to save
+    logged_in_user.find("Speichern").click()
+
+    # Should see error message
+    await logged_in_user.should_see("Passwörter stimmen nicht überein")
+
+
+async def test_edit_user_toggle_active_status(
+    logged_in_user: TestUser,
+    isolated_test_database,
+) -> None:
+    """Test that active status can be toggled."""
+    # Create an active user
+    with Session(isolated_test_database) as session:
+        test_user = User(
+            username="activeuser",
+            email="activeuser@example.com",
+            is_active=True,
+            role="user",
+        )
+        test_user.set_password("password123")
+        session.add(test_user)
+        session.commit()
+
+    await logged_in_user.open("/admin/users")
+
+    # Click the edit button
+    logged_in_user.find(marker="edit-activeuser").click()
+
+    # Toggle active status off
+    logged_in_user.find(marker="edit-is-active").click()
+
+    # Save
+    logged_in_user.find("Speichern").click()
+
+    # Should see Inaktiv status
+    await logged_in_user.should_see("Inaktiv")
