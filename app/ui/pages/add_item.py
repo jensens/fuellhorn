@@ -7,7 +7,9 @@ from ...services import category_service
 from ...services import item_service
 from ...services import location_service
 from ..components import create_bottom_nav
+from ..components import create_item_type_chip_group
 from ..components import create_mobile_page_container
+from ..components import create_unit_chip_group
 from ..smart_defaults import create_smart_defaults_dict
 from ..smart_defaults import get_default_categories
 from ..smart_defaults import get_default_item_type
@@ -33,18 +35,6 @@ SMART_DEFAULTS_KEY = "last_item_entry"
 @require_auth
 def add_item() -> None:
     """3-Schritt-Wizard für schnelle Artikel-Erfassung."""
-
-    # Custom CSS for vertical toggle buttons
-    ui.add_head_html("""
-        <style>
-            .q-btn-toggle--vertical .q-btn {
-                width: 100%;
-                justify-content: flex-start !important;
-                margin-bottom: 8px;
-            }
-        </style>
-    """)
-
     # Load smart defaults from browser storage
     last_entry = app.storage.browser.get(SMART_DEFAULTS_KEY)
 
@@ -137,23 +127,15 @@ def add_item() -> None:
 
             # Item Type
             ui.label("Artikel-Typ *").classes("text-sm font-medium mb-2 mt-4")
-            item_type_toggle = (
-                ui.toggle(
-                    options={
-                        ItemType.PURCHASED_FRESH: "Frisch eingekauft",
-                        ItemType.PURCHASED_FROZEN: "TK-Ware gekauft",
-                        ItemType.PURCHASED_THEN_FROZEN: "Frisch gekauft → eingefroren",
-                        ItemType.HOMEMADE_FROZEN: "Selbst eingefroren",
-                        ItemType.HOMEMADE_PRESERVED: "Selbst eingemacht",
-                    },
-                    value=form_data["item_type"],
-                )
-                .classes("w-full q-btn-toggle--vertical")
-                .props("no-caps")
-                .style("flex-direction: column")
+
+            def on_item_type_change(value: ItemType) -> None:
+                form_data["item_type"] = value
+                update_validation()
+
+            create_item_type_chip_group(
+                value=form_data["item_type"],
+                on_change=on_item_type_change,
             )
-            item_type_toggle.bind_value(form_data, "item_type")
-            item_type_toggle.on("update:model-value", update_validation)
 
             # Quantity
             ui.label("Menge *").classes("text-sm font-medium mb-1 mt-4")
@@ -172,16 +154,15 @@ def add_item() -> None:
 
             # Unit
             ui.label("Einheit *").classes("text-sm font-medium mb-1 mt-4")
-            unit_toggle = (
-                ui.toggle(
-                    options=["g", "kg", "ml", "l", "Stück", "Packung"],
-                    value=form_data["unit"],
-                )
-                .classes("w-full")
-                .props("no-caps")
+
+            def on_unit_change(value: str) -> None:
+                form_data["unit"] = value
+                update_validation()
+
+            create_unit_chip_group(
+                value=form_data["unit"],
+                on_change=on_unit_change,
             )
-            unit_toggle.bind_value(form_data, "unit")
-            unit_toggle.on("update:model-value", update_validation)
 
             # Navigation
             with ui.row().classes("w-full justify-end mt-6 gap-2"):
@@ -534,23 +515,15 @@ def add_item() -> None:
 
         # Item Type
         ui.label("Artikel-Typ *").classes("text-sm font-medium mb-2 mt-4")
-        item_type_toggle = (
-            ui.toggle(
-                options={
-                    ItemType.PURCHASED_FRESH: "Frisch eingekauft",
-                    ItemType.PURCHASED_FROZEN: "TK-Ware gekauft",
-                    ItemType.PURCHASED_THEN_FROZEN: "Frisch gekauft → eingefroren",
-                    ItemType.HOMEMADE_FROZEN: "Selbst eingefroren",
-                    ItemType.HOMEMADE_PRESERVED: "Selbst eingemacht",
-                },
-                value=form_data["item_type"],
-            )
-            .classes("w-full q-btn-toggle--vertical")
-            .props("no-caps")
-            .style("flex-direction: column")
+
+        def on_item_type_change(value: ItemType) -> None:
+            form_data["item_type"] = value
+            update_validation()
+
+        create_item_type_chip_group(
+            value=form_data["item_type"],
+            on_change=on_item_type_change,
         )
-        item_type_toggle.bind_value(form_data, "item_type")
-        item_type_toggle.on("update:model-value", update_validation)
 
         # Quantity
         ui.label("Menge *").classes("text-sm font-medium mb-1 mt-4")
@@ -568,16 +541,15 @@ def add_item() -> None:
 
         # Unit
         ui.label("Einheit *").classes("text-sm font-medium mb-1 mt-4")
-        unit_toggle = (
-            ui.toggle(
-                options=["g", "kg", "ml", "l", "Stück", "Packung"],
-                value=form_data["unit"],
-            )
-            .classes("w-full")
-            .props("no-caps")
+
+        def on_unit_change(value: str) -> None:
+            form_data["unit"] = value
+            update_validation()
+
+        create_unit_chip_group(
+            value=form_data["unit"],
+            on_change=on_unit_change,
         )
-        unit_toggle.bind_value(form_data, "unit")
-        unit_toggle.on("update:model-value", update_validation)
 
         # Navigation
         with ui.row().classes("w-full justify-end mt-6 gap-2"):
