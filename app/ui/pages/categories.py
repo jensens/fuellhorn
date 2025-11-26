@@ -3,6 +3,7 @@
 Based on Issue #20: Categories Page - Liste aller Kategorien
 Issue #21: Categories Page - Kategorie erstellen
 Issue #22: Categories Page - Kategorie bearbeiten
+Issue #23: Categories Page - Kategorie löschen
 """
 
 from ...auth import Permission
@@ -62,11 +63,13 @@ def _render_categories_list() -> None:
                             if category.freeze_time_months:
                                 ui.label(f"{category.freeze_time_months} Mon.").classes("text-sm text-gray-600")
 
-                            # Edit button - capture category data for the closure
+                            # Capture category data for the closures
                             cat_id = category.id
                             cat_name = category.name
                             cat_color = category.color
                             cat_freeze_time = category.freeze_time_months
+
+                            # Edit button
                             ui.button(
                                 icon="edit",
                                 on_click=lambda cid=cat_id,
@@ -74,6 +77,12 @@ def _render_categories_list() -> None:
                                 cc=cat_color,
                                 cft=cat_freeze_time: _open_edit_dialog(cid, cn, cc, cft),
                             ).props("flat round color=grey-7 size=sm").mark(f"edit-{cat_name}")
+
+                            # Delete button
+                            ui.button(
+                                icon="delete",
+                                on_click=lambda cid=cat_id, cn=cat_name: _open_delete_dialog(cid, cn),
+                            ).props("flat round color=red-7 size=sm").mark(f"delete-{cat_name}")
         else:
             # Empty state
             with ui.card().classes("w-full"):
@@ -206,5 +215,39 @@ def _open_edit_dialog(
                     error_label.set_visibility(True)
 
             ui.button("Speichern", on_click=save_changes).props("color=primary")
+
+    dialog.open()
+
+
+def _open_delete_dialog(category_id: int, category_name: str) -> None:
+    """Open confirmation dialog to delete a category."""
+    with ui.dialog() as dialog, ui.card().classes("w-full max-w-md"):
+        ui.label("Kategorie löschen").classes("text-h6 font-semibold mb-4")
+
+        # Warning message
+        ui.label(f"Möchten Sie die Kategorie '{category_name}' wirklich löschen?").classes("mb-2")
+        ui.label("Diese Aktion kann nicht rückgängig gemacht werden.").classes("text-sm text-red-600 mb-4")
+
+        # Error label (hidden by default)
+        error_label = ui.label("").classes("text-red-600 text-sm mb-2")
+        error_label.set_visibility(False)
+
+        # Buttons
+        with ui.row().classes("w-full justify-end gap-2"):
+            ui.button("Abbrechen", on_click=dialog.close).props("flat")
+
+            def confirm_delete() -> None:
+                """Perform the deletion."""
+                try:
+                    with next(get_session()) as session:
+                        category_service.delete_category(session=session, id=category_id)
+                    ui.notify("Kategorie gelöscht", type="positive")
+                    dialog.close()
+                    ui.navigate.to("/admin/categories")
+                except Exception as e:
+                    error_label.set_text(str(e))
+                    error_label.set_visibility(True)
+
+            ui.button("Löschen", on_click=confirm_delete).props("color=red")
 
     dialog.open()
