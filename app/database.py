@@ -11,6 +11,7 @@ from .models import FreezeTimeConfig  # noqa: F401
 from .models import Item  # noqa: F401
 from .models import ItemCategory  # noqa: F401
 from .models import Location  # noqa: F401
+from .models import SystemSettings  # noqa: F401
 from .models import User  # noqa: F401
 from collections.abc import Generator
 from sqlalchemy import Engine

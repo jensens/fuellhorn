@@ -17,6 +17,7 @@ def create_user_dropdown() -> None:
     """Create a clickable username with dropdown menu.
 
     The dropdown contains:
+    - Profil (all users) → /profile
     - Einstellungen (only for admin users) → /admin/settings
     - Abmelden → logout
     """
@@ -32,6 +33,12 @@ def create_user_dropdown() -> None:
     # Clickable username with dropdown
     with ui.button(username, icon="person").props("flat no-caps color=gray-7").classes("text-sm"):
         with ui.menu().classes("min-w-40"):
+            # Profile link (all users)
+            ui.menu_item(
+                "Profil",
+                on_click=lambda: ui.navigate.to("/profile"),
+            ).props("icon=account_circle")
+
             # Settings link (admin only)
             if is_admin:
                 ui.menu_item(
