@@ -210,3 +210,178 @@ async def test_create_category_validation_unique_name(user: TestUser, isolated_t
 
     # Should see error message about duplicate
     await user.should_see("bereits vorhanden")
+
+
+# =============================================================================
+# Issue #22: Category Edit Tests
+# =============================================================================
+
+
+async def test_categories_page_has_edit_buttons(
+    logged_in_user: TestUser,
+    isolated_test_database,
+) -> None:
+    """Test that each category card has an edit button."""
+    # Create a category
+    with Session(isolated_test_database) as session:
+        cat = Category(
+            name="Gemüse",
+            color="#00FF00",
+            created_by=1,
+        )
+        session.add(cat)
+        session.commit()
+
+    await logged_in_user.open("/admin/categories")
+
+    # Should see the category
+    await logged_in_user.should_see("Gemüse")
+
+
+async def test_edit_button_opens_dialog(
+    logged_in_user: TestUser,
+    isolated_test_database,
+) -> None:
+    """Test that clicking edit button opens dialog with pre-filled form."""
+    # Create a category to edit
+    with Session(isolated_test_database) as session:
+        cat = Category(
+            name="Obst",
+            color="#FF5733",
+            created_by=1,
+        )
+        session.add(cat)
+        session.commit()
+
+    await logged_in_user.open("/admin/categories")
+
+    # Click the edit button for the category (using marker)
+    logged_in_user.find(marker="edit-Obst").click()
+
+    # Should see dialog with pre-filled values
+    await logged_in_user.should_see("Kategorie bearbeiten")
+    await logged_in_user.should_see("Obst")
+
+
+async def test_edit_category_change_name(
+    logged_in_user: TestUser,
+    isolated_test_database,
+) -> None:
+    """Test that category name can be changed."""
+    # Create a category to edit
+    with Session(isolated_test_database) as session:
+        cat = Category(
+            name="Altername",
+            created_by=1,
+        )
+        session.add(cat)
+        session.commit()
+
+    await logged_in_user.open("/admin/categories")
+
+    # Click the edit button
+    logged_in_user.find(marker="edit-Altername").click()
+
+    # Clear and change name
+    logged_in_user.find(marker="edit-name").clear()
+    logged_in_user.find(marker="edit-name").type("Neuername")
+
+    # Save
+    logged_in_user.find("Speichern").click()
+
+    # Should see updated name in list
+    await logged_in_user.should_see("Neuername")
+    await logged_in_user.should_not_see("Altername")
+
+
+async def test_edit_category_validation_name_required(
+    logged_in_user: TestUser,
+    isolated_test_database,
+) -> None:
+    """Test that category name is required when editing."""
+    # Create a category to edit
+    with Session(isolated_test_database) as session:
+        cat = Category(
+            name="Testkategorie",
+            created_by=1,
+        )
+        session.add(cat)
+        session.commit()
+
+    await logged_in_user.open("/admin/categories")
+
+    # Click the edit button
+    logged_in_user.find(marker="edit-Testkategorie").click()
+
+    # Clear the name field
+    logged_in_user.find(marker="edit-name").clear()
+
+    # Try to save without name
+    logged_in_user.find("Speichern").click()
+
+    # Should see error message
+    await logged_in_user.should_see("Name ist erforderlich")
+
+
+async def test_edit_category_validation_unique_name(
+    logged_in_user: TestUser,
+    isolated_test_database,
+) -> None:
+    """Test that duplicate category names are rejected when editing."""
+    # Create two categories
+    with Session(isolated_test_database) as session:
+        cat1 = Category(
+            name="Fleisch",
+            created_by=1,
+        )
+        cat2 = Category(
+            name="Fisch",
+            created_by=1,
+        )
+        session.add(cat1)
+        session.add(cat2)
+        session.commit()
+
+    await logged_in_user.open("/admin/categories")
+
+    # Click the edit button for Fisch
+    logged_in_user.find(marker="edit-Fisch").click()
+
+    # Try to rename to existing name
+    logged_in_user.find(marker="edit-name").clear()
+    logged_in_user.find(marker="edit-name").type("Fleisch")
+
+    # Save
+    logged_in_user.find("Speichern").click()
+
+    # Should see error message about duplicate
+    await logged_in_user.should_see("bereits vorhanden")
+
+
+async def test_edit_category_cancel_closes_dialog(
+    logged_in_user: TestUser,
+    isolated_test_database,
+) -> None:
+    """Test that cancel button closes the dialog without saving."""
+    # Create a category
+    with Session(isolated_test_database) as session:
+        cat = Category(
+            name="Milchprodukte",
+            created_by=1,
+        )
+        session.add(cat)
+        session.commit()
+
+    await logged_in_user.open("/admin/categories")
+
+    # Click the edit button
+    logged_in_user.find(marker="edit-Milchprodukte").click()
+
+    # Should see dialog
+    await logged_in_user.should_see("Kategorie bearbeiten")
+
+    # Click cancel
+    logged_in_user.find("Abbrechen").click()
+
+    # Dialog should be closed, original name should still be there
+    await logged_in_user.should_see("Milchprodukte")

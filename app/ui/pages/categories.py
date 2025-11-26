@@ -2,6 +2,7 @@
 
 Based on Issue #20: Categories Page - Liste aller Kategorien
 Issue #21: Categories Page - Kategorie erstellen
+Issue #22: Categories Page - Kategorie bearbeiten
 """
 
 from ...auth import Permission
@@ -54,9 +55,25 @@ def _render_categories_list() -> None:
                                 ui.element("div").classes("w-6 h-6 rounded-full bg-gray-300")
                             # Category name
                             ui.label(category.name).classes("font-medium text-lg")
-                        # Freeze time info (if set)
-                        if category.freeze_time_months:
-                            ui.label(f"{category.freeze_time_months} Mon.").classes("text-sm text-gray-600")
+
+                        # Right side: freeze time and edit button
+                        with ui.row().classes("items-center gap-2"):
+                            # Freeze time info (if set)
+                            if category.freeze_time_months:
+                                ui.label(f"{category.freeze_time_months} Mon.").classes("text-sm text-gray-600")
+
+                            # Edit button - capture category data for the closure
+                            cat_id = category.id
+                            cat_name = category.name
+                            cat_color = category.color
+                            cat_freeze_time = category.freeze_time_months
+                            ui.button(
+                                icon="edit",
+                                on_click=lambda cid=cat_id,
+                                cn=cat_name,
+                                cc=cat_color,
+                                cft=cat_freeze_time: _open_edit_dialog(cid, cn, cc, cft),
+                            ).props("flat round color=grey-7 size=sm").mark(f"edit-{cat_name}")
         else:
             # Empty state
             with ui.card().classes("w-full"):
@@ -126,5 +143,68 @@ def _open_create_dialog() -> None:
                     error_label.set_visibility(True)
 
             ui.button("Speichern", on_click=save_category).props("color=primary")
+
+    dialog.open()
+
+
+def _open_edit_dialog(
+    category_id: int,
+    current_name: str,
+    current_color: str | None,
+    current_freeze_time: int | None,
+) -> None:
+    """Open dialog to edit an existing category."""
+    with ui.dialog() as dialog, ui.card().classes("w-full max-w-md"):
+        ui.label("Kategorie bearbeiten").classes("text-h6 font-semibold mb-4")
+
+        # Name input (pre-filled)
+        name_input = (
+            ui.input(label="Name", value=current_name).classes("w-full mb-2").props("outlined").mark("edit-name")
+        )
+
+        # Color input (pre-filled)
+        color_input = ui.color_input(label="Farbe", value=current_color or "").classes("w-full mb-4")
+
+        # Error label (hidden by default)
+        error_label = ui.label("").classes("text-red-600 text-sm mb-2")
+        error_label.set_visibility(False)
+
+        # Buttons
+        with ui.row().classes("w-full justify-end gap-2"):
+            ui.button("Abbrechen", on_click=dialog.close).props("flat")
+
+            def save_changes() -> None:
+                """Validate and save the category changes."""
+                name = name_input.value.strip() if name_input.value else ""
+                color = color_input.value if color_input.value else None
+
+                # Validation: name is required
+                if not name:
+                    error_label.set_text("Name ist erforderlich")
+                    error_label.set_visibility(True)
+                    return
+
+                try:
+                    with next(get_session()) as session:
+                        category_service.update_category(
+                            session=session,
+                            id=category_id,
+                            name=name if name != current_name else None,
+                            color=color,
+                            freeze_time_months=current_freeze_time,
+                        )
+                    ui.notify(f"Kategorie '{name}' aktualisiert", type="positive")
+                    dialog.close()
+                    ui.navigate.to("/admin/categories")
+                except ValueError as e:
+                    # Handle duplicate name error
+                    error_msg = str(e)
+                    if "already exists" in error_msg:
+                        error_label.set_text(f"Kategorie '{name}' bereits vorhanden")
+                    else:
+                        error_label.set_text(error_msg)
+                    error_label.set_visibility(True)
+
+            ui.button("Speichern", on_click=save_changes).props("color=primary")
 
     dialog.open()
