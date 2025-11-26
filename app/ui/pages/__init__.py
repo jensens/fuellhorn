@@ -11,3 +11,4 @@ from . import locations  # noqa: F401
 from . import login  # noqa: F401
 from . import more  # noqa: F401
 from . import settings  # noqa: F401
+from . import users  # noqa: F401
