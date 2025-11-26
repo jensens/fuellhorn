@@ -723,3 +723,174 @@ def page_items_with_type_filter() -> None:
                 create_item_card(item, session)
 
     create_bottom_nav(current_page="items")
+
+
+# Sorting test pages (Issue #13)
+
+# Sort options labels
+SORT_OPTIONS: dict[str, str] = {
+    "expiry_date": "Ablaufdatum",
+    "product_name": "Produktname",
+    "created_at": "Erfassungsdatum",
+}
+
+
+@ui.page("/test-items-page-with-sorting")
+def page_items_with_sorting() -> None:
+    """Test page with sorting dropdown and direction toggle."""
+    _set_test_session()
+
+    with next(get_session()) as session:
+        location = _create_test_location(session)
+
+        # Create test items
+        _create_test_item(
+            session,
+            location,
+            product_name="Test Item",
+            expiry_days_from_now=10,
+        )
+
+        with ui.column().classes("w-full"):
+            ui.label("Vorrat").classes("text-h5")
+
+            # Sort controls row
+            with ui.row().classes("w-full gap-2 items-center"):
+                ui.select(
+                    label="Sortierung",
+                    options=SORT_OPTIONS,
+                    value="expiry_date",
+                ).classes("flex-1")
+
+                # Direction toggle button
+                ui.button(icon="arrow_upward").props("flat dense")
+
+            # Get items
+            items = list(
+                session.exec(select(Item).where(Item.is_consumed.is_(False))).all()  # type: ignore
+            )
+
+            for item in items:
+                create_item_card(item, session)
+
+    create_bottom_nav(current_page="items")
+
+
+@ui.page("/test-items-page-with-sorting-data")
+def page_items_with_sorting_data() -> None:
+    """Test page with items sorted by expiry date (default ascending)."""
+    _set_test_session()
+
+    with next(get_session()) as session:
+        location = _create_test_location(session)
+
+        # Create items with different expiry dates
+        _create_test_item(
+            session,
+            location,
+            product_name="Später Ablaufend",
+            expiry_days_from_now=30,
+        )
+        _create_test_item(
+            session,
+            location,
+            product_name="Bald Ablaufend",
+            expiry_days_from_now=5,
+        )
+
+        with ui.column().classes("w-full"):
+            ui.label("Vorrat").classes("text-h5")
+
+            # Get items sorted by expiry date ascending
+            items = list(
+                session.exec(
+                    select(Item)
+                    .where(Item.is_consumed.is_(False))  # type: ignore
+                    .order_by(Item.expiry_date)  # type: ignore[arg-type]
+                ).all()
+            )
+
+            for item in items:
+                create_item_card(item, session)
+
+    create_bottom_nav(current_page="items")
+
+
+@ui.page("/test-items-page-with-sorting-by-name")
+def page_items_with_sorting_by_name() -> None:
+    """Test page with items sorted by product name."""
+    _set_test_session()
+
+    with next(get_session()) as session:
+        location = _create_test_location(session)
+
+        # Create items with different names
+        _create_test_item(
+            session,
+            location,
+            product_name="Zwiebel",
+            expiry_days_from_now=10,
+        )
+        _create_test_item(
+            session,
+            location,
+            product_name="Apfel",
+            expiry_days_from_now=15,
+        )
+
+        with ui.column().classes("w-full"):
+            ui.label("Vorrat").classes("text-h5")
+
+            # Get items sorted by product name
+            items = list(
+                session.exec(
+                    select(Item)
+                    .where(Item.is_consumed.is_(False))  # type: ignore
+                    .order_by(Item.product_name)
+                ).all()
+            )
+
+            for item in items:
+                create_item_card(item, session)
+
+    create_bottom_nav(current_page="items")
+
+
+@ui.page("/test-items-page-with-sorting-desc")
+def page_items_with_sorting_desc() -> None:
+    """Test page with items sorted by expiry date descending."""
+    _set_test_session()
+
+    with next(get_session()) as session:
+        location = _create_test_location(session)
+
+        # Create items with different expiry dates
+        _create_test_item(
+            session,
+            location,
+            product_name="Bald Ablaufend",
+            expiry_days_from_now=5,
+        )
+        _create_test_item(
+            session,
+            location,
+            product_name="Später Ablaufend",
+            expiry_days_from_now=30,
+        )
+
+        with ui.column().classes("w-full"):
+            ui.label("Vorrat").classes("text-h5")
+
+            # Get items sorted by expiry date descending
+            items = list(
+                session.exec(
+                    select(Item)
+                    .where(Item.is_consumed.is_(False))  # type: ignore
+                    .order_by(Item.expiry_date.desc())  # type: ignore
+                ).all()
+            )
+
+            for item in items:
+                create_item_card(item, session)
+
+    create_bottom_nav(current_page="items")

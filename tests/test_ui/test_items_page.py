@@ -269,3 +269,48 @@ async def test_items_page_item_type_filter_filters_items(user: TestUser) -> None
     await user.should_see("Selbst Eingefrorenes")
     # Should NOT see purchased fresh item
     await user.should_not_see("Frisch Gekauftes")
+
+
+# Sorting functionality tests (Issue #13)
+
+
+async def test_items_page_has_sort_dropdown(user: TestUser) -> None:
+    """Test that items page has a sort dropdown with label."""
+    await user.open("/test-items-page-with-sorting")
+    await user.should_see("Sortierung")
+
+
+async def test_items_page_sort_default_is_expiry(user: TestUser) -> None:
+    """Test that default sort is by expiry date (shown as selected value)."""
+    await user.open("/test-items-page-with-sorting")
+    # Default selected value should be expiry date
+    await user.should_see("Ablaufdatum")
+
+
+async def test_items_page_has_sort_direction_toggle(user: TestUser) -> None:
+    """Test that items page has ascending/descending toggle."""
+    await user.open("/test-items-page-with-sorting")
+    # Should see the direction toggle button
+    await user.should_see("arrow_upward")
+
+
+async def test_items_page_sort_by_expiry_default(user: TestUser) -> None:
+    """Test that items are sorted by expiry date by default (ascending)."""
+    await user.open("/test-items-page-with-sorting-data")
+    # Item expiring soonest should appear first
+    # "Bald Ablaufend" expires in 5 days, "Später Ablaufend" in 30 days
+    await user.should_see("Bald Ablaufend")
+
+
+async def test_items_page_sort_by_name(user: TestUser) -> None:
+    """Test that items can be sorted by product name."""
+    await user.open("/test-items-page-with-sorting-by-name")
+    # "Apfel" comes before "Zwiebel" alphabetically
+    await user.should_see("Apfel")
+
+
+async def test_items_page_sort_descending(user: TestUser) -> None:
+    """Test that sort direction can be toggled to descending."""
+    await user.open("/test-items-page-with-sorting-desc")
+    # Item expiring latest should appear first when descending
+    await user.should_see("Später Ablaufend")

@@ -5,6 +5,7 @@ Based on requirements from Issue #9.
 Search functionality added in Issue #10.
 Category filter added in Issue #11.
 Filter by location and item type added in Issue #12.
+Sorting added in Issue #13.
 Extended in Issue #17 to allow showing consumed items via toggle.
 """
 
@@ -28,6 +29,13 @@ from typing import Any
 
 # Browser storage key for consumed items filter
 SHOW_CONSUMED_KEY = "show_consumed_items"
+
+# Sorting options
+SORT_OPTIONS: dict[str, str] = {
+    "expiry_date": "Ablaufdatum",
+    "product_name": "Produktname",
+    "created_at": "Erfassungsdatum",
+}
 
 # Human-readable labels for item types
 ITEM_TYPE_LABELS: dict[str, str] = {
@@ -136,6 +144,26 @@ def _filter_items_by_categories(
     ]
 
 
+def _sort_items(items: list[Item], sort_field: str, ascending: bool) -> list[Item]:
+    """Sort items by the specified field.
+
+    Args:
+        items: List of items to sort
+        sort_field: Field to sort by (expiry_date, product_name, created_at)
+        ascending: True for ascending, False for descending
+
+    Returns:
+        Sorted list of items
+    """
+    if sort_field == "expiry_date":
+        return sorted(items, key=lambda x: x.expiry_date, reverse=not ascending)
+    elif sort_field == "product_name":
+        return sorted(items, key=lambda x: x.product_name.lower(), reverse=not ascending)
+    elif sort_field == "created_at":
+        return sorted(items, key=lambda x: x.created_at, reverse=not ascending)
+    return items
+
+
 @ui.page("/items")
 @require_auth
 def items_page() -> None:
@@ -144,14 +172,17 @@ def items_page() -> None:
     # Read filter setting from browser storage (default: False = hide consumed)
     show_consumed = app.storage.browser.get(SHOW_CONSUMED_KEY, False)
 
-    # State for filters
+    # State for filters and sorting
     filter_state: dict[str, Any] = {
         "search_term": "",
         "location_id": 0,  # 0 = all locations
         "item_type": "",  # "" = all types
+        "sort_field": "expiry_date",  # Default: sort by expiry date
+        "sort_ascending": True,  # Default: ascending (soonest first)
     }
     selected_categories: set[int] = set()
     chip_elements: dict[int, ui.button] = {}
+    sort_direction_btn: ui.button | None = None
 
     # Container reference (for refreshing)
     items_container: Any = None
@@ -193,6 +224,13 @@ def items_page() -> None:
                 # Apply category filter
                 filtered_items = _filter_items_by_categories(filtered_items, selected_categories, item_category_map)
 
+                # Apply sorting
+                filtered_items = _sort_items(
+                    filtered_items,
+                    filter_state["sort_field"],
+                    filter_state["sort_ascending"],
+                )
+
                 if not all_items:
                     # No items at all - show empty state with CTA
                     _render_empty_state()
@@ -222,6 +260,21 @@ def items_page() -> None:
     def on_item_type_change(e: Any) -> None:
         """Handle item type filter change."""
         filter_state["item_type"] = e.value if e.value else ""
+        refresh_items()
+
+    def on_sort_field_change(e: Any) -> None:
+        """Handle sort field change."""
+        filter_state["sort_field"] = e.value if e.value else "expiry_date"
+        refresh_items()
+
+    def toggle_sort_direction() -> None:
+        """Toggle between ascending and descending sort."""
+        nonlocal sort_direction_btn
+        filter_state["sort_ascending"] = not filter_state["sort_ascending"]
+        # Update button icon
+        if sort_direction_btn:
+            new_icon = "arrow_upward" if filter_state["sort_ascending"] else "arrow_downward"
+            sort_direction_btn.props(f"icon={new_icon}")
         refresh_items()
 
     def update_chip_style(cat_id: int) -> None:
@@ -281,6 +334,21 @@ def items_page() -> None:
                 value="",
                 on_change=on_item_type_change,
             ).props("dense outlined").classes("flex-1")
+
+        # Sorting row
+        with ui.row().classes("w-full gap-2 items-center mb-2"):
+            ui.select(
+                label="Sortierung",
+                options=SORT_OPTIONS,
+                value="expiry_date",
+                on_change=on_sort_field_change,
+            ).props("dense outlined").classes("flex-1")
+
+            # Direction toggle button
+            sort_direction_btn = ui.button(
+                icon="arrow_upward",
+                on_click=toggle_sort_direction,
+            ).props("flat dense")
 
         # Category filter chips (load categories once)
         with next(get_session()) as session:
