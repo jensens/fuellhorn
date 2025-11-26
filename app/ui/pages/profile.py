@@ -6,11 +6,6 @@ Based on Issue #85: Profil-Seite für User (Passwort ändern, Smart Defaults)
 - Smart default time window settings (stored per user in DB)
 """
 
-from typing import Any
-
-from nicegui import ui
-from sqlmodel import Session
-
 from ...auth import get_current_user
 from ...auth import require_auth
 from ...database import get_engine
@@ -18,6 +13,9 @@ from ...models.user import User
 from ...services import preferences_service
 from ..components import create_bottom_nav
 from ..components import create_mobile_page_container
+from nicegui import ui
+from sqlmodel import Session
+from typing import Any
 
 
 # Default time windows in minutes
@@ -40,9 +38,7 @@ def profile() -> None:
     # Header
     with ui.row().classes("w-full items-center justify-between p-4 bg-white border-b border-gray-200"):
         with ui.row().classes("items-center gap-2"):
-            ui.button(icon="arrow_back", on_click=lambda: ui.navigate.to("/dashboard")).props(
-                "flat round color=gray-7"
-            )
+            ui.button(icon="arrow_back", on_click=lambda: ui.navigate.to("/dashboard")).props("flat round color=gray-7")
             ui.label("Profil").classes("text-h5 font-bold text-primary")
 
     # Main content with bottom nav spacing
