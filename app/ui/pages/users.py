@@ -23,7 +23,9 @@ def users_page() -> None:
     # Header
     with ui.row().classes("w-full items-center justify-between p-4 bg-white border-b border-gray-200"):
         with ui.row().classes("items-center gap-2"):
-            ui.button(icon="arrow_back", on_click=lambda: ui.navigate.to("/settings")).props("flat round color=gray-7")
+            ui.button(icon="arrow_back", on_click=lambda: ui.navigate.to("/admin/settings")).props(
+                "flat round color=gray-7"
+            )
             ui.label("Benutzer").classes("text-h5 font-bold text-primary")
 
     # Main content with bottom nav spacing

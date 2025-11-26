@@ -3,7 +3,7 @@
 Based on UI_KONZEPT.md Section 4: Bottom Navigation (Mobile)
 - 56px height
 - Sticky at bottom
-- 4 main items
+- 3 main items (Issue #83: removed 'Mehr')
 - Active state with primary color
 """
 
@@ -15,14 +15,13 @@ def create_bottom_nav(current_page: str = "dashboard") -> None:
     """Create bottom navigation bar for mobile-first UI.
 
     Args:
-        current_page: Current active page ("dashboard", "add", "inventory", "more")
+        current_page: Current active page ("dashboard", "add", "inventory")
     """
-    # Navigation items with icons and labels
+    # Navigation items with icons and labels (Issue #83: only 3 items)
     nav_items = [
         {"id": "dashboard", "icon": "home", "label": "Übersicht", "route": "/dashboard"},
         {"id": "add", "icon": "add_circle", "label": "Erfassen", "route": "/items/add"},
         {"id": "inventory", "icon": "inventory_2", "label": "Vorrat", "route": "/items"},
-        {"id": "more", "icon": "more_horiz", "label": "Mehr", "route": "/settings"},
     ]
 
     # Bottom navigation container - sticky at bottom

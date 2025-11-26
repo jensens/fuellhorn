@@ -39,8 +39,8 @@ def settings() -> None:
         # Smart Default Settings section (Issue #34)
         _render_smart_defaults_section()
 
-    # Bottom Navigation
-    create_bottom_nav(current_page="settings")
+    # Bottom Navigation (no item active - accessed via user dropdown)
+    create_bottom_nav(current_page="")
 
 
 def _render_admin_navigation() -> None:

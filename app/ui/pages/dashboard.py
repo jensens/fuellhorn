@@ -9,8 +9,8 @@ from ...models.item import Item
 from ...services import item_service
 from ..components import create_bottom_nav
 from ..components import create_mobile_page_container
+from ..components import create_user_dropdown
 from datetime import date
-from nicegui import app
 from nicegui import ui
 
 
@@ -19,13 +19,10 @@ from nicegui import ui
 def dashboard() -> None:
     """Dashboard mit Ablaufübersicht und Statistiken (Mobile-First)."""
 
-    # Header with user info and settings
+    # Header with user dropdown
     with ui.row().classes("w-full items-center justify-between p-4 bg-white border-b border-gray-200"):
         ui.label("Füllhorn").classes("text-h5 font-bold text-primary")
-        with ui.row().classes("items-center gap-2"):
-            username = app.storage.user.get("username", "User")
-            ui.label(f"@{username}").classes("text-sm text-gray-600")
-            ui.button(icon="settings", on_click=lambda: ui.navigate.to("/settings")).props("flat round color=gray-7")
+        create_user_dropdown()
 
     # Main content with bottom nav spacing
     with create_mobile_page_container():
