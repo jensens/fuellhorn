@@ -2,6 +2,8 @@
 
 Issue #20: Categories Liste
 Issue #21: Kategorie erstellen
+Issue #22: Kategorie bearbeiten
+Issue #23: Kategorie löschen
 """
 
 from app.models.category import Category
@@ -385,3 +387,104 @@ async def test_edit_category_cancel_closes_dialog(
 
     # Dialog should be closed, original name should still be there
     await logged_in_user.should_see("Milchprodukte")
+
+
+# =============================================================================
+# Issue #23: Category Delete Tests
+# =============================================================================
+
+
+async def test_categories_page_has_delete_buttons(
+    logged_in_user: TestUser,
+    isolated_test_database,
+) -> None:
+    """Test that each category card has a delete button."""
+    # Create a category
+    with Session(isolated_test_database) as session:
+        cat = Category(
+            name="Löschbar",
+            created_by=1,
+        )
+        session.add(cat)
+        session.commit()
+
+    await logged_in_user.open("/admin/categories")
+
+    # Should see the category
+    await logged_in_user.should_see("Löschbar")
+
+
+async def test_delete_button_opens_confirmation_dialog(
+    logged_in_user: TestUser,
+    isolated_test_database,
+) -> None:
+    """Test that clicking delete button opens confirmation dialog."""
+    # Create a category
+    with Session(isolated_test_database) as session:
+        cat = Category(
+            name="ZuLöschen",
+            created_by=1,
+        )
+        session.add(cat)
+        session.commit()
+
+    await logged_in_user.open("/admin/categories")
+
+    # Click the delete button
+    logged_in_user.find(marker="delete-ZuLöschen").click()
+
+    # Should see confirmation dialog
+    await logged_in_user.should_see("Kategorie löschen")
+    await logged_in_user.should_see("ZuLöschen")
+
+
+async def test_delete_category_success(
+    logged_in_user: TestUser,
+    isolated_test_database,
+) -> None:
+    """Test that deleting a category works correctly."""
+    # Create a category
+    with Session(isolated_test_database) as session:
+        cat = Category(
+            name="WirdGelöscht",
+            created_by=1,
+        )
+        session.add(cat)
+        session.commit()
+
+    await logged_in_user.open("/admin/categories")
+
+    # Click the delete button
+    logged_in_user.find(marker="delete-WirdGelöscht").click()
+
+    # Confirm deletion
+    logged_in_user.find("Löschen").click()
+
+    # Category should be gone
+    await logged_in_user.should_not_see("WirdGelöscht")
+
+
+async def test_delete_category_cancel(
+    logged_in_user: TestUser,
+    isolated_test_database,
+) -> None:
+    """Test that canceling delete keeps the category."""
+    # Create a category
+    with Session(isolated_test_database) as session:
+        cat = Category(
+            name="NichtLöschen",
+            created_by=1,
+        )
+        session.add(cat)
+        session.commit()
+
+    await logged_in_user.open("/admin/categories")
+
+    # Click the delete button
+    logged_in_user.find(marker="delete-NichtLöschen").click()
+
+    # Cancel deletion
+    logged_in_user.find("Abbrechen").click()
+
+    # Category should still be there
+    await logged_in_user.should_see("NichtLöschen")
