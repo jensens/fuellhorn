@@ -1,7 +1,8 @@
-"""UI Tests for Settings Page - Admin Navigation and Smart Defaults.
+"""UI Tests for Settings Page - Admin Navigation and System Defaults.
 
 Issue #79: Settings Page aufteilen - Navigation zu Admin-Bereichen.
 Issue #34: Smart Default Zeitfenster konfigurieren.
+Issue #85: System-Defaults in DB speichern (Fallback für User ohne eigene Einstellungen).
 """
 
 from nicegui.testing import User
@@ -57,14 +58,14 @@ async def test_settings_page_shows_freeze_times_link(logged_in_user: User) -> No
 
 
 # =============================================================================
-# Smart Default Zeitfenster Tests (Issue #34)
+# System Default Zeitfenster Tests (Issue #34, #85)
 # =============================================================================
 
 
 async def test_settings_page_shows_smart_defaults_section(logged_in_user: User) -> None:
-    """Test that settings page has a Smart Defaults section."""
+    """Test that settings page has a System Defaults section (renamed in #85)."""
     await logged_in_user.open("/admin/settings")
-    await logged_in_user.should_see("Smart Default Einstellungen")
+    await logged_in_user.should_see("System-Standardwerte")
 
 
 async def test_settings_page_shows_item_type_time_window(logged_in_user: User) -> None:

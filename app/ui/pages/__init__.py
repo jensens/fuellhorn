@@ -10,5 +10,6 @@ from . import freeze_times  # noqa: F401
 from . import items  # noqa: F401
 from . import locations  # noqa: F401
 from . import login  # noqa: F401
+from . import profile  # noqa: F401
 from . import settings  # noqa: F401
 from . import users  # noqa: F401

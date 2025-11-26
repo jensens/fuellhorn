@@ -6,8 +6,11 @@ Repräsentiert einen Benutzer mit Authentifizierung und Rolle.
 import bcrypt
 from datetime import datetime
 from enum import Enum
+from sqlalchemy import Column
+from sqlalchemy.dialects.sqlite import JSON
 from sqlmodel import Field
 from sqlmodel import SQLModel
+from typing import Any
 
 
 class Role(str, Enum):
@@ -50,6 +53,15 @@ class User(SQLModel, table=True):
 
     # Remember-Me Token (für "Angemeldet bleiben" Feature)
     remember_token: str | None = Field(default=None)
+
+    # User Preferences (JSON field for personal settings like smart defaults)
+    # Structure: {
+    #     "item_type_time_window": 30,  # Minutes
+    #     "category_time_window": 30,   # Minutes
+    #     "location_time_window": 60,   # Minutes
+    #     "last_item_entry": {...}      # Last entered item data for smart defaults
+    # }
+    preferences: dict[str, Any] | None = Field(default=None, sa_column=Column(JSON))
 
     # Timestamps
     created_at: datetime = Field(default_factory=datetime.now)
