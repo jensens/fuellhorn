@@ -13,6 +13,10 @@ from .item_card import format_expiry_text
 from .item_card import get_expiry_status
 from .item_card import get_status_color
 from .item_card import get_status_icon
+from .item_type_chips import create_item_type_chip_group
+from .item_type_chips import get_item_type_label
+from .unit_chips import create_unit_chip_group
+from .unit_chips import get_available_units
 from .user_dropdown import create_user_dropdown
 
 
@@ -21,11 +25,15 @@ __all__ = [
     "create_bottom_sheet",
     "create_expiry_badge",
     "create_item_card",
+    "create_item_type_chip_group",
     "create_mobile_page_container",
+    "create_unit_chip_group",
     "create_user_dropdown",
     "format_expiry_text",
+    "get_available_units",
     "get_expiry_label",
     "get_expiry_status",
+    "get_item_type_label",
     "get_status_color",
     "get_status_icon",
 ]
