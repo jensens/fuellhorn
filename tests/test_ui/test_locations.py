@@ -426,3 +426,157 @@ async def test_create_location_success(logged_in_user: TestUser) -> None:
 
     # Should navigate back to locations page and show the new location
     await logged_in_user.should_see("Neuer Gefrierschrank")
+
+
+# === Issue #27: Delete Location Tests ===
+
+
+async def test_delete_button_visible_for_locations(
+    logged_in_user: TestUser,
+    isolated_test_database,
+) -> None:
+    """Test that delete button is visible for each location."""
+    # Create a test location
+    with Session(isolated_test_database) as session:
+        loc = Location(
+            name="Testlagerort",
+            location_type=LocationType.FROZEN,
+            created_by=1,
+        )
+        session.add(loc)
+        session.commit()
+
+    await logged_in_user.open("/admin/locations")
+
+    # Delete button should be visible (via marker)
+    logged_in_user.find(marker="delete-Testlagerort")
+
+
+async def test_delete_location_opens_confirmation_dialog(
+    logged_in_user: TestUser,
+    isolated_test_database,
+) -> None:
+    """Test that clicking delete button opens confirmation dialog."""
+    # Create a test location
+    with Session(isolated_test_database) as session:
+        loc = Location(
+            name="Löschlagerort",
+            location_type=LocationType.FROZEN,
+            created_by=1,
+        )
+        session.add(loc)
+        session.commit()
+
+    await logged_in_user.open("/admin/locations")
+
+    # Click delete button
+    logged_in_user.find(marker="delete-Löschlagerort").click()
+
+    # Should see confirmation dialog
+    await logged_in_user.should_see("Lagerort löschen")
+    await logged_in_user.should_see("Löschlagerort")
+
+
+async def test_delete_location_successfully(
+    logged_in_user: TestUser,
+    isolated_test_database,
+) -> None:
+    """Test that location can be deleted when not in use."""
+    # Create a test location without items
+    with Session(isolated_test_database) as session:
+        loc = Location(
+            name="Löschbar",
+            location_type=LocationType.FROZEN,
+            created_by=1,
+        )
+        session.add(loc)
+        session.commit()
+
+    await logged_in_user.open("/admin/locations")
+
+    # Verify location is visible
+    await logged_in_user.should_see("Löschbar")
+
+    # Click delete button
+    logged_in_user.find(marker="delete-Löschbar").click()
+
+    # Confirm deletion
+    logged_in_user.find("Löschen").click()
+
+    # Location should no longer be visible
+    await logged_in_user.should_not_see("Löschbar")
+
+
+async def test_cannot_delete_location_in_use(
+    logged_in_user: TestUser,
+    isolated_test_database,
+) -> None:
+    """Test that location cannot be deleted when it has items."""
+    from app.models.item import Item
+    from app.models.item import ItemType
+    from datetime import date
+    from datetime import timedelta
+
+    # Create a location with an item
+    with Session(isolated_test_database) as session:
+        loc = Location(
+            name="InVerwendung",
+            location_type=LocationType.FROZEN,
+            created_by=1,
+        )
+        session.add(loc)
+        session.commit()
+        session.refresh(loc)
+
+        # Add an item using this location
+        today = date.today()
+        item = Item(
+            product_name="Testitem",
+            item_type=ItemType.PURCHASED_FROZEN,
+            location_id=loc.id,
+            quantity=1.0,
+            unit="kg",
+            best_before_date=today,
+            expiry_date=today + timedelta(days=30),
+            created_by=1,
+        )
+        session.add(item)
+        session.commit()
+
+    await logged_in_user.open("/admin/locations")
+
+    # Click delete button
+    logged_in_user.find(marker="delete-InVerwendung").click()
+
+    # Confirm deletion
+    logged_in_user.find("Löschen").click()
+
+    # Should see error message about items in use
+    await logged_in_user.should_see("in Verwendung")
+
+
+async def test_delete_dialog_can_be_cancelled(
+    logged_in_user: TestUser,
+    isolated_test_database,
+) -> None:
+    """Test that delete operation can be cancelled."""
+    # Create a test location
+    with Session(isolated_test_database) as session:
+        loc = Location(
+            name="Abbruch",
+            location_type=LocationType.FROZEN,
+            created_by=1,
+        )
+        session.add(loc)
+        session.commit()
+
+    await logged_in_user.open("/admin/locations")
+
+    # Click delete button
+    logged_in_user.find(marker="delete-Abbruch").click()
+
+    # Cancel deletion
+    logged_in_user.find("Abbrechen").click()
+
+    # Location should still be visible
+    await logged_in_user.should_see("Abbruch")
