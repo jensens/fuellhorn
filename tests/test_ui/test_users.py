@@ -550,3 +550,141 @@ async def test_edit_user_toggle_active_status(
 
     # Should see Inaktiv status
     await logged_in_user.should_see("Inaktiv")
+
+
+# Issue #31: Delete User Tests
+
+
+async def test_delete_button_visible_for_users(
+    logged_in_user: TestUser,
+    isolated_test_database,
+) -> None:
+    """Test that delete button is visible for each user."""
+    # Create a test user
+    with Session(isolated_test_database) as session:
+        test_user = User(
+            username="deletetest",
+            email="deletetest@example.com",
+            is_active=True,
+            role="user",
+        )
+        test_user.set_password("password123")
+        session.add(test_user)
+        session.commit()
+
+    await logged_in_user.open("/admin/users")
+
+    # Delete button should be visible (via marker)
+    logged_in_user.find(marker="delete-deletetest")
+
+
+async def test_delete_user_opens_confirmation_dialog(
+    logged_in_user: TestUser,
+    isolated_test_database,
+) -> None:
+    """Test that clicking delete button opens confirmation dialog."""
+    # Create a test user
+    with Session(isolated_test_database) as session:
+        test_user = User(
+            username="confirmdelete",
+            email="confirmdelete@example.com",
+            is_active=True,
+            role="user",
+        )
+        test_user.set_password("password123")
+        session.add(test_user)
+        session.commit()
+
+    await logged_in_user.open("/admin/users")
+
+    # Click delete button
+    logged_in_user.find(marker="delete-confirmdelete").click()
+
+    # Should see confirmation dialog
+    await logged_in_user.should_see("Benutzer löschen")
+    await logged_in_user.should_see("confirmdelete")
+
+
+async def test_delete_user_successfully(
+    logged_in_user: TestUser,
+    isolated_test_database,
+) -> None:
+    """Test that user can be deleted successfully."""
+    # Create a test user
+    with Session(isolated_test_database) as session:
+        test_user = User(
+            username="deleteme",
+            email="deleteme@example.com",
+            is_active=True,
+            role="user",
+        )
+        test_user.set_password("password123")
+        session.add(test_user)
+        session.commit()
+
+    await logged_in_user.open("/admin/users")
+
+    # Verify user is visible
+    await logged_in_user.should_see("deleteme")
+
+    # Click delete button
+    logged_in_user.find(marker="delete-deleteme").click()
+
+    # Confirm deletion
+    logged_in_user.find("Löschen").click()
+
+    # User should no longer be visible
+    await logged_in_user.should_not_see("deleteme")
+
+
+async def test_cannot_delete_yourself(
+    logged_in_user: TestUser,
+    isolated_test_database,
+) -> None:
+    """Test that the current user cannot delete themselves."""
+    await logged_in_user.open("/admin/users")
+
+    # The logged-in user is "admin"
+    await logged_in_user.should_see("admin")
+
+    # Delete button for admin should not exist (or be disabled)
+    # We use a marker that won't exist for the current user
+    try:
+        logged_in_user.find(marker="delete-admin")
+        # If we get here, the button exists - test should fail
+        assert False, "Delete button should not exist for current user"
+    except AssertionError as e:
+        # Button doesn't exist - this is expected
+        if "Delete button should not exist" in str(e):
+            raise
+        # Expected: button not found
+        pass
+
+
+async def test_delete_dialog_can_be_cancelled(
+    logged_in_user: TestUser,
+    isolated_test_database,
+) -> None:
+    """Test that delete operation can be cancelled."""
+    # Create a test user
+    with Session(isolated_test_database) as session:
+        test_user = User(
+            username="canceldelete",
+            email="canceldelete@example.com",
+            is_active=True,
+            role="user",
+        )
+        test_user.set_password("password123")
+        session.add(test_user)
+        session.commit()
+
+    await logged_in_user.open("/admin/users")
+
+    # Click delete button
+    logged_in_user.find(marker="delete-canceldelete").click()
+
+    # Cancel deletion
+    logged_in_user.find("Abbrechen").click()
+
+    # User should still be visible
+    await logged_in_user.should_see("canceldelete")

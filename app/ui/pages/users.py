@@ -3,10 +3,12 @@
 Based on Issue #28: Users Page - Liste aller Benutzer
 Issue #29: Users Page - Benutzer erstellen
 Issue #30: Users Page - Benutzer bearbeiten
+Issue #31: Users Page - Benutzer löschen
 """
 
 from ...auth import Permission
 from ...auth import require_permissions
+from ...auth.dependencies import get_current_user
 from ...database import get_session
 from ...models.user import Role
 from ...services import auth_service
@@ -36,6 +38,10 @@ def users_page() -> None:
 
 def _render_users_list() -> None:
     """Render the list of users."""
+    # Get current user to prevent self-deletion
+    current_user = get_current_user(require_auth=True)
+    current_user_id = current_user.id if current_user else None
+
     with next(get_session()) as session:
         users = auth_service.list_users(session)
 
@@ -82,6 +88,13 @@ def _render_users_list() -> None:
                                 ro=role,
                                 ia=is_active: _open_edit_dialog(uid, un, em, ro, ia),
                             ).props("flat round color=grey-7 size=sm").mark(f"edit-{username}")
+
+                            # Delete button - only if not current user
+                            if user_id != current_user_id:
+                                ui.button(
+                                    icon="delete",
+                                    on_click=lambda uid=user_id, un=username: _open_delete_dialog(uid, un),
+                                ).props("flat round color=red-7 size=sm").mark(f"delete-{username}")
         else:
             # Empty state (shouldn't happen since there's always at least one admin)
             with ui.card().classes("w-full"):
@@ -331,5 +344,39 @@ def _open_edit_dialog(
                     error_label.set_visibility(True)
 
             ui.button("Speichern", on_click=save_changes).props("color=primary")
+
+    dialog.open()
+
+
+def _open_delete_dialog(user_id: int, username: str) -> None:
+    """Open confirmation dialog to delete a user."""
+    with ui.dialog() as dialog, ui.card().classes("w-full max-w-md"):
+        ui.label("Benutzer löschen").classes("text-h6 font-semibold mb-4")
+
+        # Warning message
+        ui.label(f"Möchten Sie den Benutzer '{username}' wirklich löschen?").classes("mb-2")
+        ui.label("Diese Aktion kann nicht rückgängig gemacht werden.").classes("text-sm text-red-600 mb-4")
+
+        # Error label (hidden by default)
+        error_label = ui.label("").classes("text-red-600 text-sm mb-2")
+        error_label.set_visibility(False)
+
+        # Buttons
+        with ui.row().classes("w-full justify-end gap-2"):
+            ui.button("Abbrechen", on_click=dialog.close).props("flat")
+
+            def confirm_delete() -> None:
+                """Perform the deletion."""
+                try:
+                    with next(get_session()) as session:
+                        auth_service.delete_user(session=session, user_id=user_id)
+                    ui.notify("Benutzer gelöscht", type="positive")
+                    dialog.close()
+                    ui.navigate.to("/admin/users")
+                except Exception as e:
+                    error_label.set_text(str(e))
+                    error_label.set_visibility(True)
+
+            ui.button("Löschen", on_click=confirm_delete).props("color=red")
 
     dialog.open()
