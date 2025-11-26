@@ -22,10 +22,15 @@ COPY main.py ./
 COPY alembic.ini ./
 COPY alembic/ ./alembic/
 
-# Create data directory for SQLite database
+# Copy entrypoint script
+COPY docker-entrypoint.sh ./
+RUN chmod +x docker-entrypoint.sh
+
+# Create data directory for SQLite database (standalone mode)
 RUN mkdir -p /app/data
 
-# Environment variables
+# Environment variables (defaults for standalone SQLite mode)
+# Override via docker-compose.yml or -e flags for PostgreSQL
 ENV PYTHONUNBUFFERED=1
 ENV DB_TYPE=sqlite
 ENV DATABASE_URL=sqlite:///data/fuellhorn.db
@@ -38,5 +43,5 @@ EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8080/api/health')" || exit 1
 
-# Run the application via the venv Python
-CMD ["/app/.venv/bin/python", "main.py"]
+# Default entrypoint runs migrations then starts app
+ENTRYPOINT ["./docker-entrypoint.sh"]
