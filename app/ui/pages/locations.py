@@ -3,6 +3,7 @@
 Based on Issue #24: Locations Page - Liste aller Lagerorte
 Issue #25: Locations Page - Lagerort erstellen
 Issue #26: Locations Page - Lagerort bearbeiten
+Issue #27: Locations Page - Lagerort löschen
 """
 
 from ...auth import Permission
@@ -11,6 +12,7 @@ from ...auth.dependencies import get_current_user
 from ...database import get_session
 from ...models.location import Location
 from ...models.location import LocationType
+from ...services import item_service
 from ...services import location_service
 from ..components import create_mobile_page_container
 from nicegui import ui
@@ -80,7 +82,7 @@ def locations_page() -> None:
                                 ).classes(f"text-{_get_location_type_color(location.location_type)}")
                                 # Location name
                                 ui.label(location.name).classes("font-medium text-lg")
-                            # Type badge, status and edit button
+                            # Type badge, status, edit and delete buttons
                             with ui.row().classes("items-center gap-2"):
                                 # Type badge
                                 ui.badge(
@@ -95,6 +97,15 @@ def locations_page() -> None:
                                     icon="edit",
                                     on_click=lambda loc=location: _open_edit_dialog(loc),
                                 ).props("flat round size=sm").classes("min-w-0")
+                                # Delete button
+                                location_id = location.id
+                                location_name = location.name
+                                ui.button(
+                                    icon="delete",
+                                    on_click=lambda lid=location_id, ln=location_name: _open_delete_dialog(lid, ln),
+                                ).props("flat round color=red-7 size=sm").classes("min-w-0").mark(
+                                    f"delete-{location_name}"
+                                )
             else:
                 # Empty state
                 with ui.card().classes("w-full"):
@@ -303,5 +314,49 @@ def _open_create_dialog() -> None:
                     error_label.set_visibility(True)
 
             ui.button("Speichern", on_click=save_location).props("color=primary")
+
+    dialog.open()
+
+
+def _open_delete_dialog(location_id: int, location_name: str) -> None:
+    """Open confirmation dialog to delete a location."""
+    with ui.dialog() as dialog, ui.card().classes("w-full max-w-md"):
+        ui.label("Lagerort löschen").classes("text-h6 font-semibold mb-4")
+
+        # Warning message
+        ui.label(f"Möchten Sie den Lagerort '{location_name}' wirklich löschen?").classes("mb-2")
+        ui.label("Diese Aktion kann nicht rückgängig gemacht werden.").classes("text-sm text-red-600 mb-4")
+
+        # Error label (hidden by default)
+        error_label = ui.label("").classes("text-red-600 text-sm mb-2")
+        error_label.set_visibility(False)
+
+        # Buttons
+        with ui.row().classes("w-full justify-end gap-2"):
+            ui.button("Abbrechen", on_click=dialog.close).props("flat")
+
+            def confirm_delete() -> None:
+                """Perform the deletion."""
+                try:
+                    with next(get_session()) as session:
+                        # Check if location is in use
+                        items = item_service.get_items_by_location(session, location_id)
+                        if items:
+                            error_label.set_text(
+                                f"Lagerort ist in Verwendung ({len(items)} Artikel). Bitte zuerst alle Artikel entfernen."
+                            )
+                            error_label.set_visibility(True)
+                            return
+
+                        # Delete location
+                        location_service.delete_location(session=session, id=location_id)
+                    ui.notify("Lagerort gelöscht", type="positive")
+                    dialog.close()
+                    ui.navigate.to("/admin/locations")
+                except Exception as e:
+                    error_label.set_text(str(e))
+                    error_label.set_visibility(True)
+
+            ui.button("Löschen", on_click=confirm_delete).props("color=red")
 
     dialog.open()
