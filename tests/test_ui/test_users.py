@@ -143,3 +143,190 @@ async def test_users_page_has_back_button(logged_in_user: TestUser) -> None:
     # Should have back button (arrow_back icon)
     # The back button should navigate to /settings
     await logged_in_user.should_see("Benutzer")
+
+
+# =============================================================================
+# Issue #29: User Creation Tests
+# =============================================================================
+
+
+async def test_users_page_has_new_user_button(logged_in_user: TestUser) -> None:
+    """Test that users page has 'Neuer Benutzer' button."""
+    await logged_in_user.open("/admin/users")
+
+    # Should see "Neuer Benutzer" button
+    await logged_in_user.should_see("Neuer Benutzer")
+
+
+async def test_new_user_button_opens_dialog(logged_in_user: TestUser) -> None:
+    """Test that clicking 'Neuer Benutzer' opens a dialog with form."""
+    await logged_in_user.open("/admin/users")
+
+    # Click the "Neuer Benutzer" button
+    logged_in_user.find("Neuer Benutzer").click()
+
+    # Should see dialog with form fields
+    await logged_in_user.should_see("Neuen Benutzer erstellen")
+    await logged_in_user.should_see("Benutzername")
+    await logged_in_user.should_see("E-Mail")
+    await logged_in_user.should_see("Passwort")
+    await logged_in_user.should_see("Wiederholung")
+    await logged_in_user.should_see("Rolle")
+
+
+async def test_create_user_success(
+    logged_in_user: TestUser,
+    isolated_test_database,
+) -> None:
+    """Test that creating a user works correctly."""
+    await logged_in_user.open("/admin/users")
+
+    # Click the "Neuer Benutzer" button
+    logged_in_user.find("Neuer Benutzer").click()
+
+    # Fill in the form
+    logged_in_user.find("Benutzername").type("newuser")
+    logged_in_user.find("E-Mail").type("newuser@example.com")
+    logged_in_user.find(marker="password-input").type("securepassword123")
+    logged_in_user.find(marker="password-confirm-input").type("securepassword123")
+
+    # Click save
+    logged_in_user.find("Speichern").click()
+
+    # Should see the new user in the list
+    await logged_in_user.should_see("newuser")
+
+
+async def test_create_user_validation_username_required(
+    logged_in_user: TestUser,
+) -> None:
+    """Test that username is required."""
+    await logged_in_user.open("/admin/users")
+
+    # Click the "Neuer Benutzer" button
+    logged_in_user.find("Neuer Benutzer").click()
+
+    # Fill in only other fields
+    logged_in_user.find("E-Mail").type("test@example.com")
+    logged_in_user.find(marker="password-input").type("password123")
+    logged_in_user.find(marker="password-confirm-input").type("password123")
+
+    # Try to save without username
+    logged_in_user.find("Speichern").click()
+
+    # Should see error message
+    await logged_in_user.should_see("Benutzername ist erforderlich")
+
+
+async def test_create_user_validation_email_required(
+    logged_in_user: TestUser,
+) -> None:
+    """Test that email is required."""
+    await logged_in_user.open("/admin/users")
+
+    # Click the "Neuer Benutzer" button
+    logged_in_user.find("Neuer Benutzer").click()
+
+    # Fill in only other fields
+    logged_in_user.find("Benutzername").type("testuser")
+    logged_in_user.find(marker="password-input").type("password123")
+    logged_in_user.find(marker="password-confirm-input").type("password123")
+
+    # Try to save without email
+    logged_in_user.find("Speichern").click()
+
+    # Should see error message
+    await logged_in_user.should_see("E-Mail ist erforderlich")
+
+
+async def test_create_user_validation_password_required(
+    logged_in_user: TestUser,
+) -> None:
+    """Test that password is required."""
+    await logged_in_user.open("/admin/users")
+
+    # Click the "Neuer Benutzer" button
+    logged_in_user.find("Neuer Benutzer").click()
+
+    # Fill in only other fields
+    logged_in_user.find("Benutzername").type("testuser")
+    logged_in_user.find("E-Mail").type("test@example.com")
+
+    # Try to save without password
+    logged_in_user.find("Speichern").click()
+
+    # Should see error message
+    await logged_in_user.should_see("Passwort ist erforderlich")
+
+
+async def test_create_user_validation_passwords_must_match(
+    logged_in_user: TestUser,
+) -> None:
+    """Test that password and confirmation must match."""
+    await logged_in_user.open("/admin/users")
+
+    # Click the "Neuer Benutzer" button
+    logged_in_user.find("Neuer Benutzer").click()
+
+    # Fill in form with mismatched passwords
+    logged_in_user.find("Benutzername").type("testuser")
+    logged_in_user.find("E-Mail").type("test@example.com")
+    logged_in_user.find(marker="password-input").type("password123")
+    logged_in_user.find(marker="password-confirm-input").type("differentpassword")
+
+    # Try to save
+    logged_in_user.find("Speichern").click()
+
+    # Should see error message
+    await logged_in_user.should_see("Passwörter stimmen nicht überein")
+
+
+async def test_create_user_validation_unique_username(
+    logged_in_user: TestUser,
+    isolated_test_database,
+) -> None:
+    """Test that duplicate usernames are rejected."""
+    # Admin user already exists with username "admin"
+    await logged_in_user.open("/admin/users")
+
+    # Click the "Neuer Benutzer" button
+    logged_in_user.find("Neuer Benutzer").click()
+
+    # Try to create user with existing username
+    logged_in_user.find("Benutzername").type("admin")
+    logged_in_user.find("E-Mail").type("admin2@example.com")
+    logged_in_user.find(marker="password-input").type("password123")
+    logged_in_user.find(marker="password-confirm-input").type("password123")
+
+    # Try to save
+    logged_in_user.find("Speichern").click()
+
+    # Should see error message about duplicate
+    await logged_in_user.should_see("bereits vorhanden")
+
+
+async def test_create_user_with_admin_role(
+    logged_in_user: TestUser,
+    isolated_test_database,
+) -> None:
+    """Test that creating an admin user works correctly."""
+    await logged_in_user.open("/admin/users")
+
+    # Click the "Neuer Benutzer" button
+    logged_in_user.find("Neuer Benutzer").click()
+
+    # Fill in the form
+    logged_in_user.find("Benutzername").type("newadmin")
+    logged_in_user.find("E-Mail").type("newadmin@example.com")
+    logged_in_user.find(marker="password-input").type("securepassword123")
+    logged_in_user.find(marker="password-confirm-input").type("securepassword123")
+
+    # Select Admin role
+    logged_in_user.find("Rolle").click()
+    logged_in_user.find("Admin").click()
+
+    # Click save
+    logged_in_user.find("Speichern").click()
+
+    # Should see the new admin in the list
+    await logged_in_user.should_see("newadmin")
