@@ -79,15 +79,18 @@ def create_item_type_chip_group(
             label_text = ITEM_TYPE_LABELS.get(item_type, item_type.value)
 
             # Create chip as button for proper click handling
-            chip = ui.button(
-                on_click=lambda _, it=item_type: select_item_type(it),
-            ).classes(
-                "rounded-lg cursor-pointer "
-                "transition-all duration-150 ease-in-out select-none normal-case "
-                + ("bg-primary text-white" if is_selected else "bg-gray-100 text-gray-700 hover:bg-gray-200")
-            ).style(
-                "min-height: 44px; padding: 0.5rem 0.75rem;"
-            ).props("flat no-caps")
+            chip = (
+                ui.button(
+                    on_click=lambda _, it=item_type: select_item_type(it),
+                )
+                .classes(
+                    "rounded-lg cursor-pointer "
+                    "transition-all duration-150 ease-in-out select-none normal-case "
+                    + ("bg-primary text-white" if is_selected else "bg-gray-100 text-gray-700 hover:bg-gray-200")
+                )
+                .style("min-height: 44px; padding: 0.5rem 0.75rem;")
+                .props("flat no-caps")
+            )
 
             chip_refs[item_type] = chip
 

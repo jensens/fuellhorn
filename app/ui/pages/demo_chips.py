@@ -47,9 +47,9 @@ def demo_chips() -> None:
         ui.label("Einheit Chips").classes("text-h6 font-semibold")
         ui.label("Kompakt ohne Indikator (nur Farbwechsel)").classes("text-sm text-gray-500 mb-2")
 
-        unit_value_label = ui.label(
-            f"Ausgewählt: {selected_unit[0] or 'Keine Auswahl'}"
-        ).classes("text-sm font-medium mb-2")
+        unit_value_label = ui.label(f"Ausgewählt: {selected_unit[0] or 'Keine Auswahl'}").classes(
+            "text-sm font-medium mb-2"
+        )
 
         def on_unit_change(value: str) -> None:
             selected_unit[0] = value
