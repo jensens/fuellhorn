@@ -69,9 +69,7 @@ async def test_freeze_times_page_groups_by_item_type(logged_in_user: User, isola
     await logged_in_user.should_see("Frisch gekauft, eingefroren")
 
 
-async def test_freeze_times_page_shows_category_specific_configs(
-    logged_in_user: User, isolated_test_database
-) -> None:
+async def test_freeze_times_page_shows_category_specific_configs(logged_in_user: User, isolated_test_database) -> None:
     """Test that category-specific configs are displayed with category name."""
     with Session(isolated_test_database) as session:
         category = Category(

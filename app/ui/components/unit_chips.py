@@ -61,16 +61,19 @@ def create_unit_chip_group(
             is_selected = unit == value
 
             # Chip as button for proper click handling
-            chip = ui.button(
-                unit,
-                on_click=lambda _, u=unit: select_unit(u),
-            ).classes(
-                "flex items-center justify-center px-3 rounded-lg cursor-pointer "
-                "transition-all duration-150 ease-in-out select-none font-semibold text-sm "
-                + ("bg-primary text-white" if is_selected else "bg-gray-200 text-gray-800 hover:bg-gray-300")
-            ).style(
-                "min-width: 48px; height: 44px;"
-            ).props("flat no-caps")
+            chip = (
+                ui.button(
+                    unit,
+                    on_click=lambda _, u=unit: select_unit(u),
+                )
+                .classes(
+                    "flex items-center justify-center px-3 rounded-lg cursor-pointer "
+                    "transition-all duration-150 ease-in-out select-none font-semibold text-sm "
+                    + ("bg-primary text-white" if is_selected else "bg-gray-200 text-gray-800 hover:bg-gray-300")
+                )
+                .style("min-width: 48px; height: 44px;")
+                .props("flat no-caps")
+            )
 
             chip_refs[unit] = chip
 
