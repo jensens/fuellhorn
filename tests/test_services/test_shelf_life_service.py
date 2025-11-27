@@ -1,342 +1,340 @@
 """Tests for shelf_life_service."""
 
-from app.models import Category
-from app.models import User
-from app.models.category_shelf_life import CategoryShelfLife
-from app.models.category_shelf_life import StorageType
-from app.services import shelf_life_service
+from app.models import Category, User
+from app.models.category_shelf_life import CategoryShelfLife, StorageType
 import pytest
 from sqlmodel import Session
-from sqlmodel import select
 
 
-@pytest.fixture(name="test_category")
-def test_category_fixture(session: Session, test_admin: User) -> Category:
+@pytest.fixture
+def test_category(session: Session, test_admin: User) -> Category:
     """Create a test category."""
-    category = Category(
-        name="Fleisch",
-        created_by=test_admin.id,
-    )
+    category = Category(name="Fleisch", created_by=test_admin.id)
     session.add(category)
     session.commit()
     session.refresh(category)
     return category
 
 
-def test_create_shelf_life(session: Session, test_category: Category) -> None:
-    """Test creating a shelf life configuration."""
-    shelf_life = shelf_life_service.create_shelf_life(
-        session=session,
-        category_id=test_category.id,
-        storage_type=StorageType.FROZEN,
-        months_min=6,
-        months_max=12,
-        source_url="https://example.com/shelf-life",
-    )
+class TestCreateShelfLife:
+    """Tests for create_shelf_life function."""
 
-    assert shelf_life.id is not None
-    assert shelf_life.category_id == test_category.id
-    assert shelf_life.storage_type == StorageType.FROZEN
-    assert shelf_life.months_min == 6
-    assert shelf_life.months_max == 12
-    assert shelf_life.source_url == "https://example.com/shelf-life"
+    def test_create_shelf_life_success(self, session: Session, test_category: Category) -> None:
+        """Test creating a shelf life config."""
+        from app.services import shelf_life_service
 
+        result = shelf_life_service.create_shelf_life(
+            session=session,
+            category_id=test_category.id,
+            storage_type=StorageType.FROZEN,
+            months_min=6,
+            months_max=12,
+            source_url="https://example.com/frozen",
+        )
 
-def test_create_shelf_life_without_source_url(session: Session, test_category: Category) -> None:
-    """Test creating a shelf life configuration without source URL."""
-    shelf_life = shelf_life_service.create_shelf_life(
-        session=session,
-        category_id=test_category.id,
-        storage_type=StorageType.CHILLED,
-        months_min=1,
-        months_max=2,
-    )
+        assert result.id is not None
+        assert result.category_id == test_category.id
+        assert result.storage_type == StorageType.FROZEN
+        assert result.months_min == 6
+        assert result.months_max == 12
+        assert result.source_url == "https://example.com/frozen"
 
-    assert shelf_life.id is not None
-    assert shelf_life.source_url is None
+    def test_create_shelf_life_without_source_url(self, session: Session, test_category: Category) -> None:
+        """Test creating a shelf life config without source_url."""
+        from app.services import shelf_life_service
 
+        result = shelf_life_service.create_shelf_life(
+            session=session,
+            category_id=test_category.id,
+            storage_type=StorageType.CHILLED,
+            months_min=1,
+            months_max=2,
+        )
 
-def test_create_shelf_life_min_greater_than_max_fails(session: Session, test_category: Category) -> None:
-    """Test that creating with months_min > months_max raises error."""
-    with pytest.raises(ValueError, match="months_min .* must be <= months_max"):
+        assert result.id is not None
+        assert result.source_url is None
+
+    def test_create_shelf_life_validates_min_max(self, session: Session, test_category: Category) -> None:
+        """Test that min must be <= max."""
+        from app.services import shelf_life_service
+
+        with pytest.raises(ValueError, match="months_min must be <= months_max"):
+            shelf_life_service.create_shelf_life(
+                session=session,
+                category_id=test_category.id,
+                storage_type=StorageType.FROZEN,
+                months_min=12,
+                months_max=6,  # Invalid: max < min
+            )
+
+    def test_create_shelf_life_duplicate_raises_error(self, session: Session, test_category: Category) -> None:
+        """Test that duplicate (category_id, storage_type) raises error."""
+        from app.services import shelf_life_service
+
+        # Create first entry
         shelf_life_service.create_shelf_life(
             session=session,
             category_id=test_category.id,
             storage_type=StorageType.FROZEN,
-            months_min=12,
-            months_max=6,
-        )
-
-
-def test_create_shelf_life_equal_min_max(session: Session, test_category: Category) -> None:
-    """Test creating with equal months_min and months_max."""
-    shelf_life = shelf_life_service.create_shelf_life(
-        session=session,
-        category_id=test_category.id,
-        storage_type=StorageType.AMBIENT,
-        months_min=6,
-        months_max=6,
-    )
-
-    assert shelf_life.months_min == 6
-    assert shelf_life.months_max == 6
-
-
-def test_get_shelf_life(session: Session, test_category: Category) -> None:
-    """Test retrieving a shelf life by category_id and storage_type."""
-    created = shelf_life_service.create_shelf_life(
-        session=session,
-        category_id=test_category.id,
-        storage_type=StorageType.FROZEN,
-        months_min=6,
-        months_max=12,
-    )
-
-    shelf_life = shelf_life_service.get_shelf_life(
-        session=session,
-        category_id=test_category.id,
-        storage_type=StorageType.FROZEN,
-    )
-
-    assert shelf_life is not None
-    assert shelf_life.id == created.id
-    assert shelf_life.months_min == 6
-    assert shelf_life.months_max == 12
-
-
-def test_get_shelf_life_not_found(session: Session, test_category: Category) -> None:
-    """Test that getting non-existent shelf life returns None."""
-    shelf_life = shelf_life_service.get_shelf_life(
-        session=session,
-        category_id=test_category.id,
-        storage_type=StorageType.FROZEN,
-    )
-
-    assert shelf_life is None
-
-
-def test_get_shelf_life_different_storage_type(session: Session, test_category: Category) -> None:
-    """Test that get_shelf_life returns correct entry for storage type."""
-    # Create entries for different storage types
-    shelf_life_service.create_shelf_life(
-        session=session,
-        category_id=test_category.id,
-        storage_type=StorageType.FROZEN,
-        months_min=6,
-        months_max=12,
-    )
-    shelf_life_service.create_shelf_life(
-        session=session,
-        category_id=test_category.id,
-        storage_type=StorageType.CHILLED,
-        months_min=1,
-        months_max=2,
-    )
-
-    # Get CHILLED entry
-    shelf_life = shelf_life_service.get_shelf_life(
-        session=session,
-        category_id=test_category.id,
-        storage_type=StorageType.CHILLED,
-    )
-
-    assert shelf_life is not None
-    assert shelf_life.storage_type == StorageType.CHILLED
-    assert shelf_life.months_min == 1
-    assert shelf_life.months_max == 2
-
-
-def test_get_all_shelf_lives_for_category(session: Session, test_category: Category) -> None:
-    """Test retrieving all shelf life configurations for a category."""
-    shelf_life_service.create_shelf_life(
-        session=session,
-        category_id=test_category.id,
-        storage_type=StorageType.FROZEN,
-        months_min=6,
-        months_max=12,
-    )
-    shelf_life_service.create_shelf_life(
-        session=session,
-        category_id=test_category.id,
-        storage_type=StorageType.CHILLED,
-        months_min=1,
-        months_max=2,
-    )
-    shelf_life_service.create_shelf_life(
-        session=session,
-        category_id=test_category.id,
-        storage_type=StorageType.AMBIENT,
-        months_min=3,
-        months_max=6,
-    )
-
-    shelf_lives = shelf_life_service.get_all_shelf_lives_for_category(
-        session=session,
-        category_id=test_category.id,
-    )
-
-    assert len(shelf_lives) == 3
-    storage_types = {sl.storage_type for sl in shelf_lives}
-    assert storage_types == {StorageType.FROZEN, StorageType.CHILLED, StorageType.AMBIENT}
-
-
-def test_get_all_shelf_lives_for_category_empty(session: Session, test_category: Category) -> None:
-    """Test that get_all_shelf_lives_for_category returns empty list if none exist."""
-    shelf_lives = shelf_life_service.get_all_shelf_lives_for_category(
-        session=session,
-        category_id=test_category.id,
-    )
-
-    assert shelf_lives == []
-
-
-def test_get_all_shelf_lives_for_category_only_returns_matching(
-    session: Session, test_admin: User, test_category: Category
-) -> None:
-    """Test that only shelf lives for the specified category are returned."""
-    # Create another category
-    other_category = Category(name="Gemüse", created_by=test_admin.id)
-    session.add(other_category)
-    session.commit()
-    session.refresh(other_category)
-
-    # Create shelf lives for both categories
-    shelf_life_service.create_shelf_life(
-        session=session,
-        category_id=test_category.id,
-        storage_type=StorageType.FROZEN,
-        months_min=6,
-        months_max=12,
-    )
-    shelf_life_service.create_shelf_life(
-        session=session,
-        category_id=other_category.id,
-        storage_type=StorageType.FROZEN,
-        months_min=9,
-        months_max=18,
-    )
-
-    # Get only for test_category
-    shelf_lives = shelf_life_service.get_all_shelf_lives_for_category(
-        session=session,
-        category_id=test_category.id,
-    )
-
-    assert len(shelf_lives) == 1
-    assert shelf_lives[0].category_id == test_category.id
-
-
-def test_update_shelf_life(session: Session, test_category: Category) -> None:
-    """Test updating a shelf life configuration."""
-    created = shelf_life_service.create_shelf_life(
-        session=session,
-        category_id=test_category.id,
-        storage_type=StorageType.FROZEN,
-        months_min=6,
-        months_max=12,
-    )
-
-    updated = shelf_life_service.update_shelf_life(
-        session=session,
-        id=created.id,
-        months_min=9,
-        months_max=18,
-        source_url="https://example.com/updated",
-    )
-
-    assert updated.id == created.id
-    assert updated.months_min == 9
-    assert updated.months_max == 18
-    assert updated.source_url == "https://example.com/updated"
-
-
-def test_update_shelf_life_partial(session: Session, test_category: Category) -> None:
-    """Test partial update of shelf life configuration."""
-    created = shelf_life_service.create_shelf_life(
-        session=session,
-        category_id=test_category.id,
-        storage_type=StorageType.FROZEN,
-        months_min=6,
-        months_max=12,
-        source_url="https://example.com/original",
-    )
-
-    # Update only months_max
-    updated = shelf_life_service.update_shelf_life(
-        session=session,
-        id=created.id,
-        months_max=24,
-    )
-
-    assert updated.months_min == 6  # Unchanged
-    assert updated.months_max == 24  # Updated
-    assert updated.source_url == "https://example.com/original"  # Unchanged
-
-
-def test_update_shelf_life_not_found(session: Session) -> None:
-    """Test that updating non-existent shelf life raises error."""
-    with pytest.raises(ValueError, match="Shelf life with id 999 not found"):
-        shelf_life_service.update_shelf_life(
-            session=session,
-            id=999,
             months_min=6,
+            months_max=12,
         )
 
+        # Try to create duplicate
+        with pytest.raises(ValueError, match="already exists"):
+            shelf_life_service.create_shelf_life(
+                session=session,
+                category_id=test_category.id,
+                storage_type=StorageType.FROZEN,
+                months_min=3,
+                months_max=6,
+            )
 
-def test_update_shelf_life_min_greater_than_max_fails(session: Session, test_category: Category) -> None:
-    """Test that updating with months_min > months_max raises error."""
-    created = shelf_life_service.create_shelf_life(
-        session=session,
-        category_id=test_category.id,
-        storage_type=StorageType.FROZEN,
-        months_min=6,
-        months_max=12,
-    )
 
-    with pytest.raises(ValueError, match="months_min .* must be <= months_max"):
-        shelf_life_service.update_shelf_life(
+class TestGetShelfLife:
+    """Tests for get_shelf_life function."""
+
+    def test_get_shelf_life_existing(self, session: Session, test_category: Category) -> None:
+        """Test getting an existing shelf life config."""
+        from app.services import shelf_life_service
+
+        created = shelf_life_service.create_shelf_life(
+            session=session,
+            category_id=test_category.id,
+            storage_type=StorageType.FROZEN,
+            months_min=6,
+            months_max=12,
+        )
+
+        result = shelf_life_service.get_shelf_life(
+            session=session,
+            category_id=test_category.id,
+            storage_type=StorageType.FROZEN,
+        )
+
+        assert result is not None
+        assert result.id == created.id
+
+    def test_get_shelf_life_not_found(self, session: Session, test_category: Category) -> None:
+        """Test getting a non-existing shelf life config."""
+        from app.services import shelf_life_service
+
+        result = shelf_life_service.get_shelf_life(
+            session=session,
+            category_id=test_category.id,
+            storage_type=StorageType.FROZEN,
+        )
+
+        assert result is None
+
+
+class TestGetAllShelfLivesForCategory:
+    """Tests for get_all_shelf_lives_for_category function."""
+
+    def test_get_all_shelf_lives_empty(self, session: Session, test_category: Category) -> None:
+        """Test getting shelf lives for category with none."""
+        from app.services import shelf_life_service
+
+        result = shelf_life_service.get_all_shelf_lives_for_category(
+            session=session,
+            category_id=test_category.id,
+        )
+
+        assert result == []
+
+    def test_get_all_shelf_lives_multiple(self, session: Session, test_category: Category) -> None:
+        """Test getting multiple shelf lives for a category."""
+        from app.services import shelf_life_service
+
+        shelf_life_service.create_shelf_life(
+            session=session,
+            category_id=test_category.id,
+            storage_type=StorageType.FROZEN,
+            months_min=6,
+            months_max=12,
+        )
+        shelf_life_service.create_shelf_life(
+            session=session,
+            category_id=test_category.id,
+            storage_type=StorageType.CHILLED,
+            months_min=1,
+            months_max=2,
+        )
+
+        result = shelf_life_service.get_all_shelf_lives_for_category(
+            session=session,
+            category_id=test_category.id,
+        )
+
+        assert len(result) == 2
+        storage_types = {r.storage_type for r in result}
+        assert storage_types == {StorageType.FROZEN, StorageType.CHILLED}
+
+
+class TestUpdateShelfLife:
+    """Tests for update_shelf_life function."""
+
+    def test_update_shelf_life_months(self, session: Session, test_category: Category) -> None:
+        """Test updating months_min and months_max."""
+        from app.services import shelf_life_service
+
+        created = shelf_life_service.create_shelf_life(
+            session=session,
+            category_id=test_category.id,
+            storage_type=StorageType.FROZEN,
+            months_min=6,
+            months_max=12,
+        )
+
+        result = shelf_life_service.update_shelf_life(
             session=session,
             id=created.id,
-            months_min=24,  # Greater than existing max (12)
+            months_min=3,
+            months_max=9,
         )
 
+        assert result.months_min == 3
+        assert result.months_max == 9
 
-def test_update_shelf_life_new_max_less_than_existing_min_fails(session: Session, test_category: Category) -> None:
-    """Test that updating months_max < existing months_min raises error."""
-    created = shelf_life_service.create_shelf_life(
-        session=session,
-        category_id=test_category.id,
-        storage_type=StorageType.FROZEN,
-        months_min=6,
-        months_max=12,
-    )
+    def test_update_shelf_life_source_url(self, session: Session, test_category: Category) -> None:
+        """Test updating source_url."""
+        from app.services import shelf_life_service
 
-    with pytest.raises(ValueError, match="months_min .* must be <= months_max"):
-        shelf_life_service.update_shelf_life(
+        created = shelf_life_service.create_shelf_life(
+            session=session,
+            category_id=test_category.id,
+            storage_type=StorageType.FROZEN,
+            months_min=6,
+            months_max=12,
+        )
+
+        result = shelf_life_service.update_shelf_life(
             session=session,
             id=created.id,
-            months_max=3,  # Less than existing min (6)
+            source_url="https://updated.com",
         )
 
+        assert result.source_url == "https://updated.com"
 
-def test_delete_shelf_life(session: Session, test_category: Category) -> None:
-    """Test deleting a shelf life configuration."""
-    created = shelf_life_service.create_shelf_life(
-        session=session,
-        category_id=test_category.id,
-        storage_type=StorageType.FROZEN,
-        months_min=6,
-        months_max=12,
-    )
+    def test_update_shelf_life_validates_min_max(self, session: Session, test_category: Category) -> None:
+        """Test that update validates min <= max."""
+        from app.services import shelf_life_service
 
-    shelf_life_service.delete_shelf_life(session=session, id=created.id)
+        created = shelf_life_service.create_shelf_life(
+            session=session,
+            category_id=test_category.id,
+            storage_type=StorageType.FROZEN,
+            months_min=6,
+            months_max=12,
+        )
 
-    # Verify it's deleted
-    result = session.exec(select(CategoryShelfLife).where(CategoryShelfLife.id == created.id)).first()
-    assert result is None
+        with pytest.raises(ValueError, match="months_min must be <= months_max"):
+            shelf_life_service.update_shelf_life(
+                session=session,
+                id=created.id,
+                months_min=15,
+                months_max=10,
+            )
+
+    def test_update_shelf_life_not_found(self, session: Session) -> None:
+        """Test updating non-existing shelf life raises error."""
+        from app.services import shelf_life_service
+
+        with pytest.raises(ValueError, match="not found"):
+            shelf_life_service.update_shelf_life(
+                session=session,
+                id=9999,
+                months_min=3,
+            )
 
 
-def test_delete_shelf_life_not_found(session: Session) -> None:
-    """Test that deleting non-existent shelf life raises error."""
-    with pytest.raises(ValueError, match="Shelf life with id 999 not found"):
-        shelf_life_service.delete_shelf_life(session=session, id=999)
+class TestDeleteShelfLife:
+    """Tests for delete_shelf_life function."""
+
+    def test_delete_shelf_life_success(self, session: Session, test_category: Category) -> None:
+        """Test deleting a shelf life config."""
+        from app.services import shelf_life_service
+
+        created = shelf_life_service.create_shelf_life(
+            session=session,
+            category_id=test_category.id,
+            storage_type=StorageType.FROZEN,
+            months_min=6,
+            months_max=12,
+        )
+
+        shelf_life_service.delete_shelf_life(session=session, id=created.id)
+
+        # Verify it's deleted
+        result = shelf_life_service.get_shelf_life(
+            session=session,
+            category_id=test_category.id,
+            storage_type=StorageType.FROZEN,
+        )
+        assert result is None
+
+    def test_delete_shelf_life_not_found(self, session: Session) -> None:
+        """Test deleting non-existing shelf life raises error."""
+        from app.services import shelf_life_service
+
+        with pytest.raises(ValueError, match="not found"):
+            shelf_life_service.delete_shelf_life(session=session, id=9999)
+
+
+class TestCreateOrUpdateShelfLife:
+    """Tests for create_or_update_shelf_life function (upsert)."""
+
+    def test_create_or_update_creates_new(self, session: Session, test_category: Category) -> None:
+        """Test that it creates a new entry when none exists."""
+        from app.services import shelf_life_service
+
+        result = shelf_life_service.create_or_update_shelf_life(
+            session=session,
+            category_id=test_category.id,
+            storage_type=StorageType.FROZEN,
+            months_min=6,
+            months_max=12,
+        )
+
+        assert result.id is not None
+        assert result.months_min == 6
+        assert result.months_max == 12
+
+    def test_create_or_update_updates_existing(self, session: Session, test_category: Category) -> None:
+        """Test that it updates an existing entry."""
+        from app.services import shelf_life_service
+
+        # Create initial
+        created = shelf_life_service.create_shelf_life(
+            session=session,
+            category_id=test_category.id,
+            storage_type=StorageType.FROZEN,
+            months_min=6,
+            months_max=12,
+        )
+
+        # Update via create_or_update
+        result = shelf_life_service.create_or_update_shelf_life(
+            session=session,
+            category_id=test_category.id,
+            storage_type=StorageType.FROZEN,
+            months_min=3,
+            months_max=9,
+        )
+
+        assert result.id == created.id
+        assert result.months_min == 3
+        assert result.months_max == 9
+
+    def test_create_or_update_validates_min_max(self, session: Session, test_category: Category) -> None:
+        """Test validation on create_or_update."""
+        from app.services import shelf_life_service
+
+        with pytest.raises(ValueError, match="months_min must be <= months_max"):
+            shelf_life_service.create_or_update_shelf_life(
+                session=session,
+                category_id=test_category.id,
+                storage_type=StorageType.FROZEN,
+                months_min=12,
+                months_max=6,
+            )

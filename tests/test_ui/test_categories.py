@@ -488,3 +488,207 @@ async def test_delete_category_cancel(
 
     # Category should still be there
     await logged_in_user.should_see("NichtLöschen")
+
+
+# =============================================================================
+# Issue #107: Shelf Life Management Tests
+# =============================================================================
+
+
+async def test_edit_dialog_shows_shelf_life_section(
+    logged_in_user: TestUser,
+    isolated_test_database,
+) -> None:
+    """Test that edit dialog shows shelf life configuration section."""
+    # Create a category
+    with Session(isolated_test_database) as session:
+        cat = Category(
+            name="Fleisch",
+            created_by=1,
+        )
+        session.add(cat)
+        session.commit()
+
+    await logged_in_user.open("/admin/categories")
+
+    # Click the edit button
+    logged_in_user.find(marker="edit-Fleisch").click()
+
+    # Should see shelf life section
+    await logged_in_user.should_see("Haltbarkeit")
+    await logged_in_user.should_see("Gefroren")
+    await logged_in_user.should_see("Gekühlt")
+    await logged_in_user.should_see("Raumtemperatur")
+
+
+async def test_shelf_life_inputs_have_min_max_fields(
+    logged_in_user: TestUser,
+    isolated_test_database,
+) -> None:
+    """Test that shelf life section has min and max input fields."""
+    # Create a category
+    with Session(isolated_test_database) as session:
+        cat = Category(
+            name="Gemüse",
+            created_by=1,
+        )
+        session.add(cat)
+        session.commit()
+
+    await logged_in_user.open("/admin/categories")
+
+    # Click the edit button
+    logged_in_user.find(marker="edit-Gemüse").click()
+
+    # Should see Min/Max labels
+    await logged_in_user.should_see("Min")
+    await logged_in_user.should_see("Max")
+
+
+async def test_save_shelf_life_for_category(
+    logged_in_user: TestUser,
+    isolated_test_database,
+) -> None:
+    """Test that shelf life can be saved for a category."""
+    from app.models.category_shelf_life import CategoryShelfLife, StorageType
+
+    # Create a category
+    with Session(isolated_test_database) as session:
+        cat = Category(
+            name="Fleisch",
+            created_by=1,
+        )
+        session.add(cat)
+        session.commit()
+        cat_id = cat.id
+
+    await logged_in_user.open("/admin/categories")
+
+    # Click the edit button
+    logged_in_user.find(marker="edit-Fleisch").click()
+
+    # Wait for dialog to open and set values on number inputs
+    # For ui.number we need to set value directly via elements (which is a set)
+    frozen_min = logged_in_user.find(marker="frozen-min")
+    frozen_max = logged_in_user.find(marker="frozen-max")
+    list(frozen_min.elements)[0].value = 6
+    list(frozen_max.elements)[0].value = 12
+
+    # Save
+    logged_in_user.find("Speichern").click()
+
+    # Verify in database
+    with Session(isolated_test_database) as session:
+        from sqlmodel import select
+
+        shelf_life = session.exec(
+            select(CategoryShelfLife).where(
+                CategoryShelfLife.category_id == cat_id,
+                CategoryShelfLife.storage_type == StorageType.FROZEN,
+            )
+        ).first()
+        assert shelf_life is not None
+        assert shelf_life.months_min == 6
+        assert shelf_life.months_max == 12
+
+
+async def test_shelf_life_validation_min_greater_than_max(
+    logged_in_user: TestUser,
+    isolated_test_database,
+) -> None:
+    """Test that validation error is shown when min > max."""
+    # Create a category
+    with Session(isolated_test_database) as session:
+        cat = Category(
+            name="Obst",
+            created_by=1,
+        )
+        session.add(cat)
+        session.commit()
+
+    await logged_in_user.open("/admin/categories")
+
+    # Click the edit button
+    logged_in_user.find(marker="edit-Obst").click()
+
+    # Fill in invalid shelf life (min > max)
+    # For ui.number we need to set value directly via elements (which is a set)
+    frozen_min = logged_in_user.find(marker="frozen-min")
+    frozen_max = logged_in_user.find(marker="frozen-max")
+    list(frozen_min.elements)[0].value = 12
+    list(frozen_max.elements)[0].value = 6
+
+    # Save
+    logged_in_user.find("Speichern").click()
+
+    # Should see validation error
+    await logged_in_user.should_see("Min muss <= Max sein")
+
+
+async def test_category_list_shows_shelf_life_info(
+    logged_in_user: TestUser,
+    isolated_test_database,
+) -> None:
+    """Test that category list shows configured shelf life info."""
+    from app.models.category_shelf_life import CategoryShelfLife, StorageType
+
+    # Create a category with shelf life
+    with Session(isolated_test_database) as session:
+        cat = Category(
+            name="Milch",
+            created_by=1,
+        )
+        session.add(cat)
+        session.commit()
+        session.refresh(cat)
+
+        shelf_life = CategoryShelfLife(
+            category_id=cat.id,
+            storage_type=StorageType.FROZEN,
+            months_min=6,
+            months_max=12,
+        )
+        session.add(shelf_life)
+        session.commit()
+
+    await logged_in_user.open("/admin/categories")
+
+    # Should see shelf life info in the list
+    await logged_in_user.should_see("Milch")
+    await logged_in_user.should_see("6-12")
+
+
+async def test_edit_dialog_shows_existing_shelf_life(
+    logged_in_user: TestUser,
+    isolated_test_database,
+) -> None:
+    """Test that edit dialog shows existing shelf life values."""
+    from app.models.category_shelf_life import CategoryShelfLife, StorageType
+
+    # Create a category with shelf life
+    with Session(isolated_test_database) as session:
+        cat = Category(
+            name="Fisch",
+            created_by=1,
+        )
+        session.add(cat)
+        session.commit()
+        session.refresh(cat)
+
+        shelf_life = CategoryShelfLife(
+            category_id=cat.id,
+            storage_type=StorageType.FROZEN,
+            months_min=3,
+            months_max=6,
+        )
+        session.add(shelf_life)
+        session.commit()
+
+    await logged_in_user.open("/admin/categories")
+
+    # Click the edit button
+    logged_in_user.find(marker="edit-Fisch").click()
+
+    # Should see existing values in the inputs
+    await logged_in_user.should_see("Haltbarkeit")
+    # The input fields should be pre-filled with existing values
