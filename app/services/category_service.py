@@ -10,7 +10,6 @@ def create_category(
     name: str,
     created_by: int,
     color: str | None = None,
-    freeze_time_months: int | None = None,
 ) -> Category:
     """Create a new category.
 
@@ -19,7 +18,6 @@ def create_category(
         name: Category name (case-insensitive unique)
         created_by: User ID who created the category
         color: Hex color code (e.g., "#FF5733")
-        freeze_time_months: Default freeze time in months (1-24)
 
     Returns:
         Created category
@@ -39,7 +37,6 @@ def create_category(
         name=name,
         created_by=created_by,
         color=color,
-        freeze_time_months=freeze_time_months,
     )
 
     session.add(category)
@@ -87,7 +84,6 @@ def update_category(
     id: int,
     name: str | None = None,
     color: str | None = None,
-    freeze_time_months: int | None = None,
 ) -> Category:
     """Update category.
 
@@ -96,7 +92,6 @@ def update_category(
         id: Category ID
         name: New name (case-insensitive unique)
         color: New color code
-        freeze_time_months: New freeze time in months
 
     Returns:
         Updated category
@@ -119,9 +114,6 @@ def update_category(
 
     if color is not None:
         category.color = color
-
-    if freeze_time_months is not None:
-        category.freeze_time_months = freeze_time_months
 
     session.add(category)
     session.commit()

@@ -15,13 +15,11 @@ def test_create_category(session: Session, test_admin: User) -> None:
         name="Gemüse",
         created_by=test_admin.id,
         color="#4CAF50",
-        freeze_time_months=12,
     )
 
     assert category.id is not None
     assert category.name == "Gemüse"
     assert category.color == "#4CAF50"
-    assert category.freeze_time_months == 12
     assert category.created_by == test_admin.id
 
 
@@ -79,13 +77,11 @@ def test_update_category(session: Session, test_admin: User) -> None:
         id=category.id,
         name="Brot & Backwaren",
         color="#FFEB3B",
-        freeze_time_months=6,
     )
 
     assert updated.id == category.id
     assert updated.name == "Brot & Backwaren"
     assert updated.color == "#FFEB3B"
-    assert updated.freeze_time_months == 6
 
 
 def test_update_category_duplicate_name_fails(session: Session, test_admin: User) -> None:
