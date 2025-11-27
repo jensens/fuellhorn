@@ -60,9 +60,7 @@ class TestCategoryShelfLife:
         assert shelf_life.months_max == 12
         assert shelf_life.source_url == "https://example.com/frozen-meat"
 
-    def test_create_category_shelf_life_without_source_url(
-        self, session: Session, test_admin: User
-    ) -> None:
+    def test_create_category_shelf_life_without_source_url(self, session: Session, test_admin: User) -> None:
         """Test creating a CategoryShelfLife without source_url."""
         from app.models.category_shelf_life import CategoryShelfLife, StorageType
 
@@ -83,9 +81,7 @@ class TestCategoryShelfLife:
         assert shelf_life.id is not None
         assert shelf_life.source_url is None
 
-    def test_unique_constraint_category_storage(
-        self, session: Session, test_admin: User
-    ) -> None:
+    def test_unique_constraint_category_storage(self, session: Session, test_admin: User) -> None:
         """Test unique constraint on (category_id, storage_type)."""
         from app.models.category_shelf_life import CategoryShelfLife, StorageType
 
@@ -115,9 +111,7 @@ class TestCategoryShelfLife:
         with pytest.raises(IntegrityError):
             session.commit()
 
-    def test_same_category_different_storage_types(
-        self, session: Session, test_admin: User
-    ) -> None:
+    def test_same_category_different_storage_types(self, session: Session, test_admin: User) -> None:
         """Test that same category can have different storage types."""
         from app.models.category_shelf_life import CategoryShelfLife, StorageType
 

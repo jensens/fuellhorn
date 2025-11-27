@@ -64,9 +64,7 @@ def test_user_fixture(session: Session) -> User:
 class TestPreferencesService:
     """Tests for preferences service."""
 
-    def test_get_preference_returns_hardcoded_default_when_no_settings(
-        self, session: Session, test_user: User
-    ) -> None:
+    def test_get_preference_returns_hardcoded_default_when_no_settings(self, session: Session, test_user: User) -> None:
         """Test: Returns hardcoded default when no user or system settings exist."""
         # User has no preferences, no system settings exist
         value = preferences_service.get_preference(
@@ -128,9 +126,7 @@ class TestPreferencesService:
 
         assert value == 60
 
-    def test_set_user_preference(
-        self, session: Session, test_user: User
-    ) -> None:
+    def test_set_user_preference(self, session: Session, test_user: User) -> None:
         """Test: Set user preference."""
         preferences_service.set_user_preference(
             session=session,
@@ -143,9 +139,7 @@ class TestPreferencesService:
         assert test_user.preferences is not None
         assert test_user.preferences["item_type_time_window"] == 45
 
-    def test_set_user_preference_preserves_other_preferences(
-        self, session: Session, test_user: User
-    ) -> None:
+    def test_set_user_preference_preserves_other_preferences(self, session: Session, test_user: User) -> None:
         """Test: Setting one preference preserves others."""
         # Set initial preference
         test_user.preferences = {"category_time_window": 30}
@@ -164,9 +158,7 @@ class TestPreferencesService:
         assert test_user.preferences["category_time_window"] == 30
         assert test_user.preferences["item_type_time_window"] == 45
 
-    def test_get_system_setting(
-        self, session: Session, test_admin: User
-    ) -> None:
+    def test_get_system_setting(self, session: Session, test_admin: User) -> None:
         """Test: Get system setting by key."""
         system_setting = SystemSettings(
             key="item_type_time_window",
@@ -181,16 +173,12 @@ class TestPreferencesService:
         assert result is not None
         assert result.value == "45"
 
-    def test_get_system_setting_returns_none_when_not_found(
-        self, session: Session
-    ) -> None:
+    def test_get_system_setting_returns_none_when_not_found(self, session: Session) -> None:
         """Test: Returns None when system setting not found."""
         result = preferences_service.get_system_setting(session, "nonexistent_key")
         assert result is None
 
-    def test_set_system_setting_creates_new(
-        self, session: Session, test_admin: User
-    ) -> None:
+    def test_set_system_setting_creates_new(self, session: Session, test_admin: User) -> None:
         """Test: Set system setting creates new entry."""
         preferences_service.set_system_setting(
             session=session,
@@ -204,9 +192,7 @@ class TestPreferencesService:
         assert result.value == "45"
         assert result.updated_by == test_admin.id
 
-    def test_set_system_setting_updates_existing(
-        self, session: Session, test_admin: User
-    ) -> None:
+    def test_set_system_setting_updates_existing(self, session: Session, test_admin: User) -> None:
         """Test: Set system setting updates existing entry."""
         # Create initial setting
         system_setting = SystemSettings(
@@ -229,9 +215,7 @@ class TestPreferencesService:
         assert result is not None
         assert result.value == "60"
 
-    def test_get_all_user_preferences(
-        self, session: Session, test_user: User
-    ) -> None:
+    def test_get_all_user_preferences(self, session: Session, test_user: User) -> None:
         """Test: Get all user preferences with defaults."""
         test_user.preferences = {"item_type_time_window": 45}
         session.add(test_user)
@@ -248,9 +232,7 @@ class TestPreferencesService:
 class TestPasswordChange:
     """Tests for password change functionality."""
 
-    def test_change_password_success(
-        self, session: Session, test_user: User
-    ) -> None:
+    def test_change_password_success(self, session: Session, test_user: User) -> None:
         """Test: Password change with correct current password."""
         result = preferences_service.change_user_password(
             session=session,
@@ -263,9 +245,7 @@ class TestPasswordChange:
         session.refresh(test_user)
         assert test_user.check_password("newpassword456")
 
-    def test_change_password_wrong_current_password(
-        self, session: Session, test_user: User
-    ) -> None:
+    def test_change_password_wrong_current_password(self, session: Session, test_user: User) -> None:
         """Test: Password change fails with wrong current password."""
         result = preferences_service.change_user_password(
             session=session,
@@ -279,9 +259,7 @@ class TestPasswordChange:
         # Password should not have changed
         assert test_user.check_password("password123")
 
-    def test_change_password_too_short(
-        self, session: Session, test_user: User
-    ) -> None:
+    def test_change_password_too_short(self, session: Session, test_user: User) -> None:
         """Test: Password change fails when new password is too short."""
         with pytest.raises(ValueError, match="mindestens 8 Zeichen"):
             preferences_service.change_user_password(
@@ -295,9 +273,7 @@ class TestPasswordChange:
 class TestEmailChange:
     """Tests for email change functionality."""
 
-    def test_change_email_success(
-        self, session: Session, test_user: User
-    ) -> None:
+    def test_change_email_success(self, session: Session, test_user: User) -> None:
         """Test: Email change successful."""
         result = preferences_service.change_user_email(
             session=session,
@@ -309,9 +285,7 @@ class TestEmailChange:
         session.refresh(test_user)
         assert test_user.email == "newemail@example.com"
 
-    def test_change_email_invalid_format(
-        self, session: Session, test_user: User
-    ) -> None:
+    def test_change_email_invalid_format(self, session: Session, test_user: User) -> None:
         """Test: Email change fails with invalid format."""
         with pytest.raises(ValueError, match="ungültige E-Mail"):
             preferences_service.change_user_email(
@@ -320,9 +294,7 @@ class TestEmailChange:
                 new_email="not-an-email",
             )
 
-    def test_change_email_already_exists(
-        self, session: Session, test_user: User, test_admin: User
-    ) -> None:
+    def test_change_email_already_exists(self, session: Session, test_user: User, test_admin: User) -> None:
         """Test: Email change fails when email already exists."""
         with pytest.raises(ValueError, match="bereits vergeben"):
             preferences_service.change_user_email(
@@ -335,9 +307,7 @@ class TestEmailChange:
 class TestLastItemEntryPreferences:
     """Tests for last item entry preferences (smart defaults)."""
 
-    def test_save_last_item_entry(
-        self, session: Session, test_user: User
-    ) -> None:
+    def test_save_last_item_entry(self, session: Session, test_user: User) -> None:
         """Test: Save last item entry to user preferences."""
         last_entry = {
             "timestamp": datetime.now().isoformat(),
@@ -358,9 +328,7 @@ class TestLastItemEntryPreferences:
         assert test_user.preferences is not None
         assert test_user.preferences["last_item_entry"] == last_entry
 
-    def test_get_last_item_entry(
-        self, session: Session, test_user: User
-    ) -> None:
+    def test_get_last_item_entry(self, session: Session, test_user: User) -> None:
         """Test: Get last item entry from user preferences."""
         last_entry = {
             "timestamp": datetime.now().isoformat(),
@@ -378,9 +346,7 @@ class TestLastItemEntryPreferences:
 
         assert result == last_entry
 
-    def test_get_last_item_entry_returns_none_when_not_set(
-        self, session: Session, test_user: User
-    ) -> None:
+    def test_get_last_item_entry_returns_none_when_not_set(self, session: Session, test_user: User) -> None:
         """Test: Returns None when no last item entry."""
         result = preferences_service.get_last_item_entry(session, test_user)
         assert result is None
