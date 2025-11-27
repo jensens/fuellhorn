@@ -76,7 +76,19 @@ cp .env.example .env
 uv run alembic upgrade head
 ```
 
-### 6. Anwendung starten
+### 6. Initialen Admin-Benutzer anlegen
+
+```bash
+uv run python create_admin.py
+```
+
+Dies erstellt einen Admin-Benutzer mit:
+- **Username:** `admin`
+- **Passwort:** `admin`
+
+**Wichtig:** Das Passwort nach dem ersten Login ändern!
+
+### 7. Anwendung starten
 
 ```bash
 uv run python main.py
