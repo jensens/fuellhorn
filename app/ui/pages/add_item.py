@@ -164,6 +164,13 @@ def add_item() -> None:
                 on_change=on_unit_change,
             )
 
+            # Notes (optional)
+            ui.label("Notizen (optional)").classes("text-sm font-medium mb-1 mt-4")
+            notes_input = (
+                ui.textarea(placeholder="z.B. je 12 Stück, 300g pro Packung").classes("w-full").props("outlined rows=2")
+            )
+            notes_input.bind_value(form_data, "notes")
+
             # Navigation
             with ui.row().classes("w-full justify-end mt-6 gap-2"):
                 next_button = (
@@ -276,7 +283,9 @@ def add_item() -> None:
 
             # Notes (optional)
             ui.label("Notizen (optional)").classes("text-sm font-medium mb-1 mt-4")
-            notes_input = ui.textarea(placeholder="z.B. blanchiert").classes("w-full").props("outlined")
+            notes_input = (
+                ui.textarea(placeholder="z.B. je 12 Stück, 300g pro Packung").classes("w-full").props("outlined rows=2")
+            )
             notes_input.bind_value(form_data, "notes")
 
             # Navigation
@@ -375,6 +384,13 @@ def add_item() -> None:
                         return toggle_category
 
                     category_checkbox.on("update:model-value", make_toggle_handler(category.id))  # type: ignore[arg-type]
+
+            # Notes (optional)
+            ui.label("Notizen (optional)").classes("text-sm font-medium mb-1 mt-4")
+            notes_input = (
+                ui.textarea(placeholder="z.B. je 12 Stück, 300g pro Packung").classes("w-full").props("outlined rows=2")
+            )
+            notes_input.bind_value(form_data, "notes")
 
             # Navigation
             with ui.row().classes("w-full justify-between mt-6 gap-2"):
@@ -549,6 +565,13 @@ def add_item() -> None:
             value=form_data["unit"],
             on_change=on_unit_change,
         )
+
+        # Notes (optional)
+        ui.label("Notizen (optional)").classes("text-sm font-medium mb-1 mt-4")
+        notes_input = (
+            ui.textarea(placeholder="z.B. je 12 Stück, 300g pro Packung").classes("w-full").props("outlined rows=2")
+        )
+        notes_input.bind_value(form_data, "notes")
 
         # Navigation
         with ui.row().classes("w-full justify-end mt-6 gap-2"):
