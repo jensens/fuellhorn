@@ -182,6 +182,7 @@ Blocked by #43
 - Bei Features mit Dependencies: Im Issue-Template das "Blockiert durch" Feld ausfüllen
 - Format muss exakt sein: `Blocked by #XX` (case-insensitive)
 - Mehrere Blocker: Eine Zeile pro Blocker
+- **NICHT** das Header-Format verwenden (`## Blocked by` + Bullet-Liste) - das wird nicht erkannt!
 
 **Workflow für Agents:**
 ```bash
