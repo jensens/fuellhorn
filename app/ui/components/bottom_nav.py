@@ -55,6 +55,7 @@ def create_mobile_page_container() -> Any:
     """Create container for mobile page with bottom navigation spacing.
 
     Returns the column container that should be used for page content.
+    Uses max-width: 800px for consistent layout across all pages (Issue #81).
     """
-    # Main content area with padding for bottom nav (56px + 16px spacing)
-    return ui.column().classes("w-full p-4").style("padding-bottom: 72px")
+    # Main content area with max-width for desktop and padding for bottom nav (56px + 16px spacing)
+    return ui.column().classes("w-full mx-auto p-4").style("max-width: 800px; padding-bottom: 72px")
