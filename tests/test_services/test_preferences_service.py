@@ -4,16 +4,17 @@ Tests the preference hierarchy:
 1. User-Einstellung > 2. System-Default > 3. Hardcoded Default
 """
 
+from app.models.system_settings import SystemSettings
+from app.models.user import Role
+from app.models.user import User
+from app.services import preferences_service
 from collections.abc import Generator
 from datetime import datetime
-
 import pytest
 from sqlalchemy.pool import StaticPool
-from sqlmodel import Session, SQLModel, create_engine
-
-from app.models.user import Role, User
-from app.models.system_settings import SystemSettings
-from app.services import preferences_service
+from sqlmodel import Session
+from sqlmodel import SQLModel
+from sqlmodel import create_engine
 
 
 @pytest.fixture(name="session")

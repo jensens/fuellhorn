@@ -1,6 +1,7 @@
 """Tests for CategoryShelfLife model."""
 
-from app.models import Category, User
+from app.models import Category
+from app.models import User
 import pytest
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session
@@ -30,7 +31,8 @@ class TestCategoryShelfLife:
 
     def test_create_category_shelf_life(self, session: Session, test_admin: User) -> None:
         """Test creating a CategoryShelfLife record."""
-        from app.models.category_shelf_life import CategoryShelfLife, StorageType
+        from app.models.category_shelf_life import CategoryShelfLife
+        from app.models.category_shelf_life import StorageType
 
         # Create a category first
         category = Category(
@@ -62,7 +64,8 @@ class TestCategoryShelfLife:
 
     def test_create_category_shelf_life_without_source_url(self, session: Session, test_admin: User) -> None:
         """Test creating a CategoryShelfLife without source_url."""
-        from app.models.category_shelf_life import CategoryShelfLife, StorageType
+        from app.models.category_shelf_life import CategoryShelfLife
+        from app.models.category_shelf_life import StorageType
 
         category = Category(name="Gemüse", created_by=test_admin.id)
         session.add(category)
@@ -83,7 +86,8 @@ class TestCategoryShelfLife:
 
     def test_unique_constraint_category_storage(self, session: Session, test_admin: User) -> None:
         """Test unique constraint on (category_id, storage_type)."""
-        from app.models.category_shelf_life import CategoryShelfLife, StorageType
+        from app.models.category_shelf_life import CategoryShelfLife
+        from app.models.category_shelf_life import StorageType
 
         category = Category(name="Obst", created_by=test_admin.id)
         session.add(category)
@@ -113,7 +117,8 @@ class TestCategoryShelfLife:
 
     def test_same_category_different_storage_types(self, session: Session, test_admin: User) -> None:
         """Test that same category can have different storage types."""
-        from app.models.category_shelf_life import CategoryShelfLife, StorageType
+        from app.models.category_shelf_life import CategoryShelfLife
+        from app.models.category_shelf_life import StorageType
 
         category = Category(name="Milchprodukte", created_by=test_admin.id)
         session.add(category)
@@ -152,7 +157,8 @@ class TestCategoryShelfLife:
 
     def test_months_min_validation(self, session: Session, test_admin: User) -> None:
         """Test that months_min field has ge=1 constraint in schema."""
-        from app.models.category_shelf_life import CategoryShelfLife, StorageType
+        from app.models.category_shelf_life import CategoryShelfLife
+        from app.models.category_shelf_life import StorageType
         from pydantic import ValidationError
 
         category = Category(name="Test", created_by=test_admin.id)
@@ -172,7 +178,8 @@ class TestCategoryShelfLife:
 
     def test_months_max_validation(self, session: Session, test_admin: User) -> None:
         """Test that months_max field has le=36 constraint in schema."""
-        from app.models.category_shelf_life import CategoryShelfLife, StorageType
+        from app.models.category_shelf_life import CategoryShelfLife
+        from app.models.category_shelf_life import StorageType
         from pydantic import ValidationError
 
         category = Category(name="Test2", created_by=test_admin.id)
@@ -192,7 +199,8 @@ class TestCategoryShelfLife:
 
     def test_all_storage_types(self, session: Session, test_admin: User) -> None:
         """Test creating entries for all storage types."""
-        from app.models.category_shelf_life import CategoryShelfLife, StorageType
+        from app.models.category_shelf_life import CategoryShelfLife
+        from app.models.category_shelf_life import StorageType
 
         for i, storage_type in enumerate(StorageType):
             category = Category(name=f"Category_{i}", created_by=test_admin.id)

@@ -7,7 +7,6 @@ from ...database import get_session
 from ...models.category import Category
 from ...models.freeze_time_config import ItemType
 from ...models.item import Item
-from ...models.item import ItemCategory
 from ...models.location import Location
 from ...models.location import LocationType
 from ..components.item_card import create_item_card
@@ -57,6 +56,7 @@ def _create_test_item(
     session: Session,
     location: Location,
     expiry_days_from_now: int = 30,
+    category_id: int | None = None,
 ) -> Item:
     """Create a test item with specified expiry."""
     expiry_date = date.today() + timedelta(days=expiry_days_from_now)
@@ -68,6 +68,7 @@ def _create_test_item(
         unit="g",
         item_type=ItemType.HOMEMADE_FROZEN,
         location_id=location.id,
+        category_id=category_id,
         created_by=1,
     )
     session.add(item)
@@ -87,17 +88,11 @@ def page_item_card() -> None:
 
 @ui.page("/test-item-card-with-categories")
 def page_item_card_with_categories() -> None:
-    """Test page for item card with categories."""
+    """Test page for item card with category."""
     with next(get_session()) as session:
         location = _create_test_location(session)
         category = _create_test_category(session)
-        item = _create_test_item(session, location, expiry_days_from_now=30)
-
-        # Link item to category
-        item_category = ItemCategory(item_id=item.id, category_id=category.id)
-        session.add(item_category)
-        session.commit()
-
+        item = _create_test_item(session, location, expiry_days_from_now=30, category_id=category.id)
         create_item_card(item, session)
 
 

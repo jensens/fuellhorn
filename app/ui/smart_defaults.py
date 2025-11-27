@@ -22,7 +22,7 @@ def create_smart_defaults_dict(
     item_type: ItemType,
     unit: str,
     location_id: int,
-    category_ids: list[int] | None,
+    category_id: int | None,
     best_before_date_str: str,
 ) -> dict[str, Any]:
     """Create a dictionary with smart defaults to store in browser storage.
@@ -31,7 +31,7 @@ def create_smart_defaults_dict(
         item_type: The item type enum value.
         unit: The unit string (g, kg, ml, etc.).
         location_id: The location ID.
-        category_ids: List of category IDs (optional).
+        category_id: Category ID (optional).
         best_before_date_str: Best before date as string (DD.MM.YYYY format).
 
     Returns:
@@ -42,7 +42,7 @@ def create_smart_defaults_dict(
         "item_type": item_type.value,
         "unit": unit,
         "location_id": location_id,
-        "category_ids": category_ids if category_ids else [],
+        "category_id": category_id,
         "best_before_date": best_before_date_str,
     }
 
@@ -128,35 +128,34 @@ def get_default_location(last_entry: dict[str, Any] | None) -> int | None:
     return last_entry.get("location_id")
 
 
-def get_default_categories(
+def get_default_category(
     last_entry: dict[str, Any] | None,
     window_minutes: int = 30,
-) -> list[int]:
-    """Get the default category IDs from last entry if within time window.
+) -> int | None:
+    """Get the default category ID from last entry if within time window.
 
     Args:
         last_entry: The last item entry from browser storage.
         window_minutes: Time window in minutes (default: 30).
 
     Returns:
-        List of category IDs or empty list if not within window.
+        Category ID or None if not within window.
     """
     if not last_entry:
-        return []
+        return None
 
     timestamp = last_entry.get("timestamp")
     if not is_within_time_window(timestamp, window_minutes):
-        return []
+        return None
 
-    category_ids = last_entry.get("category_ids", [])
-    return list(category_ids) if category_ids else []
+    return last_entry.get("category_id")
 
 
 def get_reset_form_data(
     default_item_type: ItemType | None,
     default_unit: str,
     default_location_id: int | None,
-    default_category_ids: list[int],
+    default_category_id: int | None,
 ) -> dict[str, Any]:
     """Get reset form data with smart defaults applied.
 
@@ -167,7 +166,7 @@ def get_reset_form_data(
         default_item_type: Default item type (or None).
         default_unit: Default unit string.
         default_location_id: Default location ID (or None).
-        default_category_ids: Default category IDs list.
+        default_category_id: Default category ID (or None).
 
     Returns:
         Dictionary with form data for the wizard.
@@ -181,6 +180,6 @@ def get_reset_form_data(
         "freeze_date": None,
         "notes": "",
         "location_id": default_location_id,
-        "category_ids": default_category_ids,
+        "category_id": default_category_id,
         "current_step": 1,
     }

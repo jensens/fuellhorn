@@ -4,7 +4,6 @@ from app.models import ItemType
 from app.models import LocationType
 from app.models import User
 from app.services import category_service
-from app.services import freeze_time_service
 from app.services import item_service
 from app.services import location_service
 from datetime import date
@@ -14,82 +13,45 @@ from sqlmodel import Session
 
 
 def test_create_item(session: Session, test_admin: User) -> None:
-    """Test creating an item with automatic expiry calculation."""
+    """Test creating an item with category_id."""
     location = location_service.create_location(
         session=session,
         name="Gefrierschrank",
         location_type=LocationType.FROZEN,
         created_by=test_admin.id,
     )
-    freeze_time_service.create_freeze_time_config(
+    category = category_service.create_category(
         session=session,
-        item_type=ItemType.PURCHASED_FROZEN,
-        freeze_time_months=12,
+        name="TK-Ware",
         created_by=test_admin.id,
     )
+
+    assert category.id is not None
 
     # PURCHASED_FROZEN (TK-Ware) doesn't need freeze_date (has MHD)
     item = item_service.create_item(
         session=session,
         product_name="Rindfleisch",
         best_before_date=date(2024, 1, 1),
-        freeze_date=None,  # Not needed for PURCHASED_FROZEN
         quantity=1.5,
         unit="kg",
         item_type=ItemType.PURCHASED_FROZEN,
         location_id=location.id,
         created_by=test_admin.id,
+        category_id=category.id,
+        freeze_date=None,  # Not needed for PURCHASED_FROZEN
     )
 
     assert item.id is not None
     assert item.product_name == "Rindfleisch"
-    assert item.expiry_date == date(2025, 1, 1)  # best_before_date + 12 months
+    assert item.category_id == category.id
+    # expiry_date is now set to best_before_date (dynamic calculation via get_item_expiry_info)
+    assert item.expiry_date == date(2024, 1, 1)
     assert item.is_consumed is False
 
 
-def test_create_item_with_categories(session: Session, test_admin: User) -> None:
-    """Test creating an item with categories."""
-    location = location_service.create_location(
-        session=session,
-        name="Kühlschrank",
-        location_type=LocationType.CHILLED,
-        created_by=test_admin.id,
-    )
-    cat1 = category_service.create_category(
-        session=session,
-        name="Fleisch",
-        created_by=test_admin.id,
-    )
-    cat2 = category_service.create_category(
-        session=session,
-        name="Bio",
-        created_by=test_admin.id,
-    )
-
-    assert cat1.id is not None
-    assert cat2.id is not None
-
-    item = item_service.create_item(
-        session=session,
-        product_name="Hähnchenbrust",
-        best_before_date=date(2024, 12, 1),
-        quantity=0.5,
-        unit="kg",
-        item_type=ItemType.PURCHASED_FRESH,
-        location_id=location.id,
-        created_by=test_admin.id,
-        category_ids=[cat1.id, cat2.id],
-    )
-
-    assert item.id is not None
-    categories = item_service.get_item_categories(session, item.id)
-    assert len(categories) == 2
-    assert cat1.id in [c.id for c in categories]
-    assert cat2.id in [c.id for c in categories]
-
-
 def test_create_item_with_category_id(session: Session, test_admin: User) -> None:
-    """Test creating an item with the new category_id field."""
+    """Test creating an item with the category_id field."""
     location = location_service.create_location(
         session=session,
         name="Kühlschrank",
@@ -120,30 +82,6 @@ def test_create_item_with_category_id(session: Session, test_admin: User) -> Non
     assert item.category_id == category.id
 
 
-def test_create_item_without_category_id(session: Session, test_admin: User) -> None:
-    """Test creating an item without category_id (should be None)."""
-    location = location_service.create_location(
-        session=session,
-        name="Kühlschrank",
-        location_type=LocationType.CHILLED,
-        created_by=test_admin.id,
-    )
-
-    item = item_service.create_item(
-        session=session,
-        product_name="Butter",
-        best_before_date=date(2024, 12, 20),
-        quantity=1,
-        unit="Packung",
-        item_type=ItemType.PURCHASED_FRESH,
-        location_id=location.id,
-        created_by=test_admin.id,
-    )
-
-    assert item.id is not None
-    assert item.category_id is None
-
-
 def test_get_all_items(session: Session, test_admin: User) -> None:
     """Test getting all items."""
     location = location_service.create_location(
@@ -152,6 +90,13 @@ def test_get_all_items(session: Session, test_admin: User) -> None:
         location_type=LocationType.AMBIENT,
         created_by=test_admin.id,
     )
+    category = category_service.create_category(
+        session=session,
+        name="Eingemachtes",
+        created_by=test_admin.id,
+    )
+
+    assert category.id is not None
 
     item_service.create_item(
         session=session,
@@ -162,6 +107,7 @@ def test_get_all_items(session: Session, test_admin: User) -> None:
         item_type=ItemType.HOMEMADE_PRESERVED,
         location_id=location.id,
         created_by=test_admin.id,
+        category_id=category.id,
     )
     item_service.create_item(
         session=session,
@@ -172,6 +118,7 @@ def test_get_all_items(session: Session, test_admin: User) -> None:
         item_type=ItemType.HOMEMADE_PRESERVED,
         location_id=location.id,
         created_by=test_admin.id,
+        category_id=category.id,
     )
 
     items = item_service.get_all_items(session)
@@ -187,6 +134,14 @@ def test_get_item(session: Session, test_admin: User) -> None:
         location_type=LocationType.AMBIENT,
         created_by=test_admin.id,
     )
+    category = category_service.create_category(
+        session=session,
+        name="Marmelade",
+        created_by=test_admin.id,
+    )
+
+    assert category.id is not None
+
     created = item_service.create_item(
         session=session,
         product_name="Marmelade",
@@ -196,6 +151,7 @@ def test_get_item(session: Session, test_admin: User) -> None:
         item_type=ItemType.HOMEMADE_PRESERVED,
         location_id=location.id,
         created_by=test_admin.id,
+        category_id=category.id,
     )
 
     item = item_service.get_item(session, created.id)
@@ -218,16 +174,25 @@ def test_update_item(session: Session, test_admin: User) -> None:
         location_type=LocationType.FROZEN,
         created_by=test_admin.id,
     )
+    category = category_service.create_category(
+        session=session,
+        name="Gemüse",
+        created_by=test_admin.id,
+    )
+
+    assert category.id is not None
+
     created = item_service.create_item(
         session=session,
         product_name="Erbsen",
         best_before_date=date(2024, 1, 1),
-        freeze_date=date(2024, 6, 1),
         quantity=1.0,
         unit="kg",
         item_type=ItemType.PURCHASED_FROZEN,
         location_id=location.id,
         created_by=test_admin.id,
+        category_id=category.id,
+        freeze_date=date(2024, 6, 1),
     )
 
     updated = item_service.update_item(
@@ -250,6 +215,14 @@ def test_mark_item_consumed(session: Session, test_admin: User) -> None:
         location_type=LocationType.CHILLED,
         created_by=test_admin.id,
     )
+    category = category_service.create_category(
+        session=session,
+        name="Milch",
+        created_by=test_admin.id,
+    )
+
+    assert category.id is not None
+
     created = item_service.create_item(
         session=session,
         product_name="Milch",
@@ -259,6 +232,7 @@ def test_mark_item_consumed(session: Session, test_admin: User) -> None:
         item_type=ItemType.PURCHASED_FRESH,
         location_id=location.id,
         created_by=test_admin.id,
+        category_id=category.id,
     )
 
     updated = item_service.mark_item_consumed(session, created.id)
@@ -274,6 +248,14 @@ def test_delete_item(session: Session, test_admin: User) -> None:
         location_type=LocationType.AMBIENT,
         created_by=test_admin.id,
     )
+    category = category_service.create_category(
+        session=session,
+        name="Konserven",
+        created_by=test_admin.id,
+    )
+
+    assert category.id is not None
+
     created = item_service.create_item(
         session=session,
         product_name="Alte Konserve",
@@ -283,6 +265,7 @@ def test_delete_item(session: Session, test_admin: User) -> None:
         item_type=ItemType.HOMEMADE_PRESERVED,
         location_id=location.id,
         created_by=test_admin.id,
+        category_id=category.id,
     )
 
     item_service.delete_item(session, created.id)
@@ -305,17 +288,25 @@ def test_get_items_by_location(session: Session, test_admin: User) -> None:
         location_type=LocationType.CHILLED,
         created_by=test_admin.id,
     )
+    category = category_service.create_category(
+        session=session,
+        name="Lebensmittel",
+        created_by=test_admin.id,
+    )
+
+    assert category.id is not None
 
     item_service.create_item(
         session=session,
         product_name="Eis",
         best_before_date=date(2025, 1, 1),
-        freeze_date=date(2024, 6, 1),
         quantity=1,
         unit="Packung",
         item_type=ItemType.PURCHASED_FROZEN,
         location_id=location1.id,
         created_by=test_admin.id,
+        category_id=category.id,
+        freeze_date=date(2024, 6, 1),
     )
     item_service.create_item(
         session=session,
@@ -326,6 +317,7 @@ def test_get_items_by_location(session: Session, test_admin: User) -> None:
         item_type=ItemType.PURCHASED_FRESH,
         location_id=location2.id,
         created_by=test_admin.id,
+        category_id=category.id,
     )
 
     items = item_service.get_items_by_location(session, location1.id)
@@ -342,6 +334,13 @@ def test_get_items_expiring_soon(session: Session, test_admin: User) -> None:
         location_type=LocationType.CHILLED,
         created_by=test_admin.id,
     )
+    category = category_service.create_category(
+        session=session,
+        name="Frische",
+        created_by=test_admin.id,
+    )
+
+    assert category.id is not None
 
     # Item expiring in 5 days
     item_service.create_item(
@@ -353,6 +352,7 @@ def test_get_items_expiring_soon(session: Session, test_admin: User) -> None:
         item_type=ItemType.PURCHASED_FRESH,
         location_id=location.id,
         created_by=test_admin.id,
+        category_id=category.id,
     )
     # Item expiring in 20 days
     item_service.create_item(
@@ -364,6 +364,7 @@ def test_get_items_expiring_soon(session: Session, test_admin: User) -> None:
         item_type=ItemType.PURCHASED_FRESH,
         location_id=location.id,
         created_by=test_admin.id,
+        category_id=category.id,
     )
 
     items = item_service.get_items_expiring_soon(session, days=7)
@@ -385,16 +386,25 @@ def test_withdraw_partial_reduces_quantity(session: Session, test_admin: User) -
         location_type=LocationType.FROZEN,
         created_by=test_admin.id,
     )
+    category = category_service.create_category(
+        session=session,
+        name="Gemüse",
+        created_by=test_admin.id,
+    )
+
+    assert category.id is not None
+
     item = item_service.create_item(
         session=session,
         product_name="Erbsen",
         best_before_date=date(2025, 1, 1),
-        freeze_date=date(2024, 6, 1),
         quantity=500,
         unit="g",
         item_type=ItemType.PURCHASED_FROZEN,
         location_id=location.id,
         created_by=test_admin.id,
+        category_id=category.id,
+        freeze_date=date(2024, 6, 1),
     )
 
     updated = item_service.withdraw_partial(
@@ -415,16 +425,25 @@ def test_withdraw_partial_complete_marks_consumed(session: Session, test_admin: 
         location_type=LocationType.FROZEN,
         created_by=test_admin.id,
     )
+    category = category_service.create_category(
+        session=session,
+        name="Gemüse",
+        created_by=test_admin.id,
+    )
+
+    assert category.id is not None
+
     item = item_service.create_item(
         session=session,
         product_name="Erbsen",
         best_before_date=date(2025, 1, 1),
-        freeze_date=date(2024, 6, 1),
         quantity=500,
         unit="g",
         item_type=ItemType.PURCHASED_FROZEN,
         location_id=location.id,
         created_by=test_admin.id,
+        category_id=category.id,
+        freeze_date=date(2024, 6, 1),
     )
 
     updated = item_service.withdraw_partial(
@@ -445,16 +464,25 @@ def test_withdraw_partial_exceeds_quantity_fails(session: Session, test_admin: U
         location_type=LocationType.FROZEN,
         created_by=test_admin.id,
     )
+    category = category_service.create_category(
+        session=session,
+        name="Gemüse",
+        created_by=test_admin.id,
+    )
+
+    assert category.id is not None
+
     item = item_service.create_item(
         session=session,
         product_name="Erbsen",
         best_before_date=date(2025, 1, 1),
-        freeze_date=date(2024, 6, 1),
         quantity=500,
         unit="g",
         item_type=ItemType.PURCHASED_FROZEN,
         location_id=location.id,
         created_by=test_admin.id,
+        category_id=category.id,
+        freeze_date=date(2024, 6, 1),
     )
 
     with pytest.raises(ValueError, match="Cannot withdraw more than available"):
@@ -473,16 +501,25 @@ def test_withdraw_partial_zero_quantity_fails(session: Session, test_admin: User
         location_type=LocationType.FROZEN,
         created_by=test_admin.id,
     )
+    category = category_service.create_category(
+        session=session,
+        name="Gemüse",
+        created_by=test_admin.id,
+    )
+
+    assert category.id is not None
+
     item = item_service.create_item(
         session=session,
         product_name="Erbsen",
         best_before_date=date(2025, 1, 1),
-        freeze_date=date(2024, 6, 1),
         quantity=500,
         unit="g",
         item_type=ItemType.PURCHASED_FROZEN,
         location_id=location.id,
         created_by=test_admin.id,
+        category_id=category.id,
+        freeze_date=date(2024, 6, 1),
     )
 
     with pytest.raises(ValueError, match="Withdraw quantity must be positive"):
@@ -501,16 +538,25 @@ def test_withdraw_partial_negative_quantity_fails(session: Session, test_admin: 
         location_type=LocationType.FROZEN,
         created_by=test_admin.id,
     )
+    category = category_service.create_category(
+        session=session,
+        name="Gemüse",
+        created_by=test_admin.id,
+    )
+
+    assert category.id is not None
+
     item = item_service.create_item(
         session=session,
         product_name="Erbsen",
         best_before_date=date(2025, 1, 1),
-        freeze_date=date(2024, 6, 1),
         quantity=500,
         unit="g",
         item_type=ItemType.PURCHASED_FROZEN,
         location_id=location.id,
         created_by=test_admin.id,
+        category_id=category.id,
+        freeze_date=date(2024, 6, 1),
     )
 
     with pytest.raises(ValueError, match="Withdraw quantity must be positive"):
@@ -539,16 +585,25 @@ def test_withdraw_partial_consumed_item_fails(session: Session, test_admin: User
         location_type=LocationType.FROZEN,
         created_by=test_admin.id,
     )
+    category = category_service.create_category(
+        session=session,
+        name="Gemüse",
+        created_by=test_admin.id,
+    )
+
+    assert category.id is not None
+
     item = item_service.create_item(
         session=session,
         product_name="Erbsen",
         best_before_date=date(2025, 1, 1),
-        freeze_date=date(2024, 6, 1),
         quantity=500,
         unit="g",
         item_type=ItemType.PURCHASED_FROZEN,
         location_id=location.id,
         created_by=test_admin.id,
+        category_id=category.id,
+        freeze_date=date(2024, 6, 1),
     )
 
     # Mark as consumed first

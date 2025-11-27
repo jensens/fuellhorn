@@ -109,8 +109,8 @@ def create_item_card(
     except ValueError:
         location_name = f"Lagerort {item.location_id}"
 
-    categories = item_service.get_item_categories(session, item.id)  # type: ignore[arg-type]
-    category_names = [cat.name for cat in categories]
+    category = item_service.get_item_category(session, item.id)  # type: ignore[arg-type]
+    category_names = [category.name] if category else []
 
     # Calculate expiry status
     status = get_expiry_status(item.expiry_date)
