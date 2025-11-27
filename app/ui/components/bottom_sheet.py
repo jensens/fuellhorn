@@ -11,7 +11,7 @@ from ...database import get_session
 from ...models.item import Item
 from ...models.location import Location
 from ...services import item_service
-from .item_card import get_expiry_status
+from ...services.expiry_calculator import get_expiry_status
 from datetime import date
 from nicegui import ui
 from typing import Callable

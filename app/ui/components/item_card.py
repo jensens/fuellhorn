@@ -1,93 +1,83 @@
 """Item Card Component - Mobile-First Card for displaying inventory items.
 
-Based on requirements from Issue #7:
+Based on requirements from Issue #7 and #109:
 - Card shows product name, quantity, unit
 - Card shows location and categories
-- Card shows expiry date with status indicator
+- Card shows expiry date(s) with status indicator:
+  - For shelf-life items: Optimal + Max dates
+  - For MHD items: Single best-before date
 - Mobile-optimized (touch-friendly, min 48px height)
 """
 
 from ...models.item import Item
 from ...services import item_service
 from ...services import location_service
+from ...services.expiry_calculator import get_expiry_status_minmax
 from datetime import date
 from nicegui import ui
 from sqlmodel import Session
 from typing import Callable
 
 
-def get_expiry_status(expiry_date: date) -> str:
-    """Get expiry status based on days until expiry.
+# Status color mapping (Tailwind classes without prefix)
+STATUS_COLORS = {
+    "critical": "red-500",
+    "warning": "orange-500",
+    "ok": "green-500",
+}
 
-    Args:
-        expiry_date: The expiry date to check
-
-    Returns:
-        Status string: "critical" (< 3 days), "warning" (< 7 days), "ok" (>= 7 days)
-    """
-    days_until_expiry = (expiry_date - date.today()).days
-
-    if days_until_expiry < 3:
-        return "critical"
-    elif days_until_expiry < 7:
-        return "warning"
-    else:
-        return "ok"
+# Status icons
+STATUS_ICONS = {
+    "critical": "🔴",
+    "warning": "🟡",
+    "ok": "🟢",
+}
 
 
 def get_status_color(status: str) -> str:
-    """Get Tailwind color class for status.
-
-    Args:
-        status: The expiry status
-
-    Returns:
-        Tailwind color class (e.g., "red-500")
-    """
-    colors = {
-        "critical": "red-500",
-        "warning": "orange-500",
-        "ok": "green-500",
-    }
-    return colors.get(status, "gray-500")
+    """Get Tailwind color class for status."""
+    return STATUS_COLORS.get(status, "gray-500")
 
 
 def get_status_icon(status: str) -> str:
-    """Get status icon emoji.
-
-    Args:
-        status: The expiry status
-
-    Returns:
-        Emoji icon for the status
-    """
-    icons = {
-        "critical": "🔴",
-        "warning": "🟡",
-        "ok": "🟢",
-    }
-    return icons.get(status, "⚪")
+    """Get status icon emoji."""
+    return STATUS_ICONS.get(status, "⚪")
 
 
-def format_expiry_text(expiry_date: date) -> str:
-    """Format expiry date as human-readable text.
+def _render_expiry_shelf_life(
+    optimal_date: date,
+    max_date: date,
+    status: str,
+    status_color: str,
+) -> None:
+    """Render expiry info for shelf-life items (two dates)."""
+    with ui.column().classes("items-end gap-0"):
+        # Optimal date
+        ui.label("Optimal bis:").classes("text-xs text-gray-500")
+        ui.label(optimal_date.strftime("%d.%m.%Y")).classes(f"text-sm font-medium text-{status_color}")
+        # Max date
+        ui.label("Max. bis:").classes("text-xs text-gray-500 mt-1")
+        ui.label(max_date.strftime("%d.%m.%Y")).classes("text-xs text-gray-600")
 
-    Args:
-        expiry_date: The expiry date
 
-    Returns:
-        Formatted expiry text
-    """
-    days_until_expiry = (expiry_date - date.today()).days
+def _render_expiry_mhd(
+    best_before_date: date,
+    status_color: str,
+) -> None:
+    """Render expiry info for MHD items (single date)."""
+    with ui.column().classes("items-end gap-0"):
+        ui.label("MHD:").classes("text-xs text-gray-500")
+        ui.label(best_before_date.strftime("%d.%m.%Y")).classes(f"text-sm font-medium text-{status_color}")
 
-    if days_until_expiry < 0:
-        return "Abgelaufen"
-    elif days_until_expiry == 0:
-        return "Heute"
-    elif days_until_expiry == 1:
-        return "Morgen"
-    else:
-        return f"in {days_until_expiry} Tagen"
+
+def _render_expiry_fallback(
+    expiry_date: date,
+    status_color: str,
+) -> None:
+    """Render expiry info fallback (when no shelf life config)."""
+    with ui.column().classes("items-end gap-0"):
+        ui.label("Ablauf:").classes("text-xs text-gray-500")
+        ui.label(expiry_date.strftime("%d.%m.%Y")).classes(f"text-sm font-medium text-{status_color}")
 
 
 def create_item_card(
@@ -96,6 +86,10 @@ def create_item_card(
     on_click: Callable[[Item], None] | None = None,
 ) -> None:
     """Create a mobile-optimized item card component.
+
+    Displays expiry info based on item type:
+    - Shelf-life items (frozen/preserved): Shows optimal + max dates
+    - MHD items (purchased fresh/frozen): Shows single best-before date
 
     Args:
         item: The item to display
@@ -112,11 +106,16 @@ def create_item_card(
     category = item_service.get_item_category(session, item.id)  # type: ignore[arg-type]
     category_names = [category.name] if category else []
 
-    # Calculate expiry status
-    status = get_expiry_status(item.expiry_date)
+    # Get expiry info (optimal_date, max_date, best_before_date)
+    optimal_date, max_date, best_before_date = item_service.get_item_expiry_info(
+        session,
+        item.id,  # type: ignore[arg-type]
+    )
+
+    # Calculate status based on the dates
+    status = get_expiry_status_minmax(optimal_date, max_date, best_before_date)
     status_color = get_status_color(status)
     status_icon = get_status_icon(status)
-    expiry_text = format_expiry_text(item.expiry_date)
 
     # Create card with status border
     card_classes = f"w-full mb-2 border-l-4 border-{status_color}"
@@ -143,10 +142,15 @@ def create_item_card(
                             ui.badge(cat_name).props("outline color=primary")
 
             # Right column: Expiry info
-            with ui.column().classes("items-end gap-1"):
-                ui.label("Ablauf:").classes("text-xs text-gray-500")
-                ui.label(expiry_text).classes(f"text-sm font-medium text-{status_color}")
-                ui.label(item.expiry_date.strftime("%d.%m.%Y")).classes("text-xs text-gray-500")
+            if optimal_date is not None and max_date is not None:
+                # Shelf-life items: show two dates
+                _render_expiry_shelf_life(optimal_date, max_date, status, status_color)
+            elif best_before_date is not None:
+                # MHD items: show single date
+                _render_expiry_mhd(best_before_date, status_color)
+            else:
+                # Fallback: use item.expiry_date
+                _render_expiry_fallback(item.expiry_date, status_color)
 
         # Click handler if provided
         if on_click:
