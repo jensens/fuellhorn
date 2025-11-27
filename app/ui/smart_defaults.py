@@ -35,7 +35,7 @@ def create_smart_defaults_dict(
         best_before_date_str: Best before date as string (DD.MM.YYYY format).
 
     Returns:
-        Dictionary suitable for storing in app.storage.browser.
+        Dictionary suitable for storing in app.storage.user.
     """
     return {
         "timestamp": datetime.now().isoformat(),

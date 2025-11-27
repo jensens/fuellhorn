@@ -35,8 +35,8 @@ SMART_DEFAULTS_KEY = "last_item_entry"
 @require_auth
 def add_item() -> None:
     """3-Schritt-Wizard für schnelle Artikel-Erfassung."""
-    # Load smart defaults from browser storage
-    last_entry = app.storage.browser.get(SMART_DEFAULTS_KEY)
+    # Load smart defaults from user storage
+    last_entry = app.storage.user.get(SMART_DEFAULTS_KEY)
 
     # Apply smart defaults with time windows
     default_item_type = get_default_item_type(last_entry, window_minutes=30)
@@ -498,7 +498,7 @@ def add_item() -> None:
             category_ids=form_data.get("category_ids"),
             best_before_date_str=best_before_str,
         )
-        app.storage.browser[SMART_DEFAULTS_KEY] = smart_defaults
+        app.storage.user[SMART_DEFAULTS_KEY] = smart_defaults
 
         # Show success notification
         ui.notify(f"✅ {product_name} gespeichert!", type="positive")
