@@ -166,10 +166,33 @@ def validate_freeze_date(
     return None
 
 
+def _requires_category(item_type: Any) -> bool:
+    """Check if item type requires a category for shelf life calculation.
+
+    Args:
+        item_type: Selected item type
+
+    Returns:
+        True if category is required (for types that calculate shelf life from DB)
+    """
+    # Import here to avoid circular dependency
+    from ...models.freeze_time_config import ItemType
+
+    # purchased_fresh/purchased_frozen use MHD from package - no category needed
+    # Other types need category for shelf life calculation
+    types_needing_category = {
+        ItemType.PURCHASED_THEN_FROZEN,
+        ItemType.HOMEMADE_FROZEN,
+        ItemType.HOMEMADE_PRESERVED,
+    }
+    return item_type in types_needing_category
+
+
 def validate_step2(
     item_type: Any,
     best_before: date | None,
     freeze_date: date | None,
+    category_id: int | None = None,
 ) -> dict[str, str]:
     """Validate all Step 2 fields.
 
@@ -177,6 +200,7 @@ def validate_step2(
         item_type: Selected item type
         best_before: Best before/production date
         freeze_date: Freeze date (optional, required for frozen types)
+        category_id: Category ID (required for types that need shelf life calculation)
 
     Returns:
         Dictionary of field errors (empty if all valid)
@@ -189,6 +213,10 @@ def validate_step2(
     if error := validate_freeze_date(freeze_date, item_type, best_before):
         errors["freeze_date"] = error
 
+    # Category is required for types that calculate shelf life from DB
+    if _requires_category(item_type) and category_id is None:
+        errors["category"] = "Kategorie erforderlich für Haltbarkeitsberechnung"
+
     return errors
 
 
@@ -196,6 +224,7 @@ def is_step2_valid(
     item_type: Any,
     best_before: date | None,
     freeze_date: date | None,
+    category_id: int | None = None,
 ) -> bool:
     """Check if Step 2 is valid.
 
@@ -203,11 +232,24 @@ def is_step2_valid(
         item_type: Selected item type
         best_before: Best before/production date
         freeze_date: Freeze date
+        category_id: Category ID (required for types that need shelf life calculation)
 
     Returns:
         True if all fields are valid
     """
-    return len(validate_step2(item_type, best_before, freeze_date)) == 0
+    return len(validate_step2(item_type, best_before, freeze_date, category_id)) == 0
+
+
+def requires_category(item_type: Any) -> bool:
+    """Public helper to check if item type requires category selection.
+
+    Args:
+        item_type: Selected item type
+
+    Returns:
+        True if category is required
+    """
+    return _requires_category(item_type)
 
 
 # Step 3 Validation Functions
@@ -243,13 +285,11 @@ def validate_category(category_id: int | None) -> str | None:
 
 def validate_step3(
     location_id: int | None,
-    category_id: int | None,
 ) -> dict[str, str]:
     """Validate all Step 3 fields.
 
     Args:
         location_id: Selected location ID
-        category_id: Selected category ID (required)
 
     Returns:
         Dictionary of field errors (empty if all valid)
@@ -259,23 +299,18 @@ def validate_step3(
     if error := validate_location(location_id):
         errors["location"] = error
 
-    if error := validate_category(category_id):
-        errors["category"] = error
-
     return errors
 
 
 def is_step3_valid(
     location_id: int | None,
-    category_id: int | None,
 ) -> bool:
     """Check if Step 3 is valid.
 
     Args:
         location_id: Selected location ID
-        category_id: Selected category ID
 
     Returns:
         True if all fields are valid
     """
-    return len(validate_step3(location_id, category_id)) == 0
+    return len(validate_step3(location_id)) == 0

@@ -339,6 +339,83 @@ def test_is_step2_valid_returns_false_when_invalid() -> None:
     )
 
 
+# Step 2 Category Validation Tests (category moved from Step 3 to Step 2)
+
+
+def test_requires_category_for_frozen_types() -> None:
+    """Test that frozen types require a category."""
+    from app.ui.validation import requires_category
+
+    # Types that need category for shelf life calculation
+    assert requires_category(ItemType.PURCHASED_THEN_FROZEN) is True
+    assert requires_category(ItemType.HOMEMADE_FROZEN) is True
+    assert requires_category(ItemType.HOMEMADE_PRESERVED) is True
+
+
+def test_requires_category_not_for_mhd_types() -> None:
+    """Test that MHD types don't require a category."""
+    from app.ui.validation import requires_category
+
+    # Types that use MHD from package - no category needed
+    assert requires_category(ItemType.PURCHASED_FRESH) is False
+    assert requires_category(ItemType.PURCHASED_FROZEN) is False
+
+
+def test_is_step2_valid_with_category_for_frozen_types() -> None:
+    """Test Step 2 validation requires category for frozen types."""
+    from app.ui.validation import is_step2_valid
+    from datetime import date
+
+    # Frozen type without category - invalid
+    assert (
+        is_step2_valid(
+            item_type=ItemType.PURCHASED_THEN_FROZEN,
+            best_before=date.today(),
+            freeze_date=date.today(),
+            category_id=None,
+        )
+        is False
+    )
+
+    # Frozen type with category - valid
+    assert (
+        is_step2_valid(
+            item_type=ItemType.PURCHASED_THEN_FROZEN,
+            best_before=date.today(),
+            freeze_date=date.today(),
+            category_id=1,
+        )
+        is True
+    )
+
+
+def test_is_step2_valid_without_category_for_mhd_types() -> None:
+    """Test Step 2 validation doesn't require category for MHD types."""
+    from app.ui.validation import is_step2_valid
+    from datetime import date
+
+    # MHD type without category - still valid (uses best_before from package)
+    assert (
+        is_step2_valid(
+            item_type=ItemType.PURCHASED_FRESH,
+            best_before=date.today(),
+            freeze_date=None,
+            category_id=None,
+        )
+        is True
+    )
+
+    assert (
+        is_step2_valid(
+            item_type=ItemType.PURCHASED_FROZEN,
+            best_before=date.today(),
+            freeze_date=None,
+            category_id=None,
+        )
+        is True
+    )
+
+
 # Step 3 Validation Tests
 
 
@@ -366,28 +443,19 @@ def test_validate_category_required() -> None:
     assert validate_category(42) is None
 
 
-def test_validate_step3_all_valid_with_category() -> None:
-    """Test Step 3 validation with location and category."""
+def test_validate_step3_all_valid() -> None:
+    """Test Step 3 validation with location only (category moved to Step 2)."""
     from app.ui.validation import validate_step3
 
-    errors = validate_step3(location_id=1, category_id=1)
+    errors = validate_step3(location_id=1)
     assert errors == {}
-
-
-def test_validate_step3_missing_category() -> None:
-    """Test Step 3 validation with missing category."""
-    from app.ui.validation import validate_step3
-
-    errors = validate_step3(location_id=1, category_id=None)
-    assert "category" in errors
-    assert errors["category"] == "Kategorie ist erforderlich"
 
 
 def test_validate_step3_missing_location() -> None:
     """Test Step 3 validation with missing location."""
     from app.ui.validation import validate_step3
 
-    errors = validate_step3(location_id=None, category_id=1)
+    errors = validate_step3(location_id=None)
     assert "location" in errors
     assert errors["location"] == "Bitte Lagerort auswählen"
 
@@ -396,14 +464,12 @@ def test_is_step3_valid_returns_true_when_valid() -> None:
     """Test is_step3_valid returns True for valid inputs."""
     from app.ui.validation import is_step3_valid
 
-    assert is_step3_valid(location_id=1, category_id=1) is True
-    assert is_step3_valid(location_id=5, category_id=3) is True
+    assert is_step3_valid(location_id=1) is True
+    assert is_step3_valid(location_id=5) is True
 
 
 def test_is_step3_valid_returns_false_when_invalid() -> None:
     """Test is_step3_valid returns False for invalid inputs."""
     from app.ui.validation import is_step3_valid
 
-    assert is_step3_valid(location_id=None, category_id=None) is False
-    assert is_step3_valid(location_id=None, category_id=1) is False
-    assert is_step3_valid(location_id=1, category_id=None) is False
+    assert is_step3_valid(location_id=None) is False
