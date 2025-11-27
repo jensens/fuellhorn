@@ -202,7 +202,6 @@ def _open_edit_dialog(
                             id=category_id,
                             name=name if name != current_name else None,
                             color=color,
-                            freeze_time_months=current_freeze_time,
                         )
                     ui.notify(f"Kategorie '{name}' aktualisiert", type="positive")
                     dialog.close()
