@@ -11,7 +11,7 @@ from ..components import create_item_type_chip_group
 from ..components import create_mobile_page_container
 from ..components import create_unit_chip_group
 from ..smart_defaults import create_smart_defaults_dict
-from ..smart_defaults import get_default_categories
+from ..smart_defaults import get_default_category
 from ..smart_defaults import get_default_item_type
 from ..smart_defaults import get_default_location
 from ..smart_defaults import get_default_unit
@@ -42,7 +42,7 @@ def add_item() -> None:
     default_item_type = get_default_item_type(last_entry, window_minutes=30)
     default_unit = get_default_unit(last_entry)
     default_location_id = get_default_location(last_entry)
-    default_category_ids = get_default_categories(last_entry, window_minutes=30)
+    default_category_id = get_default_category(last_entry, window_minutes=30)
 
     # Form state with smart defaults applied
     form_data: dict[str, Any] = {
@@ -54,7 +54,7 @@ def add_item() -> None:
         "freeze_date": None,
         "notes": "",
         "location_id": default_location_id,
-        "category_ids": default_category_ids.copy() if default_category_ids else [],
+        "category_id": default_category_id,
         "current_step": 1,
     }
 
@@ -93,7 +93,7 @@ def add_item() -> None:
         """Update Step 3 submit buttons state based on validation."""
         is_valid = is_step3_valid(
             location_id=form_data.get("location_id"),
-            category_ids=form_data.get("category_ids"),
+            category_id=form_data.get("category_id"),
         )
         if is_valid:
             step3_submit_button.props(remove="disabled")
@@ -317,7 +317,7 @@ def add_item() -> None:
             ui.label("Schritt 3 von 3").classes("text-sm text-gray-600 mb-4")
 
             # Step 3: Location & Categories
-            ui.label("Lagerort & Kategorien").classes("text-h6 font-semibold mb-3")
+            ui.label("Lagerort & Kategorie").classes("text-h6 font-semibold mb-3")
 
             # Summary from Steps 1-2
             item_type_labels = {
@@ -362,28 +362,20 @@ def add_item() -> None:
             location_select.bind_value(form_data, "location_id")
             location_select.on("update:model-value", update_step3_validation)
 
-            # Category Selection (optional multi-select)
+            # Category Selection (required single-select)
             if categories:
-                ui.label("Kategorien (optional)").classes("text-sm font-medium mb-1 mt-4")
-                ui.label("Mehrfachauswahl möglich").classes("text-xs text-gray-600 mb-2")
-
-                # Create checkbox group for categories
-                for category in categories:
-                    category_checkbox = ui.checkbox(category.name).classes("mb-2")
-
-                    def make_toggle_handler(cat_id: int) -> Any:
-                        def toggle_category(e: Any) -> None:
-                            if e.value:
-                                if cat_id not in form_data["category_ids"]:
-                                    form_data["category_ids"].append(cat_id)
-                            else:
-                                if cat_id in form_data["category_ids"]:
-                                    form_data["category_ids"].remove(cat_id)
-                            update_step3_validation()
-
-                        return toggle_category
-
-                    category_checkbox.on("update:model-value", make_toggle_handler(category.id))  # type: ignore[arg-type]
+                ui.label("Kategorie *").classes("text-sm font-medium mb-1 mt-4")
+                category_options = {cat.id: cat.name for cat in categories}
+                category_select = (
+                    ui.select(
+                        options=category_options,
+                        value=form_data.get("category_id"),
+                    )
+                    .classes("w-full")
+                    .props("outlined")
+                )
+                category_select.bind_value(form_data, "category_id")
+                category_select.on("update:model-value", update_step3_validation)
 
             # Notes (optional)
             ui.label("Notizen (optional)").classes("text-sm font-medium mb-1 mt-4")
@@ -439,7 +431,7 @@ def add_item() -> None:
         errors.update(
             validate_step3(
                 form_data.get("location_id"),
-                form_data.get("category_ids"),
+                form_data.get("category_id"),
             )
         )
 
@@ -462,13 +454,13 @@ def add_item() -> None:
                     session=session,
                     product_name=form_data["product_name"],
                     best_before_date=form_data["best_before_date"],
-                    freeze_date=form_data.get("freeze_date"),
                     quantity=form_data["quantity"],
                     unit=form_data["unit"],
                     item_type=form_data["item_type"],
                     location_id=form_data["location_id"],
                     created_by=user_id,
-                    category_ids=form_data.get("category_ids"),
+                    category_id=form_data["category_id"],
+                    freeze_date=form_data.get("freeze_date"),
                     notes=form_data.get("notes"),
                 )
             return True
@@ -495,7 +487,7 @@ def add_item() -> None:
             item_type=form_data["item_type"],
             unit=form_data["unit"],
             location_id=form_data["location_id"],
-            category_ids=form_data.get("category_ids"),
+            category_id=form_data.get("category_id"),
             best_before_date_str=best_before_str,
         )
         app.storage.user[SMART_DEFAULTS_KEY] = smart_defaults

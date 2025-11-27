@@ -357,36 +357,37 @@ def test_validate_location_none() -> None:
     assert validate_location(None) == "Bitte Lagerort auswählen"
 
 
-def test_validate_categories_always_valid() -> None:
-    """Test categories are always valid (optional field)."""
-    from app.ui.validation import validate_categories
+def test_validate_category_required() -> None:
+    """Test category is now required."""
+    from app.ui.validation import validate_category
 
-    assert validate_categories(None) is None
-    assert validate_categories([]) is None
-    assert validate_categories([1, 2, 3]) is None
+    assert validate_category(None) == "Kategorie ist erforderlich"
+    assert validate_category(1) is None
+    assert validate_category(42) is None
 
 
-def test_validate_step3_all_valid_no_categories() -> None:
-    """Test Step 3 validation with location only."""
+def test_validate_step3_all_valid_with_category() -> None:
+    """Test Step 3 validation with location and category."""
     from app.ui.validation import validate_step3
 
-    errors = validate_step3(location_id=1, category_ids=None)
+    errors = validate_step3(location_id=1, category_id=1)
     assert errors == {}
 
 
-def test_validate_step3_all_valid_with_categories() -> None:
-    """Test Step 3 validation with location and categories."""
+def test_validate_step3_missing_category() -> None:
+    """Test Step 3 validation with missing category."""
     from app.ui.validation import validate_step3
 
-    errors = validate_step3(location_id=1, category_ids=[1, 2, 3])
-    assert errors == {}
+    errors = validate_step3(location_id=1, category_id=None)
+    assert "category" in errors
+    assert errors["category"] == "Kategorie ist erforderlich"
 
 
 def test_validate_step3_missing_location() -> None:
     """Test Step 3 validation with missing location."""
     from app.ui.validation import validate_step3
 
-    errors = validate_step3(location_id=None, category_ids=[1, 2])
+    errors = validate_step3(location_id=None, category_id=1)
     assert "location" in errors
     assert errors["location"] == "Bitte Lagerort auswählen"
 
@@ -395,13 +396,14 @@ def test_is_step3_valid_returns_true_when_valid() -> None:
     """Test is_step3_valid returns True for valid inputs."""
     from app.ui.validation import is_step3_valid
 
-    assert is_step3_valid(location_id=1, category_ids=None) is True
-    assert is_step3_valid(location_id=5, category_ids=[1, 2, 3]) is True
+    assert is_step3_valid(location_id=1, category_id=1) is True
+    assert is_step3_valid(location_id=5, category_id=3) is True
 
 
 def test_is_step3_valid_returns_false_when_invalid() -> None:
     """Test is_step3_valid returns False for invalid inputs."""
     from app.ui.validation import is_step3_valid
 
-    assert is_step3_valid(location_id=None, category_ids=None) is False
-    assert is_step3_valid(location_id=None, category_ids=[1, 2]) is False
+    assert is_step3_valid(location_id=None, category_id=None) is False
+    assert is_step3_valid(location_id=None, category_id=1) is False
+    assert is_step3_valid(location_id=1, category_id=None) is False

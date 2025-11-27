@@ -227,28 +227,29 @@ def validate_location(location_id: int | None) -> str | None:
     return None
 
 
-def validate_categories(category_ids: list[int] | None) -> str | None:
+def validate_category(category_id: int | None) -> str | None:
     """Validate category selection.
 
     Args:
-        category_ids: Selected category IDs
+        category_id: Selected category ID
 
     Returns:
-        Error message if invalid, None if valid (categories are optional)
+        Error message if invalid, None if valid
     """
-    # Categories are optional, so always valid
+    if category_id is None:
+        return "Kategorie ist erforderlich"
     return None
 
 
 def validate_step3(
     location_id: int | None,
-    category_ids: list[int] | None,
+    category_id: int | None,
 ) -> dict[str, str]:
     """Validate all Step 3 fields.
 
     Args:
         location_id: Selected location ID
-        category_ids: Selected category IDs (optional)
+        category_id: Selected category ID (required)
 
     Returns:
         Dictionary of field errors (empty if all valid)
@@ -258,23 +259,23 @@ def validate_step3(
     if error := validate_location(location_id):
         errors["location"] = error
 
-    if error := validate_categories(category_ids):
-        errors["categories"] = error
+    if error := validate_category(category_id):
+        errors["category"] = error
 
     return errors
 
 
 def is_step3_valid(
     location_id: int | None,
-    category_ids: list[int] | None,
+    category_id: int | None,
 ) -> bool:
     """Check if Step 3 is valid.
 
     Args:
         location_id: Selected location ID
-        category_ids: Selected category IDs
+        category_id: Selected category ID
 
     Returns:
         True if all fields are valid
     """
-    return len(validate_step3(location_id, category_ids)) == 0
+    return len(validate_step3(location_id, category_id)) == 0

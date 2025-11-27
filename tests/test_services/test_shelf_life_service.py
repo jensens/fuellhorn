@@ -1,7 +1,8 @@
 """Tests for shelf_life_service."""
 
-from app.models import Category, User
-from app.models.category_shelf_life import CategoryShelfLife, StorageType
+from app.models import Category
+from app.models import User
+from app.models.category_shelf_life import StorageType
 import pytest
 from sqlmodel import Session
 

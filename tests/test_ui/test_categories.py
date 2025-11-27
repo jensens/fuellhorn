@@ -550,7 +550,8 @@ async def test_save_shelf_life_for_category(
     isolated_test_database,
 ) -> None:
     """Test that shelf life can be saved for a category."""
-    from app.models.category_shelf_life import CategoryShelfLife, StorageType
+    from app.models.category_shelf_life import CategoryShelfLife
+    from app.models.category_shelf_life import StorageType
 
     # Create a category
     with Session(isolated_test_database) as session:
@@ -630,7 +631,8 @@ async def test_category_list_shows_shelf_life_info(
     isolated_test_database,
 ) -> None:
     """Test that category list shows configured shelf life info."""
-    from app.models.category_shelf_life import CategoryShelfLife, StorageType
+    from app.models.category_shelf_life import CategoryShelfLife
+    from app.models.category_shelf_life import StorageType
 
     # Create a category with shelf life
     with Session(isolated_test_database) as session:
@@ -663,7 +665,8 @@ async def test_edit_dialog_shows_existing_shelf_life(
     isolated_test_database,
 ) -> None:
     """Test that edit dialog shows existing shelf life values."""
-    from app.models.category_shelf_life import CategoryShelfLife, StorageType
+    from app.models.category_shelf_life import CategoryShelfLife
+    from app.models.category_shelf_life import StorageType
 
     # Create a category with shelf life
     with Session(isolated_test_database) as session:

@@ -16,7 +16,7 @@ def test_create_smart_defaults_dict_contains_required_fields() -> None:
         item_type=ItemType.PURCHASED_FRESH,
         unit="g",
         location_id=1,
-        category_ids=[1, 2],
+        category_id=1,
         best_before_date_str="25.11.2025",
     )
 
@@ -24,7 +24,7 @@ def test_create_smart_defaults_dict_contains_required_fields() -> None:
     assert "item_type" in result
     assert "unit" in result
     assert "location_id" in result
-    assert "category_ids" in result
+    assert "category_id" in result
     assert "best_before_date" in result
 
 
@@ -36,14 +36,14 @@ def test_create_smart_defaults_dict_values() -> None:
         item_type=ItemType.HOMEMADE_FROZEN,
         unit="kg",
         location_id=5,
-        category_ids=[3, 4, 5],
+        category_id=3,
         best_before_date_str="01.12.2025",
     )
 
     assert result["item_type"] == ItemType.HOMEMADE_FROZEN.value
     assert result["unit"] == "kg"
     assert result["location_id"] == 5
-    assert result["category_ids"] == [3, 4, 5]
+    assert result["category_id"] == 3
     assert result["best_before_date"] == "01.12.2025"
 
 
@@ -55,7 +55,7 @@ def test_create_smart_defaults_dict_timestamp_is_iso_format() -> None:
         item_type=ItemType.PURCHASED_FROZEN,
         unit="ml",
         location_id=2,
-        category_ids=[],
+        category_id=None,
         best_before_date_str="15.11.2025",
     )
 
@@ -66,34 +66,34 @@ def test_create_smart_defaults_dict_timestamp_is_iso_format() -> None:
     assert (datetime.now() - parsed).total_seconds() < 60
 
 
-def test_create_smart_defaults_with_empty_categories() -> None:
-    """Test smart defaults with empty category list."""
+def test_create_smart_defaults_with_none_category() -> None:
+    """Test smart defaults with None category."""
     from app.ui.smart_defaults import create_smart_defaults_dict
 
     result = create_smart_defaults_dict(
         item_type=ItemType.PURCHASED_FRESH,
         unit="Stück",
         location_id=1,
-        category_ids=[],
+        category_id=None,
         best_before_date_str="20.11.2025",
     )
 
-    assert result["category_ids"] == []
+    assert result["category_id"] is None
 
 
-def test_create_smart_defaults_with_none_categories() -> None:
-    """Test smart defaults with None category list."""
+def test_create_smart_defaults_with_category() -> None:
+    """Test smart defaults with a category ID."""
     from app.ui.smart_defaults import create_smart_defaults_dict
 
     result = create_smart_defaults_dict(
         item_type=ItemType.PURCHASED_FRESH,
         unit="l",
         location_id=3,
-        category_ids=None,
+        category_id=5,
         best_before_date_str="10.11.2025",
     )
 
-    assert result["category_ids"] == []
+    assert result["category_id"] == 5
 
 
 # Test for Time Window Logic
@@ -236,40 +236,40 @@ def test_get_default_location_returns_none_when_no_entry() -> None:
     assert result is None
 
 
-def test_get_default_categories_returns_last_when_within_window() -> None:
-    """Test categories default returns last value within time window."""
-    from app.ui.smart_defaults import get_default_categories
+def test_get_default_category_returns_last_when_within_window() -> None:
+    """Test category default returns last value within time window."""
+    from app.ui.smart_defaults import get_default_category
 
     recent_timestamp = (datetime.now() - timedelta(minutes=15)).isoformat()
     last_entry = {
         "timestamp": recent_timestamp,
-        "category_ids": [1, 2, 3],
+        "category_id": 3,
     }
 
-    result = get_default_categories(last_entry, window_minutes=30)
-    assert result == [1, 2, 3]
+    result = get_default_category(last_entry, window_minutes=30)
+    assert result == 3
 
 
-def test_get_default_categories_returns_empty_when_outside_window() -> None:
-    """Test categories default returns empty list when outside time window."""
-    from app.ui.smart_defaults import get_default_categories
+def test_get_default_category_returns_none_when_outside_window() -> None:
+    """Test category default returns None when outside time window."""
+    from app.ui.smart_defaults import get_default_category
 
     old_timestamp = (datetime.now() - timedelta(minutes=60)).isoformat()
     last_entry = {
         "timestamp": old_timestamp,
-        "category_ids": [1, 2, 3],
+        "category_id": 3,
     }
 
-    result = get_default_categories(last_entry, window_minutes=30)
-    assert result == []
+    result = get_default_category(last_entry, window_minutes=30)
+    assert result is None
 
 
-def test_get_default_categories_returns_empty_when_no_entry() -> None:
-    """Test categories default returns empty list when no last entry."""
-    from app.ui.smart_defaults import get_default_categories
+def test_get_default_category_returns_none_when_no_entry() -> None:
+    """Test category default returns None when no last entry."""
+    from app.ui.smart_defaults import get_default_category
 
-    result = get_default_categories(None, window_minutes=30)
-    assert result == []
+    result = get_default_category(None, window_minutes=30)
+    assert result is None
 
 
 # Test for Form Reset Logic
@@ -283,7 +283,7 @@ def test_get_reset_form_data_contains_all_fields() -> None:
         default_item_type=None,
         default_unit="g",
         default_location_id=None,
-        default_category_ids=[],
+        default_category_id=None,
     )
 
     assert "product_name" in result
@@ -294,7 +294,7 @@ def test_get_reset_form_data_contains_all_fields() -> None:
     assert "freeze_date" in result
     assert "notes" in result
     assert "location_id" in result
-    assert "category_ids" in result
+    assert "category_id" in result
     assert "current_step" in result
 
 
@@ -306,7 +306,7 @@ def test_get_reset_form_data_clears_product_name() -> None:
         default_item_type=ItemType.PURCHASED_FRESH,
         default_unit="kg",
         default_location_id=5,
-        default_category_ids=[1, 2],
+        default_category_id=1,
     )
 
     assert result["product_name"] == ""
@@ -320,7 +320,7 @@ def test_get_reset_form_data_clears_quantity() -> None:
         default_item_type=ItemType.PURCHASED_FRESH,
         default_unit="kg",
         default_location_id=5,
-        default_category_ids=[1, 2],
+        default_category_id=1,
     )
 
     assert result["quantity"] is None
@@ -334,13 +334,13 @@ def test_get_reset_form_data_applies_smart_defaults() -> None:
         default_item_type=ItemType.HOMEMADE_FROZEN,
         default_unit="kg",
         default_location_id=3,
-        default_category_ids=[1, 2, 3],
+        default_category_id=1,
     )
 
     assert result["item_type"] == ItemType.HOMEMADE_FROZEN
     assert result["unit"] == "kg"
     assert result["location_id"] == 3
-    assert result["category_ids"] == [1, 2, 3]
+    assert result["category_id"] == 1
 
 
 def test_get_reset_form_data_resets_to_step_1() -> None:
@@ -351,7 +351,7 @@ def test_get_reset_form_data_resets_to_step_1() -> None:
         default_item_type=None,
         default_unit="g",
         default_location_id=None,
-        default_category_ids=[],
+        default_category_id=None,
     )
 
     assert result["current_step"] == 1
@@ -365,7 +365,7 @@ def test_get_reset_form_data_clears_notes() -> None:
         default_item_type=None,
         default_unit="g",
         default_location_id=None,
-        default_category_ids=[],
+        default_category_id=None,
     )
 
     assert result["notes"] == ""
@@ -379,7 +379,7 @@ def test_get_reset_form_data_clears_freeze_date() -> None:
         default_item_type=None,
         default_unit="g",
         default_location_id=None,
-        default_category_ids=[],
+        default_category_id=None,
     )
 
     assert result["freeze_date"] is None

@@ -6,11 +6,7 @@ Tests the /profile page functionality:
 - Smart default time window settings
 """
 
-import pytest
 from nicegui.testing import User as NiceGUIUser
-
-from app.models.user import User
-from sqlmodel import Session
 
 
 async def test_profile_page_requires_authentication(user: NiceGUIUser) -> None:
