@@ -1,23 +1,10 @@
 """FreezeTimeConfig model for freeze time calculation rules."""
 
+from .item import ItemType
 from datetime import datetime
-from enum import Enum
 from sqlalchemy import UniqueConstraint
 from sqlmodel import Field
 from sqlmodel import SQLModel
-
-
-class ItemType(str, Enum):
-    """Item type for expiry calculation.
-
-    Based on UI_KONZEPT.md - reflects actual user workflow for food storage.
-    """
-
-    PURCHASED_FRESH = "purchased_fresh"  # Frisch eingekauft
-    PURCHASED_FROZEN = "purchased_frozen"  # TK-Ware gekauft
-    PURCHASED_THEN_FROZEN = "purchased_then_frozen"  # Frisch gekauft → eingefroren
-    HOMEMADE_FROZEN = "homemade_frozen"  # Selbst eingefroren (Ernte/Reste)
-    HOMEMADE_PRESERVED = "homemade_preserved"  # Selbst eingemacht
 
 
 class FreezeTimeConfig(SQLModel, table=True):

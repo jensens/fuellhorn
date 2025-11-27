@@ -88,6 +88,62 @@ def test_create_item_with_categories(session: Session, test_admin: User) -> None
     assert cat2.id in [c.id for c in categories]
 
 
+def test_create_item_with_category_id(session: Session, test_admin: User) -> None:
+    """Test creating an item with the new category_id field."""
+    location = location_service.create_location(
+        session=session,
+        name="Kühlschrank",
+        location_type=LocationType.CHILLED,
+        created_by=test_admin.id,
+    )
+    category = category_service.create_category(
+        session=session,
+        name="Milchprodukte",
+        created_by=test_admin.id,
+    )
+
+    assert category.id is not None
+
+    item = item_service.create_item(
+        session=session,
+        product_name="Joghurt",
+        best_before_date=date(2024, 12, 15),
+        quantity=1,
+        unit="Becher",
+        item_type=ItemType.PURCHASED_FRESH,
+        location_id=location.id,
+        created_by=test_admin.id,
+        category_id=category.id,
+    )
+
+    assert item.id is not None
+    assert item.category_id == category.id
+
+
+def test_create_item_without_category_id(session: Session, test_admin: User) -> None:
+    """Test creating an item without category_id (should be None)."""
+    location = location_service.create_location(
+        session=session,
+        name="Kühlschrank",
+        location_type=LocationType.CHILLED,
+        created_by=test_admin.id,
+    )
+
+    item = item_service.create_item(
+        session=session,
+        product_name="Butter",
+        best_before_date=date(2024, 12, 20),
+        quantity=1,
+        unit="Packung",
+        item_type=ItemType.PURCHASED_FRESH,
+        location_id=location.id,
+        created_by=test_admin.id,
+    )
+
+    assert item.id is not None
+    assert item.category_id is None
+
+
 def test_get_all_items(session: Session, test_admin: User) -> None:
     """Test getting all items."""
     location = location_service.create_location(

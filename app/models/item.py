@@ -1,10 +1,23 @@
 """Item model for inventory management."""
 
-from .freeze_time_config import ItemType
 from datetime import date
 from datetime import datetime
+from enum import Enum
 from sqlmodel import Field
 from sqlmodel import SQLModel
+
+
+class ItemType(str, Enum):
+    """Item type for expiry calculation.
+
+    Based on UI_KONZEPT.md - reflects actual user workflow for food storage.
+    """
+
+    PURCHASED_FRESH = "purchased_fresh"  # Frisch eingekauft
+    PURCHASED_FROZEN = "purchased_frozen"  # TK-Ware gekauft
+    PURCHASED_THEN_FROZEN = "purchased_then_frozen"  # Frisch gekauft → eingefroren
+    HOMEMADE_FROZEN = "homemade_frozen"  # Selbst eingefroren (Ernte/Reste)
+    HOMEMADE_PRESERVED = "homemade_preserved"  # Selbst eingemacht
 
 
 class Item(SQLModel, table=True):
@@ -24,6 +37,7 @@ class Item(SQLModel, table=True):
     unit: str  # e.g., "kg", "L", "pieces"
     item_type: ItemType
     location_id: int = Field(foreign_key="location.id")
+    category_id: int | None = Field(default=None, foreign_key="category.id")
     notes: str | None = Field(default=None)
     is_consumed: bool = Field(default=False)
     created_at: datetime = Field(default_factory=datetime.now)
