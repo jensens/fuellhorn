@@ -9,6 +9,7 @@ from . import freeze_time_service
 from . import item_service
 from . import location_service
 from . import preferences_service
+from . import shelf_life_service
 
 
 __all__ = [
@@ -18,4 +19,5 @@ __all__ = [
     "item_service",
     "location_service",
     "preferences_service",
+    "shelf_life_service",
 ]
