@@ -495,9 +495,8 @@ def add_item() -> None:
         ui.label("Artikel erfassen").classes("text-h5 font-bold text-primary")
         ui.button(icon="close", on_click=lambda: ui.navigate.to("/dashboard")).props("flat round color=gray-7")
 
-    # Main content container with max-width for desktop
-    with ui.column().classes("w-full mx-auto").style("max-width: 800px"):
-        content_container = create_mobile_page_container()
+    # Main content container (max-width handled by create_mobile_page_container)
+    content_container = create_mobile_page_container()
     with content_container:
         # Progress Indicator
         ui.label("Schritt 1 von 3").classes("text-sm text-gray-600 mb-4")
