@@ -1,6 +1,6 @@
 """Pytest fixtures für Playwright E2E Tests.
 
-Diese Fixtures starten einen echten Server in einem Subprocess
+Diese Fixtures starten einen echten Server als separaten Prozess
 und verwenden Playwright für Browser-Automatisierung.
 
 Jeder Test bekommt:
@@ -9,10 +9,12 @@ Jeder Test bekommt:
 - Perfekte Test-Isolation
 """
 
-from multiprocessing import Process
 import os
+from pathlib import Path
 import pytest
 import socket
+import subprocess
+import sys
 import time
 
 
@@ -23,54 +25,7 @@ def _find_free_port() -> int:
         return s.getsockname()[1]
 
 
-def _run_server(port: int) -> None:
-    """Starte den NiceGUI/FastAPI Server.
-
-    Diese Funktion läuft in einem separaten Prozess.
-    Jeder Prozess hat seine eigene in-memory SQLite DB.
-    """
-    # Setze Umgebungsvariablen für Test-Modus
-    os.environ["TESTING"] = "true"
-    os.environ["SECRET_KEY"] = "test-secret-key-for-e2e-tests"
-    os.environ["FUELLHORN_SECRET"] = "test-fuellhorn-secret-for-e2e-tests"
-
-    # Importiere die App erst im Subprocess
-    # damit jeder Test eine frische DB bekommt
-    import app.api.health as _api_health  # noqa: F401
-    from app.database import create_db_and_tables
-    from app.database import get_session
-    from app.models import User
-    import app.ui.pages as _pages  # noqa: F401
-    import app.ui.test_pages as _test_pages  # noqa: F401
-    from nicegui import ui
-
-    # Datenbank initialisieren (in-memory SQLite)
-    create_db_and_tables()
-
-    # Admin-User erstellen
-    with next(get_session()) as session:
-        admin = User(
-            username="admin",
-            email="admin@test.com",
-            is_active=True,
-            role="admin",
-        )
-        admin.set_password("admin")  # Einfaches Passwort für E2E Tests
-        session.add(admin)
-        session.commit()
-
-    # Server starten
-    ui.run(
-        host="127.0.0.1",
-        port=port,
-        title="Füllhorn - E2E Test",
-        storage_secret="test-storage-secret",
-        reload=False,
-        show=False,
-    )
-
-
-def _wait_for_server(url: str, timeout: float = 10.0) -> bool:
+def _wait_for_server(url: str, timeout: float = 30.0) -> bool:
     """Warte bis der Server erreichbar ist."""
     import httpx
 
@@ -109,21 +64,39 @@ def live_server():
     port = _find_free_port()
     url = f"http://127.0.0.1:{port}"
 
-    # Server in Subprocess starten
-    proc = Process(target=_run_server, args=(port,), daemon=True)
-    proc.start()
+    # Pfad zum Server-Script
+    server_script = Path(__file__).parent / "_server.py"
+
+    # Saubere Umgebung für den Server-Prozess erstellen
+    # (ohne pytest/NiceGUI Test-Mode Variablen)
+    clean_env = {
+        k: v
+        for k, v in os.environ.items()
+        if not k.startswith("NICEGUI_") and k != "TESTING" and not k.startswith("PYTEST")
+    }
+
+    # Server als separaten Prozess starten mit sauberer Umgebung
+    proc = subprocess.Popen(
+        [sys.executable, str(server_script), str(port)],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        env=clean_env,
+    )
 
     # Warten bis Server bereit ist
     if not _wait_for_server(url):
         proc.terminate()
-        proc.join(timeout=5)
-        pytest.fail(f"Server wurde nicht rechtzeitig gestartet auf {url}")
+        stdout, stderr = proc.communicate(timeout=5)
+        pytest.fail(
+            f"Server wurde nicht rechtzeitig gestartet auf {url}\nstdout: {stdout.decode()}\nstderr: {stderr.decode()}"
+        )
 
     yield url
 
     # Server beenden
     proc.terminate()
-    proc.join(timeout=5)
-    if proc.is_alive():
+    try:
+        proc.wait(timeout=5)
+    except subprocess.TimeoutExpired:
         proc.kill()
-        proc.join(timeout=5)
+        proc.wait(timeout=5)
