@@ -7,6 +7,7 @@ from ...services import category_service
 from ...services import item_service
 from ...services import location_service
 from ..components import create_bottom_nav
+from ..components import create_category_chip_group
 from ..components import create_item_type_chip_group
 from ..components import create_mobile_page_container
 from ..components import create_unit_chip_group
@@ -18,6 +19,7 @@ from ..smart_defaults import get_default_unit
 from ..validation import is_step1_valid
 from ..validation import is_step2_valid
 from ..validation import is_step3_valid
+from ..validation import requires_category
 from ..validation import validate_step1
 from ..validation import validate_step2
 from ..validation import validate_step3
@@ -83,6 +85,7 @@ def add_item() -> None:
             item_type=form_data["item_type"],
             best_before=form_data["best_before_date"],
             freeze_date=form_data.get("freeze_date"),
+            category_id=form_data.get("category_id"),
         )
         if is_valid:
             step2_next_button.props(remove="disabled")
@@ -93,7 +96,6 @@ def add_item() -> None:
         """Update Step 3 submit buttons state based on validation."""
         is_valid = is_step3_valid(
             location_id=form_data.get("location_id"),
-            category_id=form_data.get("category_id"),
         )
         if is_valid:
             step3_submit_button.props(remove="disabled")
@@ -191,14 +193,17 @@ def add_item() -> None:
             return
 
         form_data["current_step"] = 2
+        item_type = form_data["item_type"]
+        needs_category = requires_category(item_type)
+
         # Clear and rebuild UI for Step 2
         content_container.clear()
         with content_container:
             # Progress Indicator
             ui.label("Schritt 2 von 3").classes("text-sm text-gray-600 mb-4")
 
-            # Step 2: Date Information
-            ui.label("Datumsangaben").classes("text-h6 font-semibold mb-3")
+            # Step 2: Shelf Life Information
+            ui.label("Haltbarkeit").classes("text-h6 font-semibold mb-3")
 
             # Summary from Step 1
             item_type_labels = {
@@ -208,7 +213,7 @@ def add_item() -> None:
                 ItemType.HOMEMADE_FROZEN: "Selbst eingefroren",
                 ItemType.HOMEMADE_PRESERVED: "Selbst eingemacht",
             }
-            type_label = item_type_labels.get(form_data["item_type"], "")
+            type_label = item_type_labels.get(item_type, "")
 
             with ui.card().classes("w-full bg-gray-50 p-3 mb-4"):
                 ui.label("Zusammenfassung:").classes("text-sm font-medium mb-2")
@@ -216,46 +221,69 @@ def add_item() -> None:
                     f"{form_data['product_name']} • {form_data['quantity']} {form_data['unit']} • {type_label}"
                 ).classes("text-sm")
 
-            # Best Before / Production Date (always shown)
-            homemade_types = {ItemType.HOMEMADE_FROZEN, ItemType.HOMEMADE_PRESERVED}
-            date_label = "Produktionsdatum" if form_data["item_type"] in homemade_types else "Einkaufsdatum"
+            # Category Chips (only for types that need shelf life from DB)
+            if needs_category:
+                with next(get_session()) as session:
+                    categories = category_service.get_all_categories(session)
 
-            ui.label(f"{date_label} *").classes("text-sm font-medium mb-1")
+                ui.label("Kategorie *").classes("text-sm font-medium mb-2")
+                ui.label("Bestimmt die Haltbarkeit").classes("text-xs text-gray-600 mb-2")
+
+                def on_category_change(category_id: int) -> None:
+                    form_data["category_id"] = category_id
+                    update_step2_validation()
+
+                create_category_chip_group(
+                    categories=categories,
+                    value=form_data.get("category_id"),
+                    on_change=on_category_change,
+                )
+
+            # Date field - different label based on item type
+            if item_type in {ItemType.PURCHASED_FRESH, ItemType.PURCHASED_FROZEN}:
+                # MHD from package
+                date_label = "Mindesthaltbarkeitsdatum"
+                date_field = "best_before_date"
+            elif item_type == ItemType.PURCHASED_THEN_FROZEN:
+                # Freeze date for items bought fresh then frozen
+                date_label = "Einfrierdatum"
+                date_field = "freeze_date"
+                # Initialize freeze_date with today if not set
+                if form_data.get("freeze_date") is None:
+                    form_data["freeze_date"] = date_type.today()
+            else:
+                # Production date for homemade items
+                date_label = "Produktionsdatum"
+                date_field = "best_before_date"
+
+            ui.label(f"{date_label} *").classes("text-sm font-medium mb-1 mt-4")
+            date_value = form_data.get(date_field) or date_type.today()
+            form_data[date_field] = date_value  # Ensure it's set
+
             with (
-                ui.input(value=form_data["best_before_date"].strftime("%d.%m.%Y"))
+                ui.input(value=date_value.strftime("%d.%m.%Y"))
                 .classes("w-full")
                 .props('outlined mask="##.##.####"')
-                .style("max-width: 500px") as best_before_input
+                .style("max-width: 500px") as date_input
             ):
-                with best_before_input.add_slot("append"):
+                with date_input.add_slot("append"):
                     with ui.icon("event").classes("cursor-pointer"):
-                        with ui.menu() as best_before_menu:
-                            best_before_date_picker = (
-                                ui.date().bind_value(best_before_input).props('locale="de" mask="DD.MM.YYYY"')
-                            )
+                        with ui.menu() as date_menu:
+                            date_picker = ui.date().bind_value(date_input).props('locale="de" mask="DD.MM.YYYY"')
 
-                            def on_best_before_change(e: Any) -> None:
-                                best_before_menu.close()
-                                # Update form_data when date changes
+                            def on_date_change(e: Any, field: str = date_field) -> None:
+                                date_menu.close()
                                 if e.value:
-                                    # e.value is already a date object from ui.date
-                                    form_data["best_before_date"] = e.value
+                                    form_data[field] = e.value
                                 update_step2_validation()
 
-                            best_before_date_picker.on("update:model-value", on_best_before_change)
-            best_before_input.on("blur", update_step2_validation)
+                            date_picker.on("update:model-value", on_date_change)
+            date_input.on("blur", update_step2_validation)
 
-            # Freeze Date (conditional - only for self-frozen types)
-            # PURCHASED_FROZEN has MHD on package, no freeze_date needed
-            frozen_types = {
-                ItemType.PURCHASED_THEN_FROZEN,
-                ItemType.HOMEMADE_FROZEN,
-            }
-
-            if form_data["item_type"] in frozen_types:
+            # Additional freeze date for homemade_frozen
+            if item_type == ItemType.HOMEMADE_FROZEN:
                 ui.label("Einfrierdatum *").classes("text-sm font-medium mb-1 mt-4")
                 freeze_date_value = form_data.get("freeze_date") or date_type.today()
-                # Initialize form_data with default if not set (fixes #51)
                 form_data["freeze_date"] = freeze_date_value
                 with (
                     ui.input(value=freeze_date_value.strftime("%d.%m.%Y"))
@@ -272,21 +300,12 @@ def add_item() -> None:
 
                                 def on_freeze_date_change(e: Any) -> None:
                                     freeze_date_menu.close()
-                                    # Update form_data when date changes
                                     if e.value:
-                                        # e.value is already a date object from ui.date
                                         form_data["freeze_date"] = e.value
                                     update_step2_validation()
 
                                 freeze_date_picker.on("update:model-value", on_freeze_date_change)
                 freeze_date_input.on("blur", update_step2_validation)
-
-            # Notes (optional)
-            ui.label("Notizen (optional)").classes("text-sm font-medium mb-1 mt-4")
-            notes_input = (
-                ui.textarea(placeholder="z.B. je 12 Stück, 300g pro Packung").classes("w-full").props("outlined rows=2")
-            )
-            notes_input.bind_value(form_data, "notes")
 
             # Navigation
             with ui.row().classes("w-full justify-between mt-6 gap-2"):
@@ -305,19 +324,26 @@ def add_item() -> None:
 
     def show_step3() -> None:
         """Navigate to Step 3."""
-        if not is_step2_valid(form_data["item_type"], form_data["best_before_date"], form_data.get("freeze_date")):
+        if not is_step2_valid(
+            form_data["item_type"],
+            form_data["best_before_date"],
+            form_data.get("freeze_date"),
+            form_data.get("category_id"),
+        ):
             ui.notify("Bitte alle Pflichtfelder ausfüllen", type="warning")
             return
 
         form_data["current_step"] = 3
+        item_type = form_data["item_type"]
+
         # Clear and rebuild UI for Step 3
         content_container.clear()
         with content_container:
             # Progress Indicator
             ui.label("Schritt 3 von 3").classes("text-sm text-gray-600 mb-4")
 
-            # Step 3: Location & Categories
-            ui.label("Lagerort & Kategorie").classes("text-h6 font-semibold mb-3")
+            # Step 3: Location & Notes
+            ui.label("Lagerort & Notizen").classes("text-h6 font-semibold mb-3")
 
             # Summary from Steps 1-2
             item_type_labels = {
@@ -327,13 +353,26 @@ def add_item() -> None:
                 ItemType.HOMEMADE_FROZEN: "Selbst eingefroren",
                 ItemType.HOMEMADE_PRESERVED: "Selbst eingemacht",
             }
-            type_label = item_type_labels.get(form_data["item_type"], "")
+            type_label = item_type_labels.get(item_type, "")
+
+            # Get category name for summary if selected
+            category_name = None
+            if form_data.get("category_id"):
+                with next(get_session()) as session:
+                    category = category_service.get_category(session, form_data["category_id"])
+                    if category:
+                        category_name = category.name
 
             with ui.card().classes("w-full bg-gray-50 p-3 mb-4"):
                 ui.label("Zusammenfassung:").classes("text-sm font-medium mb-2")
-                ui.label(
-                    f"{form_data['product_name']} • {form_data['quantity']} {form_data['unit']} • {type_label}"
-                ).classes("text-sm")
+                summary_parts = [
+                    form_data["product_name"],
+                    f"{form_data['quantity']} {form_data['unit']}",
+                    type_label,
+                ]
+                if category_name:
+                    summary_parts.append(category_name)
+                ui.label(" • ".join(summary_parts)).classes("text-sm")
 
                 # Date info
                 best_before_str = form_data["best_before_date"].strftime("%d.%m.%Y")
@@ -343,10 +382,9 @@ def add_item() -> None:
                     date_info += f" • Eingefroren: {freeze_str}"
                 ui.label(date_info).classes("text-sm")
 
-            # Fetch locations and categories from database
+            # Fetch locations from database
             with next(get_session()) as session:
                 locations = location_service.get_all_locations(session)
-                categories = category_service.get_all_categories(session)
 
             # Location Selection (required)
             ui.label("Lagerort *").classes("text-sm font-medium mb-1")
@@ -361,21 +399,6 @@ def add_item() -> None:
             )
             location_select.bind_value(form_data, "location_id")
             location_select.on("update:model-value", update_step3_validation)
-
-            # Category Selection (required single-select)
-            if categories:
-                ui.label("Kategorie *").classes("text-sm font-medium mb-1 mt-4")
-                category_options = {cat.id: cat.name for cat in categories}
-                category_select = (
-                    ui.select(
-                        options=category_options,
-                        value=form_data.get("category_id"),
-                    )
-                    .classes("w-full")
-                    .props("outlined")
-                )
-                category_select.bind_value(form_data, "category_id")
-                category_select.on("update:model-value", update_step3_validation)
 
             # Notes (optional)
             ui.label("Notizen (optional)").classes("text-sm font-medium mb-1 mt-4")
@@ -426,12 +449,12 @@ def add_item() -> None:
                 form_data["item_type"],
                 form_data["best_before_date"],
                 form_data.get("freeze_date"),
+                form_data.get("category_id"),
             )
         )
         errors.update(
             validate_step3(
                 form_data.get("location_id"),
-                form_data.get("category_id"),
             )
         )
 

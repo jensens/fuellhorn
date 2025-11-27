@@ -7,6 +7,7 @@ from .bottom_nav import create_bottom_nav
 from .bottom_nav import create_mobile_page_container
 from .bottom_sheet import create_bottom_sheet
 from .bottom_sheet import get_expiry_label
+from .category_chips import create_category_chip_group
 from .expiry_badge import create_expiry_badge
 from .expiry_badge import get_status_icon
 from .expiry_badge import get_status_text_color
@@ -22,6 +23,7 @@ from .user_dropdown import create_user_dropdown
 __all__ = [
     "create_bottom_nav",
     "create_bottom_sheet",
+    "create_category_chip_group",
     "create_expiry_badge",
     "create_item_card",
     "create_item_type_chip_group",
