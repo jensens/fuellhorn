@@ -79,7 +79,11 @@ uv run alembic upgrade head
 ### 6. Initialen Admin-Benutzer anlegen
 
 ```bash
+# Lokale Entwicklung
 uv run python create_admin.py
+
+# Docker Compose
+docker compose exec app /app/.venv/bin/python create_admin.py
 ```
 
 Dies erstellt einen Admin-Benutzer mit:
@@ -173,13 +177,133 @@ fuellhorn/
 
 ## Docker Deployment
 
+Füllhorn ist für Self-Hosting mit Docker konzipiert. Es gibt zwei Deployment-Optionen:
+
+### Option 1: Docker Compose (Empfohlen)
+
+Docker Compose startet Füllhorn mit PostgreSQL als Produktions-Datenbank.
+
+#### Schritt 1: Repository klonen
+
 ```bash
-# Docker Image bauen
+git clone https://github.com/jensens/fuellhorn.git
+cd fuellhorn
+```
+
+#### Schritt 2: Environment-Variablen konfigurieren
+
+```bash
+cp .env.example .env
+```
+
+**WICHTIG: Sichere Secrets generieren und in `.env` eintragen!**
+
+```bash
+# Secrets generieren:
+python -c "import secrets; print('SECRET_KEY=' + secrets.token_urlsafe(32))"
+python -c "import secrets; print('FUELLHORN_SECRET=' + secrets.token_urlsafe(32))"
+python -c "import secrets; print('POSTGRES_PASSWORD=' + secrets.token_urlsafe(16))"
+```
+
+Mindestens diese Werte in `.env` anpassen:
+- `SECRET_KEY` - JWT/Session Secret (min. 32 Zeichen)
+- `FUELLHORN_SECRET` - NiceGUI Storage Secret
+- `POSTGRES_PASSWORD` - PostgreSQL Passwort
+
+#### Schritt 3: Container starten
+
+```bash
+docker compose up -d
+```
+
+Die Anwendung ist dann erreichbar unter: `http://localhost:8080`
+
+**Hinweis:** Beim ersten Start werden automatisch die Datenbank-Migrationen ausgeführt.
+
+#### Weitere Docker Compose Befehle
+
+```bash
+# Logs anzeigen
+docker compose logs -f
+
+# Nur App-Logs
+docker compose logs -f app
+
+# Container stoppen
+docker compose down
+
+# Container stoppen und Daten löschen (ACHTUNG!)
+docker compose down -v
+
+# Container neu bauen (nach Code-Änderungen)
+docker compose build
+docker compose up -d
+```
+
+### Option 2: Standalone Docker (SQLite)
+
+Für einfache Setups oder Tests kann Füllhorn auch standalone mit SQLite laufen.
+
+```bash
+# Image bauen
 docker build -t fuellhorn .
 
-# Mit docker-compose starten
-docker-compose up -d
+# Container starten
+docker run -d \
+  --name fuellhorn \
+  -p 8080:8080 \
+  -e SECRET_KEY="your-secret-key-min-32-chars" \
+  -e FUELLHORN_SECRET="your-nicegui-secret" \
+  -v fuellhorn-data:/app/data \
+  fuellhorn
 ```
+
+**Hinweis:** SQLite ist nur für Einzelnutzer/Tests geeignet. Für Produktions-Deployments mit mehreren Nutzern wird PostgreSQL empfohlen.
+
+---
+
+## Umgebungsvariablen
+
+### Pflicht-Variablen (Security)
+
+| Variable | Beschreibung | Beispiel |
+|----------|--------------|----------|
+| `SECRET_KEY` | Geheimer Schlüssel für JWT/Sessions. **Min. 32 Zeichen!** | `secrets.token_urlsafe(32)` |
+| `FUELLHORN_SECRET` | Secret für NiceGUI Browser-Storage | `secrets.token_urlsafe(32)` |
+
+### Datenbank-Konfiguration
+
+| Variable | Beschreibung | Default |
+|----------|--------------|---------|
+| `DB_TYPE` | Datenbanktyp: `sqlite` oder `postgresql` | `sqlite` |
+| `DATABASE_URL` | Datenbank-Verbindungs-URL | `sqlite:///data/fuellhorn.db` |
+| `POSTGRES_USER` | PostgreSQL Benutzername (docker-compose) | `fuellhorn` |
+| `POSTGRES_PASSWORD` | PostgreSQL Passwort (docker-compose) | - |
+| `POSTGRES_DB` | PostgreSQL Datenbankname (docker-compose) | `fuellhorn` |
+
+### Anwendungs-Konfiguration
+
+| Variable | Beschreibung | Default |
+|----------|--------------|---------|
+| `DEBUG` | Debug-Modus aktivieren | `false` |
+| `HOST` | Bind-Adresse | `0.0.0.0` |
+| `PORT` | Port | `8080` |
+| `APP_PORT` | Externer Port (docker-compose) | `8080` |
+
+### Session-Konfiguration
+
+| Variable | Beschreibung | Default |
+|----------|--------------|---------|
+| `SESSION_MAX_AGE` | Session-Dauer in Sekunden (ohne "Angemeldet bleiben") | `86400` (24h) |
+| `REMEMBER_ME_MAX_AGE` | Session-Dauer mit "Angemeldet bleiben" | `2592000` (30 Tage) |
+
+### Logging
+
+| Variable | Beschreibung | Default |
+|----------|--------------|---------|
+| `LOG_LEVEL` | Log-Level: `DEBUG`, `INFO`, `WARNING`, `ERROR` | `INFO` |
+
+---
 
 ## Development Guidelines
 
