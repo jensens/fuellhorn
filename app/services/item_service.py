@@ -1,9 +1,9 @@
 """Item service - Business logic for item management."""
 
 from ..models.category import Category
-from ..models.freeze_time_config import ItemType
 from ..models.item import Item
 from ..models.item import ItemCategory
+from ..models.item import ItemType
 from . import expiry_calculator
 from . import freeze_time_service
 from datetime import date
@@ -24,6 +24,7 @@ def create_item(
     freeze_date: date | None = None,
     notes: str | None = None,
     category_ids: list[int] | None = None,
+    category_id: int | None = None,
 ) -> Item:
     """Create a new item with automatic expiry calculation.
 
@@ -38,7 +39,8 @@ def create_item(
         created_by: User ID who created the item
         freeze_date: Date when item was frozen (required for FROZEN items)
         notes: Optional notes
-        category_ids: Optional list of category IDs to assign
+        category_ids: Optional list of category IDs to assign (many-to-many, deprecated)
+        category_id: Optional category ID (single FK, new approach)
 
     Returns:
         Created item
@@ -70,6 +72,7 @@ def create_item(
         unit=unit,
         item_type=item_type,
         location_id=location_id,
+        category_id=category_id,
         notes=notes,
         created_by=created_by,
     )
