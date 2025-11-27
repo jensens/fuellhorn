@@ -207,7 +207,7 @@ main_menu() {
         done
 
         echo ""
-        echo -e "Eingabe: ${BOLD}Issue-Nummer${NC} (nur grüne auswählbar), ${BOLD}q${NC} zum Beenden"
+        echo -e "Eingabe: ${BOLD}Issue-Nummer${NC} (grün=auswählen, gelb=Briefing erneut anzeigen), ${BOLD}q${NC} zum Beenden"
         read -p "> " selection
 
         # Beenden
@@ -226,9 +226,26 @@ main_menu() {
             continue
         fi
 
-        # Prüfen ob Issue in Liste
+        # Prüfen ob Issue in agent-ready Liste
         if ! echo "$issues_json" | jq -e ".[] | select(.number == $selection)" > /dev/null 2>&1; then
-            echo -e "${RED}Issue #$selection ist nicht in der Liste der agent-ready Issues.${NC}"
+            # Prüfen ob Issue in in-progress Liste (dann Briefing nochmal zeigen)
+            if echo "$inprogress_json" | jq -e ".[] | select(.number == $selection)" > /dev/null 2>&1; then
+                clear
+                print_header "Issue #$selection - Briefing erneut anzeigen"
+                local inprogress_title
+                inprogress_title=$(echo "$inprogress_json" | jq -r ".[] | select(.number == $selection) | .title")
+                generate_briefing "$selection" "$inprogress_title"
+                show_dependents "$selection"
+                echo -e "\n${YELLOW}(Issue ist bereits in Bearbeitung - Labels nicht geändert)${NC}"
+                echo -e "\nDrücke Enter um fortzufahren oder 'q' zum Beenden..."
+                read -r -p "" next
+                if [ "$next" = "q" ]; then
+                    exit 0
+                fi
+                clear
+                continue
+            fi
+            echo -e "${RED}Issue #$selection ist nicht in der Liste der verfügbaren Issues.${NC}"
             sleep 1
             continue
         fi
