@@ -2,11 +2,83 @@
 
 ## Übersicht
 
-Fuellhorn verwendet pytest für alle Tests. Tests sind in drei Kategorien eingeteilt:
+Fuellhorn verwendet pytest für alle Tests. Tests sind in vier Kategorien eingeteilt:
 
 1. **Unit Tests** - Testen einzelne Komponenten isoliert (Models, Services)
 2. **Integration Tests** - Testen Zusammenspiel mehrerer Komponenten (Service + Datenbank)
 3. **UI Tests** - Testen die Benutzeroberfläche mit NiceGUI Testing Framework
+4. **E2E Tests** - Testen komplette Workflows mit Playwright Browser-Automatisierung
+
+## Hybrid Testing Strategy: NiceGUI vs Playwright
+
+Fuellhorn nutzt eine **Hybrid-Strategie** mit zwei UI-Testing-Frameworks:
+
+| Framework | Geschwindigkeit | Realistisch | Use Case |
+|-----------|-----------------|-------------|----------|
+| **NiceGUI User Fixture** | ⚡ Schnell (~100ms/Test) | Simuliert | Komponenten, schnelle Iteration |
+| **Playwright E2E** | 🐢 Langsam (~2-5s/Test) | Echter Browser | Kritische Workflows, Regressions |
+
+### Wann NiceGUI User Fixture verwenden?
+
+✅ **Empfohlen für:**
+- UI-Komponenten testen (Formulare, Buttons, Cards)
+- Schnelle Feedback-Zyklen während Entwicklung
+- Isolierte Page-Tests
+- Unit-Test-ähnliche UI-Tests
+- Die meisten UI-Tests (90%+)
+
+```python
+# tests/test_ui/test_items_page.py
+from nicegui.testing import User
+
+async def test_items_page_shows_items(logged_in_user: User) -> None:
+    """Test: Items-Seite zeigt vorhandene Artikel."""
+    await logged_in_user.open("/items")
+    await logged_in_user.should_see("Vorrat")
+```
+
+### Wann Playwright E2E verwenden?
+
+✅ **Empfohlen für:**
+- Kritische User-Journeys (Login, Checkout-ähnliche Flows)
+- Browser-spezifisches Verhalten (JavaScript, CSS, Timing)
+- Multi-Step Wizards die echtes Browser-Verhalten brauchen
+- Regressionstests für bekannte Browser-Bugs
+- Screenshots und visuelle Tests
+
+```python
+# tests/test_e2e/test_login.py
+from playwright.sync_api import Page, expect
+
+def test_login_with_valid_credentials(page: Page, live_server: str) -> None:
+    """Test: Login-Flow im echten Browser."""
+    page.goto(f"{live_server}/login")
+    page.get_by_label("Benutzername").fill("admin")
+    page.get_by_label("Passwort").fill("admin")
+    page.get_by_role("button", name="Anmelden").click()
+    page.wait_for_url(f"{live_server}/dashboard", timeout=10000)
+```
+
+### Entscheidungshilfe
+
+```
+Brauche ich echtes Browser-Verhalten?
+├── JA → Playwright E2E
+│   ├── JavaScript-Timing kritisch?
+│   ├── CSS-Rendering prüfen?
+│   ├── Multi-Page Navigation?
+│   └── Screenshot-Vergleiche?
+│
+└── NEIN → NiceGUI User Fixture
+    ├── Schneller Feedback-Loop
+    ├── Einfache Assertions
+    └── Bessere Test-Isolation
+```
+
+**Faustregel:** Starte mit NiceGUI User Fixture. Wechsle zu Playwright nur wenn:
+1. Ein Test mit NiceGUI nicht funktioniert
+2. Du echtes Browser-Verhalten brauchst
+3. Du einen kritischen User-Flow absicherst
 
 ## Grundprinzipien
 
@@ -507,36 +579,203 @@ async def test_infinite_scroll(user: User) -> None:
     # Prüfe dass weitere Items geladen werden
 ```
 
+## E2E Tests mit Playwright
+
+E2E Tests verwenden Playwright für echte Browser-Automatisierung. Sie laufen in
+einem separaten Server-Prozess und testen die Anwendung wie ein echter User.
+
+### Warum separate E2E Tests?
+
+⚠️ **WICHTIG:** E2E Tests müssen **SEPARAT** von regulären Tests ausgeführt werden!
+
+**Problem:** NiceGUI Testing Plugin und Playwright E2E Tests kollidieren:
+- NiceGUI setzt `NICEGUI_SCREEN_TEST_PORT` Environment Variable
+- Der E2E Server-Subprocess erbt diese Variable
+- NiceGUI geht dann in Test-Mode und funktioniert nicht korrekt
+
+**Lösung:** E2E Tests starten einen sauberen Server-Subprocess ohne Test-Variablen.
+
+### Verzeichnisstruktur
+
+```
+tests/
+├── conftest.py              # NiceGUI fixtures (für UI tests)
+├── test_services/           # Unit tests
+├── test_ui/                 # NiceGUI User Fixture tests
+└── test_e2e/                # Playwright E2E tests (SEPARAT!)
+    ├── __init__.py          # Dokumentation
+    ├── conftest.py          # live_server fixture
+    ├── _server.py           # Standalone server script
+    └── test_login.py        # E2E test files
+```
+
+### E2E Test-Ausführung
+
+```bash
+# ⚠️ WICHTIG: Reguläre Tests OHNE E2E ausführen
+uv run pytest tests/ --ignore=tests/test_e2e/
+
+# E2E Tests SEPARAT ausführen
+uv run pytest tests/test_e2e/ -v
+
+# E2E mit sichtbarem Browser (Debugging)
+uv run pytest tests/test_e2e/ --headed
+
+# E2E mit Traces (für Fehleranalyse)
+uv run pytest tests/test_e2e/ --tracing on
+
+# E2E nur ein spezifischer Test
+uv run pytest tests/test_e2e/test_login.py::test_login_with_valid_credentials -v
+```
+
+### Neue E2E Tests schreiben
+
+#### 1. Test-Datei erstellen
+
+```python
+# tests/test_e2e/test_wizard.py
+"""E2E Tests für den Item-Erfassungs-Wizard."""
+
+from playwright.sync_api import Page, expect
+
+
+def test_wizard_step_navigation(page: Page, live_server: str) -> None:
+    """Test: Wizard-Navigation zwischen Steps."""
+    # Login (admin/admin wird automatisch erstellt)
+    page.goto(f"{live_server}/login")
+    page.get_by_label("Benutzername").fill("admin")
+    page.get_by_label("Passwort").fill("admin")
+    page.get_by_role("button", name="Anmelden").click()
+    page.wait_for_url(f"{live_server}/dashboard", timeout=10000)
+
+    # Zum Wizard navigieren
+    page.goto(f"{live_server}/add-item")
+
+    # Step 1 prüfen
+    expect(page.get_by_text("Schritt 1")).to_be_visible()
+
+    # Weiter zu Step 2
+    page.get_by_role("button", name="Weiter").click()
+    expect(page.get_by_text("Schritt 2")).to_be_visible()
+```
+
+#### 2. Die `live_server` Fixture
+
+Die `live_server` Fixture startet automatisch einen frischen Server:
+
+```python
+def test_my_e2e_test(page: Page, live_server: str) -> None:
+    """Test mit live_server fixture."""
+    # live_server ist z.B. "http://127.0.0.1:54321"
+    page.goto(f"{live_server}/login")
+    # ...
+```
+
+**Was die Fixture macht:**
+- Findet einen freien Port
+- Startet `_server.py` als Subprocess mit sauberer Umgebung
+- Wartet bis Server auf `/api/health` antwortet
+- Erstellt automatisch Admin-User (username: `admin`, password: `admin`)
+- Beendet Server nach dem Test
+
+#### 3. Playwright Best Practices
+
+```python
+from playwright.sync_api import Page, expect
+
+def test_example(page: Page, live_server: str) -> None:
+    """Beispiel für Playwright Best Practices."""
+
+    # ✅ Prefer role-based locators
+    page.get_by_role("button", name="Anmelden").click()
+
+    # ✅ Prefer label-based locators for inputs
+    page.get_by_label("Benutzername").fill("admin")
+
+    # ✅ Prefer text-based locators for content
+    expect(page.get_by_text("Willkommen")).to_be_visible()
+
+    # ✅ Use expect for assertions (auto-waits!)
+    expect(page.get_by_role("heading")).to_have_text("Dashboard")
+
+    # ✅ Wait for navigation explicitly
+    page.wait_for_url(f"{live_server}/dashboard", timeout=10000)
+
+    # ❌ Avoid CSS selectors when possible
+    # page.locator(".btn-primary").click()  # Fragil!
+
+    # ❌ Avoid fixed sleeps
+    # time.sleep(2)  # Flaky!
+```
+
+#### 4. Debugging E2E Tests
+
+```bash
+# Mit sichtbarem Browser
+uv run pytest tests/test_e2e/test_login.py -v --headed
+
+# Mit Slow-Motion (500ms zwischen Aktionen)
+uv run pytest tests/test_e2e/test_login.py -v --headed --slowmo 500
+
+# Mit Traces (Screenshots + Timeline)
+uv run pytest tests/test_e2e/test_login.py -v --tracing on
+# → Öffne trace.zip mit: npx playwright show-trace trace.zip
+
+# Pause im Test für manuelles Debugging
+def test_debug(page: Page, live_server: str) -> None:
+    page.goto(f"{live_server}/login")
+    page.pause()  # Öffnet Playwright Inspector
+```
+
+### E2E in CI
+
+E2E Tests laufen automatisch in GitHub Actions als separater Job:
+
+```yaml
+# .github/workflows/ci.yml
+test-e2e:
+  runs-on: ubuntu-latest
+  steps:
+    - uses: actions/checkout@v4
+    - name: Install Playwright Chromium
+      run: uv run playwright install chromium
+    - name: Run E2E tests
+      run: uv run pytest tests/test_e2e/ -v
+```
+
 ## Test-Ausführung
 
-### Alle Tests ausführen
+### Reguläre Tests (ohne E2E)
 
 ```bash
-uv run pytest
+# Alle Tests AUSSER E2E (Standard-Workflow)
+uv run pytest tests/ --ignore=tests/test_e2e/
+
+# Mit Coverage
+uv run pytest tests/ --ignore=tests/test_e2e/ --cov=app --cov-report=html
 ```
 
-### Spezifische Test-Datei
+### E2E Tests (separat!)
 
 ```bash
-uv run pytest tests/test_item_service.py -v
+# ⚠️ E2E Tests MÜSSEN separat laufen!
+uv run pytest tests/test_e2e/ -v
+
+# Mit sichtbarem Browser
+uv run pytest tests/test_e2e/ --headed
 ```
 
-### Mit Coverage
+### Spezifische Tests
 
 ```bash
-uv run pytest --cov=app --cov-report=html
-```
+# Spezifische Test-Datei
+uv run pytest tests/test_services/test_item_service.py -v
 
-### Nur UI Tests
+# Nur UI Tests (NiceGUI)
+uv run pytest tests/test_ui/ -v
 
-```bash
-uv run pytest tests/ui/ -v
-```
-
-### Nur Unit Tests (ohne UI)
-
-```bash
-uv run pytest tests/ --ignore=tests/ui/ -v
+# Nur Unit/Integration Tests
+uv run pytest tests/test_services/ tests/test_api/ -v
 ```
 
 ## Best Practices
@@ -737,5 +976,7 @@ class TestItemService:
 - [pytest Documentation](https://docs.pytest.org/)
 - [SQLModel Testing](https://sqlmodel.tiangolo.com/tutorial/fastapi/tests/)
 - [NiceGUI Testing](https://nicegui.io/documentation/section_testing)
+- [Playwright Python Documentation](https://playwright.dev/python/)
+- [Playwright Locators](https://playwright.dev/python/docs/locators)
 - VellenBase TESTING.md - Lessons Learned übernommen
 - Projekt-Regeln: siehe [CLAUDE.md](CLAUDE.md)
