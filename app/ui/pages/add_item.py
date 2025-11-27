@@ -581,5 +581,8 @@ def add_item() -> None:
                 .style("min-height: 48px")
             )
 
+        # Initial validation to set button state based on smart defaults
+        update_validation()
+
     # Bottom Navigation
     create_bottom_nav(current_page="add")
