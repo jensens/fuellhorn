@@ -106,7 +106,8 @@ Bitte implementiere Issue #$issue_num: $issue_title
 WICHTIG - Worktree selbst erstellen:
 Du musst zuerst einen Git Worktree erstellen um isoliert zu arbeiten.
 
-1. Worktree erstellen (vom Hauptrepo aus):
+1. Worktree erstellen (vom Hauptrepo aus, unbedingt erst main pullen!):
+   git pull origin main
    git worktree add $worktree_abs -b $branch_name
 
 2. In Worktree wechseln:
