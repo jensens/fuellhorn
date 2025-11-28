@@ -6,7 +6,6 @@ Exportiert alle SQLModel Entitaeten.
 from .category import Category
 from .category_shelf_life import CategoryShelfLife
 from .category_shelf_life import StorageType
-from .freeze_time_config import FreezeTimeConfig
 from .item import Item
 from .item import ItemCategory
 from .item import ItemType
@@ -25,7 +24,6 @@ __all__ = [
     "StorageType",
     "Location",
     "LocationType",
-    "FreezeTimeConfig",
     "ItemType",
     "Item",
     "ItemCategory",

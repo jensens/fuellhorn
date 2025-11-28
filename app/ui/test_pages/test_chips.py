@@ -4,7 +4,7 @@ These pages are used to test the chip components in isolation.
 Only loaded when TESTING=true environment variable is set.
 """
 
-from ...models.freeze_time_config import ItemType
+from ...models.item import ItemType
 from ..components import create_item_type_chip_group
 from ..components import create_unit_chip_group
 from nicegui import ui

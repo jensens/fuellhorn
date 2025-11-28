@@ -4,7 +4,7 @@ A chip-based selection component for choosing item types with a radio-button-lik
 ring-dot indicator. Designed for mobile-first touch interaction.
 """
 
-from ...models.freeze_time_config import ItemType
+from ...models.item import ItemType
 from collections.abc import Callable
 from nicegui import ui
 

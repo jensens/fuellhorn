@@ -11,9 +11,9 @@ Extended in Issue #17 to allow showing consumed items via toggle.
 
 from ...auth import require_auth
 from ...database import get_session
-from ...models.freeze_time_config import ItemType
 from ...models.item import Item
 from ...models.item import ItemCategory
+from ...models.item import ItemType
 from ...services import category_service
 from ...services import item_service
 from ...services import location_service

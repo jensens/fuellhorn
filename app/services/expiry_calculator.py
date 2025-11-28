@@ -1,7 +1,7 @@
 """Expiry calculator - Calculate expiry dates and status for items."""
 
 from ..models.category_shelf_life import StorageType
-from ..models.freeze_time_config import ItemType
+from ..models.item import ItemType
 from datetime import date
 from dateutil.relativedelta import relativedelta
 from typing import Literal

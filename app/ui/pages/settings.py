@@ -56,7 +56,6 @@ def _render_admin_navigation() -> None:
         {"icon": "category", "label": "Kategorien", "route": "/admin/categories"},
         {"icon": "place", "label": "Lagerorte", "route": "/admin/locations"},
         {"icon": "people", "label": "Benutzer", "route": "/admin/users"},
-        {"icon": "ac_unit", "label": "Gefrierzeiten", "route": "/admin/freeze-times"},
     ]
 
     for item in nav_items:

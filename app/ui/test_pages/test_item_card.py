@@ -8,8 +8,8 @@ from ...database import get_session
 from ...models.category import Category
 from ...models.category_shelf_life import CategoryShelfLife
 from ...models.category_shelf_life import StorageType
-from ...models.freeze_time_config import ItemType
 from ...models.item import Item
+from ...models.item import ItemType
 from ...models.location import Location
 from ...models.location import LocationType
 from ..components.item_card import create_item_card

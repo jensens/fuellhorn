@@ -147,7 +147,7 @@ def validate_freeze_date(
         Error message if invalid, None if valid
     """
     # Import here to avoid circular dependency
-    from ...models.freeze_time_config import ItemType
+    from ...models.item import ItemType
 
     # Only self-frozen items require freeze_date
     # PURCHASED_FROZEN has MHD on package, no freeze_date needed
@@ -176,7 +176,7 @@ def _requires_category(item_type: Any) -> bool:
         True if category is required (for types that calculate shelf life from DB)
     """
     # Import here to avoid circular dependency
-    from ...models.freeze_time_config import ItemType
+    from ...models.item import ItemType
 
     # purchased_fresh/purchased_frozen use MHD from package - no category needed
     # Other types need category for shelf life calculation

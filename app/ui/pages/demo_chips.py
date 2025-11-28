@@ -4,7 +4,7 @@ This page allows interactive testing of the chip components in the browser.
 Temporary page - can be removed after integration into add_item.py.
 """
 
-from ...models.freeze_time_config import ItemType
+from ...models.item import ItemType
 from ..components import create_item_type_chip_group
 from ..components import create_unit_chip_group
 from ..components import get_item_type_label

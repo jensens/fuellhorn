@@ -7,7 +7,6 @@ from . import add_item  # noqa: F401
 from . import categories  # noqa: F401
 from . import dashboard  # noqa: F401
 from . import demo_chips  # noqa: F401  # Temporary demo page
-from . import freeze_times  # noqa: F401
 from . import items  # noqa: F401
 from . import locations  # noqa: F401
 from . import login  # noqa: F401
