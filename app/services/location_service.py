@@ -1,9 +1,50 @@
 """Location service - Business logic for location management."""
 
+from ..models.item import ItemType
 from ..models.location import Location
 from ..models.location import LocationType
 from sqlmodel import Session
 from sqlmodel import select
+
+
+def get_valid_location_types(item_type: ItemType) -> list[LocationType]:
+    """Get valid location types for a given item type.
+
+    Args:
+        item_type: The type of item
+
+    Returns:
+        List of valid LocationTypes for this item type
+    """
+    if item_type in {
+        ItemType.PURCHASED_FROZEN,
+        ItemType.PURCHASED_THEN_FROZEN,
+        ItemType.HOMEMADE_FROZEN,
+    }:
+        return [LocationType.FROZEN]
+    elif item_type in {ItemType.PURCHASED_FRESH, ItemType.HOMEMADE_PRESERVED}:
+        return [LocationType.AMBIENT, LocationType.CHILLED]
+    else:
+        # Fallback (should not happen with current ItemType enum)
+        return [LocationType.FROZEN, LocationType.CHILLED, LocationType.AMBIENT]
+
+
+def get_locations_for_item_type(session: Session, item_type: ItemType) -> list[Location]:
+    """Get locations filtered by valid types for the given item type.
+
+    Args:
+        session: Database session
+        item_type: The type of item to filter locations for
+
+    Returns:
+        List of locations that are valid for this item type
+    """
+    valid_types = get_valid_location_types(item_type)
+    return list(
+        session.exec(
+            select(Location).where(Location.location_type.in_(valid_types))  # type: ignore
+        ).all()
+    )
 
 
 def create_location(

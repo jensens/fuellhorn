@@ -1,5 +1,6 @@
 """Tests for location_service."""
 
+from app.models import ItemType
 from app.models import LocationType
 from app.models import User
 from app.services import location_service
@@ -193,3 +194,162 @@ def test_delete_location(session: Session, test_admin: User) -> None:
 
     with pytest.raises(ValueError, match="Location with id .* not found"):
         location_service.get_location(session, created.id)
+
+
+# Tests for get_valid_location_types()
+
+
+def test_get_valid_location_types_purchased_fresh() -> None:
+    """Test that purchased_fresh items can only be stored in chilled/ambient."""
+    valid_types = location_service.get_valid_location_types(ItemType.PURCHASED_FRESH)
+
+    assert LocationType.CHILLED in valid_types
+    assert LocationType.AMBIENT in valid_types
+    assert LocationType.FROZEN not in valid_types
+
+
+def test_get_valid_location_types_purchased_frozen() -> None:
+    """Test that purchased_frozen items can only be stored in frozen."""
+    valid_types = location_service.get_valid_location_types(ItemType.PURCHASED_FROZEN)
+
+    assert LocationType.FROZEN in valid_types
+    assert LocationType.CHILLED not in valid_types
+    assert LocationType.AMBIENT not in valid_types
+
+
+def test_get_valid_location_types_purchased_then_frozen() -> None:
+    """Test that purchased_then_frozen items can only be stored in frozen."""
+    valid_types = location_service.get_valid_location_types(ItemType.PURCHASED_THEN_FROZEN)
+
+    assert LocationType.FROZEN in valid_types
+    assert LocationType.CHILLED not in valid_types
+    assert LocationType.AMBIENT not in valid_types
+
+
+def test_get_valid_location_types_homemade_frozen() -> None:
+    """Test that homemade_frozen items can only be stored in frozen."""
+    valid_types = location_service.get_valid_location_types(ItemType.HOMEMADE_FROZEN)
+
+    assert LocationType.FROZEN in valid_types
+    assert LocationType.CHILLED not in valid_types
+    assert LocationType.AMBIENT not in valid_types
+
+
+def test_get_valid_location_types_homemade_preserved() -> None:
+    """Test that homemade_preserved items can only be stored in ambient/chilled."""
+    valid_types = location_service.get_valid_location_types(ItemType.HOMEMADE_PRESERVED)
+
+    assert LocationType.AMBIENT in valid_types
+    assert LocationType.CHILLED in valid_types
+    assert LocationType.FROZEN not in valid_types
+
+
+# Tests for get_locations_for_item_type()
+
+
+def test_get_locations_for_item_type_frozen_items(session: Session, test_admin: User) -> None:
+    """Test filtering locations for frozen item types."""
+    # Create locations of different types
+    frozen_loc = location_service.create_location(
+        session=session,
+        name="Gefrierschrank",
+        location_type=LocationType.FROZEN,
+        created_by=test_admin.id,
+    )
+    location_service.create_location(
+        session=session,
+        name="Kühlschrank",
+        location_type=LocationType.CHILLED,
+        created_by=test_admin.id,
+    )
+    location_service.create_location(
+        session=session,
+        name="Keller",
+        location_type=LocationType.AMBIENT,
+        created_by=test_admin.id,
+    )
+
+    # Frozen items should only see frozen locations
+    locations = location_service.get_locations_for_item_type(session, ItemType.PURCHASED_FROZEN)
+
+    assert len(locations) == 1
+    assert locations[0].id == frozen_loc.id
+    assert locations[0].location_type == LocationType.FROZEN
+
+
+def test_get_locations_for_item_type_fresh_items(session: Session, test_admin: User) -> None:
+    """Test filtering locations for fresh item types."""
+    # Create locations of different types
+    location_service.create_location(
+        session=session,
+        name="Gefrierschrank",
+        location_type=LocationType.FROZEN,
+        created_by=test_admin.id,
+    )
+    chilled_loc = location_service.create_location(
+        session=session,
+        name="Kühlschrank",
+        location_type=LocationType.CHILLED,
+        created_by=test_admin.id,
+    )
+    ambient_loc = location_service.create_location(
+        session=session,
+        name="Keller",
+        location_type=LocationType.AMBIENT,
+        created_by=test_admin.id,
+    )
+
+    # Fresh items should only see chilled and ambient locations
+    locations = location_service.get_locations_for_item_type(session, ItemType.PURCHASED_FRESH)
+
+    assert len(locations) == 2
+    location_ids = [loc.id for loc in locations]
+    assert chilled_loc.id in location_ids
+    assert ambient_loc.id in location_ids
+
+
+def test_get_locations_for_item_type_preserved_items(session: Session, test_admin: User) -> None:
+    """Test filtering locations for preserved item types."""
+    # Create locations of different types
+    location_service.create_location(
+        session=session,
+        name="Gefrierschrank",
+        location_type=LocationType.FROZEN,
+        created_by=test_admin.id,
+    )
+    chilled_loc = location_service.create_location(
+        session=session,
+        name="Kühlschrank",
+        location_type=LocationType.CHILLED,
+        created_by=test_admin.id,
+    )
+    ambient_loc = location_service.create_location(
+        session=session,
+        name="Keller",
+        location_type=LocationType.AMBIENT,
+        created_by=test_admin.id,
+    )
+
+    # Preserved items should only see chilled and ambient locations
+    locations = location_service.get_locations_for_item_type(session, ItemType.HOMEMADE_PRESERVED)
+
+    assert len(locations) == 2
+    location_ids = [loc.id for loc in locations]
+    assert chilled_loc.id in location_ids
+    assert ambient_loc.id in location_ids
+
+
+def test_get_locations_for_item_type_empty_result(session: Session, test_admin: User) -> None:
+    """Test that empty list is returned when no matching locations exist."""
+    # Create only chilled location
+    location_service.create_location(
+        session=session,
+        name="Kühlschrank",
+        location_type=LocationType.CHILLED,
+        created_by=test_admin.id,
+    )
+
+    # Frozen items should get empty list (no frozen locations)
+    locations = location_service.get_locations_for_item_type(session, ItemType.PURCHASED_FROZEN)
+
+    assert len(locations) == 0
