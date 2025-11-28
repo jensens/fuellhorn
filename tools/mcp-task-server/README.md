@@ -51,3 +51,40 @@ Nach Aktivierung des MCP Servers kann ein Agent:
 3. assign_issue um das Issue zu übernehmen
 4. Nach Abschluss: complete_issue aufrufen
 ```
+
+## Beispiel-Prompts für Agents
+
+### Neues Issue übernehmen
+
+```
+Zeige mir die verfügbaren Issues mit list_ready_issues.
+Dann hole mir das Briefing für Issue #42 und weise es mir zu.
+```
+
+### Issue-Status prüfen
+
+```
+Welche Issues sind gerade in Bearbeitung?
+Zeige mir auch welche Issues von Issue #42 abhängen.
+```
+
+### Nach PR-Merge aufräumen
+
+```
+Mein PR für Issue #42 wurde gemerged.
+Rufe complete_issue auf und zeige mir die Aufräum-Anweisungen.
+```
+
+### Selbstständig nächstes Issue bearbeiten
+
+```
+Finde das nächste verfügbare Issue mit der höchsten Priorität.
+Hole das Briefing, weise es mir zu und erstelle den Worktree.
+Dann implementiere das Feature nach TDD.
+```
+
+### Issue-Details verstehen
+
+```
+Zeige mir die Details zu Issue #42 und liste alle abhängigen Issues auf.
+```
