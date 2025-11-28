@@ -309,7 +309,7 @@ docker run -d \
 
 Bitte lies vor der Entwicklung:
 - [CLAUDE.md](CLAUDE.md) - Entwicklungsregeln und Best Practices
-- [TESTING.md](TESTING.md) - Testing Strategy
+- [docs/TESTING.md](docs/TESTING.md) - Testing Strategy
 
 ### Aufgabenverwaltung
 
@@ -332,7 +332,7 @@ Alle Aufgaben werden über **GitHub Issues** verwaltet:
 - ❌ Statistiken & Analytics
 - ❌ Kubernetes Deployment (CDK8s)
 
-Siehe [CLAUDE.md](CLAUDE.md) für vollständige Roadmap.
+Siehe [docs/requirements.md](docs/requirements.md) für vollständige Roadmap.
 
 ## Lizenz
 
