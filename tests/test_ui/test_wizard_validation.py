@@ -1,6 +1,6 @@
 """Unit tests for wizard validation logic."""
 
-from app.models.freeze_time_config import ItemType
+from app.models.item import ItemType
 from app.ui.validation import is_step1_valid
 from app.ui.validation import validate_item_type
 from app.ui.validation import validate_product_name

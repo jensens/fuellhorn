@@ -1,7 +1,7 @@
 """UI Tests for Bottom Sheet component."""
 
-from app.models.freeze_time_config import ItemType
 from app.models.item import Item
+from app.models.item import ItemType
 from app.models.location import Location
 from app.models.location import LocationType
 from datetime import date

@@ -1,6 +1,6 @@
 """Unit tests for Save & Next flow logic (Phase 7)."""
 
-from app.models.freeze_time_config import ItemType
+from app.models.item import ItemType
 from datetime import datetime
 from datetime import timedelta
 
