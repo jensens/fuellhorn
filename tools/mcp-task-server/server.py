@@ -82,7 +82,9 @@ def list_ready_issues() -> list[dict[str, Any]]:
     Liste alle GitHub Issues mit 'status/agent-ready' Label.
 
     Gibt Issues zurück die sofort von einem Agent bearbeitet werden können.
-    Blockierte Issues (mit 'status/blocked' Label) werden ausgeschlossen.
+    Ausgeschlossen werden:
+    - Blockierte Issues (mit 'status/blocked' Label)
+    - Epics (mit 'type/epic' Label) - diese werden nicht direkt bearbeitet
     """
     gh = get_github_client()
     repo = gh.get_repo(REPO_NAME)
@@ -92,7 +94,8 @@ def list_ready_issues() -> list[dict[str, Any]]:
     result = []
     for issue in issues:
         label_names = [label.name for label in issue.labels]
-        if "status/blocked" not in label_names:
+        # Blockierte und Epics ausschließen
+        if "status/blocked" not in label_names and "type/epic" not in label_names:
             result.append(issue_to_dict(issue))
 
     return result
@@ -104,13 +107,66 @@ def list_inprogress_issues() -> list[dict[str, Any]]:
     Liste alle GitHub Issues mit 'status/in-progress' Label.
 
     Zeigt welche Issues aktuell von Agents bearbeitet werden.
+    Epics werden ausgeschlossen (diese werden nicht direkt bearbeitet).
     """
     gh = get_github_client()
     repo = gh.get_repo(REPO_NAME)
 
     issues = repo.get_issues(state="open", labels=["status/in-progress"])
 
-    return [issue_to_dict(issue) for issue in issues]
+    result = []
+    for issue in issues:
+        label_names = [label.name for label in issue.labels]
+        if "type/epic" not in label_names:
+            result.append(issue_to_dict(issue))
+
+    return result
+
+
+@mcp.tool()
+def list_epics() -> list[dict[str, Any]]:
+    """
+    Liste alle Epics mit ihren Sub-Issues.
+
+    Epics sind Issues mit 'type/epic' Label. Sub-Issues werden über
+    GitHub's Sub-Issue Feature (Parent-Issue) verknüpft.
+    Ein Epic wird automatisch geschlossen wenn alle Sub-Issues erledigt sind.
+    """
+    gh = get_github_client()
+    repo = gh.get_repo(REPO_NAME)
+
+    epics = repo.get_issues(state="open", labels=["type/epic"])
+
+    result = []
+    for epic in epics:
+        # Sub-Issues über GitHub API abrufen (falls unterstützt)
+        # Alternativ: Alle Issues durchsuchen die dieses als Parent haben
+        sub_issues = []
+
+        # Suche nach Sub-Issues die "Part of #X" im Body haben
+        pattern = re.compile(rf"(?i)part\s+of:?\s*#{epic.number}\b")
+        for issue in repo.get_issues(state="all"):
+            if issue.number == epic.number:
+                continue
+            if issue.body and pattern.search(issue.body):
+                sub_issues.append({
+                    "number": issue.number,
+                    "title": issue.title,
+                    "state": issue.state,
+                })
+
+        open_count = sum(1 for si in sub_issues if si["state"] == "open")
+        closed_count = sum(1 for si in sub_issues if si["state"] == "closed")
+
+        result.append({
+            **issue_to_dict(epic),
+            "sub_issues": sub_issues,
+            "sub_issues_open": open_count,
+            "sub_issues_closed": closed_count,
+            "progress": f"{closed_count}/{open_count + closed_count}",
+        })
+
+    return result
 
 
 @mcp.tool()

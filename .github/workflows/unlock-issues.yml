@@ -11,7 +11,7 @@ jobs:
   unlock-dependents:
     runs-on: ubuntu-latest
     steps:
-      - name: Unlock dependent issues
+      - name: Unlock dependent issues and close completed epics
         uses: actions/github-script@v7
         with:
           script: |
@@ -28,7 +28,13 @@ jobs:
 
             // Pattern to find "Blocked by #X" or "Blocked by: #X" in issue body
             const blockedByPattern = /[Bb]locked\s+by:?\s*#(\d+)/g;
+            // Pattern to find "Part of #X" or "Part of: #X" in issue body (for sub-issues)
+            const partOfPattern = /[Pp]art\s+of:?\s*#(\d+)/g;
 
+            // Helper to check if issue has a label
+            const hasLabel = (issue, labelName) => issue.labels.some(l => l.name === labelName);
+
+            // --- Part 1: Unlock blocked issues ---
             for (const issue of allIssues) {
               if (!issue.body) continue;
 
@@ -68,8 +74,25 @@ jobs:
 
               // All blockers are closed - unlock this issue!
               const labels = issue.labels.map(l => l.name);
+              const isEpic = labels.includes('type/epic');
               const hasBlocked = labels.includes('status/blocked');
               const hasAgentReady = labels.includes('status/agent-ready');
+
+              // WICHTIG: Epics bekommen NIEMALS status/agent-ready
+              if (isEpic) {
+                if (hasBlocked) {
+                  // Nur blocked Label entfernen, kein agent-ready hinzufügen
+                  const newLabels = labels.filter(l => l !== 'status/blocked');
+                  await github.rest.issues.update({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: issue.number,
+                    labels: newLabels
+                  });
+                  console.log(`✓ Epic #${issue.number} unblocked (no agent-ready for epics)`);
+                }
+                continue;
+              }
 
               if (hasBlocked || !hasAgentReady) {
                 const newLabels = labels.filter(l => l !== 'status/blocked');
@@ -95,6 +118,79 @@ jobs:
               } else {
                 console.log(`#${issue.number} was already unlocked`);
               }
+            }
+
+            // --- Part 2: Check if closed issue is sub-issue of an epic ---
+            const closedIssueData = context.payload.issue;
+            if (closedIssueData.body) {
+              let epicMatch;
+              while ((epicMatch = partOfPattern.exec(closedIssueData.body)) !== null) {
+                const epicNumber = parseInt(epicMatch[1]);
+                console.log(`Closed issue #${closedIssue} is part of Epic #${epicNumber}`);
+
+                // Get the epic
+                try {
+                  const { data: epic } = await github.rest.issues.get({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: epicNumber
+                  });
+
+                  // Only process if it's actually an epic and still open
+                  if (epic.state !== 'open' || !epic.labels.some(l => l.name === 'type/epic')) {
+                    continue;
+                  }
+
+                  // Find all sub-issues of this epic
+                  const subIssuePattern = new RegExp(`[Pp]art\\s+of:?\\s*#${epicNumber}\\b`, 'g');
+                  const { data: allRepoIssues } = await github.rest.issues.listForRepo({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    state: 'all',
+                    per_page: 100
+                  });
+
+                  let openSubIssues = 0;
+                  let closedSubIssues = 0;
+
+                  for (const issue of allRepoIssues) {
+                    if (issue.number === epicNumber) continue;
+                    if (!issue.body) continue;
+                    if (subIssuePattern.test(issue.body)) {
+                      if (issue.state === 'open') {
+                        openSubIssues++;
+                      } else {
+                        closedSubIssues++;
+                      }
+                    }
+                    subIssuePattern.lastIndex = 0;
+                  }
+
+                  console.log(`Epic #${epicNumber}: ${closedSubIssues} closed, ${openSubIssues} open`);
+
+                  // If all sub-issues are closed, close the epic
+                  if (openSubIssues === 0 && closedSubIssues > 0) {
+                    await github.rest.issues.update({
+                      owner: context.repo.owner,
+                      repo: context.repo.repo,
+                      issue_number: epicNumber,
+                      state: 'closed'
+                    });
+
+                    await github.rest.issues.createComment({
+                      owner: context.repo.owner,
+                      repo: context.repo.repo,
+                      issue_number: epicNumber,
+                      body: `🎉 Epic automatisch geschlossen - alle ${closedSubIssues} Sub-Issues erledigt!`
+                    });
+
+                    console.log(`✓ Epic #${epicNumber} closed (all sub-issues done)`);
+                  }
+                } catch (e) {
+                  console.log(`Could not process epic #${epicNumber}: ${e.message}`);
+                }
+              }
+              partOfPattern.lastIndex = 0;
             }
 
             console.log('Done!');
