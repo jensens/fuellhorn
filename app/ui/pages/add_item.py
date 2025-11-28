@@ -382,12 +382,25 @@ def add_item() -> None:
                     date_info += f" • Eingefroren: {freeze_str}"
                 ui.label(date_info).classes("text-sm")
 
-            # Fetch locations from database
+            # Fetch locations filtered by item type
             with next(get_session()) as session:
-                locations = location_service.get_all_locations(session)
+                locations = location_service.get_locations_for_item_type(session, item_type)
 
             # Location Selection (required)
             ui.label("Lagerort *").classes("text-sm font-medium mb-1")
+
+            if not locations:
+                # Show warning when no matching locations exist
+                if item_type in {
+                    ItemType.PURCHASED_FROZEN,
+                    ItemType.PURCHASED_THEN_FROZEN,
+                    ItemType.HOMEMADE_FROZEN,
+                }:
+                    warning_msg = "Kein Tiefkühl-Lagerort vorhanden. Bitte zuerst einen anlegen."
+                else:
+                    warning_msg = "Kein passender Lagerort (Keller/Kühlschrank) vorhanden."
+                ui.label(warning_msg).classes("text-sm text-red-600 mb-2")
+
             location_options = {loc.id: loc.name for loc in locations}
             location_select = (
                 ui.select(
