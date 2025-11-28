@@ -184,7 +184,31 @@ Blocked by #43
 - Mehrere Blocker: Eine Zeile pro Blocker
 - **NICHT** das Header-Format verwenden (`## Blocked by` + Bullet-Liste) - das wird nicht erkannt!
 
-**Workflow für Agents:**
+#### MCP Server für Task-Management
+
+**Für Claude Code Agents steht ein MCP Server zur Verfügung** der die Issue-Auswahl automatisiert:
+
+| Tool | Beschreibung |
+|------|-------------|
+| `list_ready_issues` | Agent-ready Issues auflisten |
+| `list_inprogress_issues` | In-Progress Issues zeigen |
+| `get_issue_details` | Issue-Details abrufen |
+| `get_issue_briefing` | Briefing mit Worktree-Anweisungen |
+| `assign_issue` | Issue zuweisen (Labels aktualisieren) |
+| `list_dependent_issues` | Abhängige Issues finden |
+| `complete_issue` | Nach PR-Merge aufräumen |
+
+**Typischer Agent-Flow mit MCP:**
+1. `list_ready_issues` → Verfügbare Issues sehen
+2. `get_issue_briefing(issue_number)` → Briefing mit Worktree-Setup holen
+3. `assign_issue(issue_number)` → Issue übernehmen
+4. Implementieren (TDD!)
+5. PR erstellen
+6. `complete_issue(issue_number)` → Aufräum-Anweisungen holen
+
+Die MCP-Konfiguration ist in `.mcp.json` im Projekt-Root definiert.
+
+**Workflow für Agents (manuell):**
 ```bash
 # 1. Issue auswählen
 gh issue list --label "status/agent-ready"
