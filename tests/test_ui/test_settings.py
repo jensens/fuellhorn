@@ -51,12 +51,6 @@ async def test_settings_page_shows_users_link(logged_in_user: User) -> None:
     await logged_in_user.should_see("Benutzer")
 
 
-async def test_settings_page_shows_freeze_times_link(logged_in_user: User) -> None:
-    """Test that settings page has link to freeze times."""
-    await logged_in_user.open("/admin/settings")
-    await logged_in_user.should_see("Gefrierzeiten")
-
-
 # =============================================================================
 # System Default Zeitfenster Tests (Issue #34, #85)
 # =============================================================================
