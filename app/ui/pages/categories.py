@@ -209,8 +209,20 @@ def _open_create_dialog() -> None:
         # Name input (required)
         name_input = ui.input(label="Name", placeholder="z.B. Gemüse").classes("w-full mb-2").props("outlined")
 
-        # Color input (optional)
-        color_input = ui.color_input(label="Farbe").classes("w-full mb-4")
+        # Color input with preview
+        with ui.row().classes("w-full items-center gap-2 mb-4"):
+            color_input = ui.color_input(label="Farbe").classes("flex-1").mark("color-input")
+            color_preview = (
+                ui.element("div")
+                .classes("w-10 h-10 rounded-lg border-2 border-gray-300")
+                .style("background-color: #E5E7EB")
+                .mark("color-preview")
+            )
+            color_input.on_value_change(
+                lambda e: color_preview.style(
+                    f"background-color: {e.value}" if e.value else "background-color: #E5E7EB"
+                )
+            )
 
         # Shelf life section
         ui.label("Haltbarkeit (Monate)").classes("text-subtitle1 font-medium mb-2")
@@ -372,8 +384,21 @@ def _open_edit_dialog(
             ui.input(label="Name", value=current_name).classes("w-full mb-2").props("outlined").mark("edit-name")
         )
 
-        # Color input (pre-filled)
-        color_input = ui.color_input(label="Farbe", value=current_color or "").classes("w-full mb-4")
+        # Color input with preview (pre-filled)
+        initial_color = current_color or ""
+        with ui.row().classes("w-full items-center gap-2 mb-4"):
+            color_input = ui.color_input(label="Farbe", value=initial_color).classes("flex-1").mark("color-input")
+            color_preview = (
+                ui.element("div")
+                .classes("w-10 h-10 rounded-lg border-2 border-gray-300")
+                .style(f"background-color: {initial_color}" if initial_color else "background-color: #E5E7EB")
+                .mark("color-preview")
+            )
+            color_input.on_value_change(
+                lambda e: color_preview.style(
+                    f"background-color: {e.value}" if e.value else "background-color: #E5E7EB"
+                )
+            )
 
         # Shelf life section
         ui.label("Haltbarkeit (Monate)").classes("text-subtitle1 font-medium mb-2")

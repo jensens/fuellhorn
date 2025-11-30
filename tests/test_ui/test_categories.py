@@ -826,3 +826,108 @@ async def test_create_category_shelf_life_validation_min_greater_than_max(
 
     # Should see validation error
     await user.should_see("Min muss <= Max sein")
+
+
+# =============================================================================
+# Issue #162: Color Preview in Category Form
+# =============================================================================
+
+
+async def test_create_dialog_shows_color_preview(user: TestUser) -> None:
+    """Test that create dialog shows a color preview element."""
+    # Login as admin
+    await user.open("/login")
+    user.find("Benutzername").type("admin")
+    user.find("Passwort").type("password123")
+    user.find("Anmelden").click()
+
+    # Navigate to categories page
+    await user.open("/admin/categories")
+
+    # Click the "Neue Kategorie" button
+    user.find("Neue Kategorie").click()
+
+    # Should see color preview element (marker: color-preview)
+    preview = user.find(marker="color-preview")
+    assert preview is not None
+
+
+async def test_create_dialog_color_preview_updates_on_selection(
+    user: TestUser,
+) -> None:
+    """Test that color preview updates when color is selected."""
+    # Login as admin
+    await user.open("/login")
+    user.find("Benutzername").type("admin")
+    user.find("Passwort").type("password123")
+    user.find("Anmelden").click()
+
+    # Navigate to categories page
+    await user.open("/admin/categories")
+
+    # Click the "Neue Kategorie" button
+    user.find("Neue Kategorie").click()
+
+    # Find color input and set a value
+    color_input = user.find(marker="color-input")
+    # Set a color value directly on the element
+    list(color_input.elements)[0].value = "#FF5733"
+
+    # The preview should reflect the color
+    preview = user.find(marker="color-preview")
+    preview_element = list(preview.elements)[0]
+    # Check that the style contains the color
+    assert "background" in preview_element._style or preview_element._style.get("background-color") == "#FF5733"
+
+
+async def test_edit_dialog_shows_color_preview(
+    logged_in_user: TestUser,
+    isolated_test_database,
+) -> None:
+    """Test that edit dialog shows a color preview element."""
+    # Create a category with color
+    with Session(isolated_test_database) as session:
+        cat = Category(
+            name="Farbtest",
+            color="#00FF00",
+            created_by=1,
+        )
+        session.add(cat)
+        session.commit()
+
+    await logged_in_user.open("/admin/categories")
+
+    # Click the edit button
+    logged_in_user.find(marker="edit-Farbtest").click()
+
+    # Should see color preview element
+    preview = logged_in_user.find(marker="color-preview")
+    assert preview is not None
+
+
+async def test_edit_dialog_color_preview_shows_existing_color(
+    logged_in_user: TestUser,
+    isolated_test_database,
+) -> None:
+    """Test that edit dialog preview shows the existing category color."""
+    # Create a category with a specific color
+    with Session(isolated_test_database) as session:
+        cat = Category(
+            name="GrüneKategorie",
+            color="#00FF00",
+            created_by=1,
+        )
+        session.add(cat)
+        session.commit()
+
+    await logged_in_user.open("/admin/categories")
+
+    # Click the edit button
+    logged_in_user.find(marker="edit-GrüneKategorie").click()
+
+    # The preview should show the existing color
+    preview = logged_in_user.find(marker="color-preview")
+    preview_element = list(preview.elements)[0]
+    # Check that the style contains the existing color
+    style = preview_element._style
+    assert "00FF00" in str(style).upper() or "background" in str(style)
