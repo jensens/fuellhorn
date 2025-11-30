@@ -9,6 +9,7 @@ from ...services import location_service
 from ..components import create_bottom_nav
 from ..components import create_category_chip_group
 from ..components import create_item_type_chip_group
+from ..components import create_location_chip_group
 from ..components import create_mobile_page_container
 from ..components import create_unit_chip_group
 from ..smart_defaults import create_smart_defaults_dict
@@ -408,17 +409,15 @@ def add_item() -> None:
                     warning_msg = "Kein passender Lagerort (Keller/Kühlschrank) vorhanden."
                 ui.label(warning_msg).classes("text-sm text-red-600 mb-2")
 
-            location_options = {loc.id: loc.name for loc in locations}
-            location_select = (
-                ui.select(
-                    options=location_options,
-                    value=form_data.get("location_id"),
-                )
-                .classes("w-full")
-                .props("outlined")
+            def on_location_change(location_id: int) -> None:
+                form_data["location_id"] = location_id
+                update_step3_validation()
+
+            create_location_chip_group(
+                locations=locations,
+                value=form_data.get("location_id"),
+                on_change=on_location_change,
             )
-            location_select.bind_value(form_data, "location_id")
-            location_select.on("update:model-value", update_step3_validation)
 
             # Notes (optional)
             ui.label("Notizen (optional)").classes("text-sm font-medium mb-1 mt-4")

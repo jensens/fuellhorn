@@ -15,6 +15,7 @@ from .item_card import create_item_card
 from .item_card import get_status_color
 from .item_type_chips import create_item_type_chip_group
 from .item_type_chips import get_item_type_label
+from .location_chips import create_location_chip_group
 from .unit_chips import create_unit_chip_group
 from .unit_chips import get_available_units
 from .user_dropdown import create_user_dropdown
@@ -27,6 +28,7 @@ __all__ = [
     "create_expiry_badge",
     "create_item_card",
     "create_item_type_chip_group",
+    "create_location_chip_group",
     "create_mobile_page_container",
     "create_unit_chip_group",
     "create_user_dropdown",
