@@ -1,12 +1,13 @@
 {
+  "enableAllProjectMcpServers": true,
   "permissions": {
     "allow": [
       "Bash(gh label create:*)",
       "Bash(gh issue list:*)",
-      "mcp__fuellhorn-tasks__*",
       "Bash(gh pr checks:*)",
       "Bash(git commit:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(sqlite3:*)"
     ],
     "deny": [],
     "ask": []

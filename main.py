@@ -21,10 +21,14 @@ if __name__ in {"__main__", "__mp_main__"}:
     # Datenbank initialisieren
     create_db_and_tables()
 
+    # Port aus Environment (für parallele Entwicklung in Worktrees)
+    port = int(os.environ.get("PORT", "8080"))
+
     # NiceGUI starten
     ui.run(
         title="Füllhorn - Lebensmittelvorrats-Verwaltung",
         storage_secret=get_storage_secret(),
+        port=port,
         reload=True,  # Auto-Reload waehrend Entwicklung
         show=False,  # Browser nicht automatisch oeffnen
     )

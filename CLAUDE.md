@@ -178,10 +178,30 @@ Ein MCP Server (`fuellhorn-tasks`) ermöglicht automatisierte Issue-Verwaltung:
 
 ## Schnellreferenz
 
+### Dev-Server (parallele Entwicklung)
+
+**Für Worktrees automatisch Port und Testdaten konfiguriert:**
+
+```bash
+./scripts/dev-server.sh
+```
+
+- **Port**: 8000 + Issue-Nummer (z.B. Issue 123 → Port 8123)
+- **Testdaten**: Admin (admin/admin), Kategorien, Lagerorte, Beispiel-Items
+- Jeder Worktree hat eigene SQLite-DB
+
+```bash
+# Ohne Testdaten starten
+./scripts/dev-server.sh --no-seed
+
+# Manuell mit Port
+PORT=8123 uv run python main.py
+```
+
 ### Häufige Befehle
 
 ```bash
-# App starten
+# App starten (Standard-Port 8080)
 uv run python main.py
 
 # Qualitätsprüfung (alles)
