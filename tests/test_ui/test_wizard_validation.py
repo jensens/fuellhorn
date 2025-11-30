@@ -253,10 +253,12 @@ def test_validate_step2_all_valid_non_frozen() -> None:
     from app.ui.validation import validate_step2
     from datetime import date
 
+    # Since Issue #126, category is ALWAYS required for all item types
     errors = validate_step2(
         item_type=ItemType.PURCHASED_FRESH,
         best_before=date.today(),
         freeze_date=None,
+        category_id=1,  # Category now required for all types
     )
     assert errors == {}
 
@@ -266,10 +268,12 @@ def test_validate_step2_all_valid_frozen() -> None:
     from app.ui.validation import validate_step2
     from datetime import date
 
+    # Since Issue #126, category is ALWAYS required for all item types
     errors = validate_step2(
         item_type=ItemType.PURCHASED_FROZEN,
         best_before=date(2024, 1, 1),
         freeze_date=date(2024, 1, 15),
+        category_id=1,  # Category now required for all types
     )
     assert errors == {}
 
@@ -306,11 +310,13 @@ def test_is_step2_valid_returns_true_when_valid() -> None:
     from app.ui.validation import is_step2_valid
     from datetime import date
 
+    # Since Issue #126, category is ALWAYS required for all item types
     assert (
         is_step2_valid(
             item_type=ItemType.PURCHASED_FRESH,
             best_before=date.today(),
             freeze_date=None,
+            category_id=1,  # Category now required for all types
         )
         is True
     )
@@ -320,6 +326,7 @@ def test_is_step2_valid_returns_true_when_valid() -> None:
             item_type=ItemType.PURCHASED_FROZEN,
             best_before=date(2024, 1, 1),
             freeze_date=date(2024, 1, 15),
+            category_id=1,  # Category now required for all types
         )
         is True
     )
@@ -352,13 +359,14 @@ def test_requires_category_for_frozen_types() -> None:
     assert requires_category(ItemType.HOMEMADE_PRESERVED) is True
 
 
-def test_requires_category_not_for_mhd_types() -> None:
-    """Test that MHD types don't require a category."""
+def test_requires_category_for_all_types() -> None:
+    """Test that ALL types now require a category (since Issue #126)."""
     from app.ui.validation import requires_category
 
-    # Types that use MHD from package - no category needed
-    assert requires_category(ItemType.PURCHASED_FRESH) is False
-    assert requires_category(ItemType.PURCHASED_FROZEN) is False
+    # Since Issue #126, category_id is always required in the database schema
+    # Even MHD types (PURCHASED_FRESH, PURCHASED_FROZEN) need a category
+    assert requires_category(ItemType.PURCHASED_FRESH) is True
+    assert requires_category(ItemType.PURCHASED_FROZEN) is True
 
 
 def test_is_step2_valid_with_category_for_frozen_types() -> None:
@@ -389,20 +397,21 @@ def test_is_step2_valid_with_category_for_frozen_types() -> None:
     )
 
 
-def test_is_step2_valid_without_category_for_mhd_types() -> None:
-    """Test Step 2 validation doesn't require category for MHD types."""
+def test_is_step2_invalid_without_category_for_all_types() -> None:
+    """Test Step 2 validation now requires category for ALL types (since Issue #126)."""
     from app.ui.validation import is_step2_valid
     from datetime import date
 
-    # MHD type without category - still valid (uses best_before from package)
+    # Since Issue #126, category_id is always required
+    # MHD types without category are now INVALID
     assert (
         is_step2_valid(
             item_type=ItemType.PURCHASED_FRESH,
             best_before=date.today(),
             freeze_date=None,
-            category_id=None,
+            category_id=None,  # Missing category = invalid
         )
-        is True
+        is False
     )
 
     assert (
@@ -410,9 +419,9 @@ def test_is_step2_valid_without_category_for_mhd_types() -> None:
             item_type=ItemType.PURCHASED_FROZEN,
             best_before=date.today(),
             freeze_date=None,
-            category_id=None,
+            category_id=None,  # Missing category = invalid
         )
-        is True
+        is False
     )
 
 
