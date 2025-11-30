@@ -15,12 +15,12 @@ from sqlmodel import Session
 
 
 # =============================================================================
-# Tests for create_item() with mandatory category_id
+# Tests for create_item() with optional category_id
 # =============================================================================
 
 
-def test_create_item_requires_category_id(session: Session, test_admin: User) -> None:
-    """Test that create_item requires category_id (mandatory argument)."""
+def test_create_item_without_category_id_succeeds(session: Session, test_admin: User) -> None:
+    """Test that create_item works without category_id (optional since Issue #151)."""
     location = location_service.create_location(
         session=session,
         name="Gefrierschrank",
@@ -28,19 +28,21 @@ def test_create_item_requires_category_id(session: Session, test_admin: User) ->
         created_by=test_admin.id,
     )
 
-    # category_id is now a required positional argument, so Python raises TypeError
-    with pytest.raises(TypeError, match="missing 1 required positional argument.*category_id"):
-        item_service.create_item(  # type: ignore[call-arg]
-            session=session,
-            product_name="Test",
-            best_before_date=date(2025, 1, 1),
-            quantity=1.0,
-            unit="kg",
-            item_type=ItemType.PURCHASED_FRESH,
-            location_id=location.id,
-            created_by=test_admin.id,
-            # category_id not provided - should raise TypeError
-        )
+    # category_id is optional - should work without it
+    item = item_service.create_item(
+        session=session,
+        product_name="Test",
+        best_before_date=date(2025, 1, 1),
+        quantity=1.0,
+        unit="kg",
+        item_type=ItemType.PURCHASED_FRESH,
+        location_id=location.id,
+        created_by=test_admin.id,
+    )
+
+    assert item.id is not None
+    assert item.category_id is None
+    assert item.product_name == "Test"
 
 
 def test_create_item_with_category_id_succeeds(session: Session, test_admin: User) -> None:

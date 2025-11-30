@@ -7,6 +7,10 @@ Jeder Test bekommt:
 - Frischen Server mit eigener in-memory SQLite DB
 - Admin-User ist automatisch angelegt
 - Perfekte Test-Isolation
+
+WICHTIG: E2E-Tests werden standardmäßig übersprungen, da sie
+die asyncio Event Loop für UI-Tests korrumpieren können.
+Zum Ausführen: `uv run pytest -m e2e --run-e2e`
 """
 
 import os
@@ -16,6 +20,29 @@ import socket
 import subprocess
 import sys
 import time
+
+
+def pytest_collection_modifyitems(config, items):
+    """Mark all tests in this directory as e2e and skip unless --run-e2e is set."""
+    run_e2e = config.getoption("--run-e2e", default=False)
+    skip_e2e = pytest.mark.skip(reason="E2E-Tests benötigen --run-e2e Flag")
+
+    for item in items:
+        # Only mark tests in this directory
+        if "test_e2e" in str(item.fspath):
+            item.add_marker(pytest.mark.e2e)
+            if not run_e2e:
+                item.add_marker(skip_e2e)
+
+
+def pytest_addoption(parser):
+    """Add --run-e2e command line option."""
+    parser.addoption(
+        "--run-e2e",
+        action="store_true",
+        default=False,
+        help="Run E2E tests (default: skip)",
+    )
 
 
 def _find_free_port() -> int:

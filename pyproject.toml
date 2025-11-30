@@ -47,6 +47,9 @@ asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 main_file = "main.py"
 testpaths = ["tests"]
+markers = [
+    "e2e: End-to-End tests with Playwright (run with --run-e2e)",
+]
 
 [tool.mypy]
 python_version = "3.14"
