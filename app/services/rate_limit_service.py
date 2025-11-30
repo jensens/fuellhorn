@@ -6,11 +6,10 @@ Implementiert IP-basiertes Brute-Force-Schutz nach Nextcloud-Ansatz:
 - OWASP-konform (keine User-Enumeration)
 """
 
-import math
-
 from ..models.login_attempt import LoginAttempt
 from datetime import datetime
 from datetime import timedelta
+import math
 from sqlmodel import Session
 from sqlmodel import select
 
