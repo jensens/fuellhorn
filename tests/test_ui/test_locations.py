@@ -578,3 +578,53 @@ async def test_delete_dialog_can_be_cancelled(
 
     # Location should still be visible
     await logged_in_user.should_see("Abbruch")
+
+
+# =============================================================================
+# Issue #162: Color Preview in Location Form
+# =============================================================================
+
+
+async def test_create_location_dialog_shows_color_preview(user: TestUser) -> None:
+    """Test that create location dialog shows a color preview element."""
+    # Login as admin
+    await user.open("/login")
+    user.find("Benutzername").type("admin")
+    user.find("Passwort").type("password123")
+    user.find("Anmelden").click()
+
+    # Navigate to locations page
+    await user.open("/admin/locations")
+
+    # Click the "Neuer Lagerort" button
+    user.find("Neuer Lagerort").click()
+
+    # Should see color preview element (marker: color-preview)
+    preview = user.find(marker="color-preview")
+    assert preview is not None
+
+
+async def test_edit_location_dialog_shows_color_preview(
+    logged_in_user: TestUser,
+    isolated_test_database,
+) -> None:
+    """Test that edit location dialog shows a color preview element."""
+    # Create a location with color
+    with Session(isolated_test_database) as session:
+        loc = Location(
+            name="FarbigLager",
+            location_type=LocationType.FROZEN,
+            color="#FF5733",
+            created_by=1,
+        )
+        session.add(loc)
+        session.commit()
+
+    await logged_in_user.open("/admin/locations")
+
+    # Find and click edit button (icon button)
+    logged_in_user.find("edit").click()
+
+    # Should see color preview element
+    preview = logged_in_user.find(marker="color-preview")
+    assert preview is not None
