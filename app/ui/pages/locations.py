@@ -168,8 +168,21 @@ def _open_edit_dialog(location: Location) -> None:
             .props("outlined")
         )
 
-        # Color input (optional, pre-filled)
-        color_input = ui.color_input(label="Farbe", value=location.color or "").classes("w-full mb-2")
+        # Color input with preview (optional, pre-filled)
+        initial_color = location.color or ""
+        with ui.row().classes("w-full items-center gap-2 mb-2"):
+            color_input = ui.color_input(label="Farbe", value=initial_color).classes("flex-1").mark("color-input")
+            color_preview = (
+                ui.element("div")
+                .classes("w-10 h-10 rounded-lg border-2 border-gray-300")
+                .style(f"background-color: {initial_color}" if initial_color else "background-color: #E5E7EB")
+                .mark("color-preview")
+            )
+            color_input.on_value_change(
+                lambda e: color_preview.style(
+                    f"background-color: {e.value}" if e.value else "background-color: #E5E7EB"
+                )
+            )
 
         # Active status checkbox (pre-filled)
         is_active_checkbox = ui.checkbox(
@@ -277,8 +290,20 @@ def _open_create_dialog() -> None:
             .props("outlined")
         )
 
-        # Color input (optional)
-        color_input = ui.color_input(label="Farbe").classes("w-full mb-4")
+        # Color input with preview (optional)
+        with ui.row().classes("w-full items-center gap-2 mb-4"):
+            color_input = ui.color_input(label="Farbe").classes("flex-1").mark("color-input")
+            color_preview = (
+                ui.element("div")
+                .classes("w-10 h-10 rounded-lg border-2 border-gray-300")
+                .style("background-color: #E5E7EB")
+                .mark("color-preview")
+            )
+            color_input.on_value_change(
+                lambda e: color_preview.style(
+                    f"background-color: {e.value}" if e.value else "background-color: #E5E7EB"
+                )
+            )
 
         # Error label (hidden by default)
         error_label = ui.label("").classes("text-red-600 text-sm mb-2")
