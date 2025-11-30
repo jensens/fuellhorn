@@ -27,6 +27,32 @@ from typing import Any
 # Browser storage key for consumed items filter
 SHOW_CONSUMED_KEY = "show_consumed_items"
 
+
+def _get_contrast_text_color(hex_color: str) -> str:
+    """Return 'white' or 'black' based on background color contrast.
+
+    Uses WCAG relative luminance formula to determine optimal text color.
+    """
+    # Remove # prefix if present
+    hex_color = hex_color.lstrip("#")
+    if len(hex_color) != 6:
+        return "#374151"  # Default dark gray
+
+    # Parse RGB values
+    r = int(hex_color[0:2], 16) / 255
+    g = int(hex_color[2:4], 16) / 255
+    b = int(hex_color[4:6], 16) / 255
+
+    # Calculate relative luminance (WCAG formula)
+    def adjust(c: float) -> float:
+        return c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4
+
+    luminance = 0.2126 * adjust(r) + 0.7152 * adjust(g) + 0.0722 * adjust(b)
+
+    # Use white text for dark backgrounds, black for light
+    return "white" if luminance < 0.5 else "#1F2937"
+
+
 # Sorting options
 SORT_OPTIONS: dict[str, str] = {
     "best_before_date": "Haltbarkeitsdatum",
@@ -271,13 +297,18 @@ def items_page() -> None:
         """Update chip appearance based on selection state and category color."""
         chip = chip_elements.get(cat_id)
         color = category_colors.get(cat_id, "#6B7280")  # Default gray if no color
+        text_color = _get_contrast_text_color(color)
         if chip:
             if cat_id in selected_categories:
-                # Selected: Full background in category color, white text
-                chip.style(f"background-color: {color}; border-color: {color}; color: white;")
+                # Selected: Full background in category color, contrast text
+                chip.style(
+                    f"background-color: {color} !important; border: 2px solid {color}; color: {text_color} !important;"
+                )
             else:
                 # Not selected: Gray background, colored border
-                chip.style(f"background-color: #E5E7EB; border: 2px solid {color}; color: #374151;")
+                chip.style(
+                    "background-color: #E5E7EB !important; border: 2px solid " + color + "; color: #374151 !important;"
+                )
 
     def toggle_category(cat_id: int) -> None:
         """Toggle category selection."""
@@ -350,12 +381,18 @@ def items_page() -> None:
                         category_colors[cat.id] = color
 
                         # Create chip with colored dot prefix
-                        chip = ui.button(
-                            f"● {cat.name}",
-                            on_click=lambda _, cid=cat.id: toggle_category(cid),
-                        ).classes("rounded-full px-4 py-1 text-sm")
-                        # Apply initial unselected style with category color
-                        chip.style(f"background-color: #E5E7EB; border: 2px solid {color}; color: #374151;")
+                        chip = (
+                            ui.button(
+                                f"● {cat.name}",
+                                on_click=lambda _, cid=cat.id: toggle_category(cid),
+                            )
+                            .classes("rounded-full px-4 py-1 text-sm")
+                            .props("flat no-caps")
+                        )
+                        # Apply initial unselected style with category color (!important to override defaults)
+                        chip.style(
+                            f"background-color: #E5E7EB !important; border: 2px solid {color}; color: #374151 !important;"
+                        )
                         chip_elements[cat.id] = chip
 
         items_container = ui.column().classes("w-full gap-2")

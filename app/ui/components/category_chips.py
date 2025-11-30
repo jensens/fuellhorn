@@ -11,6 +11,26 @@ from collections.abc import Sequence
 from nicegui import ui
 
 
+def _get_contrast_text_color(hex_color: str) -> str:
+    """Return 'white' or dark color based on background color contrast.
+
+    Uses WCAG relative luminance formula to determine optimal text color.
+    """
+    hex_color = hex_color.lstrip("#")
+    if len(hex_color) != 6:
+        return "#374151"
+
+    r = int(hex_color[0:2], 16) / 255
+    g = int(hex_color[2:4], 16) / 255
+    b = int(hex_color[4:6], 16) / 255
+
+    def adjust(c: float) -> float:
+        return c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4
+
+    luminance = 0.2126 * adjust(r) + 0.7152 * adjust(g) + 0.0722 * adjust(b)
+    return "white" if luminance < 0.5 else "#1F2937"
+
+
 def create_category_chip_group(
     categories: Sequence[Category],
     value: int | None = None,
@@ -26,36 +46,40 @@ def create_category_chip_group(
     Returns:
         The container element with all chips
     """
-    # Store current selection and chip references
+    # Store current selection, chip references, and category colors
     current_value: list[int | None] = [value]
     chip_refs: dict[int, ui.element] = {}
     dot_refs: dict[int, ui.element] = {}
+    category_colors: dict[int, str] = {}
 
     def update_chip_styles() -> None:
-        """Update all chips to reflect current selection."""
+        """Update all chips to reflect current selection and category color."""
         for category_id, chip in chip_refs.items():
             is_selected = category_id == current_value[0]
             dot = dot_refs[category_id]
+            color = category_colors.get(category_id, "#6B7280")
+            text_color = _get_contrast_text_color(color)
+            # Dot border color: white for dark backgrounds, use category color for light
+            dot_color = "white" if text_color == "white" else color
 
             if is_selected:
-                # Selected state - white outer ring with colored inner dot
-                chip.classes(
-                    remove="bg-gray-100 text-gray-700 hover:bg-gray-200",
-                    add="bg-primary text-white",
+                # Selected state - full background in category color
+                chip.style(
+                    f"background-color: {color} !important; border: 2px solid {color}; color: {text_color} !important;"
                 )
                 dot.style(
                     "width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; "
-                    "background: radial-gradient(circle, var(--q-primary, #1976d2) 35%, white 35%);"
+                    f"background: radial-gradient(circle, {dot_color} 35%, transparent 35%); "
+                    f"border: 2px solid {dot_color};"
                 )
             else:
-                # Default state - empty ring
-                chip.classes(
-                    remove="bg-primary text-white",
-                    add="bg-gray-100 text-gray-700 hover:bg-gray-200",
+                # Default state - colored border, gray background
+                chip.style(
+                    f"background-color: #F3F4F6 !important; border: 2px solid {color}; color: #374151 !important;"
                 )
                 dot.style(
                     "width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; "
-                    "background: transparent; border: 2px solid #9ca3af;"
+                    f"background-color: transparent; border: 2px solid {color};"
                 )
 
     def select_category(category_id: int) -> None:
@@ -74,33 +98,43 @@ def create_category_chip_group(
                 continue
             cat_id: int = category.id
             is_selected = cat_id == value
+            color = category.color or "#6B7280"  # Default gray if no color
+            text_color = _get_contrast_text_color(color)
+
+            # Store color for update_chip_styles
+            category_colors[cat_id] = color
 
             # Create chip as button for proper click handling
             chip = (
                 ui.button(
                     on_click=lambda _, cid=cat_id: select_category(cid),
                 )
-                .classes(
-                    "rounded-lg cursor-pointer "
-                    "transition-all duration-150 ease-in-out select-none normal-case "
-                    + ("bg-primary text-white" if is_selected else "bg-gray-100 text-gray-700 hover:bg-gray-200")
+                .classes("rounded-lg cursor-pointer transition-all duration-150 ease-in-out select-none normal-case")
+                .style(
+                    "min-height: 44px; padding: 0.5rem 0.75rem; "
+                    + (
+                        f"background-color: {color} !important; border: 2px solid {color}; color: {text_color} !important;"
+                        if is_selected
+                        else f"background-color: #F3F4F6 !important; border: 2px solid {color}; color: #374151 !important;"
+                    )
                 )
-                .style("min-height: 44px; padding: 0.5rem 0.75rem;")
                 .props("flat no-caps")
             )
 
             chip_refs[cat_id] = chip
 
             # Add content to button with explicit flex container
+            # Dot color: same as text for visibility
+            dot_color = "white" if text_color == "white" else color
             with chip:
                 with ui.row().classes("items-center gap-2").style("flex-wrap: nowrap;"):
-                    # Ring-dot indicator
+                    # Ring-dot indicator with category color
                     dot = ui.element("div").style(
                         "width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; "
                         + (
-                            "background: radial-gradient(circle, var(--q-primary, #1976d2) 35%, white 35%);"
+                            f"background: radial-gradient(circle, {dot_color} 35%, transparent 35%); border: 2px solid {dot_color};"
                             if is_selected
-                            else "background-color: transparent; border: 2px solid #9ca3af;"
+                            else f"background-color: transparent; border: 2px solid {color};"
                         )
                     )
                     dot_refs[cat_id] = dot
