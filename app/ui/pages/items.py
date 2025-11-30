@@ -171,6 +171,7 @@ def items_page() -> None:
     }
     selected_categories: set[int] = set()
     chip_elements: dict[int, ui.button] = {}
+    category_colors: dict[int, str] = {}  # Store category colors for styling
     sort_direction_btn: ui.button | None = None
 
     # Container reference (for refreshing)
@@ -267,19 +268,16 @@ def items_page() -> None:
         refresh_items()
 
     def update_chip_style(cat_id: int) -> None:
-        """Update chip appearance based on selection state."""
+        """Update chip appearance based on selection state and category color."""
         chip = chip_elements.get(cat_id)
+        color = category_colors.get(cat_id, "#6B7280")  # Default gray if no color
         if chip:
             if cat_id in selected_categories:
-                chip.classes(
-                    remove="bg-gray-200 text-gray-800",
-                    add="bg-primary text-white",
-                )
+                # Selected: Full background in category color, white text
+                chip.style(f"background-color: {color}; border-color: {color}; color: white;")
             else:
-                chip.classes(
-                    remove="bg-primary text-white",
-                    add="bg-gray-200 text-gray-800",
-                )
+                # Not selected: Gray background, colored border
+                chip.style(f"background-color: #E5E7EB; border: 2px solid {color}; color: #374151;")
 
     def toggle_category(cat_id: int) -> None:
         """Toggle category selection."""
@@ -347,10 +345,17 @@ def items_page() -> None:
             with ui.row().classes("w-full gap-2 flex-wrap mb-4"):
                 for cat in all_categories:
                     if cat.id is not None:
+                        # Store category color for styling
+                        color = cat.color or "#6B7280"  # Default gray
+                        category_colors[cat.id] = color
+
+                        # Create chip with colored dot prefix
                         chip = ui.button(
-                            cat.name,
+                            f"● {cat.name}",
                             on_click=lambda _, cid=cat.id: toggle_category(cid),
-                        ).classes("bg-gray-200 text-gray-800 rounded-full px-4 py-1 text-sm")
+                        ).classes("rounded-full px-4 py-1 text-sm")
+                        # Apply initial unselected style with category color
+                        chip.style(f"background-color: #E5E7EB; border: 2px solid {color}; color: #374151;")
                         chip_elements[cat.id] = chip
 
         items_container = ui.column().classes("w-full gap-2")
