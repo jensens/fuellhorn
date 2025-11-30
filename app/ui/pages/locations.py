@@ -77,11 +77,16 @@ def locations_page() -> None:
                     with ui.card().classes("w-full mb-2"):
                         with ui.row().classes("w-full items-center justify-between"):
                             with ui.row().classes("items-center gap-3"):
-                                # Type icon
-                                ui.icon(
-                                    _get_location_type_icon(location.location_type),
-                                    size="24px",
-                                ).classes(f"text-{_get_location_type_color(location.location_type)}")
+                                # Color indicator (or fallback to type icon)
+                                if location.color:
+                                    ui.element("div").classes("w-6 h-6 rounded-full").style(
+                                        f"background-color: {location.color}"
+                                    )
+                                else:
+                                    ui.icon(
+                                        _get_location_type_icon(location.location_type),
+                                        size="24px",
+                                    ).classes(f"text-{_get_location_type_color(location.location_type)}")
                                 # Location name
                                 ui.label(location.name).classes("font-medium text-lg")
                             # Type badge, status, edit and delete buttons
@@ -163,6 +168,9 @@ def _open_edit_dialog(location: Location) -> None:
             .props("outlined")
         )
 
+        # Color input (optional, pre-filled)
+        color_input = ui.color_input(label="Farbe", value=location.color or "").classes("w-full mb-2")
+
         # Active status checkbox (pre-filled)
         is_active_checkbox = ui.checkbox(
             "Aktiv",
@@ -182,6 +190,7 @@ def _open_edit_dialog(location: Location) -> None:
                 name = name_input.value.strip() if name_input.value else ""
                 location_type = type_select.value
                 description = description_input.value.strip() if description_input.value else None
+                color = color_input.value if color_input.value else None
                 is_active = is_active_checkbox.value
 
                 # Validation: name is required
@@ -205,6 +214,7 @@ def _open_edit_dialog(location: Location) -> None:
                             location_type=location_type,
                             description=description,
                             is_active=is_active,
+                            color=color,
                         )
                     ui.notify(f"Lagerort '{name}' aktualisiert", type="positive")
                     dialog.close()
@@ -263,9 +273,12 @@ def _open_create_dialog() -> None:
                 label="Beschreibung",
                 placeholder="Optional",
             )
-            .classes("w-full mb-4")
+            .classes("w-full mb-2")
             .props("outlined")
         )
+
+        # Color input (optional)
+        color_input = ui.color_input(label="Farbe").classes("w-full mb-4")
 
         # Error label (hidden by default)
         error_label = ui.label("").classes("text-red-600 text-sm mb-2")
@@ -280,6 +293,7 @@ def _open_create_dialog() -> None:
                 name = name_input.value.strip() if name_input.value else ""
                 location_type = type_select.value
                 description = description_input.value.strip() if description_input.value else None
+                color = color_input.value if color_input.value else None
 
                 # Validation: name is required
                 if not name:
@@ -302,6 +316,7 @@ def _open_create_dialog() -> None:
                             location_type=location_type,
                             created_by=current_user.id,
                             description=description,
+                            color=color,
                         )
                     ui.notify(f"Lagerort '{name}' erstellt", type="positive")
                     dialog.close()

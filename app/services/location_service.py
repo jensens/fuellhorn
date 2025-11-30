@@ -53,6 +53,7 @@ def create_location(
     location_type: LocationType,
     created_by: int,
     description: str | None = None,
+    color: str | None = None,
 ) -> Location:
     """Create a new location.
 
@@ -62,6 +63,7 @@ def create_location(
         location_type: Type of storage location (frozen/chilled/ambient)
         created_by: User ID who created the location
         description: Optional description of the location
+        color: Optional hex color code (e.g., "#FF5733")
 
     Returns:
         Created location
@@ -82,6 +84,7 @@ def create_location(
         location_type=location_type,
         created_by=created_by,
         description=description,
+        color=color,
     )
 
     session.add(location)
@@ -131,6 +134,7 @@ def update_location(
     location_type: LocationType | None = None,
     description: str | None = None,
     is_active: bool | None = None,
+    color: str | None = None,
 ) -> Location:
     """Update location.
 
@@ -141,6 +145,7 @@ def update_location(
         location_type: New location type
         description: New description
         is_active: New active status
+        color: New hex color code (e.g., "#FF5733")
 
     Returns:
         Updated location
@@ -169,6 +174,9 @@ def update_location(
 
     if is_active is not None:
         location.is_active = is_active
+
+    if color is not None:
+        location.color = color
 
     session.add(location)
     session.commit()

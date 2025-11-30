@@ -25,6 +25,7 @@ class Location(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     name: str = Field(index=True, unique=True)
     location_type: LocationType
+    color: str | None = Field(default=None)  # Hex color code (e.g., "#FF5733")
     description: str | None = Field(default=None)
     is_active: bool = Field(default=True)
     created_at: datetime = Field(default_factory=datetime.now)
