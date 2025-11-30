@@ -232,8 +232,8 @@ cd worktrees/issue-<N>
 # 3. TDD implementieren
 # Test → Rot → Code → Grün → Refactor
 
-# 4. Qualitätsprüfung
-uv run pytest && uv run mypy app/ && uv run ruff check app/
+# 4. Linter/Formatter, dann Tests
+uv run ruff format app/ && uv run ruff check --fix app/ && uv run pytest
 
 # 5. Commit & PR
 git add . && git commit -m "feat: <beschreibung>"
@@ -253,3 +253,4 @@ git worktree remove worktrees/issue-<N>
 - ❌ Keine anderen Dateien ändern als nötig
 - ❌ Keine "Verbesserungen" ohne Issue
 - ❌ Nicht auf main pushen
+- ✅ **IMMER Linter/Formatter VOR Tests ausführen**: `uv run ruff format app/ && uv run ruff check --fix app/`
