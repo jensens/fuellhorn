@@ -55,8 +55,8 @@ def _create_second_location(session: Session) -> Location:
     return new_location
 
 
-def _create_test_category(session: Session, name: str = "Gemüse", id: int = 1) -> Category:
-    """Create a test category."""
+def _create_test_category(session: Session, name: str = "Gemüse", id: int = 1, color: str = "#00FF00") -> Category:
+    """Create a test category with optional color."""
     category = session.get(Category, id)
     if category:
         return category
@@ -64,7 +64,7 @@ def _create_test_category(session: Session, name: str = "Gemüse", id: int = 1) 
     new_category = Category(
         id=id,
         name=name,
-        color="#00FF00",
+        color=color,
         created_by=1,
     )
     session.add(new_category)
@@ -449,9 +449,9 @@ def page_items_with_categories() -> None:
     with next(get_session()) as session:
         location = _create_test_location(session)
 
-        # Create categories
-        cat_gemuese = _create_test_category(session, name="Gemüse", id=1)
-        cat_fleisch = _create_test_category(session, name="Fleisch", id=2)
+        # Create categories with distinct colors
+        cat_gemuese = _create_test_category(session, name="Gemüse", id=1, color="#22C55E")  # Green
+        cat_fleisch = _create_test_category(session, name="Fleisch", id=2, color="#EF4444")  # Red
 
         # Create test items with different categories
         item_tomaten = _create_test_item(
