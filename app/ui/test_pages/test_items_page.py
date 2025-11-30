@@ -6,7 +6,6 @@ These pages set up test data and allow testing the items page components.
 from ...database import get_session
 from ...models.category import Category
 from ...models.item import Item
-from ...models.item import ItemCategory
 from ...models.item import ItemType
 from ...models.location import Location
 from ...models.location import LocationType
@@ -82,17 +81,18 @@ def _create_test_item(
     quantity: float = 500,
     unit: str = "g",
     is_consumed: bool = False,
+    category_id: int | None = None,
 ) -> Item:
     """Create a test item."""
-    expiry_date = date.today() + timedelta(days=expiry_days_from_now)
+    best_before = date.today() + timedelta(days=expiry_days_from_now)
     item = Item(
         product_name=product_name,
-        best_before_date=date.today(),
-        expiry_date=expiry_date,
+        best_before_date=best_before,
         quantity=quantity,
         unit=unit,
         item_type=ItemType.HOMEMADE_FROZEN,
         location_id=location.id,
+        category_id=category_id,
         created_by=1,
         is_consumed=is_consumed,
     )
@@ -108,17 +108,18 @@ def _create_test_item_with_type(
     product_name: str,
     item_type: ItemType,
     expiry_days_from_now: int = 30,
+    category_id: int | None = None,
 ) -> Item:
     """Create a test item with specific item type."""
-    expiry_date = date.today() + timedelta(days=expiry_days_from_now)
+    best_before = date.today() + timedelta(days=expiry_days_from_now)
     item = Item(
         product_name=product_name,
-        best_before_date=date.today(),
-        expiry_date=expiry_date,
+        best_before_date=best_before,
         quantity=500,
         unit="g",
         item_type=item_type,
         location_id=location.id,
+        category_id=category_id,
         created_by=1,
         is_consumed=False,
     )
@@ -135,11 +136,13 @@ def _set_test_session() -> None:
     app.storage.user["username"] = "admin"
 
 
-def _add_item_category(session: Session, item_id: int, category_id: int) -> None:
-    """Add a category to an item."""
-    item_category = ItemCategory(item_id=item_id, category_id=category_id)
-    session.add(item_category)
-    session.commit()
+def _set_item_category(session: Session, item_id: int, category_id: int) -> None:
+    """Set the category of an item."""
+    item = session.get(Item, item_id)
+    if item:
+        item.category_id = category_id
+        session.add(item)
+        session.commit()
 
 
 @ui.page("/test-login-admin")
@@ -184,10 +187,10 @@ def page_items_with_items() -> None:
             unit="g",
         )
 
-        # Add category to first item
+        # Set category on first item
         category = _create_test_category(session)
-        item_category = ItemCategory(item_id=item1.id, category_id=category.id)
-        session.add(item_category)
+        item1.category_id = category.id
+        session.add(item1)
         session.commit()
 
         # Create page layout
@@ -459,7 +462,7 @@ def page_items_with_categories() -> None:
             quantity=500,
             unit="g",
         )
-        _add_item_category(session, item_tomaten.id, cat_gemuese.id)  # type: ignore
+        _set_item_category(session, item_tomaten.id, cat_gemuese.id)  # type: ignore
 
         item_hackfleisch = _create_test_item(
             session,
@@ -469,7 +472,7 @@ def page_items_with_categories() -> None:
             quantity=750,
             unit="g",
         )
-        _add_item_category(session, item_hackfleisch.id, cat_fleisch.id)  # type: ignore
+        _set_item_category(session, item_hackfleisch.id, cat_fleisch.id)  # type: ignore
 
         item_karotten = _create_test_item(
             session,
@@ -479,7 +482,7 @@ def page_items_with_categories() -> None:
             quantity=300,
             unit="g",
         )
-        _add_item_category(session, item_karotten.id, cat_gemuese.id)  # type: ignore
+        _set_item_category(session, item_karotten.id, cat_gemuese.id)  # type: ignore
 
         # Get all items and categories
         all_items = list(
@@ -489,11 +492,10 @@ def page_items_with_categories() -> None:
         )
         all_categories = list(session.exec(select(Category)).all())
 
-        # Build item-to-categories mapping
-        item_category_map: dict[int, set[int]] = {}
-        for item in all_items:
-            item_cats = session.exec(select(ItemCategory).where(ItemCategory.item_id == item.id)).all()
-            item_category_map[item.id] = {ic.category_id for ic in item_cats}  # type: ignore
+        # Build item-to-category mapping (now 1:1 relationship)
+        item_category_map: dict[int, int | None] = {
+            item.id: item.category_id for item in all_items if item.id is not None
+        }
 
         # State for filters
         selected_categories: set[int] = set()
@@ -551,12 +553,12 @@ def page_items_with_categories() -> None:
                 if search_term:
                     filtered_items = [item for item in filtered_items if search_term in item.product_name.lower()]
 
-                # Filter by selected categories (OR logic: show if item has ANY selected category)
+                # Filter by selected categories (show if item has one of the selected categories)
                 if selected_categories:
                     filtered_items = [
                         item
                         for item in filtered_items
-                        if item_category_map.get(item.id, set()) & selected_categories  # type: ignore
+                        if item.id is not None and item_category_map.get(item.id) in selected_categories
                     ]
 
                 with items_container:
@@ -729,7 +731,7 @@ def page_items_with_type_filter() -> None:
 
 # Sort options labels
 SORT_OPTIONS: dict[str, str] = {
-    "expiry_date": "Ablaufdatum",
+    "best_before_date": "Haltbarkeitsdatum",
     "product_name": "Produktname",
     "created_at": "Erfassungsdatum",
 }
@@ -759,7 +761,7 @@ def page_items_with_sorting() -> None:
                 ui.select(
                     label="Sortierung",
                     options=SORT_OPTIONS,
-                    value="expiry_date",
+                    value="best_before_date",
                 ).classes("flex-1")
 
                 # Direction toggle button
@@ -806,7 +808,7 @@ def page_items_with_sorting_data() -> None:
                 session.exec(
                     select(Item)
                     .where(Item.is_consumed.is_(False))  # type: ignore
-                    .order_by(Item.expiry_date)  # type: ignore[arg-type]
+                    .order_by(Item.best_before_date)  # type: ignore[arg-type]
                 ).all()
             )
 
@@ -886,7 +888,7 @@ def page_items_with_sorting_desc() -> None:
                 session.exec(
                     select(Item)
                     .where(Item.is_consumed.is_(False))  # type: ignore
-                    .order_by(Item.expiry_date.desc())  # type: ignore
+                    .order_by(Item.best_before_date.desc())  # type: ignore
                 ).all()
             )
 

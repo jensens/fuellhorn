@@ -7,7 +7,6 @@ from .category import Category
 from .category_shelf_life import CategoryShelfLife
 from .category_shelf_life import StorageType
 from .item import Item
-from .item import ItemCategory
 from .item import ItemType
 from .location import Location
 from .location import LocationType
@@ -26,6 +25,5 @@ __all__ = [
     "LocationType",
     "ItemType",
     "Item",
-    "ItemCategory",
     "SystemSettings",
 ]

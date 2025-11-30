@@ -149,8 +149,8 @@ def create_item_card(
                 # MHD items: show single date
                 _render_expiry_mhd(best_before_date, status_color)
             else:
-                # Fallback: use item.expiry_date
-                _render_expiry_fallback(item.expiry_date, status_color)
+                # Fallback: use item.best_before_date
+                _render_expiry_fallback(item.best_before_date, status_color)
 
         # Click handler if provided
         if on_click:

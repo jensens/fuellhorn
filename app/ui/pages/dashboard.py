@@ -36,7 +36,7 @@ def dashboard() -> None:
             if expiring_items:
                 # Display expiring items as cards
                 for item in expiring_items[:5]:  # Show max 5 items
-                    days_until_expiry = (item.expiry_date - date.today()).days
+                    days_until_expiry = (item.best_before_date - date.today()).days
 
                     # Status color
                     if days_until_expiry <= 0:
