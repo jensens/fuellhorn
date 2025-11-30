@@ -307,6 +307,13 @@ def add_item() -> None:
                                 freeze_date_picker.on("update:model-value", on_freeze_date_change)
                 freeze_date_input.on("blur", update_step2_validation)
 
+            # Notes (optional)
+            ui.label("Notizen (optional)").classes("text-sm font-medium mb-1 mt-4")
+            notes_input = (
+                ui.textarea(placeholder="z.B. je 12 Stück, 300g pro Packung").classes("w-full").props("outlined rows=2")
+            )
+            notes_input.bind_value(form_data, "notes")
+
             # Navigation
             with ui.row().classes("w-full justify-between mt-6 gap-2"):
                 ui.button("Zurück", icon="arrow_back", on_click=show_step1).props("flat color=gray-7 size=lg").style(
