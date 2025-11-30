@@ -108,3 +108,64 @@ def test_delete_category_not_found(session: Session) -> None:
     """Test that deleting non-existent category raises error."""
     with pytest.raises(ValueError, match="Category with id 999 not found"):
         category_service.delete_category(session, 999)
+
+
+# =============================================================================
+# Sort Order Tests (Issue #146)
+# =============================================================================
+
+
+def test_create_category_assigns_sort_order(session: Session, test_admin: User) -> None:
+    """Test that new categories get auto-assigned sort_order."""
+    cat1 = category_service.create_category(session, "First", test_admin.id)
+    cat2 = category_service.create_category(session, "Second", test_admin.id)
+    cat3 = category_service.create_category(session, "Third", test_admin.id)
+
+    # Each new category should get the next sort_order
+    assert cat1.sort_order == 1
+    assert cat2.sort_order == 2
+    assert cat3.sort_order == 3
+
+
+def test_get_all_categories_returns_sorted(session: Session, test_admin: User) -> None:
+    """Test that get_all_categories returns categories in sort_order."""
+    # Create categories (they get sort_order 1, 2, 3)
+    cat1 = category_service.create_category(session, "First", test_admin.id)
+    cat2 = category_service.create_category(session, "Second", test_admin.id)
+    cat3 = category_service.create_category(session, "Third", test_admin.id)
+
+    # Manually change sort_order to reverse order
+    cat1.sort_order = 3
+    cat2.sort_order = 1
+    cat3.sort_order = 2
+    session.add_all([cat1, cat2, cat3])
+    session.commit()
+
+    # Should return in sort_order: Second, Third, First
+    categories = category_service.get_all_categories(session)
+    assert [c.name for c in categories] == ["Second", "Third", "First"]
+
+
+def test_update_category_order(session: Session, test_admin: User) -> None:
+    """Test updating category order."""
+    cat1 = category_service.create_category(session, "First", test_admin.id)
+    cat2 = category_service.create_category(session, "Second", test_admin.id)
+    cat3 = category_service.create_category(session, "Third", test_admin.id)
+
+    # Reorder: Third, First, Second
+    category_service.update_category_order(session, [cat3.id, cat1.id, cat2.id])
+
+    # Verify new order
+    categories = category_service.get_all_categories(session)
+    assert [c.name for c in categories] == ["Third", "First", "Second"]
+    assert categories[0].sort_order == 0
+    assert categories[1].sort_order == 1
+    assert categories[2].sort_order == 2
+
+
+def test_update_category_order_invalid_id(session: Session, test_admin: User) -> None:
+    """Test that invalid category ID raises error."""
+    category_service.create_category(session, "First", test_admin.id)
+
+    with pytest.raises(ValueError, match="Category with id 999 not found"):
+        category_service.update_category_order(session, [999])

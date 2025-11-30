@@ -18,5 +18,6 @@ class Category(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     name: str = Field(index=True, unique=True)
     color: str | None = Field(default=None)  # Hex color code (e.g., "#FF5733")
+    sort_order: int = Field(default=0)  # For drag & drop sorting
     created_at: datetime = Field(default_factory=datetime.now)
     created_by: int = Field(foreign_key="users.id")

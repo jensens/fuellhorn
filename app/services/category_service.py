@@ -2,6 +2,7 @@
 
 from ..models.category import Category
 from sqlmodel import Session
+from sqlmodel import func
 from sqlmodel import select
 
 
@@ -33,10 +34,15 @@ def create_category(
     if existing:
         raise ValueError(f"Category with name '{existing.name}' already exists")
 
+    # Get next sort_order (max + 1)
+    max_order = session.exec(select(func.max(Category.sort_order))).one()
+    next_order = (max_order or 0) + 1
+
     category = Category(
         name=name,
         created_by=created_by,
         color=color,
+        sort_order=next_order,
     )
 
     session.add(category)
@@ -47,15 +53,17 @@ def create_category(
 
 
 def get_all_categories(session: Session) -> list[Category]:
-    """Get all categories.
+    """Get all categories sorted by sort_order.
 
     Args:
         session: Database session
 
     Returns:
-        List of all categories
+        List of all categories sorted by sort_order
     """
-    return list(session.exec(select(Category)).all())
+    return list(
+        session.exec(select(Category).order_by(Category.sort_order)).all()  # type: ignore[arg-type]
+    )
 
 
 def get_category(session: Session, id: int) -> Category:
@@ -135,4 +143,22 @@ def delete_category(session: Session, id: int) -> None:
     category = get_category(session, id)
 
     session.delete(category)
+    session.commit()
+
+
+def update_category_order(session: Session, category_ids: list[int]) -> None:
+    """Update sort order of categories based on list order.
+
+    Args:
+        session: Database session
+        category_ids: List of category IDs in desired order
+
+    Raises:
+        ValueError: If any category ID is invalid
+    """
+    for index, category_id in enumerate(category_ids):
+        category = get_category(session, category_id)
+        category.sort_order = index
+        session.add(category)
+
     session.commit()
