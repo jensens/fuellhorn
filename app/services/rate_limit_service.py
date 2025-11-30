@@ -6,6 +6,8 @@ Implementiert IP-basiertes Brute-Force-Schutz nach Nextcloud-Ansatz:
 - OWASP-konform (keine User-Enumeration)
 """
 
+import math
+
 from ..models.login_attempt import LoginAttempt
 from datetime import datetime
 from datetime import timedelta
@@ -84,7 +86,8 @@ def get_required_delay(session: Session, ip_address: str) -> int:
     required_wait_until = attempt.last_attempt + timedelta(seconds=delay_seconds)
     remaining = (required_wait_until - datetime.now()).total_seconds()
 
-    return max(0, int(remaining))
+    # ceil() damit auch 0.1s noch als 1s gewertet wird
+    return max(0, math.ceil(remaining))
 
 
 def record_failed_attempt(session: Session, ip_address: str) -> int:
