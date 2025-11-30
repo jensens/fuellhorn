@@ -614,3 +614,239 @@ def test_withdraw_partial_consumed_item_fails(session: Session, test_admin: User
             item_id=item.id,
             withdraw_quantity=200,
         )
+
+
+# =============================================================================
+# Withdrawal Tracking Tests (Issue #97)
+# =============================================================================
+
+
+def test_withdraw_partial_creates_withdrawal_entry(
+    session: Session, test_admin: User
+) -> None:
+    """Test: Partial withdrawal creates a Withdrawal record."""
+    from app.models import Withdrawal
+
+    location = location_service.create_location(
+        session=session,
+        name="Gefrierschrank",
+        location_type=LocationType.FROZEN,
+        created_by=test_admin.id,
+    )
+    category = category_service.create_category(
+        session=session,
+        name="Gemüse",
+        created_by=test_admin.id,
+    )
+
+    assert category.id is not None
+    assert test_admin.id is not None
+
+    item = item_service.create_item(
+        session=session,
+        product_name="Erbsen",
+        best_before_date=date(2025, 1, 1),
+        quantity=500,
+        unit="g",
+        item_type=ItemType.PURCHASED_FROZEN,
+        location_id=location.id,
+        created_by=test_admin.id,
+        category_id=category.id,
+        freeze_date=date(2024, 6, 1),
+    )
+
+    # Withdraw partial quantity
+    item_service.withdraw_partial(
+        session=session,
+        item_id=item.id,
+        withdraw_quantity=200,
+        user_id=test_admin.id,
+    )
+
+    # Check withdrawal entry was created
+    withdrawals = item_service.get_withdrawal_history(session, item.id)
+    assert len(withdrawals) == 1
+    assert withdrawals[0].item_id == item.id
+    assert withdrawals[0].quantity == 200
+    assert withdrawals[0].withdrawn_by == test_admin.id
+    assert withdrawals[0].withdrawn_at is not None
+
+
+def test_mark_item_consumed_creates_withdrawal_entry(
+    session: Session, test_admin: User
+) -> None:
+    """Test: Marking item as consumed creates a Withdrawal record with full quantity."""
+    location = location_service.create_location(
+        session=session,
+        name="Kühlschrank",
+        location_type=LocationType.CHILLED,
+        created_by=test_admin.id,
+    )
+    category = category_service.create_category(
+        session=session,
+        name="Milch",
+        created_by=test_admin.id,
+    )
+
+    assert category.id is not None
+    assert test_admin.id is not None
+
+    item = item_service.create_item(
+        session=session,
+        product_name="Milch",
+        best_before_date=date(2024, 12, 10),
+        quantity=1.0,
+        unit="L",
+        item_type=ItemType.PURCHASED_FRESH,
+        location_id=location.id,
+        created_by=test_admin.id,
+        category_id=category.id,
+    )
+
+    item_service.mark_item_consumed(session, item.id, user_id=test_admin.id)
+
+    # Check withdrawal entry was created
+    withdrawals = item_service.get_withdrawal_history(session, item.id)
+    assert len(withdrawals) == 1
+    assert withdrawals[0].item_id == item.id
+    assert withdrawals[0].quantity == 1.0  # Full quantity
+    assert withdrawals[0].withdrawn_by == test_admin.id
+
+
+def test_get_withdrawal_history_returns_all_entries(
+    session: Session, test_admin: User
+) -> None:
+    """Test: Withdrawal history returns all entries in chronological order."""
+    location = location_service.create_location(
+        session=session,
+        name="Gefrierschrank",
+        location_type=LocationType.FROZEN,
+        created_by=test_admin.id,
+    )
+    category = category_service.create_category(
+        session=session,
+        name="Gemüse",
+        created_by=test_admin.id,
+    )
+
+    assert category.id is not None
+    assert test_admin.id is not None
+
+    item = item_service.create_item(
+        session=session,
+        product_name="Erbsen",
+        best_before_date=date(2025, 1, 1),
+        quantity=500,
+        unit="g",
+        item_type=ItemType.PURCHASED_FROZEN,
+        location_id=location.id,
+        created_by=test_admin.id,
+        category_id=category.id,
+        freeze_date=date(2024, 6, 1),
+    )
+
+    # Multiple withdrawals
+    item_service.withdraw_partial(
+        session=session,
+        item_id=item.id,
+        withdraw_quantity=100,
+        user_id=test_admin.id,
+    )
+    item_service.withdraw_partial(
+        session=session,
+        item_id=item.id,
+        withdraw_quantity=150,
+        user_id=test_admin.id,
+    )
+
+    withdrawals = item_service.get_withdrawal_history(session, item.id)
+    assert len(withdrawals) == 2
+    assert withdrawals[0].quantity == 100
+    assert withdrawals[1].quantity == 150
+
+
+def test_get_withdrawal_history_empty_for_new_item(
+    session: Session, test_admin: User
+) -> None:
+    """Test: New item has empty withdrawal history."""
+    location = location_service.create_location(
+        session=session,
+        name="Kühlschrank",
+        location_type=LocationType.CHILLED,
+        created_by=test_admin.id,
+    )
+    category = category_service.create_category(
+        session=session,
+        name="Obst",
+        created_by=test_admin.id,
+    )
+
+    assert category.id is not None
+
+    item = item_service.create_item(
+        session=session,
+        product_name="Äpfel",
+        best_before_date=date(2024, 12, 20),
+        quantity=5,
+        unit="Stück",
+        item_type=ItemType.PURCHASED_FRESH,
+        location_id=location.id,
+        created_by=test_admin.id,
+        category_id=category.id,
+    )
+
+    withdrawals = item_service.get_withdrawal_history(session, item.id)
+    assert len(withdrawals) == 0
+
+
+def test_delete_item_cascades_withdrawals(session: Session, test_admin: User) -> None:
+    """Test: Deleting item also deletes associated withdrawal entries."""
+    from app.models import Withdrawal
+    from sqlmodel import select
+
+    location = location_service.create_location(
+        session=session,
+        name="Gefrierschrank",
+        location_type=LocationType.FROZEN,
+        created_by=test_admin.id,
+    )
+    category = category_service.create_category(
+        session=session,
+        name="Gemüse",
+        created_by=test_admin.id,
+    )
+
+    assert category.id is not None
+    assert test_admin.id is not None
+
+    item = item_service.create_item(
+        session=session,
+        product_name="Erbsen",
+        best_before_date=date(2025, 1, 1),
+        quantity=500,
+        unit="g",
+        item_type=ItemType.PURCHASED_FROZEN,
+        location_id=location.id,
+        created_by=test_admin.id,
+        category_id=category.id,
+        freeze_date=date(2024, 6, 1),
+    )
+
+    # Create withdrawal
+    item_service.withdraw_partial(
+        session=session,
+        item_id=item.id,
+        withdraw_quantity=100,
+        user_id=test_admin.id,
+    )
+
+    item_id = item.id
+
+    # Delete item
+    item_service.delete_item(session, item_id)
+
+    # Verify withdrawals are also deleted
+    remaining = list(
+        session.exec(select(Withdrawal).where(Withdrawal.item_id == item_id)).all()
+    )
+    assert len(remaining) == 0
