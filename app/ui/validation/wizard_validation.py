@@ -167,21 +167,25 @@ def validate_freeze_date(
 
 
 def _requires_category(item_type: Any) -> bool:
-    """Check if item type requires a category.
-
-    Since Issue #126, category_id is always required in the database schema
-    for all item types. This ensures proper categorization and enables
-    future shelf-life features.
+    """Check if item type requires a category for shelf life calculation.
 
     Args:
-        item_type: Selected item type (unused, kept for API compatibility)
+        item_type: Selected item type
 
     Returns:
-        Always True - category is required for all item types
+        True if category is required (for types that calculate shelf life from DB)
     """
-    # Note: item_type parameter kept for API compatibility but unused
-    _ = item_type
-    return True
+    # Import here to avoid circular dependency
+    from ...models.item import ItemType
+
+    # purchased_fresh/purchased_frozen use MHD from package - no category needed
+    # Other types need category for shelf life calculation
+    types_needing_category = {
+        ItemType.PURCHASED_THEN_FROZEN,
+        ItemType.HOMEMADE_FROZEN,
+        ItemType.HOMEMADE_PRESERVED,
+    }
+    return item_type in types_needing_category
 
 
 def validate_step2(
