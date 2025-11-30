@@ -695,3 +695,134 @@ async def test_edit_dialog_shows_existing_shelf_life(
     # Should see existing values in the inputs
     await logged_in_user.should_see("Haltbarkeit")
     # The input fields should be pre-filled with existing values
+
+
+# =============================================================================
+# Issue #158: Create Dialog with Shelf Life Fields
+# =============================================================================
+
+
+async def test_create_dialog_shows_shelf_life_section(user: TestUser) -> None:
+    """Test that create dialog shows shelf life configuration section."""
+    # Login as admin
+    await user.open("/login")
+    user.find("Benutzername").type("admin")
+    user.find("Passwort").type("password123")
+    user.find("Anmelden").click()
+
+    # Navigate to categories page
+    await user.open("/admin/categories")
+
+    # Click the "Neue Kategorie" button
+    user.find("Neue Kategorie").click()
+
+    # Should see shelf life section
+    await user.should_see("Haltbarkeit")
+    await user.should_see("Gefroren")
+    await user.should_see("Gekühlt")
+    await user.should_see("Raumtemperatur")
+
+
+async def test_create_dialog_has_min_max_fields(user: TestUser) -> None:
+    """Test that create dialog has min and max input fields for shelf life."""
+    # Login as admin
+    await user.open("/login")
+    user.find("Benutzername").type("admin")
+    user.find("Passwort").type("password123")
+    user.find("Anmelden").click()
+
+    # Navigate to categories page
+    await user.open("/admin/categories")
+
+    # Click the "Neue Kategorie" button
+    user.find("Neue Kategorie").click()
+
+    # Should see Min/Max labels
+    await user.should_see("Min")
+    await user.should_see("Max")
+    await user.should_see("Quelle")
+
+
+async def test_create_category_with_shelf_life(
+    user: TestUser,
+    isolated_test_database,
+) -> None:
+    """Test that creating a category with shelf life works correctly."""
+    from app.models.category_shelf_life import CategoryShelfLife
+    from app.models.category_shelf_life import StorageType
+
+    # Login as admin
+    await user.open("/login")
+    user.find("Benutzername").type("admin")
+    user.find("Passwort").type("password123")
+    user.find("Anmelden").click()
+
+    # Navigate to categories page
+    await user.open("/admin/categories")
+
+    # Click the "Neue Kategorie" button
+    user.find("Neue Kategorie").click()
+
+    # Fill in the form
+    user.find("Name").type("Fleisch")
+
+    # Set shelf life values for frozen
+    frozen_min = user.find(marker="create-frozen-min")
+    frozen_max = user.find(marker="create-frozen-max")
+    list(frozen_min.elements)[0].value = 6
+    list(frozen_max.elements)[0].value = 12
+
+    # Click save
+    user.find("Speichern").click()
+
+    # Should see category in list
+    await user.should_see("Fleisch")
+
+    # Verify shelf life was saved in database
+    with Session(isolated_test_database) as session:
+        from sqlmodel import select
+
+        cat = session.exec(select(Category).where(Category.name == "Fleisch")).first()
+        assert cat is not None
+
+        shelf_life = session.exec(
+            select(CategoryShelfLife).where(
+                CategoryShelfLife.category_id == cat.id,
+                CategoryShelfLife.storage_type == StorageType.FROZEN,
+            )
+        ).first()
+        assert shelf_life is not None
+        assert shelf_life.months_min == 6
+        assert shelf_life.months_max == 12
+
+
+async def test_create_category_shelf_life_validation_min_greater_than_max(
+    user: TestUser,
+) -> None:
+    """Test validation error when min > max in create dialog."""
+    # Login as admin
+    await user.open("/login")
+    user.find("Benutzername").type("admin")
+    user.find("Passwort").type("password123")
+    user.find("Anmelden").click()
+
+    # Navigate to categories page
+    await user.open("/admin/categories")
+
+    # Click the "Neue Kategorie" button
+    user.find("Neue Kategorie").click()
+
+    # Fill in the form
+    user.find("Name").type("Obst")
+
+    # Set invalid shelf life values (min > max)
+    frozen_min = user.find(marker="create-frozen-min")
+    frozen_max = user.find(marker="create-frozen-max")
+    list(frozen_min.elements)[0].value = 12
+    list(frozen_max.elements)[0].value = 6
+
+    # Click save
+    user.find("Speichern").click()
+
+    # Should see validation error
+    await user.should_see("Min muss <= Max sein")
