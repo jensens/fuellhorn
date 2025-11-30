@@ -5,6 +5,7 @@ from app.services import rate_limit_service
 from collections.abc import Generator
 from datetime import datetime
 from datetime import timedelta
+from freezegun import freeze_time
 import pytest
 from sqlalchemy.pool import StaticPool
 from sqlmodel import Session
@@ -241,3 +242,87 @@ class TestResetAfter24Hours:
         # Neuer Fehlversuch sollte bei 1 starten
         fail_count = rate_limit_service.record_failed_attempt(session, ip)
         assert fail_count == 1
+
+
+class TestCeilRounding:
+    """Tests für korrektes Aufrunden der Wartezeit."""
+
+    @freeze_time("2025-01-15 12:00:00")
+    def test_remaining_time_rounds_up_from_fraction(self, session: Session) -> None:
+        """Verbleibende Zeit wird aufgerundet (0.5s -> 1s, nicht 0s).
+
+        Regression-Test: int(0.5) = 0 würde Rate-Limiting umgehen.
+        math.ceil(0.5) = 1 ist korrekt.
+        """
+        ip = "192.168.1.100"
+
+        # Erstelle Eintrag: last_attempt war vor 1.5s, bei 3 Fails = 2s Verzögerung
+        # -> remaining = 2s - 1.5s = 0.5s -> ceil(0.5) = 1
+        attempt = LoginAttempt(
+            ip_address=ip,
+            fail_count=3,
+            last_attempt=datetime(2025, 1, 15, 11, 59, 58, 500000),  # 1.5s ago
+        )
+        session.add(attempt)
+        session.commit()
+
+        delay = rate_limit_service.get_required_delay(session, ip)
+
+        # Mit int() wäre das 0, mit ceil() ist es 1
+        assert delay == 1
+
+    @freeze_time("2025-01-15 12:00:00")
+    def test_remaining_time_rounds_up_near_zero(self, session: Session) -> None:
+        """Auch 0.1s verbleibend wird auf 1s aufgerundet."""
+        ip = "192.168.1.100"
+
+        # last_attempt vor 1.9s, bei 3 Fails = 2s Verzögerung
+        # -> remaining = 0.1s -> ceil(0.1) = 1
+        attempt = LoginAttempt(
+            ip_address=ip,
+            fail_count=3,
+            last_attempt=datetime(2025, 1, 15, 11, 59, 58, 100000),  # 1.9s ago
+        )
+        session.add(attempt)
+        session.commit()
+
+        delay = rate_limit_service.get_required_delay(session, ip)
+
+        # Mit int() wäre das 0, mit ceil() ist es 1
+        assert delay == 1
+
+    @freeze_time("2025-01-15 12:00:00")
+    def test_exactly_expired_returns_zero(self, session: Session) -> None:
+        """Genau abgelaufene Wartezeit gibt 0 zurück."""
+        ip = "192.168.1.100"
+
+        # last_attempt vor genau 2s, bei 3 Fails = 2s Verzögerung
+        # -> remaining = 0s -> max(0, ceil(0)) = 0
+        attempt = LoginAttempt(
+            ip_address=ip,
+            fail_count=3,
+            last_attempt=datetime(2025, 1, 15, 11, 59, 58),  # exactly 2s ago
+        )
+        session.add(attempt)
+        session.commit()
+
+        delay = rate_limit_service.get_required_delay(session, ip)
+        assert delay == 0
+
+    @freeze_time("2025-01-15 12:00:00")
+    def test_long_expired_returns_zero(self, session: Session) -> None:
+        """Lange abgelaufene Wartezeit gibt 0 zurück (nicht negativ)."""
+        ip = "192.168.1.100"
+
+        # last_attempt vor 10s, bei 3 Fails = 2s Verzögerung
+        # -> remaining = -8s -> max(0, ceil(-8)) = 0
+        attempt = LoginAttempt(
+            ip_address=ip,
+            fail_count=3,
+            last_attempt=datetime(2025, 1, 15, 11, 59, 50),  # 10s ago
+        )
+        session.add(attempt)
+        session.commit()
+
+        delay = rate_limit_service.get_required_delay(session, ip)
+        assert delay == 0
