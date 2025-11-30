@@ -14,6 +14,7 @@ from .login_attempt import LoginAttempt
 from .system_settings import SystemSettings
 from .user import Role
 from .user import User
+from .withdrawal import Withdrawal
 
 
 __all__ = [
@@ -28,4 +29,5 @@ __all__ = [
     "Item",
     "LoginAttempt",
     "SystemSettings",
+    "Withdrawal",
 ]

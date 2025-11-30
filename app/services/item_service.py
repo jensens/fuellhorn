@@ -3,6 +3,7 @@
 from ..models.category import Category
 from ..models.item import Item
 from ..models.item import ItemType
+from ..models.withdrawal import Withdrawal
 from . import expiry_calculator
 from . import shelf_life_service
 from datetime import date
@@ -157,12 +158,17 @@ def update_item(
     return item
 
 
-def mark_item_consumed(session: Session, id: int) -> Item:
+def mark_item_consumed(
+    session: Session, id: int, user_id: int | None = None
+) -> Item:
     """Mark item as consumed.
+
+    Creates a Withdrawal entry to track when and by whom the item was consumed.
 
     Args:
         session: Database session
         id: Item ID
+        user_id: User ID who consumed the item (for tracking)
 
     Returns:
         Updated item
@@ -171,6 +177,16 @@ def mark_item_consumed(session: Session, id: int) -> Item:
         ValueError: If item not found
     """
     item = get_item(session, id)
+
+    # Create withdrawal entry for the full remaining quantity
+    if user_id is not None:
+        withdrawal = Withdrawal(
+            item_id=item.id,
+            quantity=item.quantity,
+            withdrawn_by=user_id,
+        )
+        session.add(withdrawal)
+
     item.is_consumed = True
 
     session.add(item)
@@ -181,7 +197,7 @@ def mark_item_consumed(session: Session, id: int) -> Item:
 
 
 def delete_item(session: Session, id: int) -> None:
-    """Delete item.
+    """Delete item and all associated withdrawal entries.
 
     Args:
         session: Database session
@@ -191,6 +207,14 @@ def delete_item(session: Session, id: int) -> None:
         ValueError: If item not found
     """
     item = get_item(session, id)
+
+    # Delete associated withdrawal entries first
+    # (SQLite doesn't enforce CASCADE by default)
+    withdrawals = session.exec(
+        select(Withdrawal).where(Withdrawal.item_id == id)
+    ).all()
+    for withdrawal in withdrawals:
+        session.delete(withdrawal)
 
     session.delete(item)
     session.commit()
@@ -259,13 +283,17 @@ def withdraw_partial(
     session: Session,
     item_id: int,
     withdraw_quantity: float,
+    user_id: int | None = None,
 ) -> Item:
     """Withdraw a partial quantity from an item.
+
+    Creates a Withdrawal entry to track the withdrawal.
 
     Args:
         session: Database session
         item_id: Item ID
         withdraw_quantity: Quantity to withdraw
+        user_id: User ID who withdrew the item (for tracking)
 
     Returns:
         Updated item
@@ -290,6 +318,15 @@ def withdraw_partial(
         raise ValueError(
             f"Cannot withdraw more than available. Requested: {withdraw_quantity}, Available: {item.quantity}"
         )
+
+    # Create withdrawal entry
+    if user_id is not None:
+        withdrawal = Withdrawal(
+            item_id=item.id,
+            quantity=withdraw_quantity,
+            withdrawn_by=user_id,
+        )
+        session.add(withdrawal)
 
     # Update quantity
     item.quantity = item.quantity - withdraw_quantity
@@ -370,3 +407,22 @@ def get_item_expiry_info(
     )
 
     return (optimal_date, max_date, None)
+
+
+def get_withdrawal_history(session: Session, item_id: int) -> list[Withdrawal]:
+    """Get withdrawal history for an item.
+
+    Args:
+        session: Database session
+        item_id: Item ID
+
+    Returns:
+        List of Withdrawal entries sorted chronologically (oldest first)
+    """
+    return list(
+        session.exec(
+            select(Withdrawal)
+            .where(Withdrawal.item_id == item_id)
+            .order_by(Withdrawal.withdrawn_at)  # type: ignore[arg-type]
+        ).all()
+    )
