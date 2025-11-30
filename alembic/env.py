@@ -5,8 +5,8 @@ from app.config import config as app_config
 
 # Import all models to ensure they're registered with SQLModel.metadata
 from app.models import Category  # noqa: F401
+from app.models import CategoryShelfLife  # noqa: F401
 from app.models import Item  # noqa: F401
-from app.models import ItemCategory  # noqa: F401
 from app.models import Location  # noqa: F401
 from app.models import User  # noqa: F401
 from logging.config import fileConfig

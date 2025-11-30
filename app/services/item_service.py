@@ -2,7 +2,6 @@
 
 from ..models.category import Category
 from ..models.item import Item
-from ..models.item import ItemCategory
 from ..models.item import ItemType
 from . import expiry_calculator
 from . import shelf_life_service
@@ -52,13 +51,10 @@ def create_item(
     if category_id is None:
         raise ValueError("category_id is required")
 
-    # Store best_before_date as expiry_date temporarily
-    # (Model still requires expiry_date, will be removed in #125)
     item = Item(
         product_name=product_name,
         best_before_date=best_before_date,
         freeze_date=freeze_date,
-        expiry_date=best_before_date,
         quantity=quantity,
         unit=unit,
         item_type=item_type,
@@ -94,13 +90,13 @@ def get_active_items(session: Session) -> list[Item]:
         session: Database session
 
     Returns:
-        List of active items sorted by expiry date
+        List of active items sorted by best_before_date
     """
     return list(
         session.exec(
             select(Item)
             .where(Item.is_consumed.is_(False))  # type: ignore
-            .order_by(Item.expiry_date)  # type: ignore[arg-type]
+            .order_by(Item.best_before_date)  # type: ignore[arg-type]
         ).all()
     )
 
@@ -201,11 +197,6 @@ def delete_item(session: Session, id: int) -> None:
     """
     item = get_item(session, id)
 
-    # Delete category associations first
-    session.exec(select(ItemCategory).where(ItemCategory.item_id == id)).all()
-    for item_category in session.exec(select(ItemCategory).where(ItemCategory.item_id == id)).all():
-        session.delete(item_category)
-
     session.delete(item)
     session.commit()
 
@@ -245,21 +236,24 @@ def get_items_by_location(session: Session, location_id: int) -> list[Item]:
 
 
 def get_items_expiring_soon(session: Session, days: int = 7) -> list[Item]:
-    """Get items expiring within X days.
+    """Get items with best_before_date within X days.
+
+    Note: For items that use shelf life calculation (frozen/preserved),
+    this is a rough approximation. Use get_item_expiry_info() for accurate dates.
 
     Args:
         session: Database session
         days: Number of days to look ahead (default 7)
 
     Returns:
-        List of items expiring soon
+        List of items with best_before_date coming up soon
     """
     cutoff_date = date.today() + timedelta(days=days)
 
     return list(
         session.exec(
             select(Item).where(
-                Item.expiry_date <= cutoff_date,
+                Item.best_before_date <= cutoff_date,
                 Item.is_consumed.is_(False),  # type: ignore
             )
         ).all()

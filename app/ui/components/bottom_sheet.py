@@ -113,12 +113,12 @@ def create_bottom_sheet(
                     ui.icon("place", size="20px").classes("text-gray-500")
                     ui.label(location.name).classes("text-base")
 
-                # Expiry date with status badge
-                expiry_status = get_expiry_status(item.expiry_date)
+                # Expiry date with status badge (using best_before_date as fallback)
+                expiry_status = get_expiry_status(item.best_before_date)
                 with ui.row().classes("items-center gap-2"):
                     ui.icon("event", size="20px").classes("text-gray-500")
-                    ui.label(item.expiry_date.strftime("%d.%m.%Y")).classes("text-base")
-                    ui.label(get_expiry_label(item.expiry_date)).classes(get_expiry_badge_classes(expiry_status))
+                    ui.label(item.best_before_date.strftime("%d.%m.%Y")).classes("text-base")
+                    ui.label(get_expiry_label(item.best_before_date)).classes(get_expiry_badge_classes(expiry_status))
 
                 # Notes (if present)
                 if item.notes:

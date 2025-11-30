@@ -85,7 +85,6 @@ def _create_shelf_life_item(
         product_name="Erbsen",
         best_before_date=freeze_date,
         freeze_date=freeze_date,
-        expiry_date=freeze_date,  # Placeholder, calculated dynamically
         quantity=500,
         unit="g",
         item_type=ItemType.HOMEMADE_FROZEN,
@@ -110,7 +109,6 @@ def _create_mhd_item(
     item = Item(
         product_name="Joghurt",
         best_before_date=best_before,
-        expiry_date=best_before,
         quantity=150,
         unit="g",
         item_type=ItemType.PURCHASED_FRESH,

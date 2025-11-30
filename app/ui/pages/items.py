@@ -12,7 +12,6 @@ Extended in Issue #17 to allow showing consumed items via toggle.
 from ...auth import require_auth
 from ...database import get_session
 from ...models.item import Item
-from ...models.item import ItemCategory
 from ...models.item import ItemType
 from ...services import category_service
 from ...services import item_service
@@ -22,8 +21,6 @@ from ..components import create_item_card
 from ..components import create_mobile_page_container
 from nicegui import app
 from nicegui import ui
-from sqlmodel import Session
-from sqlmodel import select
 from typing import Any
 
 
@@ -32,7 +29,7 @@ SHOW_CONSUMED_KEY = "show_consumed_items"
 
 # Sorting options
 SORT_OPTIONS: dict[str, str] = {
-    "expiry_date": "Ablaufdatum",
+    "best_before_date": "Haltbarkeitsdatum",
     "product_name": "Produktname",
     "created_at": "Erfassungsdatum",
 }
@@ -68,22 +65,16 @@ def _render_no_filter_results() -> None:
         ui.label("Versuche andere Filter oder Suchbegriffe").classes("text-sm text-gray-500")
 
 
-def _build_item_category_map(session: Session, items: list[Item]) -> dict[int, set[int]]:
-    """Build a mapping from item IDs to their category IDs.
+def _build_item_category_map(items: list[Item]) -> dict[int, int | None]:
+    """Build a mapping from item IDs to their category ID.
 
     Args:
-        session: Database session
         items: List of items
 
     Returns:
-        Dictionary mapping item ID to set of category IDs
+        Dictionary mapping item ID to category ID (or None)
     """
-    item_category_map: dict[int, set[int]] = {}
-    for item in items:
-        if item.id is not None:
-            item_cats = session.exec(select(ItemCategory).where(ItemCategory.item_id == item.id)).all()
-            item_category_map[item.id] = {ic.category_id for ic in item_cats}
-    return item_category_map
+    return {item.id: item.category_id for item in items if item.id is not None}
 
 
 def _filter_items(
@@ -124,24 +115,22 @@ def _filter_items(
 def _filter_items_by_categories(
     items: list[Item],
     selected_categories: set[int],
-    item_category_map: dict[int, set[int]],
+    item_category_map: dict[int, int | None],
 ) -> list[Item]:
     """Filter items by selected categories (OR logic).
 
     Args:
         items: List of items to filter
         selected_categories: Set of selected category IDs
-        item_category_map: Mapping of item IDs to category IDs
+        item_category_map: Mapping of item IDs to category ID
 
     Returns:
-        Filtered list of items that have at least one of the selected categories
+        Filtered list of items that have one of the selected categories
     """
     if not selected_categories:
         return items
 
-    return [
-        item for item in items if item.id is not None and item_category_map.get(item.id, set()) & selected_categories
-    ]
+    return [item for item in items if item.id is not None and item_category_map.get(item.id) in selected_categories]
 
 
 def _sort_items(items: list[Item], sort_field: str, ascending: bool) -> list[Item]:
@@ -149,14 +138,14 @@ def _sort_items(items: list[Item], sort_field: str, ascending: bool) -> list[Ite
 
     Args:
         items: List of items to sort
-        sort_field: Field to sort by (expiry_date, product_name, created_at)
+        sort_field: Field to sort by (best_before_date, product_name, created_at)
         ascending: True for ascending, False for descending
 
     Returns:
         Sorted list of items
     """
-    if sort_field == "expiry_date":
-        return sorted(items, key=lambda x: x.expiry_date, reverse=not ascending)
+    if sort_field == "best_before_date":
+        return sorted(items, key=lambda x: x.best_before_date, reverse=not ascending)
     elif sort_field == "product_name":
         return sorted(items, key=lambda x: x.product_name.lower(), reverse=not ascending)
     elif sort_field == "created_at":
@@ -177,7 +166,7 @@ def items_page() -> None:
         "search_term": "",
         "location_id": 0,  # 0 = all locations
         "item_type": "",  # "" = all types
-        "sort_field": "expiry_date",  # Default: sort by expiry date
+        "sort_field": "best_before_date",  # Default: sort by best_before_date
         "sort_ascending": True,  # Default: ascending (soonest first)
     }
     selected_categories: set[int] = set()
@@ -210,8 +199,8 @@ def items_page() -> None:
                 else:
                     all_items = item_service.get_active_items(session)
 
-                # Build item-to-categories mapping
-                item_category_map = _build_item_category_map(session, all_items)
+                # Build item-to-category mapping
+                item_category_map = _build_item_category_map(all_items)
 
                 # Apply all filters (search, location, item type)
                 filtered_items = _filter_items(
@@ -264,7 +253,7 @@ def items_page() -> None:
 
     def on_sort_field_change(e: Any) -> None:
         """Handle sort field change."""
-        filter_state["sort_field"] = e.value if e.value else "expiry_date"
+        filter_state["sort_field"] = e.value if e.value else "best_before_date"
         refresh_items()
 
     def toggle_sort_direction() -> None:
@@ -340,7 +329,7 @@ def items_page() -> None:
             ui.select(
                 label="Sortierung",
                 options=SORT_OPTIONS,
-                value="expiry_date",
+                value="best_before_date",
                 on_change=on_sort_field_change,
             ).props("dense outlined").classes("flex-1")
 

@@ -537,7 +537,6 @@ async def test_cannot_delete_location_in_use(
             quantity=1.0,
             unit="kg",
             best_before_date=today,
-            expiry_date=today + timedelta(days=30),
             created_by=1,
         )
         session.add(item)

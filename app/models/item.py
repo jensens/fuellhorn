@@ -24,15 +24,15 @@ class Item(SQLModel, table=True):
     """Item in the inventory.
 
     Represents a physical item with expiry tracking and categorization.
+    Expiry is calculated dynamically based on category shelf life.
     """
 
     __tablename__ = "item"
 
     id: int | None = Field(default=None, primary_key=True)
     product_name: str = Field(index=True)
-    best_before_date: date  # Date of manufacture/packaging
+    best_before_date: date  # MHD for purchased items, production date for homemade
     freeze_date: date | None = Field(default=None)  # Date when item was frozen
-    expiry_date: date  # Calculated expiry date
     quantity: float = Field(gt=0)
     unit: str  # e.g., "kg", "L", "pieces"
     item_type: ItemType
@@ -42,12 +42,3 @@ class Item(SQLModel, table=True):
     is_consumed: bool = Field(default=False)
     created_at: datetime = Field(default_factory=datetime.now)
     created_by: int = Field(foreign_key="users.id")
-
-
-class ItemCategory(SQLModel, table=True):
-    """Junction table for Item-Category Many-to-Many relationship."""
-
-    __tablename__ = "item_category"
-
-    item_id: int = Field(foreign_key="item.id", primary_key=True)
-    category_id: int = Field(foreign_key="category.id", primary_key=True)

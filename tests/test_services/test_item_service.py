@@ -45,8 +45,7 @@ def test_create_item(session: Session, test_admin: User) -> None:
     assert item.id is not None
     assert item.product_name == "Rindfleisch"
     assert item.category_id == category.id
-    # expiry_date is now set to best_before_date (dynamic calculation via get_item_expiry_info)
-    assert item.expiry_date == date(2024, 1, 1)
+    assert item.best_before_date == date(2024, 1, 1)
     assert item.is_consumed is False
 
 

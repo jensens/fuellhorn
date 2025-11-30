@@ -35,7 +35,6 @@ async def test_bottom_sheet_shows_item_details(user: User) -> None:
             location_id=location.id,
             best_before_date=date.today() + timedelta(days=365),
             freeze_date=date.today(),
-            expiry_date=date.today() + timedelta(days=365),
             created_by=1,
         )
         session.add(item)
@@ -77,7 +76,6 @@ async def test_bottom_sheet_has_action_buttons(user: User) -> None:
             unit="L",
             location_id=location.id,
             best_before_date=date.today() + timedelta(days=7),
-            expiry_date=date.today() + timedelta(days=7),
             created_by=1,
         )
         session.add(item)
@@ -118,7 +116,6 @@ async def test_bottom_sheet_has_close_button(user: User) -> None:
             unit="Gläser",
             location_id=location.id,
             best_before_date=date.today() + timedelta(days=365),
-            expiry_date=date.today() + timedelta(days=365),
             created_by=1,
         )
         session.add(item)
@@ -158,7 +155,6 @@ async def test_bottom_sheet_shows_expiry_status(user: User) -> None:
             location_id=location.id,
             best_before_date=date.today() + timedelta(days=2),
             freeze_date=date.today() - timedelta(days=10),
-            expiry_date=date.today() + timedelta(days=2),
             created_by=1,
         )
         session.add(item)
@@ -199,7 +195,6 @@ async def test_bottom_sheet_shows_notes(user: User) -> None:
             location_id=location.id,
             best_before_date=date.today() + timedelta(days=90),
             freeze_date=date.today(),
-            expiry_date=date.today() + timedelta(days=90),
             notes="Mit Paprika und Zwiebeln",
             created_by=1,
         )
@@ -241,7 +236,6 @@ async def test_bottom_sheet_consume_button_present(user: User) -> None:
             location_id=location.id,
             best_before_date=date.today() + timedelta(days=180),
             freeze_date=date.today(),
-            expiry_date=date.today() + timedelta(days=180),
             created_by=1,
         )
         session.add(item)
@@ -284,7 +278,6 @@ async def test_bottom_sheet_withdraw_shows_quantity_dialog(user: User) -> None:
             location_id=location.id,
             best_before_date=date.today() + timedelta(days=180),
             freeze_date=date.today(),
-            expiry_date=date.today() + timedelta(days=180),
             created_by=1,
         )
         session.add(item)
@@ -324,7 +317,6 @@ async def test_bottom_sheet_withdraw_validates_max_quantity(user: User) -> None:
             location_id=location.id,
             best_before_date=date.today() + timedelta(days=180),
             freeze_date=date.today(),
-            expiry_date=date.today() + timedelta(days=180),
             created_by=1,
         )
         session.add(item)
@@ -370,7 +362,6 @@ async def test_bottom_sheet_withdraw_partial_success(user: User) -> None:
             location_id=location.id,
             best_before_date=date.today() + timedelta(days=180),
             freeze_date=date.today(),
-            expiry_date=date.today() + timedelta(days=180),
             created_by=1,
         )
         session.add(item)
