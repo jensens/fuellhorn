@@ -281,10 +281,10 @@ async def test_items_page_has_sort_dropdown(user: TestUser) -> None:
 
 
 async def test_items_page_sort_default_is_expiry(user: TestUser) -> None:
-    """Test that default sort is by expiry date (shown as selected value)."""
+    """Test that default sort is by best before date (shown as selected value)."""
     await user.open("/test-items-page-with-sorting")
-    # Default selected value should be expiry date
-    await user.should_see("Ablaufdatum")
+    # Default selected value should be best before date
+    await user.should_see("Haltbarkeitsdatum")
 
 
 async def test_items_page_has_sort_direction_toggle(user: TestUser) -> None:
