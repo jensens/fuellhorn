@@ -515,7 +515,6 @@ async def test_cannot_delete_location_in_use(
     from app.models.item import Item
     from app.models.item import ItemType
     from datetime import date
-    from datetime import timedelta
 
     # Create a location with an item
     with Session(isolated_test_database) as session:
