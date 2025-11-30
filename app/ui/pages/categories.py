@@ -126,7 +126,7 @@ def _render_shelf_life_badges(shelf_life_dict: dict) -> None:
 
 def _open_create_dialog() -> None:
     """Open dialog to create a new category."""
-    with ui.dialog() as dialog, ui.card().classes("w-full max-w-md"):
+    with ui.dialog() as dialog, ui.card().classes("w-full max-w-lg"):
         ui.label("Neue Kategorie erstellen").classes("text-h6 font-semibold mb-4")
 
         # Name input (required)
@@ -134,6 +134,56 @@ def _open_create_dialog() -> None:
 
         # Color input (optional)
         color_input = ui.color_input(label="Farbe").classes("w-full mb-4")
+
+        # Shelf life section
+        ui.label("Haltbarkeit (Monate)").classes("text-subtitle1 font-medium mb-2")
+
+        # Store input references
+        shelf_life_inputs: dict[StorageType, dict] = {}
+
+        for storage_type in [StorageType.FROZEN, StorageType.CHILLED, StorageType.AMBIENT]:
+            label = STORAGE_TYPE_LABELS[storage_type]
+
+            with ui.row().classes("w-full items-center gap-2 mb-2"):
+                ui.label(label).classes("w-28 text-sm")
+                ui.label("Min").classes("text-xs text-gray-500")
+                min_input = (
+                    ui.number(
+                        value=None,
+                        min=1,
+                        max=36,
+                    )
+                    .classes("w-16")
+                    .props("dense outlined")
+                    .mark(f"create-{storage_type.value}-min")
+                )
+                ui.label("Max").classes("text-xs text-gray-500")
+                max_input = (
+                    ui.number(
+                        value=None,
+                        min=1,
+                        max=36,
+                    )
+                    .classes("w-16")
+                    .props("dense outlined")
+                    .mark(f"create-{storage_type.value}-max")
+                )
+                ui.label("Quelle").classes("text-xs text-gray-500")
+                source_input = (
+                    ui.input(
+                        value="",
+                        placeholder="URL",
+                    )
+                    .classes("flex-1")
+                    .props("dense outlined")
+                    .mark(f"create-{storage_type.value}-source")
+                )
+
+                shelf_life_inputs[storage_type] = {
+                    "min": min_input,
+                    "max": max_input,
+                    "source": source_input,
+                }
 
         # Error label (hidden by default)
         error_label = ui.label("").classes("text-red-600 text-sm mb-2")
@@ -154,6 +204,28 @@ def _open_create_dialog() -> None:
                     error_label.set_visibility(True)
                     return
 
+                # Validate shelf life min <= max
+                for storage_type, inputs in shelf_life_inputs.items():
+                    min_val = inputs["min"].value
+                    max_val = inputs["max"].value
+
+                    # Skip if both empty
+                    if min_val is None and max_val is None:
+                        continue
+
+                    # Both must be set if one is set
+                    if (min_val is None) != (max_val is None):
+                        label = STORAGE_TYPE_LABELS[storage_type]
+                        error_label.set_text(f"{label}: Min und Max müssen beide gesetzt sein")
+                        error_label.set_visibility(True)
+                        return
+
+                    # Min must be <= Max
+                    if min_val is not None and max_val is not None and min_val > max_val:
+                        error_label.set_text("Min muss <= Max sein")
+                        error_label.set_visibility(True)
+                        return
+
                 # Get current user for created_by
                 current_user = get_current_user()
                 if current_user is None or current_user.id is None:
@@ -163,12 +235,30 @@ def _open_create_dialog() -> None:
 
                 try:
                     with next(get_session()) as session:
-                        category_service.create_category(
+                        category = category_service.create_category(
                             session=session,
                             name=name,
                             created_by=current_user.id,
                             color=color,
                         )
+
+                        # Save shelf lives if provided
+                        if category.id is not None:
+                            for storage_type, inputs in shelf_life_inputs.items():
+                                min_val = inputs["min"].value
+                                max_val = inputs["max"].value
+                                source_val = inputs["source"].value.strip() if inputs["source"].value else None
+
+                                if min_val is not None and max_val is not None:
+                                    shelf_life_service.create_or_update_shelf_life(
+                                        session=session,
+                                        category_id=category.id,
+                                        storage_type=storage_type,
+                                        months_min=int(min_val),
+                                        months_max=int(max_val),
+                                        source_url=source_val,
+                                    )
+
                     ui.notify(f"Kategorie '{name}' erstellt", type="positive")
                     dialog.close()
                     ui.navigate.to("/admin/categories")
