@@ -1,6 +1,7 @@
 """Authentication UI - Login/Logout."""
 
 from ..database import get_session
+from ..services import rate_limit_service
 from ..services.auth_service import AuthenticationError
 from ..services.auth_service import authenticate_user
 from ..services.auth_service import generate_remember_token
@@ -8,13 +9,41 @@ from ..services.auth_service import get_user
 from ..services.auth_service import revoke_remember_token
 from nicegui import app
 from nicegui import ui
+from starlette.requests import Request
+
+
+def _get_client_ip() -> str:
+    """Ermittelt die Client-IP-Adresse aus dem Request.
+
+    Berücksichtigt X-Forwarded-For Header für Reverse-Proxy-Setups.
+
+    Returns:
+        IP-Adresse als String (oder "test" im Test-Umfeld)
+    """
+    try:
+        request: Request = app.storage.request  # type: ignore[attr-defined]
+    except AttributeError:
+        # Im Test-Umfeld existiert app.storage.request nicht
+        return "test"
+
+    # X-Forwarded-For für Reverse-Proxy (erster Eintrag ist der echte Client)
+    forwarded_for = request.headers.get("x-forwarded-for")
+    if forwarded_for:
+        return forwarded_for.split(",")[0].strip()
+
+    # Fallback: Direkter Client
+    client = request.client
+    if client:
+        return client.host
+
+    return "unknown"
 
 
 def show_login_page() -> None:
     """Zeigt die Login-Seite mit mobile-first Design."""
 
     async def handle_login() -> None:
-        """Login-Handler mit Remember-Me Support."""
+        """Login-Handler mit Remember-Me Support und Rate-Limiting."""
         username_val = username_input.value
         password_val = password_input.value
         remember_me = remember_checkbox.value
@@ -23,9 +52,23 @@ def show_login_page() -> None:
             ui.notify("Bitte Username und Passwort eingeben", type="warning")
             return
 
+        client_ip = _get_client_ip()
+
         with next(get_session()) as session:
+            # Rate-Limiting prüfen (IP-basiert)
+            required_delay = rate_limit_service.get_required_delay(session, client_ip)
+            if required_delay > 0:
+                ui.notify(
+                    f"Zu viele Fehlversuche. Bitte {required_delay} Sekunden warten.",
+                    type="warning",
+                )
+                return
+
             try:
                 user = authenticate_user(session, username_val, password_val)
+
+                # Login erfolgreich - Rate-Limit zurücksetzen
+                rate_limit_service.record_successful_login(session, client_ip)
 
                 # Session speichern (nur essenzielle Daten, Permissions werden bei Bedarf aus DB geholt)
                 app.storage.user["authenticated"] = True
@@ -43,7 +86,17 @@ def show_login_page() -> None:
                 ui.navigate.to("/dashboard")
 
             except AuthenticationError as e:
-                ui.notify(str(e), type="negative")
+                # Fehlversuch aufzeichnen
+                fail_count = rate_limit_service.record_failed_attempt(session, client_ip)
+                next_delay = rate_limit_service.get_delay_seconds(fail_count + 1)
+
+                if next_delay > 0:
+                    ui.notify(
+                        f"{e} (Nächster Versuch: {next_delay}s Wartezeit)",
+                        type="negative",
+                    )
+                else:
+                    ui.notify(str(e), type="negative")
 
     # Mobile-First Layout: Full-screen auf Mobile, zentrierte Card auf Desktop
     with ui.column().classes("w-full min-h-screen items-center justify-center bg-gray-100 p-4"):

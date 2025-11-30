@@ -10,6 +10,7 @@ from .item import Item
 from .item import ItemType
 from .location import Location
 from .location import LocationType
+from .login_attempt import LoginAttempt
 from .system_settings import SystemSettings
 from .user import Role
 from .user import User
@@ -25,5 +26,6 @@ __all__ = [
     "LocationType",
     "ItemType",
     "Item",
+    "LoginAttempt",
     "SystemSettings",
 ]
