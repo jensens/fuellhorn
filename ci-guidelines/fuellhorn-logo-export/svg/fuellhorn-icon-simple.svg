@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="512" height="512">
+  <defs>
+    <linearGradient id="simpleCircle" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4A7C59"/>
+      <stop offset="100%" style="stop-color:#7CB342"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Kompakter Kreisbogen -->
+  <path d="M 50 12 A 38 38 0 1 1 12 50" 
+        fill="none" 
+        stroke="url(#simpleCircle)" 
+        stroke-width="9"
+        stroke-linecap="round"/>
+  
+  <!-- Vereinfachtes Horn -->
+  <path d="M 50 12 
+           C 60 22, 62 35, 55 52
+           C 48 68, 35 78, 25 80
+           C 35 72, 44 62, 48 50
+           C 52 38, 50 25, 46 15
+           Z" 
+        fill="#E6A832"/>
+  
+  <!-- Ein Blatt als Akzent -->
+  <ellipse cx="24" cy="75" rx="6" ry="9" fill="#7CB342" transform="rotate(-25, 24, 75)"/>
+</svg>

@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Füllhorn Logo Export – Übersicht</title>
+    <style>
+        :root {
+            --fern: #4A7C59;
+            --cream: #FAF7F0;
+            --oat: #F5F0E6;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: var(--cream);
+            color: #333;
+            line-height: 1.6;
+            padding: 2rem;
+        }
+        
+        h1 {
+            color: var(--fern);
+            margin-bottom: 0.5rem;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 2rem;
+        }
+        
+        section {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        
+        h2 {
+            color: var(--fern);
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--oat);
+        }
+        
+        .logo-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            align-items: flex-end;
+        }
+        
+        .logo-item {
+            text-align: center;
+        }
+        
+        .logo-item img {
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+        
+        .logo-item .filename {
+            font-size: 0.75rem;
+            color: #666;
+            font-family: monospace;
+        }
+        
+        .logo-item .size {
+            font-size: 0.7rem;
+            color: #999;
+        }
+        
+        .dark-bg {
+            background: #2D3B2D;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+        }
+        
+        .dark-bg .logo-item .filename,
+        .dark-bg .logo-item .size {
+            color: #aaa;
+        }
+        
+        .svg-preview {
+            width: 120px;
+            height: 120px;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 10px;
+            background: white;
+        }
+        
+        .files-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 0.5rem;
+            font-family: monospace;
+            font-size: 0.85rem;
+        }
+        
+        .files-list div {
+            padding: 0.5rem;
+            background: var(--oat);
+            border-radius: 4px;
+        }
+        
+        .checkerboard {
+            background-image: 
+                linear-gradient(45deg, #ccc 25%, transparent 25%), 
+                linear-gradient(-45deg, #ccc 25%, transparent 25%), 
+                linear-gradient(45deg, transparent 75%, #ccc 75%), 
+                linear-gradient(-45deg, transparent 75%, #ccc 75%);
+            background-size: 16px 16px;
+            background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+            padding: 1rem;
+            border-radius: 8px;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <h1>🌿 Füllhorn Logo Export</h1>
+    <p class="subtitle">Kreislauf-Horn – Solarpunk CI</p>
+    
+    <section>
+        <h2>SVG Dateien (Vektoren – skalierbar)</h2>
+        <div class="logo-grid">
+            <div class="logo-item">
+                <img src="svg/fuellhorn-logo-color.svg" class="svg-preview" alt="Color Logo">
+                <div class="filename">fuellhorn-logo-color.svg</div>
+                <div class="size">Hauptlogo, Vollfarbe</div>
+            </div>
+            <div class="logo-item">
+                <img src="svg/fuellhorn-logo-dark.svg" class="svg-preview" alt="Dark Logo">
+                <div class="filename">fuellhorn-logo-dark.svg</div>
+                <div class="size">Für dunkle Hintergründe</div>
+            </div>
+            <div class="logo-item">
+                <img src="svg/fuellhorn-logo-mono-green.svg" class="svg-preview" alt="Mono Green">
+                <div class="filename">fuellhorn-logo-mono-green.svg</div>
+                <div class="size">Monochrom, Einfarb-Druck</div>
+            </div>
+            <div class="logo-item">
+                <div class="checkerboard">
+                    <img src="svg/fuellhorn-logo-mono-white.svg" width="100" height="100" alt="Mono White">
+                </div>
+                <div class="filename">fuellhorn-logo-mono-white.svg</div>
+                <div class="size">Weiß, für dunkle BGs</div>
+            </div>
+            <div class="logo-item">
+                <img src="svg/fuellhorn-icon-simple.svg" class="svg-preview" alt="Simple Icon">
+                <div class="filename">fuellhorn-icon-simple.svg</div>
+                <div class="size">Vereinfacht, für kleine Größen</div>
+            </div>
+        </div>
+    </section>
+    
+    <section>
+        <h2>PNG Dateien – Hauptlogo (Vollfarbe)</h2>
+        <div class="logo-grid">
+            <div class="logo-item">
+                <img src="png/fuellhorn-logo-color-512.png" width="128" height="128" alt="512px">
+                <div class="filename">fuellhorn-logo-color-512.png</div>
+                <div class="size">512 × 512</div>
+            </div>
+            <div class="logo-item">
+                <img src="png/fuellhorn-logo-color-256.png" width="96" height="96" alt="256px">
+                <div class="filename">fuellhorn-logo-color-256.png</div>
+                <div class="size">256 × 256</div>
+            </div>
+            <div class="logo-item">
+                <img src="png/fuellhorn-logo-color-128.png" width="64" height="64" alt="128px">
+                <div class="filename">fuellhorn-logo-color-128.png</div>
+                <div class="size">128 × 128</div>
+            </div>
+            <div class="logo-item">
+                <img src="png/fuellhorn-logo-color-64.png" alt="64px">
+                <div class="filename">fuellhorn-logo-color-64.png</div>
+                <div class="size">64 × 64</div>
+            </div>
+            <div class="logo-item">
+                <img src="png/fuellhorn-logo-color-48.png" alt="48px">
+                <div class="filename">fuellhorn-logo-color-48.png</div>
+                <div class="size">48 × 48</div>
+            </div>
+            <div class="logo-item">
+                <img src="png/fuellhorn-logo-color-32.png" alt="32px">
+                <div class="filename">fuellhorn-logo-color-32.png</div>
+                <div class="size">32 × 32</div>
+            </div>
+            <div class="logo-item">
+                <img src="png/fuellhorn-logo-color-16.png" alt="16px">
+                <div class="filename">fuellhorn-logo-color-16.png</div>
+                <div class="size">16 × 16</div>
+            </div>
+        </div>
+    </section>
+    
+    <section>
+        <h2>PNG Dateien – App Icons (vereinfacht)</h2>
+        <div class="logo-grid">
+            <div class="logo-item">
+                <img src="png/fuellhorn-icon-512.png" width="128" height="128" alt="512px">
+                <div class="filename">fuellhorn-icon-512.png</div>
+                <div class="size">512 × 512 (PWA)</div>
+            </div>
+            <div class="logo-item">
+                <img src="png/fuellhorn-icon-192.png" width="96" height="96" alt="192px">
+                <div class="filename">fuellhorn-icon-192.png</div>
+                <div class="size">192 × 192 (Android)</div>
+            </div>
+            <div class="logo-item">
+                <img src="png/fuellhorn-icon-180.png" width="90" height="90" alt="180px">
+                <div class="filename">fuellhorn-icon-180.png</div>
+                <div class="size">180 × 180 (iOS)</div>
+            </div>
+        </div>
+    </section>
+    
+    <section>
+        <h2>PNG Dateien – Favicons</h2>
+        <div class="logo-grid">
+            <div class="logo-item">
+                <img src="png/fuellhorn-favicon-48.png" alt="48px">
+                <div class="filename">fuellhorn-favicon-48.png</div>
+                <div class="size">48 × 48</div>
+            </div>
+            <div class="logo-item">
+                <img src="png/fuellhorn-favicon-32.png" alt="32px">
+                <div class="filename">fuellhorn-favicon-32.png</div>
+                <div class="size">32 × 32</div>
+            </div>
+            <div class="logo-item">
+                <img src="png/fuellhorn-favicon-16.png" alt="16px">
+                <div class="filename">fuellhorn-favicon-16.png</div>
+                <div class="size">16 × 16</div>
+            </div>
+        </div>
+    </section>
+    
+    <section>
+        <h2>PNG Dateien – Varianten (512px)</h2>
+        <div class="logo-grid">
+            <div class="logo-item">
+                <img src="png/fuellhorn-logo-mono-green-512.png" width="100" height="100" alt="Mono Green">
+                <div class="filename">fuellhorn-logo-mono-green-512.png</div>
+                <div class="size">Monochrom Grün</div>
+            </div>
+            <div class="logo-item">
+                <div class="dark-bg">
+                    <img src="png/fuellhorn-logo-dark-512.png" width="100" height="100" alt="Dark Mode">
+                </div>
+                <div class="filename">fuellhorn-logo-dark-512.png</div>
+                <div class="size">Dark Mode</div>
+            </div>
+            <div class="logo-item">
+                <div class="dark-bg">
+                    <img src="png/fuellhorn-logo-mono-white-512.png" width="100" height="100" alt="Mono White">
+                </div>
+                <div class="filename">fuellhorn-logo-mono-white-512.png</div>
+                <div class="size">Monochrom Weiß</div>
+            </div>
+        </div>
+    </section>
+    
+    <section>
+        <h2>Alle Dateien</h2>
+        <div class="files-list">
+            <div>📁 svg/fuellhorn-logo-color.svg</div>
+            <div>📁 svg/fuellhorn-logo-dark.svg</div>
+            <div>📁 svg/fuellhorn-logo-mono-green.svg</div>
+            <div>📁 svg/fuellhorn-logo-mono-white.svg</div>
+            <div>📁 svg/fuellhorn-icon-simple.svg</div>
+            <div>🖼️ png/fuellhorn-logo-color-512.png</div>
+            <div>🖼️ png/fuellhorn-logo-color-256.png</div>
+            <div>🖼️ png/fuellhorn-logo-color-128.png</div>
+            <div>🖼️ png/fuellhorn-logo-color-64.png</div>
+            <div>🖼️ png/fuellhorn-logo-color-48.png</div>
+            <div>🖼️ png/fuellhorn-logo-color-32.png</div>
+            <div>🖼️ png/fuellhorn-logo-color-16.png</div>
+            <div>🖼️ png/fuellhorn-icon-512.png</div>
+            <div>🖼️ png/fuellhorn-icon-192.png</div>
+            <div>🖼️ png/fuellhorn-icon-180.png</div>
+            <div>🖼️ png/fuellhorn-favicon-48.png</div>
+            <div>🖼️ png/fuellhorn-favicon-32.png</div>
+            <div>🖼️ png/fuellhorn-favicon-16.png</div>
+            <div>🖼️ png/fuellhorn-logo-dark-512.png</div>
+            <div>🖼️ png/fuellhorn-logo-mono-green-512.png</div>
+            <div>🖼️ png/fuellhorn-logo-mono-white-512.png</div>
+        </div>
+    </section>
+</body>
+</html>
