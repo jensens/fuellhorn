@@ -84,17 +84,21 @@ def seed_categories(session, admin_id: int) -> dict[str, int]:
 def seed_locations(session, admin_id: int) -> dict[str, int]:
     """Create test locations. Returns name -> id mapping."""
     locations = [
-        ("Kühlschrank", LocationType.CHILLED, "Hauptkühlschrank in der Küche"),
-        ("Gefriertruhe", LocationType.FROZEN, "Große Truhe im Keller"),
-        ("Gefrierfach", LocationType.FROZEN, "Kleines Fach im Kühlschrank"),
-        ("Vorratsschrank", LocationType.AMBIENT, "Trockenlager in der Küche"),
-        ("Keller", LocationType.AMBIENT, "Kühler Kellerraum"),
+        ("Kühlschrank", LocationType.CHILLED, "Hauptkühlschrank in der Küche", "#00BCD4"),
+        ("Gefriertruhe", LocationType.FROZEN, "Große Truhe im Keller", "#1565C0"),
+        ("Gefrierfach", LocationType.FROZEN, "Kleines Fach im Kühlschrank", "#42A5F5"),
+        ("Vorratsschrank", LocationType.AMBIENT, "Trockenlager in der Küche", "#FF8F00"),
+        ("Keller", LocationType.AMBIENT, "Kühler Kellerraum", "#6D4C41"),
     ]
 
     result = {}
-    for name, loc_type, desc in locations:
+    for name, loc_type, desc, color in locations:
         existing = session.exec(select(Location).where(Location.name == name)).first()
         if existing:
+            # Update color if location exists but has no color
+            if not existing.color:
+                existing.color = color
+                session.add(existing)
             result[name] = existing.id
             continue
 
@@ -102,6 +106,7 @@ def seed_locations(session, admin_id: int) -> dict[str, int]:
             name=name,
             location_type=loc_type,
             description=desc,
+            color=color,
             created_by=admin_id,
         )
         session.add(loc)
