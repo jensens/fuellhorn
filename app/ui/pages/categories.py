@@ -49,14 +49,72 @@ def categories_page() -> None:
         _render_categories_list()
 
 
+def _move_category_up(category_id: int) -> None:
+    """Move a category up in the sort order."""
+    with next(get_session()) as session:
+        categories = category_service.get_all_categories(session)
+        category_ids = [c.id for c in categories if c.id is not None]
+
+        # Find current position
+        try:
+            current_index = category_ids.index(category_id)
+        except ValueError:
+            return
+
+        # Can't move up if already first
+        if current_index == 0:
+            return
+
+        # Swap with previous
+        category_ids[current_index], category_ids[current_index - 1] = (
+            category_ids[current_index - 1],
+            category_ids[current_index],
+        )
+
+        # Update order in database
+        category_service.update_category_order(session, category_ids)
+
+    # Refresh page
+    ui.navigate.to("/admin/categories")
+
+
+def _move_category_down(category_id: int) -> None:
+    """Move a category down in the sort order."""
+    with next(get_session()) as session:
+        categories = category_service.get_all_categories(session)
+        category_ids = [c.id for c in categories if c.id is not None]
+
+        # Find current position
+        try:
+            current_index = category_ids.index(category_id)
+        except ValueError:
+            return
+
+        # Can't move down if already last
+        if current_index >= len(category_ids) - 1:
+            return
+
+        # Swap with next
+        category_ids[current_index], category_ids[current_index + 1] = (
+            category_ids[current_index + 1],
+            category_ids[current_index],
+        )
+
+        # Update order in database
+        category_service.update_category_order(session, category_ids)
+
+    # Refresh page
+    ui.navigate.to("/admin/categories")
+
+
 def _render_categories_list() -> None:
-    """Render the list of categories."""
+    """Render the list of categories with reorder buttons."""
     with next(get_session()) as session:
         categories = category_service.get_all_categories(session)
 
         if categories:
-            # Display categories as cards
-            for category in categories:
+            # Display categories as cards with reorder buttons
+            for index, category in enumerate(categories):
                 # Get shelf lives for this category
                 cat_id = category.id
                 if cat_id is None:
@@ -64,9 +122,28 @@ def _render_categories_list() -> None:
                 shelf_lives = shelf_life_service.get_all_shelf_lives_for_category(session, cat_id)
                 shelf_life_dict = {sl.storage_type: sl for sl in shelf_lives}
 
+                is_first = index == 0
+                is_last = index == len(categories) - 1
+
                 with ui.card().classes("w-full mb-2"):
                     with ui.row().classes("w-full items-center justify-between"):
-                        with ui.row().classes("items-center gap-3"):
+                        # Left side: reorder buttons + color + name
+                        with ui.row().classes("items-center gap-2"):
+                            # Reorder buttons (up/down)
+                            with ui.column().classes("gap-0"):
+                                ui.button(
+                                    icon="keyboard_arrow_up",
+                                    on_click=lambda cid=cat_id: _move_category_up(cid),
+                                ).props(f"flat round dense size=xs {'disabled' if is_first else ''}").classes(
+                                    "h-5"
+                                ).mark(f"move-up-{category.name}")
+                                ui.button(
+                                    icon="keyboard_arrow_down",
+                                    on_click=lambda cid=cat_id: _move_category_down(cid),
+                                ).props(f"flat round dense size=xs {'disabled' if is_last else ''}").classes(
+                                    "h-5"
+                                ).mark(f"move-down-{category.name}")
+
                             # Color indicator
                             if category.color:
                                 ui.element("div").classes("w-6 h-6 rounded-full").style(
