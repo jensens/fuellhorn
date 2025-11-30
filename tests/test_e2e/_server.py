@@ -40,7 +40,10 @@ def main() -> None:
     import app.api.health as _api_health  # noqa: F401
     from app.database import create_db_and_tables
     from app.database import get_session
+    from app.models import Category
+    from app.models import Location
     from app.models import User
+    from app.models.location import LocationType
     import app.ui.pages as _pages  # noqa: F401
     from nicegui import ui
 
@@ -57,6 +60,39 @@ def main() -> None:
         )
         admin.set_password("admin")  # Einfaches Passwort für E2E Tests
         session.add(admin)
+        session.commit()
+        session.refresh(admin)
+
+        # Kategorien für Wizard-Tests erstellen
+        categories = [
+            Category(name="Gemüse", color="#4CAF50", created_by=admin.id),
+            Category(name="Obst", color="#FF9800", created_by=admin.id),
+            Category(name="Fleisch", color="#F44336", created_by=admin.id),
+        ]
+        session.add_all(categories)
+
+        # Lagerorte für Wizard-Tests erstellen (alle LocationTypes abdecken)
+        locations = [
+            Location(
+                name="Kühlschrank",
+                location_type=LocationType.CHILLED,
+                color="#87CEEB",
+                created_by=admin.id,
+            ),
+            Location(
+                name="Tiefkühler",
+                location_type=LocationType.FROZEN,
+                color="#6495ED",
+                created_by=admin.id,
+            ),
+            Location(
+                name="Speisekammer",
+                location_type=LocationType.AMBIENT,
+                color="#DAA520",
+                created_by=admin.id,
+            ),
+        ]
+        session.add_all(locations)
         session.commit()
 
     # Server starten
