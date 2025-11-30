@@ -36,7 +36,26 @@ def dashboard() -> None:
             if expiring_items:
                 # Display expiring items as cards
                 for item in expiring_items[:5]:  # Show max 5 items
-                    days_until_expiry = (item.best_before_date - date.today()).days
+                    # Get proper expiry info via service (fixes #149)
+                    # For MHD items: returns (None, None, best_before_date)
+                    # For shelf-life items: returns (optimal_date, max_date, None)
+                    optimal_date, max_date, mhd_date = item_service.get_item_expiry_info(
+                        session,
+                        item.id,  # type: ignore[arg-type]
+                    )
+
+                    # Determine effective expiry date for status calculation
+                    if mhd_date is not None:
+                        # MHD items: use best_before_date directly
+                        effective_expiry = mhd_date
+                    elif optimal_date is not None:
+                        # Shelf-life items: use optimal date for status
+                        effective_expiry = optimal_date
+                    else:
+                        # Fallback to item's best_before_date
+                        effective_expiry = item.best_before_date
+
+                    days_until_expiry = (effective_expiry - date.today()).days
 
                     # Status color
                     if days_until_expiry <= 0:
