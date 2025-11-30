@@ -158,9 +158,7 @@ def update_item(
     return item
 
 
-def mark_item_consumed(
-    session: Session, id: int, user_id: int | None = None
-) -> Item:
+def mark_item_consumed(session: Session, id: int, user_id: int | None = None) -> Item:
     """Mark item as consumed.
 
     Creates a Withdrawal entry to track when and by whom the item was consumed.
@@ -210,9 +208,7 @@ def delete_item(session: Session, id: int) -> None:
 
     # Delete associated withdrawal entries first
     # (SQLite doesn't enforce CASCADE by default)
-    withdrawals = session.exec(
-        select(Withdrawal).where(Withdrawal.item_id == id)
-    ).all()
+    withdrawals = session.exec(select(Withdrawal).where(Withdrawal.item_id == id)).all()
     for withdrawal in withdrawals:
         session.delete(withdrawal)
 
@@ -421,8 +417,6 @@ def get_withdrawal_history(session: Session, item_id: int) -> list[Withdrawal]:
     """
     return list(
         session.exec(
-            select(Withdrawal)
-            .where(Withdrawal.item_id == item_id)
-            .order_by(Withdrawal.withdrawn_at)  # type: ignore[arg-type]
+            select(Withdrawal).where(Withdrawal.item_id == item_id).order_by(Withdrawal.withdrawn_at)  # type: ignore[arg-type]
         ).all()
     )
