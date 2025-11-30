@@ -84,6 +84,7 @@ def create_item_card(
     item: Item,
     session: Session,
     on_click: Callable[[Item], None] | None = None,
+    on_consume: Callable[[Item], None] | None = None,
 ) -> None:
     """Create a mobile-optimized item card component.
 
@@ -95,6 +96,7 @@ def create_item_card(
         item: The item to display
         session: Database session for fetching related data
         on_click: Optional callback when card is clicked
+        on_consume: Optional callback for consume button (shows button if provided)
     """
     # Get related data
     try:
@@ -141,16 +143,24 @@ def create_item_card(
                         for cat_name in category_names:
                             ui.badge(cat_name).props("outline color=primary")
 
-            # Right column: Expiry info
-            if optimal_date is not None and max_date is not None:
-                # Shelf-life items: show two dates
-                _render_expiry_shelf_life(optimal_date, max_date, status, status_color)
-            elif best_before_date is not None:
-                # MHD items: show single date
-                _render_expiry_mhd(best_before_date, status_color)
-            else:
-                # Fallback: use item.best_before_date
-                _render_expiry_fallback(item.best_before_date, status_color)
+            # Right column: Expiry info + consume button
+            with ui.column().classes("items-end gap-1"):
+                if optimal_date is not None and max_date is not None:
+                    # Shelf-life items: show two dates
+                    _render_expiry_shelf_life(optimal_date, max_date, status, status_color)
+                elif best_before_date is not None:
+                    # MHD items: show single date
+                    _render_expiry_mhd(best_before_date, status_color)
+                else:
+                    # Fallback: use item.best_before_date
+                    _render_expiry_fallback(item.best_before_date, status_color)
+
+                # Consume button (if callback provided)
+                if on_consume:
+                    ui.button(
+                        "Entn.",
+                        on_click=lambda i=item: on_consume(i),
+                    ).props(f"color={status_color} size=sm").classes("mt-1")
 
         # Click handler if provided
         if on_click:

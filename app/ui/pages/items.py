@@ -17,6 +17,7 @@ from ...services import category_service
 from ...services import item_service
 from ...services import location_service
 from ..components import create_bottom_nav
+from ..components import create_bottom_sheet
 from ..components import create_item_card
 from ..components import create_mobile_page_container
 from nicegui import app
@@ -251,9 +252,9 @@ def items_page() -> None:
                     # No items at all - show empty state with CTA
                     _render_empty_state()
                 elif filtered_items:
-                    # Display filtered items as cards
+                    # Display filtered items as cards with consume button
                     for item in filtered_items:
-                        create_item_card(item, session)
+                        create_item_card(item, session, on_consume=handle_consume)
                 else:
                     # Filters yielded no results
                     _render_no_filter_results()
@@ -318,6 +319,19 @@ def items_page() -> None:
             selected_categories.add(cat_id)
         update_chip_style(cat_id)
         refresh_items()
+
+    def handle_consume(item: Item) -> None:
+        """Handle consume button click - opens bottom sheet with item details."""
+        with next(get_session()) as session:
+            location = location_service.get_location(session, item.location_id)
+            sheet = create_bottom_sheet(
+                item=item,
+                location=location,
+                on_close=refresh_items,
+                on_withdraw=lambda _: refresh_items(),
+                on_consume=lambda _: refresh_items(),
+            )
+            sheet.open()
 
     # Header with toggle
     with ui.row().classes("w-full items-center justify-between p-4 bg-white border-b border-gray-200"):
