@@ -112,6 +112,9 @@ def get_user_by_remember_token(session: Session, token: str) -> User | None:
 def authenticate_user(session: Session, username: str, password: str) -> User:
     """Authentifiziert einen User mit Username und Passwort.
 
+    Hinweis: Brute-Force-Schutz (Rate Limiting) wird auf IP-Ebene
+    im Login-Handler implementiert, nicht hier.
+
     Args:
         session: Datenbank-Session
         username: Username
@@ -122,7 +125,7 @@ def authenticate_user(session: Session, username: str, password: str) -> User:
 
     Raises:
         AuthenticationError: Wenn Username oder Passwort falsch sind,
-                            oder wenn der User deaktiviert ist
+                            oder wenn der User deaktiviert/gesperrt ist
     """
     user = get_user_by_username(session, username)
 
@@ -132,28 +135,14 @@ def authenticate_user(session: Session, username: str, password: str) -> User:
     if not user.is_active:
         raise AuthenticationError("Benutzer ist deaktiviert")
 
-    # Account-Lockout prüfen
+    # Manuelles Admin-Lock prüfen (separate von IP-basiertem Rate Limiting)
     if user.locked_until is not None and user.locked_until > datetime.now():
         raise AuthenticationError(f"Account ist gesperrt bis {user.locked_until.strftime('%H:%M Uhr')}")
 
     if not user.check_password(password):
-        # Failed login attempt tracken
-        user.failed_login_attempts += 1
-
-        # Nach 5 fehlgeschlagenen Versuchen: 15 Minuten sperren
-        if user.failed_login_attempts >= 5:
-            from datetime import timedelta
-
-            user.locked_until = datetime.now() + timedelta(minutes=15)
-
-        session.add(user)
-        session.commit()
-
         raise AuthenticationError("Username oder Passwort falsch")
 
-    # Login erfolgreich - Reset failed attempts
-    user.failed_login_attempts = 0
-    user.locked_until = None
+    # Login erfolgreich
     user.last_login = datetime.now()
     session.add(user)
     session.commit()
