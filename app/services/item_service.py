@@ -21,7 +21,7 @@ def create_item(
     item_type: ItemType,
     location_id: int,
     created_by: int,
-    category_id: int,
+    category_id: int | None = None,
     freeze_date: date | None = None,
     notes: str | None = None,
 ) -> Item:
@@ -39,18 +39,13 @@ def create_item(
         item_type: Type of item
         location_id: Location ID
         created_by: User ID who created the item
-        category_id: Category ID (required)
+        category_id: Category ID (optional for MHD items, required for frozen/preserved)
         freeze_date: Date when item was frozen (required for FROZEN items)
         notes: Optional notes
 
     Returns:
         Created item
-
-    Raises:
-        ValueError: If category_id is not provided
     """
-    if category_id is None:
-        raise ValueError("category_id is required")
 
     # Store best_before_date as expiry_date temporarily
     # (Model still requires expiry_date, will be removed in #125)
