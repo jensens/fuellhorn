@@ -1,5 +1,4 @@
 {
-  "enableAllProjectMcpServers": true,
   "permissions": {
     "allow": [
       "Bash(gh label create:*)",
@@ -7,9 +6,12 @@
       "Bash(gh pr checks:*)",
       "Bash(git commit:*)",
       "Bash(git push:*)",
-      "Bash(sqlite3:*)"
+      "Bash(sqlite3:*)",
+      "Bash(gh run view:*)",
+      "Bash(./scripts/dev-server.sh:*)"
     ],
     "deny": [],
     "ask": []
-  }
+  },
+  "enableAllProjectMcpServers": true
 }

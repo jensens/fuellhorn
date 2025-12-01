@@ -1,0 +1,1194 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Füllhorn Icon Set – Solarpunk Outline</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --fern: #4A7C59;
+            --cream: #FAF7F0;
+            --oat: #F5F0E6;
+            --stone: #A39E93;
+            --charcoal: #3D3D3D;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Nunito', system-ui, sans-serif;
+            background: var(--cream);
+            color: var(--charcoal);
+            padding: 40px 20px;
+        }
+        
+        h1 {
+            text-align: center;
+            color: var(--fern);
+            margin-bottom: 8px;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: var(--stone);
+            margin-bottom: 40px;
+        }
+        
+        .section {
+            max-width: 1200px;
+            margin: 0 auto 40px;
+        }
+        
+        .section h2 {
+            color: var(--fern);
+            font-size: 1.25rem;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--oat);
+        }
+        
+        .icon-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 16px;
+        }
+        
+        .icon-card {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(74, 124, 89, 0.1);
+            transition: all 0.2s ease;
+        }
+        
+        .icon-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(74, 124, 89, 0.15);
+        }
+        
+        .icon-card svg {
+            width: 32px;
+            height: 32px;
+            color: var(--fern);
+            margin-bottom: 8px;
+        }
+        
+        .icon-card .name {
+            font-size: 0.75rem;
+            color: var(--stone);
+            word-break: break-word;
+        }
+        
+        .icon-card .id {
+            font-size: 0.65rem;
+            color: #ccc;
+            font-family: monospace;
+            margin-top: 4px;
+        }
+        
+        /* Preview sizes */
+        .size-preview {
+            display: flex;
+            gap: 24px;
+            align-items: center;
+            justify-content: center;
+            margin: 40px 0;
+            padding: 24px;
+            background: white;
+            border-radius: 12px;
+        }
+        
+        .size-preview .icon-size {
+            text-align: center;
+        }
+        
+        .size-preview .icon-size svg {
+            color: var(--fern);
+        }
+        
+        .size-preview .icon-size span {
+            display: block;
+            font-size: 0.7rem;
+            color: var(--stone);
+            margin-top: 4px;
+        }
+        
+        /* Color variants */
+        .color-preview {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        
+        .color-preview .variant {
+            padding: 16px 24px;
+            border-radius: 12px;
+            text-align: center;
+        }
+        
+        .color-preview .variant svg {
+            width: 32px;
+            height: 32px;
+        }
+        
+        .color-preview .variant span {
+            display: block;
+            font-size: 0.7rem;
+            margin-top: 8px;
+        }
+        
+        .variant.light {
+            background: white;
+        }
+        
+        .variant.dark {
+            background: #2D3B2D;
+        }
+        
+        .variant.dark svg {
+            color: white;
+        }
+        
+        .variant.dark span {
+            color: white;
+        }
+        
+        .stats {
+            text-align: center;
+            padding: 20px;
+            background: var(--oat);
+            border-radius: 12px;
+            margin-bottom: 40px;
+        }
+        
+        .stats strong {
+            color: var(--fern);
+            font-size: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <h1>🌿 Füllhorn Icon Set</h1>
+    <p class="subtitle">Solarpunk Outline Style – 67 Icons</p>
+    
+    <div class="stats">
+        <strong>67</strong> Icons<br>
+        <span style="color: var(--stone);">24×24 viewBox · stroke-width: 1.5 · currentColor</span>
+    </div>
+    
+    <!-- SIZE PREVIEW -->
+    <div class="section">
+        <h2>Größen-Vorschau</h2>
+        <div class="size-preview">
+            <div class="icon-size">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2C8 2 4 6 4 10c0 5 8 12 8 12s8-7 8-12c0-4-4-8-8-8z"/>
+                    <circle cx="12" cy="10" r="2"/>
+                </svg>
+                <span>16px</span>
+            </div>
+            <div class="icon-size">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2C8 2 4 6 4 10c0 5 8 12 8 12s8-7 8-12c0-4-4-8-8-8z"/>
+                    <circle cx="12" cy="10" r="2"/>
+                </svg>
+                <span>24px</span>
+            </div>
+            <div class="icon-size">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2C8 2 4 6 4 10c0 5 8 12 8 12s8-7 8-12c0-4-4-8-8-8z"/>
+                    <circle cx="12" cy="10" r="2"/>
+                </svg>
+                <span>32px</span>
+            </div>
+            <div class="icon-size">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2C8 2 4 6 4 10c0 5 8 12 8 12s8-7 8-12c0-4-4-8-8-8z"/>
+                    <circle cx="12" cy="10" r="2"/>
+                </svg>
+                <span>48px</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- COLOR VARIANTS -->
+    <div class="section">
+        <h2>Farbvarianten</h2>
+        <div class="color-preview">
+            <div class="variant light">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#4A7C59" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2C8 2 4 6 4 10c0 5 8 12 8 12s8-7 8-12c0-4-4-8-8-8z"/>
+                    <circle cx="12" cy="10" r="2"/>
+                </svg>
+                <span style="color: var(--stone);">Fern auf Hell</span>
+            </div>
+            <div class="variant dark">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2C8 2 4 6 4 10c0 5 8 12 8 12s8-7 8-12c0-4-4-8-8-8z"/>
+                    <circle cx="12" cy="10" r="2"/>
+                </svg>
+                <span>Weiß auf Dunkel</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- ==================== KATEGORIEN ==================== -->
+    <div class="section">
+        <h2>Kategorien – Gemüse & Obst (4)</h2>
+        <div class="icon-grid">
+            
+            <!-- Gemüse -->
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M17 8c2 0 3 1.5 3 4s-1.5 5-5 7c-2 1-4.5 1-6.5 0-3.5-2-5-4-5-7s1-4 3-4"/>
+                    <path d="M12 4c0-1 .5-2 2-2 1 0 2 .5 2 2"/>
+                    <path d="M12 4v5"/>
+                    <path d="M9 12c0 2 1.5 4 3 5"/>
+                </svg>
+                <div class="name">Gemüse</div>
+                <div class="id">vegetable</div>
+            </div>
+            
+            <!-- Kräuter -->
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 22V8"/>
+                    <path d="M8 8c-2-2-2-5 0-6 2.5 0 4 2 4 4"/>
+                    <path d="M16 8c2-2 2-5 0-6-2.5 0-4 2-4 4"/>
+                    <path d="M6 14c-2 0-3-2-2-4 2 0 4 1 5 3"/>
+                    <path d="M18 14c2 0 3-2 2-4-2 0-4 1-5 3"/>
+                    <path d="M9 19c-1 1-3 1-4-1 1-2 3-2 5-1"/>
+                    <path d="M15 19c1 1 3 1 4-1-1-2-3-2-5-1"/>
+                </svg>
+                <div class="name">Kräuter</div>
+                <div class="id">herbs</div>
+            </div>
+            
+            <!-- Obst -->
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="14" r="7"/>
+                    <path d="M12 7V5"/>
+                    <path d="M14 3c0 2-2 3-2 5"/>
+                    <path d="M9 5c2 0 3.5 1 4 2"/>
+                </svg>
+                <div class="name">Obst</div>
+                <div class="id">fruit</div>
+            </div>
+            
+            <!-- Beeren -->
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="8" cy="16" r="4"/>
+                    <circle cx="16" cy="16" r="4"/>
+                    <circle cx="12" cy="10" r="4"/>
+                    <path d="M12 6V3"/>
+                    <path d="M10 4l2-1 2 1"/>
+                </svg>
+                <div class="name">Beeren</div>
+                <div class="id">berries</div>
+            </div>
+            
+        </div>
+    </div>
+    
+    <div class="section">
+        <h2>Kategorien – Fleisch & Fisch (8)</h2>
+        <div class="icon-grid">
+            
+            <!-- Fleisch allgemein -->
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <ellipse cx="12" cy="12" rx="8" ry="5"/>
+                    <path d="M4 12c0 2 1 4 3 5"/>
+                    <path d="M20 12c0 2-1 4-3 5"/>
+                    <ellipse cx="12" cy="12" rx="4" ry="2"/>
+                </svg>
+                <div class="name">Fleisch</div>
+                <div class="id">meat</div>
+            </div>
+            
+            <!-- Rindfleisch -->
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 12c0-4 3-7 8-7s8 3 8 7c0 3-2 6-5 7l-1 2h-4l-1-2c-3-1-5-4-5-7z"/>
+                    <path d="M9 10v2"/>
+                    <path d="M15 10v2"/>
+                    <path d="M3 8c-1-2 0-4 2-5"/>
+                    <path d="M21 8c1-2 0-4-2-5"/>
+                </svg>
+                <div class="name">Rindfleisch</div>
+                <div class="id">beef</div>
+            </div>
+            
+            <!-- Schweinefleisch -->
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <ellipse cx="12" cy="13" rx="7" ry="5"/>
+                    <circle cx="12" cy="13" r="2"/>
+                    <path d="M8 11c-2-1-4 0-4 2"/>
+                    <path d="M16 11c2-1 4 0 4 2"/>
+                    <path d="M9 17l-1 3"/>
+                    <path d="M15 17l1 3"/>
+                    <ellipse cx="12" cy="8" rx="3" ry="2"/>
+                </svg>
+                <div class="name">Schwein</div>
+                <div class="id">pork</div>
+            </div>
+            
+            <!-- Geflügel -->
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 4c-3 0-6 3-6 6 0 2 1 4 2 5l-2 6h12l-2-6c1-1 2-3 2-5 0-3-3-6-6-6z"/>
+                    <path d="M10 9h4"/>
+                    <path d="M12 4c0-1 1-2 2-2"/>
+                    <path d="M8 21l1-3"/>
+                    <path d="M16 21l-1-3"/>
+                </svg>
+                <div class="name">Geflügel</div>
+                <div class="id">poultry</div>
+            </div>
+            
+            <!-- Hackfleisch -->
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="4" y="8" width="16" height="10" rx="2"/>
+                    <path d="M7 11h2"/>
+                    <path d="M11 11h2"/>
+                    <path d="M15 11h2"/>
+                    <path d="M8 14h2"/>
+                    <path d="M12 14h2"/>
+                    <path d="M4 8l2-3h12l2 3"/>
+                </svg>
+                <div class="name">Hackfleisch</div>
+                <div class="id">ground-meat</div>
+            </div>
+            
+            <!-- Fisch -->
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M2 12c3-4 7-5 11-5 3 0 6 1 8 3l-3 2 3 2c-2 2-5 3-8 3-4 0-8-1-11-5z"/>
+                    <circle cx="17" cy="12" r="1"/>
+                    <path d="M10 10c-1 1-1 3 0 4"/>
+                </svg>
+                <div class="name">Fisch</div>
+                <div class="id">fish</div>
+            </div>
+            
+            <!-- Fisch fett (Lachs) -->
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M2 12c3-4 7-5 11-5 3 0 6 1 8 3l-3 2 3 2c-2 2-5 3-8 3-4 0-8-1-11-5z"/>
+                    <circle cx="17" cy="12" r="1"/>
+                    <path d="M6 10l3 2-3 2"/>
+                    <path d="M10 10l3 2-3 2"/>
+                </svg>
+                <div class="name">Fettfisch</div>
+                <div class="id">fish-fatty</div>
+            </div>
+            
+            <!-- Wurst -->
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M6 8c-2 0-3 2-3 4s1 4 3 4h12c2 0 3-2 3-4s-1-4-3-4"/>
+                    <path d="M6 8V6"/>
+                    <path d="M18 8V6"/>
+                    <path d="M6 16v2"/>
+                    <path d="M18 16v2"/>
+                    <path d="M10 8v8"/>
+                    <path d="M14 8v8"/>
+                </svg>
+                <div class="name">Wurst</div>
+                <div class="id">sausage</div>
+            </div>
+            
+        </div>
+    </div>
+    
+    <div class="section">
+        <h2>Kategorien – Backwaren (3)</h2>
+        <div class="icon-grid">
+            
+            <!-- Backwaren -->
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M5 18c0 1 1 2 3 2h8c2 0 3-1 3-2"/>
+                    <path d="M5 18c-2-3-1-7 2-9 2-1 4-2 5-4 1 2 3 3 5 4 3 2 4 6 2 9"/>
+                    <path d="M9 13c0 2 1.5 4 3 5"/>
+                </svg>
+                <div class="name">Backwaren</div>
+                <div class="id">bakery</div>
+            </div>
+            
+            <!-- Brot -->
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M5 12c0-3 3-5 7-5s7 2 7 5v5c0 1-1 2-2 2H7c-1 0-2-1-2-2v-5z"/>
+                    <path d="M5 12c-1 0-2-1-2-2 0-2 2-3 4-3"/>
+                    <path d="M19 12c1 0 2-1 2-2 0-2-2-3-4-3"/>
+                    <path d="M9 12v4"/>
+                    <path d="M12 12v4"/>
+                    <path d="M15 12v4"/>
+                </svg>
+                <div class="name">Brot</div>
+                <div class="id">bread</div>
+            </div>
+            
+            <!-- Kuchen -->
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 16v2c0 1 1 2 2 2h12c1 0 2-1 2-2v-2"/>
+                    <path d="M4 16c0-2 1-3 2-4h12c1 1 2 2 2 4"/>
+                    <path d="M6 12V9c0-1 1-2 2-2h8c1 0 2 1 2 2v3"/>
+                    <path d="M12 7V4"/>
+                    <path d="M10 4h4"/>
+                    <circle cx="12" cy="3" r="1"/>
+                </svg>
+                <div class="name">Kuchen</div>
+                <div class="id">cake</div>
+            </div>
+            
+        </div>
+    </div>
+    
+    <div class="section">
+        <h2>Kategorien – Milchprodukte (4)</h2>
+        <div class="icon-grid">
+            
+            <!-- Milchprodukte -->
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M8 2h8l1 4H7l1-4z"/>
+                    <path d="M7 6v14c0 1 1 2 2 2h6c1 0 2-1 2-2V6"/>
+                    <path d="M7 10h10"/>
+                    <path d="M10 14h4"/>
+                </svg>
+                <div class="name">Milch</div>
+                <div class="id">milk</div>
+            </div>
+            
+            <!-- Butter -->
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="8" width="18" height="10" rx="2"/>
+                    <path d="M3 12h18"/>
+                    <path d="M7 8V6c0-1 1-2 2-2h6c1 0 2 1 2 2v2"/>
+                </svg>
+                <div class="name">Butter</div>
+                <div class="id">butter</div>
+            </div>
+            
+            <!-- Käse -->
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 17l8-13 8 13H4z"/>
+                    <circle cx="9" cy="14" r="1.5"/>
+                    <circle cx="14" cy="12" r="1"/>
+                    <circle cx="12" cy="16" r="1"/>
+                </svg>
+                <div class="name">Käse</div>
+                <div class="id">cheese</div>
+            </div>
+            
+            <!-- Joghurt -->
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M7 4h10l1 3H6l1-3z"/>
+                    <path d="M6 7l1 13c0 1 1 2 2 2h6c1 0 2-1 2-2l1-13"/>
+                    <path d="M6 11h12"/>
+                    <path d="M10 15c1 1 3 1 4 0"/>
+                </svg>
+                <div class="name">Joghurt</div>
+                <div class="id">yogurt</div>
+            </div>
+            
+        </div>
+    </div>
+    
+    <div class="section">
+        <h2>Kategorien – Fertiggerichte (2)</h2>
+        <div class="icon-grid">
+            
+            <!-- Fertiggerichte -->
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="4" y="6" width="16" height="12" rx="2"/>
+                    <path d="M4 10h16"/>
+                    <path d="M8 14h3"/>
+                    <path d="M8 17h5"/>
+                    <path d="M15 13v5"/>
+                    <path d="M17 13v5"/>
+                </svg>
+                <div class="name">Fertiggericht</div>
+                <div class="id">ready-meal</div>
+            </div>
+            
+            <!-- Suppen -->
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M5 12h14c0 5-3 8-7 8s-7-3-7-8z"/>
+                    <path d="M3 12h18"/>
+                    <path d="M8 8c0-1 .5-2 1-2"/>
+                    <path d="M12 7c0-1.5.5-3 1-3"/>
+                    <path d="M16 8c0-1 .5-2 1-2"/>
+                </svg>
+                <div class="name">Suppe</div>
+                <div class="id">soup</div>
+            </div>
+            
+        </div>
+    </div>
+    
+    <div class="section">
+        <h2>Kategorien – Eingemachtes süß (5)</h2>
+        <div class="icon-grid">
+            
+            <!-- Marmelade -->
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M6 8c0-2 2-4 6-4s6 2 6 4"/>
+                    <path d="M6 8v10c0 2 2 3 6 3s6-1 6-3V8"/>
+                    <path d="M6 12c0 1 2 2 6 2s6-1 6-2"/>
+                    <rect x="8" y="3" width="8" height="2" rx="1"/>
+                </svg>
+                <div class="name">Marmelade</div>
+                <div class="id">jam</div>
+            </div>
+            
+            <!-- Gelee -->
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M6 8c0-2 2-4 6-4s6 2 6 4"/>
+                    <path d="M6 8v10c0 2 2 3 6 3s6-1 6-3V8"/>
+                    <rect x="8" y="3" width="8" height="2" rx="1"/>
+                    <path d="M9 14l2-2 2 2 2-2"/>
+                </svg>
+                <div class="name">Gelee</div>
+                <div class="id">jelly</div>
+            </div>
+            
+            <!-- Kompott -->
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M6 8c0-2 2-4 6-4s6 2 6 4"/>
+                    <path d="M6 8v10c0 2 2 3 6 3s6-1 6-3V8"/>
+                    <rect x="8" y="3" width="8" height="2" rx="1"/>
+                    <circle cx="10" cy="13" r="1.5"/>
+                    <circle cx="14" cy="15" r="1.5"/>
+                </svg>
+                <div class="name">Kompott</div>
+                <div class="id">compote</div>
+            </div>
+            
+            <!-- Obstmus -->
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M6 8c0-2 2-4 6-4s6 2 6 4"/>
+                    <path d="M6 8v10c0 2 2 3 6 3s6-1 6-3V8"/>
+                    <rect x="8" y="3" width="8" height="2" rx="1"/>
+                    <path d="M9 13c2 2 4 2 6 0"/>
+                    <path d="M9 16c2 1 4 1 6 0"/>
+                </svg>
+                <div class="name">Obstmus</div>
+                <div class="id">puree</div>
+            </div>
+            
+            <!-- Sirup -->
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 3h6v3H9z"/>
+                    <path d="M8 6h8l1 2H7l1-2z"/>
+                    <path d="M7 8l1 12c0 1 1 2 2 2h4c1 0 2-1 2-2l1-12"/>
+                    <path d="M10 12v6"/>
+                    <path d="M14 11v6"/>
+                </svg>
+                <div class="name">Sirup</div>
+                <div class="id">syrup</div>
+            </div>
+            
+        </div>
+    </div>
+    
+    <div class="section">
+        <h2>Kategorien – Eingemachtes herzhaft (8)</h2>
+        <div class="icon-grid">
+            
+            <!-- Eingelegtes -->
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M6 8c0-2 2-4 6-4s6 2 6 4"/>
+                    <path d="M6 8v10c0 2 2 3 6 3s6-1 6-3V8"/>
+                    <rect x="8" y="3" width="8" height="2" rx="1"/>
+                    <path d="M10 11v6"/>
+                    <path d="M14 12v5"/>
+                    <path d="M12 10v7"/>
+                </svg>
+                <div class="name">Eingelegtes</div>
+                <div class="id">pickles</div>
+            </div>
+            
+            <!-- Chutney -->
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M7 9c0-2 2-4 5-4s5 2 5 4"/>
+                    <path d="M7 9v9c0 2 2 3 5 3s5-1 5-3V9"/>
+                    <rect x="9" y="4" width="6" height="2" rx="1"/>
+                    <circle cx="10" cy="13" r="1"/>
+                    <circle cx="14" cy="14" r="1"/>
+                    <circle cx="12" cy="17" r="1"/>
+                </svg>
+                <div class="name">Chutney</div>
+                <div class="id">chutney</div>
+            </div>
+            
+            <!-- Relish -->
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M7 9c0-2 2-4 5-4s5 2 5 4"/>
+                    <path d="M7 9v9c0 2 2 3 5 3s5-1 5-3V9"/>
+                    <rect x="9" y="4" width="6" height="2" rx="1"/>
+                    <path d="M9 12h6"/>
+                    <path d="M9 15h6"/>
+                    <path d="M9 18h6"/>
+                </svg>
+                <div class="name">Relish</div>
+                <div class="id">relish</div>
+            </div>
+            
+            <!-- Tomatensoße -->
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M6 10c0-2 2-4 6-4s6 2 6 4"/>
+                    <path d="M6 10v8c0 2 2 3 6 3s6-1 6-3v-8"/>
+                    <path d="M9 5c0-1 1-2 3-2s3 1 3 2"/>
+                    <circle cx="10" cy="14" r="1"/>
+                    <circle cx="14" cy="13" r="1"/>
+                    <circle cx="12" cy="17" r="1"/>
+                </svg>
+                <div class="name">Tomatensoße</div>
+                <div class="id">tomato-sauce</div>
+            </div>
+            
+            <!-- Ketchup -->
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M10 6h4l2 4v10c0 1-1 2-2 2h-4c-1 0-2-1-2-2V10l2-4z"/>
+                    <path d="M10 6V4c0-1 1-2 2-2s2 1 2 2v2"/>
+                    <path d="M8 12h8"/>
+                    <path d="M10 16h4"/>
+                </svg>
+                <div class="name">Ketchup</div>
+                <div class="id">ketchup</div>
+            </div>
+            
+            <!-- Pesto -->
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M7 10c0-2 2-3 5-3s5 1 5 3"/>
+                    <path d="M7 10v8c0 2 2 3 5 3s5-1 5-3v-8"/>
+                    <rect x="9" y="6" width="6" height="2" rx="1"/>
+                    <path d="M10 14c1-1 3-1 4 0"/>
+                    <path d="M9 17l6-2"/>
+                </svg>
+                <div class="name">Pesto</div>
+                <div class="id">pesto</div>
+            </div>
+            
+            <!-- Senf -->
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 8h6l1 3v9c0 1-1 2-2 2h-4c-1 0-2-1-2-2v-9l1-3z"/>
+                    <path d="M9 8c0-2 1-4 3-4s3 2 3 4"/>
+                    <path d="M8 13h8"/>
+                    <circle cx="12" cy="17" r="2"/>
+                </svg>
+                <div class="name">Senf</div>
+                <div class="id">mustard</div>
+            </div>
+            
+            <!-- Sauerkraut -->
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M6 8c0-2 2-4 6-4s6 2 6 4"/>
+                    <path d="M6 8v10c0 2 2 3 6 3s6-1 6-3V8"/>
+                    <rect x="8" y="3" width="8" height="2" rx="1"/>
+                    <path d="M8 12c2 1 4 0 5 1s3 0 5-1"/>
+                    <path d="M8 15c2 1 4 0 5 1s3 0 5-1"/>
+                </svg>
+                <div class="name">Sauerkraut</div>
+                <div class="id">sauerkraut</div>
+            </div>
+            
+        </div>
+    </div>
+    
+    <!-- ==================== LAGERORTE ==================== -->
+    <div class="section">
+        <h2>Lagerorte (5)</h2>
+        <div class="icon-grid">
+            
+            <!-- Kühlschrank -->
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="5" y="2" width="14" height="20" rx="2"/>
+                    <path d="M5 10h14"/>
+                    <path d="M9 6h2"/>
+                    <path d="M9 14h2"/>
+                </svg>
+                <div class="name">Kühlschrank</div>
+                <div class="id">fridge</div>
+            </div>
+            
+            <!-- Gefriertruhe -->
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="6" width="18" height="14" rx="2"/>
+                    <path d="M3 10h18"/>
+                    <path d="M8 14v4"/>
+                    <path d="M12 13v5"/>
+                    <path d="M16 14v4"/>
+                    <path d="M12 3v3"/>
+                    <path d="M10 4l2-1 2 1"/>
+                </svg>
+                <div class="name">Gefriertruhe</div>
+                <div class="id">freezer-chest</div>
+            </div>
+            
+            <!-- Gefrierfach -->
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="5" y="2" width="14" height="20" rx="2"/>
+                    <path d="M5 8h14"/>
+                    <path d="M9 5h2"/>
+                    <path d="M8 12v2"/>
+                    <path d="M12 11v3"/>
+                    <path d="M16 12v2"/>
+                </svg>
+                <div class="name">Gefrierfach</div>
+                <div class="id">freezer</div>
+            </div>
+            
+            <!-- Keller -->
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 22V10l8-6 8 6v12"/>
+                    <path d="M4 22h16"/>
+                    <path d="M4 14h16"/>
+                    <path d="M9 22v-8h6v8"/>
+                    <path d="M4 18h5"/>
+                    <path d="M15 18h5"/>
+                </svg>
+                <div class="name">Keller</div>
+                <div class="id">cellar</div>
+            </div>
+            
+            <!-- Vorratsschrank -->
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="4" y="3" width="16" height="18" rx="1"/>
+                    <path d="M4 9h16"/>
+                    <path d="M4 15h16"/>
+                    <path d="M12 3v18"/>
+                    <circle cx="10" cy="6" r="0.5"/>
+                    <circle cx="14" cy="6" r="0.5"/>
+                    <circle cx="10" cy="12" r="0.5"/>
+                    <circle cx="14" cy="12" r="0.5"/>
+                    <circle cx="10" cy="18" r="0.5"/>
+                    <circle cx="14" cy="18" r="0.5"/>
+                </svg>
+                <div class="name">Vorratsschrank</div>
+                <div class="id">pantry</div>
+            </div>
+            
+        </div>
+    </div>
+    
+    <!-- ==================== NAVIGATION ==================== -->
+    <div class="section">
+        <h2>Navigation (3)</h2>
+        <div class="icon-grid">
+            
+            <!-- Home -->
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 12l9-9 9 9"/>
+                    <path d="M5 10v10c0 1 1 2 2 2h10c1 0 2-1 2-2V10"/>
+                    <path d="M9 22v-6c0-1 1-2 2-2h2c1 0 2 1 2 2v6"/>
+                </svg>
+                <div class="name">Übersicht</div>
+                <div class="id">home</div>
+            </div>
+            
+            <!-- Add -->
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="9"/>
+                    <path d="M12 8v8"/>
+                    <path d="M8 12h8"/>
+                </svg>
+                <div class="name">Erfassen</div>
+                <div class="id">add</div>
+            </div>
+            
+            <!-- Inventory -->
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="5" width="18" height="16" rx="2"/>
+                    <path d="M3 9h18"/>
+                    <path d="M8 9V5"/>
+                    <path d="M16 9V5"/>
+                    <path d="M7 13h4"/>
+                    <path d="M7 17h6"/>
+                </svg>
+                <div class="name">Vorrat</div>
+                <div class="id">inventory</div>
+            </div>
+            
+        </div>
+    </div>
+    
+    <!-- ==================== ACTIONS ==================== -->
+    <div class="section">
+        <h2>Actions (9)</h2>
+        <div class="icon-grid">
+            
+            <!-- Entnehmen -->
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M5 12h14"/>
+                    <path d="M12 5l7 7-7 7"/>
+                    <rect x="2" y="8" width="6" height="8" rx="1"/>
+                </svg>
+                <div class="name">Entnehmen</div>
+                <div class="id">take-out</div>
+            </div>
+            
+            <!-- Bearbeiten -->
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M17 3l4 4-11 11H6v-4L17 3z"/>
+                    <path d="M14 6l4 4"/>
+                </svg>
+                <div class="name">Bearbeiten</div>
+                <div class="id">edit</div>
+            </div>
+            
+            <!-- Löschen -->
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 6h16"/>
+                    <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+                    <path d="M6 6l1 14c0 1 1 2 2 2h6c1 0 2-1 2-2l1-14"/>
+                    <path d="M10 11v6"/>
+                    <path d="M14 11v6"/>
+                </svg>
+                <div class="name">Löschen</div>
+                <div class="id">delete</div>
+            </div>
+            
+            <!-- Speichern -->
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M5 3h11l5 5v11c0 1-1 2-2 2H5c-1 0-2-1-2-2V5c0-1 1-2 2-2z"/>
+                    <path d="M7 3v5h8V3"/>
+                    <path d="M7 21v-7h10v7"/>
+                </svg>
+                <div class="name">Speichern</div>
+                <div class="id">save</div>
+            </div>
+            
+            <!-- Zurück -->
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 12H5"/>
+                    <path d="M12 5l-7 7 7 7"/>
+                </svg>
+                <div class="name">Zurück</div>
+                <div class="id">back</div>
+            </div>
+            
+            <!-- Schließen -->
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M6 6l12 12"/>
+                    <path d="M6 18L18 6"/>
+                </svg>
+                <div class="name">Schließen</div>
+                <div class="id">close</div>
+            </div>
+            
+            <!-- Suchen -->
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="10" cy="10" r="6"/>
+                    <path d="M20 20l-5-5"/>
+                </svg>
+                <div class="name">Suchen</div>
+                <div class="id">search</div>
+            </div>
+            
+            <!-- Filter -->
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 6h18"/>
+                    <path d="M6 12h12"/>
+                    <path d="M9 18h6"/>
+                </svg>
+                <div class="name">Filter</div>
+                <div class="id">filter</div>
+            </div>
+            
+            <!-- Sortieren -->
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M7 4v16"/>
+                    <path d="M4 8l3-4 3 4"/>
+                    <path d="M17 20V4"/>
+                    <path d="M14 16l3 4 3-4"/>
+                </svg>
+                <div class="name">Sortieren</div>
+                <div class="id">sort</div>
+            </div>
+            
+        </div>
+    </div>
+    
+    <!-- ==================== ITEM TYPES ==================== -->
+    <div class="section">
+        <h2>Item Types (5)</h2>
+        <div class="icon-grid">
+            
+            <!-- Frisch -->
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 3c-4 0-7 4-7 8 0 3 2 6 5 7v3h4v-3c3-1 5-4 5-7 0-4-3-8-7-8z"/>
+                    <path d="M12 3c0 3-2 5-4 6"/>
+                    <path d="M12 3c0 3 2 5 4 6"/>
+                </svg>
+                <div class="name">Frisch</div>
+                <div class="id">fresh</div>
+            </div>
+            
+            <!-- TK-Ware -->
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2v20"/>
+                    <path d="M2 12h20"/>
+                    <path d="M5 5l14 14"/>
+                    <path d="M19 5L5 19"/>
+                    <circle cx="12" cy="12" r="3"/>
+                </svg>
+                <div class="name">TK-Ware</div>
+                <div class="id">frozen-bought</div>
+            </div>
+            
+            <!-- Eingefroren -->
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2v20"/>
+                    <path d="M2 12h20"/>
+                    <path d="M5 5l14 14"/>
+                    <path d="M19 5L5 19"/>
+                    <path d="M9 9l6 6"/>
+                    <path d="M15 9l-6 6"/>
+                </svg>
+                <div class="name">Eingefr.</div>
+                <div class="id">frozen-home</div>
+            </div>
+            
+            <!-- Selbst eingefroren -->
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2v20"/>
+                    <path d="M2 12h20"/>
+                    <path d="M5 5l14 14"/>
+                    <path d="M19 5L5 19"/>
+                    <path d="M15 7l-6 4"/>
+                    <path d="M9 7l6 4"/>
+                    <path d="M15 17l-6-4"/>
+                    <path d="M9 17l6-4"/>
+                </svg>
+                <div class="name">Selbst eingefr.</div>
+                <div class="id">frozen-self</div>
+            </div>
+            
+            <!-- Eingemacht -->
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M6 8c0-2 2-4 6-4s6 2 6 4"/>
+                    <path d="M6 8v10c0 2 2 3 6 3s6-1 6-3V8"/>
+                    <rect x="8" y="3" width="8" height="2" rx="1"/>
+                    <path d="M9 12h6"/>
+                    <path d="M12 9v6"/>
+                </svg>
+                <div class="name">Eingemacht</div>
+                <div class="id">preserved</div>
+            </div>
+            
+        </div>
+    </div>
+    
+    <!-- ==================== STATUS ==================== -->
+    <div class="section">
+        <h2>Status (6)</h2>
+        <div class="icon-grid">
+            
+            <!-- Kalender -->
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="4" width="18" height="18" rx="2"/>
+                    <path d="M3 10h18"/>
+                    <path d="M8 2v4"/>
+                    <path d="M16 2v4"/>
+                    <path d="M7 14h2"/>
+                    <path d="M11 14h2"/>
+                    <path d="M15 14h2"/>
+                    <path d="M7 18h2"/>
+                    <path d="M11 18h2"/>
+                </svg>
+                <div class="name">Haltbarkeit</div>
+                <div class="id">calendar</div>
+            </div>
+            
+            <!-- Warnung -->
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 3L2 21h20L12 3z"/>
+                    <path d="M12 10v4"/>
+                    <circle cx="12" cy="17" r="0.5"/>
+                </svg>
+                <div class="name">Warnung</div>
+                <div class="id">warning</div>
+            </div>
+            
+            <!-- OK -->
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="9"/>
+                    <path d="M8 12l3 3 5-6"/>
+                </svg>
+                <div class="name">OK</div>
+                <div class="id">ok</div>
+            </div>
+            
+            <!-- Kritisch -->
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="9"/>
+                    <path d="M12 7v5"/>
+                    <circle cx="12" cy="16" r="0.5"/>
+                </svg>
+                <div class="name">Kritisch</div>
+                <div class="id">critical</div>
+            </div>
+            
+            <!-- Abgelaufen -->
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="9"/>
+                    <path d="M8 8l8 8"/>
+                    <path d="M16 8l-8 8"/>
+                </svg>
+                <div class="name">Abgelaufen</div>
+                <div class="id">expired</div>
+            </div>
+            
+            <!-- Info -->
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="9"/>
+                    <path d="M12 11v5"/>
+                    <circle cx="12" cy="8" r="0.5"/>
+                </svg>
+                <div class="name">Info</div>
+                <div class="id">info</div>
+            </div>
+            
+        </div>
+    </div>
+    
+    <!-- ==================== MISC ==================== -->
+    <div class="section">
+        <h2>Sonstige (5)</h2>
+        <div class="icon-grid">
+            
+            <!-- Einstellungen -->
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="3"/>
+                    <path d="M12 2v3"/>
+                    <path d="M12 19v3"/>
+                    <path d="M2 12h3"/>
+                    <path d="M19 12h3"/>
+                    <path d="M4.9 4.9l2.1 2.1"/>
+                    <path d="M17 17l2.1 2.1"/>
+                    <path d="M4.9 19.1l2.1-2.1"/>
+                    <path d="M17 7l2.1-2.1"/>
+                </svg>
+                <div class="name">Einstellungen</div>
+                <div class="id">settings</div>
+            </div>
+            
+            <!-- Benutzer -->
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="8" r="4"/>
+                    <path d="M4 20c0-4 3.5-7 8-7s8 3 8 7"/>
+                </svg>
+                <div class="name">Benutzer</div>
+                <div class="id">user</div>
+            </div>
+            
+            <!-- Logout -->
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 21H5c-1 0-2-1-2-2V5c0-1 1-2 2-2h4"/>
+                    <path d="M16 17l5-5-5-5"/>
+                    <path d="M21 12H9"/>
+                </svg>
+                <div class="name">Logout</div>
+                <div class="id">logout</div>
+            </div>
+            
+            <!-- Menge -->
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 20l6-6"/>
+                    <circle cx="6" cy="18" r="2"/>
+                    <path d="M12 2v8l4-4"/>
+                    <path d="M12 2l-4 4"/>
+                    <path d="M20 12h-8l4-4"/>
+                    <path d="M20 12l-4 4"/>
+                </svg>
+                <div class="name">Menge</div>
+                <div class="id">scale</div>
+            </div>
+            
+            <!-- Notizen -->
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 3H6c-1 0-2 1-2 2v14c0 1 1 2 2 2h12c1 0 2-1 2-2V9l-6-6z"/>
+                    <path d="M14 3v6h6"/>
+                    <path d="M8 13h8"/>
+                    <path d="M8 17h5"/>
+                </svg>
+                <div class="name">Notizen</div>
+                <div class="id">notes</div>
+            </div>
+            
+        </div>
+    </div>
+    
+    <div class="stats" style="margin-top: 40px;">
+        <p style="color: var(--stone);">
+            <strong>Format:</strong> SVG, 24×24 viewBox<br>
+            <strong>Stroke:</strong> currentColor, 1.5px, round caps/joins<br>
+            <strong>Kompatibel:</strong> CSS color inheritance, alle Größen
+        </p>
+    </div>
+    
+</body>
+</html>
