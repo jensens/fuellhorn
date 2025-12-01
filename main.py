@@ -4,11 +4,17 @@ import os
 
 from app.config import get_storage_secret
 from app.database import create_db_and_tables
-from nicegui import app
+from nicegui import app, ui
 
 # Serve static files (CSS, icons, etc.)
-# Theme CSS is available at /static/css/solarpunk-theme.css
 app.add_static_files("/static", "app/static")
+
+
+# Load Solarpunk theme CSS for each client connection
+@app.on_connect
+def _load_theme() -> None:
+    ui.add_head_html('<link rel="stylesheet" href="/static/css/solarpunk-theme.css">')
+
 
 # Import pages to register routes
 import app.ui.pages as _pages  # noqa: F401, E402
