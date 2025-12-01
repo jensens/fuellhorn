@@ -44,8 +44,8 @@ async def test_items_page_shows_multiple_items(user: TestUser) -> None:
 async def test_items_page_shows_expiry_status(user: TestUser) -> None:
     """Test that expiry status is visible on items."""
     await user.open("/test-items-page-with-items")
-    # Should see expiry info
-    await user.should_see("Ablauf:")
+    # Should see expiry info (MHD for frozen items)
+    await user.should_see("MHD")
 
 
 async def test_items_page_excludes_consumed_items(user: TestUser) -> None:

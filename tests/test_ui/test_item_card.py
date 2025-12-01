@@ -1,13 +1,16 @@
 """UI Tests for Item Card component.
 
-Tests both shelf-life items (two dates) and MHD items (single date).
+Tests the unified item card with:
+- Item-Type Badge (Frisch, TK gekauft, Eingefr., etc.)
+- Expiry display: "MHD" + date or "Ablauf" + relative time
+- Status colors based on days until expiry
 """
 
 from nicegui.testing import User as TestUser
 
 
 # =============================================================================
-# Shelf-Life Item Tests (two dates: optimal + max)
+# Shelf-Life Item Tests (frozen items show "MHD" + date)
 # =============================================================================
 
 
@@ -29,16 +32,16 @@ async def test_item_card_shows_location(user: TestUser) -> None:
     await user.should_see("Tiefkühltruhe")
 
 
-async def test_item_card_shows_optimal_date_for_shelf_life(user: TestUser) -> None:
-    """Test that shelf-life item card displays optimal date."""
+async def test_item_card_shows_mhd_label_for_frozen(user: TestUser) -> None:
+    """Test that frozen item card displays MHD label."""
     await user.open("/test-item-card")
-    await user.should_see("Optimal bis:")
+    await user.should_see("MHD")
 
 
-async def test_item_card_shows_max_date_for_shelf_life(user: TestUser) -> None:
-    """Test that shelf-life item card displays max date."""
+async def test_item_card_shows_item_type_badge(user: TestUser) -> None:
+    """Test that item card displays item type badge."""
     await user.open("/test-item-card")
-    await user.should_see("Max. bis:")
+    await user.should_see("Selbst eingefr.")
 
 
 async def test_item_card_shows_categories(user: TestUser) -> None:
@@ -76,43 +79,49 @@ async def test_item_card_is_touch_friendly(user: TestUser) -> None:
 
 
 # =============================================================================
-# MHD Item Tests (single date)
+# Fresh Item Tests (MHD label or Ablauf with relative time)
 # =============================================================================
 
 
-async def test_item_card_mhd_shows_product_name(user: TestUser) -> None:
-    """Test that MHD item card displays the product name."""
+async def test_item_card_fresh_shows_product_name(user: TestUser) -> None:
+    """Test that fresh item card displays the product name."""
     await user.open("/test-item-card-mhd")
     await user.should_see("Joghurt")
 
 
-async def test_item_card_mhd_shows_mhd_label(user: TestUser) -> None:
-    """Test that MHD item card shows MHD label instead of optimal/max."""
+async def test_item_card_fresh_shows_mhd_label(user: TestUser) -> None:
+    """Test that fresh item card shows MHD label when > 7 days."""
     await user.open("/test-item-card-mhd")
-    await user.should_see("MHD:")
+    await user.should_see("MHD")
 
 
-async def test_item_card_mhd_shows_quantity_and_unit(user: TestUser) -> None:
-    """Test that MHD item card displays quantity with unit."""
+async def test_item_card_fresh_shows_quantity_and_unit(user: TestUser) -> None:
+    """Test that fresh item card displays quantity with unit."""
     await user.open("/test-item-card-mhd")
     await user.should_see("150 g")
 
 
-async def test_item_card_mhd_shows_location(user: TestUser) -> None:
-    """Test that MHD item card displays the location name."""
+async def test_item_card_fresh_shows_location(user: TestUser) -> None:
+    """Test that fresh item card displays the location name."""
     await user.open("/test-item-card-mhd")
     await user.should_see("Kühlschrank")
 
 
-async def test_item_card_mhd_critical_status(user: TestUser) -> None:
-    """Test that MHD item shows critical status when < 3 days to MHD."""
+async def test_item_card_fresh_shows_item_type_badge(user: TestUser) -> None:
+    """Test that fresh item card shows 'Frisch' badge."""
+    await user.open("/test-item-card-mhd")
+    await user.should_see("Frisch")
+
+
+async def test_item_card_fresh_critical_shows_ablauf(user: TestUser) -> None:
+    """Test that fresh item shows 'Ablauf' when < 3 days to expiry."""
     await user.open("/test-item-card-mhd-critical")
     await user.should_see("Joghurt")
-    await user.should_see("MHD:")
+    await user.should_see("Ablauf")
 
 
-async def test_item_card_mhd_warning_status(user: TestUser) -> None:
-    """Test that MHD item shows warning status when 3-7 days to MHD."""
+async def test_item_card_fresh_warning_shows_ablauf(user: TestUser) -> None:
+    """Test that fresh item shows 'Ablauf' when 3-7 days to expiry."""
     await user.open("/test-item-card-mhd-warning")
     await user.should_see("Joghurt")
-    await user.should_see("MHD:")
+    await user.should_see("Ablauf")

@@ -1,36 +1,50 @@
-"""Item Card Component - Mobile-First Card for displaying inventory items.
+"""Unified Item Card Component - Mobile-First Card for displaying inventory items.
 
-Based on requirements from Issue #7 and #109:
-- Card shows product name, quantity, unit
-- Card shows location and categories
-- Card shows expiry date(s) with status indicator:
-  - For shelf-life items: Optimal + Max dates
-  - For MHD items: Single best-before date
-- Mobile-optimized (touch-friendly, min 48px height)
+Based on Issue #173: Einheitliches Card-Design für Dashboard & Vorrat.
+Same component used in both Dashboard and Vorrat views.
+
+Card Structure (3-line version):
+┌─────────────────────────────────────────────────────────┐
+│ ▌ Name                                MHD      [ENTN.] │
+│ ▌ Menge · [Item-Type Badge]           Morgen           │
+│ ▌ 📍 Lagerort   [Kategorie]                            │
+└─────────────────────────────────────────────────────────┘
+  ↑ Status-Border (4px, colored by expiry status)
 """
 
 from ...models.item import Item
+from ...models.item import ItemType
 from ...services import item_service
 from ...services import location_service
-from ...services.expiry_calculator import get_expiry_status_minmax
 from datetime import date
 from nicegui import ui
 from sqlmodel import Session
 from typing import Callable
 
 
-# Status color mapping (Tailwind classes without prefix)
+# Status color mapping (Tailwind classes)
 STATUS_COLORS = {
     "critical": "red-500",
     "warning": "orange-500",
     "ok": "green-500",
 }
 
-# Status icons
-STATUS_ICONS = {
-    "critical": "🔴",
-    "warning": "🟡",
-    "ok": "🟢",
+# Item-Type Badge short labels (German)
+ITEM_TYPE_SHORT_LABELS = {
+    ItemType.PURCHASED_FRESH: "Frisch",
+    ItemType.PURCHASED_FROZEN: "TK gekauft",
+    ItemType.PURCHASED_THEN_FROZEN: "Eingefr.",
+    ItemType.HOMEMADE_FROZEN: "Selbst eingefr.",
+    ItemType.HOMEMADE_PRESERVED: "Eingemacht",
+}
+
+# Item-Type Badge colors (softer colors for badges)
+ITEM_TYPE_COLORS = {
+    ItemType.PURCHASED_FRESH: "#7CB342",  # Leaf green
+    ItemType.PURCHASED_FROZEN: "#5BA3C6",  # Info blue
+    ItemType.PURCHASED_THEN_FROZEN: "#5BA3C6",  # Info blue
+    ItemType.HOMEMADE_FROZEN: "#C17F59",  # Terracotta
+    ItemType.HOMEMADE_PRESERVED: "#C17F59",  # Terracotta
 }
 
 
@@ -39,45 +53,62 @@ def get_status_color(status: str) -> str:
     return STATUS_COLORS.get(status, "gray-500")
 
 
-def get_status_icon(status: str) -> str:
-    """Get status icon emoji."""
-    return STATUS_ICONS.get(status, "⚪")
+def _get_contrast_text_color(hex_color: str) -> str:
+    """Return 'white' or dark color based on background color contrast."""
+    hex_color = hex_color.lstrip("#")
+    if len(hex_color) != 6:
+        return "#374151"
+
+    r = int(hex_color[0:2], 16) / 255
+    g = int(hex_color[2:4], 16) / 255
+    b = int(hex_color[4:6], 16) / 255
+
+    def adjust(c: float) -> float:
+        return c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4
+
+    luminance = 0.2126 * adjust(r) + 0.7152 * adjust(g) + 0.0722 * adjust(b)
+    return "white" if luminance < 0.5 else "#1F2937"
 
 
-def _render_expiry_shelf_life(
-    optimal_date: date,
-    max_date: date,
-    status: str,
-    status_color: str,
-) -> None:
-    """Render expiry info for shelf-life items (two dates)."""
-    with ui.column().classes("items-end gap-0"):
-        # Optimal date
-        ui.label("Optimal bis:").classes("text-xs text-gray-500")
-        ui.label(optimal_date.strftime("%d.%m.%Y")).classes(f"text-sm font-medium text-{status_color}")
-        # Max date
-        ui.label("Max. bis:").classes("text-xs text-gray-500 mt-1")
-        ui.label(max_date.strftime("%d.%m.%Y")).classes("text-xs text-gray-600")
+def _format_expiry_display(expiry_date: date, item_type: ItemType) -> tuple[str, str]:
+    """Calculate expiry display label and value.
+
+    Returns:
+        Tuple of (label, value) for display.
+        Label is "MHD" or "Ablauf".
+        Value is either date format or relative text.
+    """
+    today = date.today()
+    days_until = (expiry_date - today).days
+
+    # Frozen items always show date format
+    is_frozen = item_type in (
+        ItemType.PURCHASED_FROZEN,
+        ItemType.PURCHASED_THEN_FROZEN,
+        ItemType.HOMEMADE_FROZEN,
+    )
+
+    if is_frozen or days_until > 7:
+        # Show date format: TT.MM.JJ
+        return "MHD", expiry_date.strftime("%d.%m.%y")
+    elif days_until < 0:
+        return "Ablauf", "Abgelaufen"
+    elif days_until == 0:
+        return "Ablauf", "Heute"
+    elif days_until == 1:
+        return "Ablauf", "Morgen"
+    else:
+        return "Ablauf", f"in {days_until} Tagen"
 
 
-def _render_expiry_mhd(
-    best_before_date: date,
-    status_color: str,
-) -> None:
-    """Render expiry info for MHD items (single date)."""
-    with ui.column().classes("items-end gap-0"):
-        ui.label("MHD:").classes("text-xs text-gray-500")
-        ui.label(best_before_date.strftime("%d.%m.%Y")).classes(f"text-sm font-medium text-{status_color}")
-
-
-def _render_expiry_fallback(
-    expiry_date: date,
-    status_color: str,
-) -> None:
-    """Render expiry info fallback (when no shelf life config)."""
-    with ui.column().classes("items-end gap-0"):
-        ui.label("Ablauf:").classes("text-xs text-gray-500")
-        ui.label(expiry_date.strftime("%d.%m.%Y")).classes(f"text-sm font-medium text-{status_color}")
+def _calculate_status(days_until: int) -> str:
+    """Calculate status based on days until expiry."""
+    if days_until < 3:
+        return "critical"
+    elif days_until <= 7:
+        return "warning"
+    else:
+        return "ok"
 
 
 def create_item_card(
@@ -86,11 +117,10 @@ def create_item_card(
     on_click: Callable[[Item], None] | None = None,
     on_consume: Callable[[Item], None] | None = None,
 ) -> None:
-    """Create a mobile-optimized item card component.
+    """Create a unified, mobile-optimized item card component.
 
-    Displays expiry info based on item type:
-    - Shelf-life items (frozen/preserved): Shows optimal + max dates
-    - MHD items (purchased fresh/frozen): Shows single best-before date
+    Used in both Dashboard and Vorrat views. Dashboard provides on_consume
+    callback to show the consume button.
 
     Args:
         item: The item to display
@@ -102,66 +132,98 @@ def create_item_card(
     try:
         location = location_service.get_location(session, item.location_id)
         location_name = location.name
+        location_color = location.color
     except ValueError:
         location_name = f"Lagerort {item.location_id}"
+        location_color = None
 
     category = item_service.get_item_category(session, item.id)  # type: ignore[arg-type]
-    category_names = [category.name] if category else []
 
     # Get expiry info (optimal_date, max_date, best_before_date)
-    optimal_date, max_date, best_before_date = item_service.get_item_expiry_info(
+    optimal_date, max_date, mhd_date = item_service.get_item_expiry_info(
         session,
         item.id,  # type: ignore[arg-type]
     )
 
-    # Calculate status based on the dates
-    status = get_expiry_status_minmax(optimal_date, max_date, best_before_date)
+    # Determine effective expiry date
+    if mhd_date is not None:
+        effective_expiry = mhd_date
+    elif optimal_date is not None:
+        effective_expiry = optimal_date
+    else:
+        effective_expiry = item.best_before_date
+
+    # Calculate status
+    days_until = (effective_expiry - date.today()).days
+    status = _calculate_status(days_until)
     status_color = get_status_color(status)
-    status_icon = get_status_icon(status)
+
+    # Get expiry display
+    expiry_label, expiry_value = _format_expiry_display(effective_expiry, item.item_type)
+
+    # Format quantity (remove decimal if whole number)
+    qty = int(item.quantity) if item.quantity == int(item.quantity) else item.quantity
+
+    # Get item type badge info
+    type_label = ITEM_TYPE_SHORT_LABELS.get(item.item_type, str(item.item_type.value))
+    type_color = ITEM_TYPE_COLORS.get(item.item_type, "#6B7280")
 
     # Create card with status border
     card_classes = f"w-full mb-2 border-l-4 border-{status_color}"
 
-    with ui.card().classes(card_classes).style("min-height: 48px"):
-        # Main content row
-        with ui.row().classes("w-full items-start justify-between"):
-            # Left column: Item details
-            with ui.column().classes("flex-1 gap-1"):
-                # Product name with status icon
-                ui.label(f"{status_icon} {item.product_name}").classes("font-medium text-base")
+    with ui.card().classes(card_classes).style("min-height: 48px; padding: 12px;"):
+        # Main grid: left content + right column (date + button)
+        with ui.row().classes("w-full items-start justify-between gap-2"):
+            # Left column: 3 lines of item info
+            with ui.column().classes("flex-1 gap-0.5 min-w-0"):
+                # Line 1: Product name (truncate on overflow)
+                ui.label(item.product_name).classes("font-semibold text-base truncate w-full").style(
+                    "line-height: 1.3;"
+                )
 
-                # Quantity and unit (format without decimal places if whole number)
-                qty = int(item.quantity) if item.quantity == int(item.quantity) else item.quantity
-                ui.label(f"{qty} {item.unit}").classes("text-sm text-gray-700")
+                # Line 2: Quantity + Item-Type Badge
+                with ui.row().classes("items-center gap-2"):
+                    ui.label(f"{qty} {item.unit}").classes("text-sm text-gray-700")
 
-                # Location
-                ui.label(f"📍 {location_name}").classes("text-xs text-gray-600")
+                    # Item-Type Badge with 15% opacity background, text in full color
+                    ui.label(type_label).classes("text-xs px-2 py-0.5 rounded").style(
+                        f"background-color: {type_color}26; color: {type_color}; font-weight: 500;"
+                    )
 
-                # Categories (if any)
-                if category_names:
-                    with ui.row().classes("gap-1 flex-wrap"):
-                        for cat_name in category_names:
-                            ui.badge(cat_name).props("outline color=primary")
+                # Line 3: Location + Category
+                with ui.row().classes("items-center gap-2 flex-wrap"):
+                    # Location with icon
+                    location_style = ""
+                    if location_color:
+                        location_style = f"color: {location_color};"
+                    ui.label(f"📍 {location_name}").classes("text-xs text-gray-600").style(location_style)
 
-            # Right column: Expiry info + consume button
-            with ui.column().classes("items-end gap-1"):
-                if optimal_date is not None and max_date is not None:
-                    # Shelf-life items: show two dates
-                    _render_expiry_shelf_life(optimal_date, max_date, status, status_color)
-                elif best_before_date is not None:
-                    # MHD items: show single date
-                    _render_expiry_mhd(best_before_date, status_color)
-                else:
-                    # Fallback: use item.best_before_date
-                    _render_expiry_fallback(item.best_before_date, status_color)
+                    # Category badge (if exists)
+                    if category:
+                        cat_color = category.color or "#6B7280"
+                        cat_text_color = _get_contrast_text_color(cat_color)
+                        ui.label(category.name).classes("text-xs px-2 py-0.5 rounded").style(
+                            f"background-color: {cat_color}; color: {cat_text_color}; font-weight: 500;"
+                        )
+
+            # Right column: Expiry info + optional button
+            with ui.column().classes("items-end gap-1 shrink-0"):
+                # Expiry label (small, muted)
+                ui.label(expiry_label).classes("text-xs text-gray-400")
+
+                # Expiry value (bold, colored by status)
+                ui.label(expiry_value).classes(f"text-sm font-bold text-{status_color}")
 
                 # Consume button (if callback provided)
                 if on_consume:
                     ui.button(
                         "Entn.",
                         on_click=lambda i=item: on_consume(i),
-                    ).props(f"color={status_color} size=sm").classes("mt-1")
+                    ).props("size=sm dense").classes("mt-1").style(
+                        f"background-color: var(--q-{status_color.replace('-', '')}, #ef4444);"
+                    )
 
-        # Click handler if provided
+        # Click handler for entire card (if provided)
         if on_click:
+            # Make card clickable
             ui.card().on("click", lambda: on_click(item))
