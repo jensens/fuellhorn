@@ -26,11 +26,13 @@ DEFAULT_LOCATION_TIME_WINDOW = 60
 @require_permissions(Permission.CONFIG_MANAGE)
 def settings() -> None:
     """Settings page with admin navigation and system defaults (Admin only)."""
-    # Header
-    with ui.row().classes("w-full items-center justify-between p-4 bg-white border-b border-gray-200"):
+    # Header (Solarpunk theme)
+    with ui.row().classes("sp-page-header w-full items-center justify-between"):
         with ui.row().classes("items-center gap-2"):
-            ui.button(icon="arrow_back", on_click=lambda: ui.navigate.to("/dashboard")).props("flat round color=gray-7")
-            ui.label("Einstellungen").classes("text-h5 font-bold text-primary")
+            ui.button(icon="arrow_back", on_click=lambda: ui.navigate.to("/dashboard")).classes("sp-back-btn").props(
+                "flat round"
+            )
+            ui.label("Einstellungen").classes("sp-page-title")
 
     # Main content with bottom nav spacing
     with create_mobile_page_container():
@@ -48,10 +50,10 @@ def settings() -> None:
 
 
 def _render_admin_navigation() -> None:
-    """Render navigation links to admin areas."""
-    ui.label("Verwaltung").classes("text-h6 font-semibold mb-3")
+    """Render navigation links to admin areas (Solarpunk theme)."""
+    ui.label("Verwaltung").classes("text-h6 font-semibold mb-3 text-fern")
 
-    # Navigation cards
+    # Navigation cards (Solarpunk theme)
     nav_items = [
         {"icon": "category", "label": "Kategorien", "route": "/admin/categories"},
         {"icon": "place", "label": "Lagerorte", "route": "/admin/locations"},
@@ -61,14 +63,14 @@ def _render_admin_navigation() -> None:
     for item in nav_items:
         with (
             ui.card()
-            .classes("w-full mb-2 cursor-pointer hover:bg-gray-50")
+            .classes("sp-dashboard-card w-full mb-2 cursor-pointer")
             .on("click", lambda r=item["route"]: ui.navigate.to(r))
         ):
             with ui.row().classes("w-full items-center justify-between p-2"):
                 with ui.row().classes("items-center gap-3"):
-                    ui.icon(item["icon"]).classes("text-primary")
-                    ui.label(item["label"]).classes("font-medium")
-                ui.icon("chevron_right").classes("text-gray-400")
+                    ui.icon(item["icon"]).classes("text-fern")
+                    ui.label(item["label"]).classes("font-medium text-charcoal")
+                ui.icon("chevron_right").classes("text-stone")
 
 
 def _get_system_defaults() -> dict:
@@ -88,21 +90,21 @@ def _get_system_defaults() -> dict:
 
 
 def _render_system_defaults_section() -> None:
-    """Render the System Default settings section (Issue #85).
+    """Render the System Default settings section (Issue #85) (Solarpunk theme).
 
     These are fallback values for users who haven't set their own preferences.
     """
     current_user = get_current_user(require_auth=True)
     defaults = _get_system_defaults()
 
-    ui.label("System-Standardwerte").classes("text-h6 font-semibold mb-3")
+    ui.label("System-Standardwerte").classes("text-h6 font-semibold mb-3 text-fern")
 
-    with ui.card().classes("w-full p-4"):
-        ui.label("Zeitfenster für automatische Vorbelegung").classes("text-body2 text-gray-600 mb-2")
+    with ui.card().classes("sp-dashboard-card w-full p-4"):
+        ui.label("Zeitfenster für automatische Vorbelegung").classes("text-body2 text-charcoal mb-2")
         ui.label(
             "Diese Werte gelten als Fallback für Benutzer, die keine eigenen Einstellungen vorgenommen haben. "
             "Jeder Benutzer kann seine persönlichen Zeitfenster in seinem Profil anpassen."
-        ).classes("text-caption text-gray-500 mb-4")
+        ).classes("text-caption text-stone mb-4")
 
         # Item type time window
         item_type_input = ui.number(
@@ -151,4 +153,4 @@ def _render_system_defaults_section() -> None:
 
             ui.notify("System-Standardwerte gespeichert", type="positive")
 
-        ui.button("Speichern", icon="save", on_click=save_system_defaults).props("color=primary")
+        ui.button("Speichern", icon="save", on_click=save_system_defaults).classes("sp-btn-primary")

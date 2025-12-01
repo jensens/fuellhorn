@@ -20,26 +20,28 @@ from nicegui import ui
 @require_permissions(Permission.USER_MANAGE)
 def users_page() -> None:
     """Users management page (Mobile-First)."""
-    # Header
-    with ui.row().classes("w-full items-center justify-between p-4 bg-white border-b border-gray-200"):
+    # Header (Solarpunk theme)
+    with ui.row().classes("sp-page-header w-full items-center justify-between"):
         with ui.row().classes("items-center gap-2"):
-            ui.button(icon="arrow_back", on_click=lambda: ui.navigate.to("/admin/settings")).props(
-                "flat round color=gray-7"
-            )
-            ui.label("Benutzer").classes("text-h5 font-bold text-primary")
+            ui.button(icon="arrow_back", on_click=lambda: ui.navigate.to("/admin/settings")).classes(
+                "sp-back-btn"
+            ).props("flat round")
+            ui.label("Benutzer").classes("sp-page-title")
 
     # Main content with bottom nav spacing
     with create_mobile_page_container():
-        # Section header with "Neuer Benutzer" button
+        # Section header with "Neuer Benutzer" button (Solarpunk theme)
         with ui.row().classes("w-full items-center justify-between mb-3"):
-            ui.label("Benutzer verwalten").classes("text-h6 font-semibold")
-            ui.button("Neuer Benutzer", icon="add", on_click=_open_create_dialog).props("color=primary size=sm")
+            ui.label("Benutzer verwalten").classes("text-h6 font-semibold text-fern")
+            ui.button("Neuer Benutzer", icon="add", on_click=_open_create_dialog).classes("sp-btn-primary").props(
+                "size=sm"
+            )
 
         _render_users_list()
 
 
 def _render_users_list() -> None:
-    """Render the list of users."""
+    """Render the list of users (Solarpunk theme)."""
     # Get current user to prevent self-deletion
     current_user = get_current_user(require_auth=True)
     current_user_id = current_user.id if current_user else None
@@ -48,34 +50,35 @@ def _render_users_list() -> None:
         users = auth_service.list_users(session)
 
         if users:
-            # Display users as cards
+            # Display users as admin list items (Solarpunk theme)
             for user in users:
-                with ui.card().classes("w-full mb-2"):
-                    with ui.row().classes("w-full items-center justify-between"):
-                        # Left side: username and role
-                        with ui.column().classes("gap-0"):
-                            ui.label(user.username).classes("font-medium text-lg")
-                            # Role badge
-                            role_display = "Admin" if user.role == "admin" else "Benutzer"
-                            role_color = "primary" if user.role == "admin" else "grey"
-                            ui.badge(role_display, color=role_color).classes("mt-1")
+                with ui.element("div").classes("sp-admin-list-item w-full"):
+                    # Left side: username and role
+                    with ui.column().classes("gap-0 flex-1"):
+                        ui.label(user.username).classes("font-medium text-lg text-charcoal")
+                        # Role badge
+                        role_display = "Admin" if user.role == "admin" else "Benutzer"
+                        role_color = "primary" if user.role == "admin" else "grey"
+                        ui.badge(role_display, color=role_color).classes("mt-1")
 
-                        # Right side: status, last login, and edit button
-                        with ui.row().classes("items-center gap-2"):
-                            with ui.column().classes("gap-0 items-end"):
-                                # Status indicator
-                                status_text = "Aktiv" if user.is_active else "Inaktiv"
-                                status_color = "text-green-600" if user.is_active else "text-red-600"
-                                ui.label(status_text).classes(f"text-sm font-medium {status_color}")
+                    # Right side: status, last login, and edit button
+                    with ui.row().classes("items-center gap-2"):
+                        with ui.column().classes("gap-0 items-end"):
+                            # Status indicator
+                            status_text = "Aktiv" if user.is_active else "Inaktiv"
+                            status_color = "text-green-600" if user.is_active else "text-red-600"
+                            ui.label(status_text).classes(f"text-sm font-medium {status_color}")
 
-                                # Last login
-                                if user.last_login:
-                                    login_date = user.last_login.strftime("%d.%m.%Y")
-                                    login_time = user.last_login.strftime("%H:%M")
-                                    ui.label(f"{login_date} {login_time}").classes("text-xs text-gray-500")
-                                else:
-                                    ui.label("Nie angemeldet").classes("text-xs text-gray-400")
+                            # Last login
+                            if user.last_login:
+                                login_date = user.last_login.strftime("%d.%m.%Y")
+                                login_time = user.last_login.strftime("%H:%M")
+                                ui.label(f"{login_date} {login_time}").classes("text-xs text-stone")
+                            else:
+                                ui.label("Nie angemeldet").classes("text-xs text-stone")
 
+                        # Action buttons (Solarpunk theme)
+                        with ui.row().classes("sp-admin-actions items-center gap-1"):
                             # Edit button - capture user data for the closure
                             user_id = user.id
                             username = user.username
@@ -89,26 +92,26 @@ def _render_users_list() -> None:
                                 em=email,
                                 ro=role,
                                 ia=is_active: _open_edit_dialog(uid, un, em, ro, ia),
-                            ).props("flat round color=grey-7 size=sm").mark(f"edit-{username}")
+                            ).props("flat round size=sm").classes("edit").mark(f"edit-{username}")
 
                             # Delete button - only if not current user
                             if user_id != current_user_id:
                                 ui.button(
                                     icon="delete",
                                     on_click=lambda uid=user_id, un=username: _open_delete_dialog(uid, un),
-                                ).props("flat round color=red-7 size=sm").mark(f"delete-{username}")
+                                ).props("flat round size=sm").classes("delete").mark(f"delete-{username}")
         else:
-            # Empty state (shouldn't happen since there's always at least one admin)
-            with ui.card().classes("w-full"):
+            # Empty state (Solarpunk theme)
+            with ui.card().classes("sp-dashboard-card w-full"):
                 with ui.column().classes("w-full items-center py-8"):
-                    ui.icon("person_off", size="48px").classes("text-gray-400 mb-2")
-                    ui.label("Keine Benutzer vorhanden").classes("text-gray-600 text-center")
+                    ui.icon("person_off", size="48px").classes("text-stone mb-2")
+                    ui.label("Keine Benutzer vorhanden").classes("text-charcoal text-center")
 
 
 def _open_create_dialog() -> None:
     """Open dialog to create a new user."""
-    with ui.dialog() as dialog, ui.card().classes("w-full max-w-md"):
-        ui.label("Neuen Benutzer erstellen").classes("text-h6 font-semibold mb-4")
+    with ui.dialog() as dialog, ui.card().classes("sp-dashboard-card w-full max-w-md"):
+        ui.label("Neuen Benutzer erstellen").classes("text-h6 font-semibold mb-4 text-fern")
 
         # Username input (required)
         username_input = (
@@ -152,9 +155,9 @@ def _open_create_dialog() -> None:
         error_label = ui.label("").classes("text-red-600 text-sm mb-2")
         error_label.set_visibility(False)
 
-        # Buttons
+        # Buttons (Solarpunk theme)
         with ui.row().classes("w-full justify-end gap-2"):
-            ui.button("Abbrechen", on_click=dialog.close).props("flat")
+            ui.button("Abbrechen", on_click=dialog.close).classes("sp-btn-ghost").props("flat")
 
             def save_user() -> None:
                 """Validate and save the new user."""
@@ -217,7 +220,7 @@ def _open_create_dialog() -> None:
                         error_label.set_text(error_msg)
                     error_label.set_visibility(True)
 
-            ui.button("Speichern", on_click=save_user).props("color=primary")
+            ui.button("Speichern", on_click=save_user).classes("sp-btn-primary")
 
     dialog.open()
 
@@ -230,8 +233,8 @@ def _open_edit_dialog(
     current_is_active: bool,
 ) -> None:
     """Open dialog to edit an existing user."""
-    with ui.dialog() as dialog, ui.card().classes("w-full max-w-md"):
-        ui.label("Benutzer bearbeiten").classes("text-h6 font-semibold mb-4")
+    with ui.dialog() as dialog, ui.card().classes("sp-dashboard-card w-full max-w-md"):
+        ui.label("Benutzer bearbeiten").classes("text-h6 font-semibold mb-4 text-fern")
 
         # Username input (pre-filled)
         username_input = (
@@ -283,9 +286,9 @@ def _open_edit_dialog(
         error_label = ui.label("").classes("text-red-600 text-sm mb-2")
         error_label.set_visibility(False)
 
-        # Buttons
+        # Buttons (Solarpunk theme)
         with ui.row().classes("w-full justify-end gap-2"):
-            ui.button("Abbrechen", on_click=dialog.close).props("flat")
+            ui.button("Abbrechen", on_click=dialog.close).classes("sp-btn-ghost").props("flat")
 
             def save_changes() -> None:
                 """Validate and save the user changes."""
@@ -345,15 +348,15 @@ def _open_edit_dialog(
                         error_label.set_text(error_msg)
                     error_label.set_visibility(True)
 
-            ui.button("Speichern", on_click=save_changes).props("color=primary")
+            ui.button("Speichern", on_click=save_changes).classes("sp-btn-primary")
 
     dialog.open()
 
 
 def _open_delete_dialog(user_id: int, username: str) -> None:
     """Open confirmation dialog to delete a user."""
-    with ui.dialog() as dialog, ui.card().classes("w-full max-w-md"):
-        ui.label("Benutzer löschen").classes("text-h6 font-semibold mb-4")
+    with ui.dialog() as dialog, ui.card().classes("sp-dashboard-card w-full max-w-md"):
+        ui.label("Benutzer löschen").classes("text-h6 font-semibold mb-4 text-fern")
 
         # Warning message
         ui.label(f"Möchten Sie den Benutzer '{username}' wirklich löschen?").classes("mb-2")
@@ -363,9 +366,9 @@ def _open_delete_dialog(user_id: int, username: str) -> None:
         error_label = ui.label("").classes("text-red-600 text-sm mb-2")
         error_label.set_visibility(False)
 
-        # Buttons
+        # Buttons (Solarpunk theme)
         with ui.row().classes("w-full justify-end gap-2"):
-            ui.button("Abbrechen", on_click=dialog.close).props("flat")
+            ui.button("Abbrechen", on_click=dialog.close).classes("sp-btn-ghost").props("flat")
 
             def confirm_delete() -> None:
                 """Perform the deletion."""
@@ -379,6 +382,6 @@ def _open_delete_dialog(user_id: int, username: str) -> None:
                     error_label.set_text(str(e))
                     error_label.set_visibility(True)
 
-            ui.button("Löschen", on_click=confirm_delete).props("color=red")
+            ui.button("Löschen", on_click=confirm_delete).classes("sp-btn-danger")
 
     dialog.open()
