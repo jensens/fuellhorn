@@ -98,17 +98,17 @@ def show_login_page() -> None:
                 else:
                     ui.notify(str(e), type="negative")
 
-    # Mobile-First Layout: Full-screen auf Mobile, zentrierte Card auf Desktop
-    with ui.column().classes("w-full min-h-screen items-center justify-center bg-gray-100 p-4"):
+    # Mobile-First Layout: Full-screen auf Mobile, zentrierte Card auf Desktop (Solarpunk theme)
+    with ui.column().classes("w-full min-h-screen items-center justify-center bg-cream p-4"):
         # Responsive Card: full width auf Mobile, max-w-md auf Desktop
-        with ui.card().classes("w-full max-w-md"):
+        with ui.card().classes("sp-dashboard-card w-full max-w-md p-6"):
             # Logo Placeholder (wird spaeter durch echtes Logo ersetzt)
             with ui.row().classes("w-full justify-center mb-4"):
-                ui.icon("kitchen", size="64px").classes("text-primary")
+                ui.icon("kitchen", size="64px").classes("text-fern")
 
-            # Titel
-            ui.label("Füllhorn").classes("text-h4 text-center w-full mb-2")
-            ui.label("Lebensmittelvorrats-Verwaltung").classes("text-subtitle2 text-center w-full mb-6 text-gray-600")
+            # Titel (Solarpunk display font)
+            ui.label("Füllhorn").classes("font-display text-h4 text-fern text-center w-full mb-2")
+            ui.label("Lebensmittelvorrats-Verwaltung").classes("text-subtitle2 text-center w-full mb-6 text-stone")
 
             # Formular
             with ui.column().classes("w-full gap-4"):
@@ -131,9 +131,9 @@ def show_login_page() -> None:
                 # Enter-Taste fuer Submit
                 password_input.on("keydown.enter", handle_login)
 
-                # Login Button - groesser fuer Touch (min 48px)
-                ui.button("Anmelden", on_click=handle_login).props("color=primary size=lg").classes(
-                    "w-full mt-4"
+                # Login Button - groesser fuer Touch (min 48px), Solarpunk primary button
+                ui.button("Anmelden", on_click=handle_login).classes("w-full mt-4 sp-btn-primary").props(
+                    "size=lg"
                 ).style("min-height: 48px")
 
 

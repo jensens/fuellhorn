@@ -22,15 +22,15 @@ from nicegui import ui
 def dashboard() -> None:
     """Dashboard mit Ablaufübersicht und Statistiken (Mobile-First)."""
 
-    # Header with user dropdown
-    with ui.row().classes("w-full items-center justify-between p-4 bg-white border-b border-gray-200"):
-        ui.label("Füllhorn").classes("text-h5 font-bold text-primary")
+    # Header with user dropdown (Solarpunk theme)
+    with ui.row().classes("sp-page-header w-full items-center justify-between"):
+        ui.label("Füllhorn").classes("sp-page-title")
         create_user_dropdown()
 
     # Main content with bottom nav spacing
     with create_mobile_page_container():
         # Expiring items section
-        ui.label("🔴 Bald abgelaufen").classes("text-h6 font-semibold mb-3")
+        ui.label("Bald abgelaufen").classes("sp-page-title text-base mb-3")
 
         with next(get_session()) as session:
             # Get items expiring in next 7 days
@@ -45,31 +45,31 @@ def dashboard() -> None:
                         on_consume=lambda i=item: handle_consume(i),  # type: ignore[misc]
                     )
             else:
-                ui.label("✅ Keine Artikel laufen in den nächsten 7 Tagen ab!").classes(
-                    "text-green-600 p-4 bg-green-50 rounded"
+                ui.label("Keine Artikel laufen in den nächsten 7 Tagen ab!").classes(
+                    "sp-expiry-ok p-4 bg-oat rounded-sp-md"
                 )
 
             # Statistics section
-            ui.label("📊 Vorrats-Statistik").classes("text-h6 font-semibold mb-3 mt-6")
+            ui.label("Vorrats-Statistik").classes("sp-page-title text-base mb-3 mt-6")
 
             all_items = item_service.get_all_items(session)
             consumed_items = [i for i in all_items if i.is_consumed]
             active_items = [i for i in all_items if not i.is_consumed]
 
-            with ui.card().classes("w-full"):
-                with ui.row().classes("w-full justify-around text-center"):
+            with ui.card().classes("sp-dashboard-card w-full"):
+                with ui.row().classes("sp-stats-row w-full"):
                     with ui.column():
-                        ui.label(str(len(active_items))).classes("text-2xl font-bold text-primary")
-                        ui.label("Artikel").classes("text-sm text-gray-600")
+                        ui.label(str(len(active_items))).classes("sp-stats-number primary")
+                        ui.label("Artikel").classes("sp-stats-label")
                     with ui.column():
-                        ui.label(str(len(expiring_items))).classes("text-2xl font-bold text-orange-500")
-                        ui.label("Ablauf").classes("text-sm text-gray-600")
+                        ui.label(str(len(expiring_items))).classes("sp-stats-number warning")
+                        ui.label("Ablauf").classes("sp-stats-label")
                     with ui.column():
-                        ui.label(str(len(consumed_items))).classes("text-2xl font-bold text-green-500")
-                        ui.label("Entn.").classes("text-sm text-gray-600")
+                        ui.label(str(len(consumed_items))).classes("sp-stats-number success")
+                        ui.label("Entn.").classes("sp-stats-label")
 
             # Quick filters section
-            ui.label("🏷️ Schnellfilter").classes("text-h6 font-semibold mb-3 mt-6")
+            ui.label("Schnellfilter").classes("sp-page-title text-base mb-3 mt-6")
 
             # Get unique locations with names
             location_items: dict[int, str] = {}
@@ -86,7 +86,7 @@ def dashboard() -> None:
                     ui.button(
                         loc_name,
                         on_click=lambda loc=loc_id: ui.navigate.to(f"/items?location={loc}"),
-                    ).props("outline color=primary size=sm")
+                    ).classes("sp-quick-filter").props("flat no-caps")
 
     # Bottom Navigation (always visible)
     create_bottom_nav(current_page="dashboard")
