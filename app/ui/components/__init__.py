@@ -12,7 +12,8 @@ from .expiry_badge import create_expiry_badge
 from .expiry_badge import get_status_icon
 from .expiry_badge import get_status_text_color
 from .item_card import create_item_card
-from .item_card import get_status_color
+from .item_card import get_status_css_class
+from .item_card import get_status_text_class
 from .item_type_chips import create_item_type_chip_group
 from .item_type_chips import get_item_type_label
 from .location_chips import create_location_chip_group
@@ -35,7 +36,8 @@ __all__ = [
     "get_available_units",
     "get_expiry_label",
     "get_item_type_label",
-    "get_status_color",
+    "get_status_css_class",
     "get_status_icon",
+    "get_status_text_class",
     "get_status_text_color",
 ]

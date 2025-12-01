@@ -89,43 +89,55 @@ def create_bottom_sheet(
     dialog.style("width: 100%; max-width: 800px;")
 
     with dialog:
-        with ui.card().classes("w-full rounded-t-2xl p-0"):
+        with ui.card().classes("sp-bottom-sheet w-full p-0"):
+            # Handle bar for visual grab affordance
+            ui.element("div").classes("sp-bottom-sheet-handle")
+
             # Header with close button
-            with ui.row().classes("w-full items-center justify-between p-4 border-b"):
-                ui.label(item.product_name).classes("text-lg font-semibold")
+            with ui.row().classes("sp-bottom-sheet-header w-full items-center justify-between"):
+                ui.label(item.product_name).classes("sp-bottom-sheet-title")
 
-                # Close button - 48x48px touch target
-                with (
-                    ui.button(icon="close", on_click=lambda: _close_sheet(dialog, on_close))
-                    .props("flat round")
-                    .classes("min-w-[48px] min-h-[48px]")
-                ):
-                    pass
+                # Close button - uses theme styling
+                ui.button(
+                    icon="close",
+                    on_click=lambda: _close_sheet(dialog, on_close),
+                ).classes("sp-bottom-sheet-close").props("flat round")
 
-            # Item details
-            with ui.column().classes("w-full p-4 gap-4"):
+            # Item details body
+            with ui.column().classes("sp-bottom-sheet-body w-full"):
                 # Quantity and unit
-                with ui.row().classes("items-center gap-2"):
-                    ui.icon("scale", size="20px").classes("text-gray-500")
-                    ui.label(f"{item.quantity} {item.unit}").classes("text-base")
+                with ui.row().classes("sp-info-row"):
+                    ui.icon("scale", size="20px").classes("text-fern")
+                    with ui.column().classes("gap-0"):
+                        ui.label("Menge").classes("sp-info-label")
+                        ui.label(f"{item.quantity} {item.unit}").classes("sp-info-value")
 
                 # Location
-                with ui.row().classes("items-center gap-2"):
-                    ui.icon("place", size="20px").classes("text-gray-500")
-                    ui.label(location.name).classes("text-base")
+                with ui.row().classes("sp-info-row"):
+                    ui.icon("place", size="20px").classes("text-fern")
+                    with ui.column().classes("gap-0"):
+                        ui.label("Lagerort").classes("sp-info-label")
+                        ui.label(location.name).classes("sp-info-value")
 
                 # Expiry date with status badge (using best_before_date as fallback)
                 expiry_status = get_expiry_status(item.best_before_date)
-                with ui.row().classes("items-center gap-2"):
-                    ui.icon("event", size="20px").classes("text-gray-500")
-                    ui.label(item.best_before_date.strftime("%d.%m.%Y")).classes("text-base")
-                    ui.label(get_expiry_label(item.best_before_date)).classes(get_expiry_badge_classes(expiry_status))
+                with ui.row().classes("sp-info-row"):
+                    ui.icon("event", size="20px").classes("text-fern")
+                    with ui.column().classes("gap-0"):
+                        ui.label("Haltbarkeit").classes("sp-info-label")
+                        with ui.row().classes("items-center gap-2"):
+                            ui.label(item.best_before_date.strftime("%d.%m.%Y")).classes("sp-info-value")
+                            ui.label(get_expiry_label(item.best_before_date)).classes(
+                                get_expiry_badge_classes(expiry_status)
+                            )
 
                 # Notes (if present)
                 if item.notes:
-                    with ui.row().classes("items-start gap-2"):
-                        ui.icon("notes", size="20px").classes("text-gray-500 mt-1")
-                        ui.label(item.notes).classes("text-base text-gray-600")
+                    with ui.row().classes("sp-info-row"):
+                        ui.icon("notes", size="20px").classes("text-fern")
+                        with ui.column().classes("gap-0"):
+                            ui.label("Notizen").classes("sp-info-label")
+                            ui.label(item.notes).classes("sp-info-value text-stone")
 
             # Action buttons
             with ui.row().classes("w-full p-4 gap-3 border-t"):

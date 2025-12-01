@@ -17,7 +17,6 @@ from ...models.item import ItemType
 from ...services import item_service
 from ...services import location_service
 from ..theme import ITEM_TYPE_COLORS
-from ..theme import STATUS_COLORS
 from ..theme import get_contrast_text_color
 from datetime import date
 from nicegui import ui
@@ -35,9 +34,22 @@ ITEM_TYPE_SHORT_LABELS = {
 }
 
 
-def get_status_color(status: str) -> str:
-    """Get Tailwind color class for status."""
-    return STATUS_COLORS.get(status, "gray-500")
+def get_status_css_class(status: str) -> str:
+    """Get CSS class suffix for status (warning, critical, or empty for ok)."""
+    if status == "critical":
+        return "status-critical"
+    elif status == "warning":
+        return "status-warning"
+    return ""
+
+
+def get_status_text_class(status: str) -> str:
+    """Get CSS text color class for status."""
+    if status == "critical":
+        return "sp-expiry-critical"
+    elif status == "warning":
+        return "sp-expiry-warning"
+    return "sp-expiry-ok"
 
 
 def _format_expiry_display(expiry_date: date, item_type: ItemType) -> tuple[str, str]:
@@ -126,7 +138,8 @@ def create_item_card(
     # Calculate status
     days_until = (effective_expiry - date.today()).days
     status = _calculate_status(days_until)
-    status_color = get_status_color(status)
+    status_css_class = get_status_css_class(status)
+    status_text_class = get_status_text_class(status)
 
     # Get expiry display
     expiry_label, expiry_value = _format_expiry_display(effective_expiry, item.item_type)
@@ -138,10 +151,10 @@ def create_item_card(
     type_label = ITEM_TYPE_SHORT_LABELS.get(item.item_type, str(item.item_type.value))
     type_color = ITEM_TYPE_COLORS.get(item.item_type, "#6B7280")
 
-    # Create card with status border
-    card_classes = f"w-full mb-2 border-l-4 border-{status_color}"
+    # Create card with status border using Solarpunk theme classes
+    card_classes = f"sp-item-card w-full {status_css_class}"
 
-    with ui.card().classes(card_classes).style("min-height: 48px; padding: 12px;"):
+    with ui.card().classes(card_classes):
         # Main grid: left content + right column (date + button)
         with ui.row().classes("w-full items-start justify-between gap-2"):
             # Left column: 3 lines of item info
@@ -179,19 +192,19 @@ def create_item_card(
             # Right column: Expiry info + optional button
             with ui.column().classes("items-end gap-1 shrink-0"):
                 # Expiry label (small, muted)
-                ui.label(expiry_label).classes("text-xs text-gray-400")
+                ui.label(expiry_label).classes("text-xs text-stone")
 
-                # Expiry value (bold, colored by status)
-                ui.label(expiry_value).classes(f"text-sm font-bold text-{status_color}")
+                # Expiry value (bold, colored by status using theme classes)
+                ui.label(expiry_value).classes(f"text-sm font-bold {status_text_class}")
 
                 # Consume button (if callback provided)
                 if on_consume:
+                    # Map status to Quasar color prop
+                    btn_color = "negative" if status == "critical" else "warning" if status == "warning" else "positive"
                     ui.button(
                         "Entn.",
                         on_click=lambda i=item: on_consume(i),
-                    ).props("size=sm dense").classes("mt-1").style(
-                        f"background-color: var(--q-{status_color.replace('-', '')}, #ef4444);"
-                    )
+                    ).props(f"size=sm dense color={btn_color}").classes("mt-1")
 
         # Click handler for entire card (if provided)
         if on_click:
