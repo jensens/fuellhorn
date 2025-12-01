@@ -4,11 +4,11 @@ Based on Issue #173: Einheitliches Card-Design für Dashboard & Vorrat.
 Same component used in both Dashboard and Vorrat views.
 
 Card Structure (3-line version):
-┌─────────────────────────────────────────────────────────┐
-│ ▌ Name                                MHD      [ENTN.] │
-│ ▌ Menge · [Item-Type Badge]           Morgen           │
-│ ▌ 📍 Lagerort   [Kategorie]                            │
-└─────────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────────┐
+│ ▌ Name                                MHD      [Entnahme] │
+│ ▌ Menge · [Item-Type Badge]           Morgen                  │
+│ ▌ 📍 Lagerort   [Kategorie]                                   │
+└───────────────────────────────────────────────────────────────┘
   ↑ Status-Border (4px, colored by expiry status)
 """
 
@@ -202,9 +202,9 @@ def create_item_card(
                     # Map status to Quasar color prop
                     btn_color = "negative" if status == "critical" else "warning" if status == "warning" else "positive"
                     ui.button(
-                        "Entn.",
+                        "Entnahme",
                         on_click=lambda i=item: on_consume(i),
-                    ).props(f"size=sm dense color={btn_color}").classes("mt-1")
+                    ).props(f"size=sm dense flat color={btn_color}")
 
         # Click handler for entire card (if provided)
         if on_click:

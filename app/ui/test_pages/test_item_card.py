@@ -213,3 +213,18 @@ def page_item_card_mhd_warning() -> None:
         category = _create_test_category(session, with_shelf_life=False)
         item = _create_mhd_item(session, location, category, mhd_days_from_now=5)
         create_item_card(item, session)
+
+
+# =============================================================================
+# Test pages for consume button
+# =============================================================================
+
+
+@ui.page("/test-item-card-with-consume")
+def page_item_card_with_consume() -> None:
+    """Test page for item card with consume button."""
+    with next(get_session()) as session:
+        location = _create_test_location(session)
+        category = _create_test_category(session, with_shelf_life=True)
+        item = _create_shelf_life_item(session, location, category, freeze_days_ago=30)
+        create_item_card(item, session, on_consume=lambda i: None)

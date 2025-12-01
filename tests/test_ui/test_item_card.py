@@ -125,3 +125,14 @@ async def test_item_card_fresh_warning_shows_ablauf(user: TestUser) -> None:
     await user.open("/test-item-card-mhd-warning")
     await user.should_see("Joghurt")
     await user.should_see("Ablauf")
+
+
+# =============================================================================
+# Consume Button Tests
+# =============================================================================
+
+
+async def test_item_card_shows_entnahme_button(user: TestUser) -> None:
+    """Test that item card shows 'Entnahme' button when on_consume is provided."""
+    await user.open("/test-item-card-with-consume")
+    await user.should_see("Entnahme")
