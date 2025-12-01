@@ -1,6 +1,7 @@
 """UI Tests for Items Page - Card list view of inventory."""
 
 from nicegui.testing import User as TestUser
+import pytest
 
 
 async def test_items_page_requires_auth(user: TestUser) -> None:
@@ -241,34 +242,25 @@ async def test_items_page_has_item_type_filter(user: TestUser) -> None:
     await user.should_see("Artikel-Typ")
 
 
-async def test_items_page_location_filter_shows_all_option(user: TestUser) -> None:
-    """Test that location filter has 'Alle' option."""
+@pytest.mark.parametrize("expected_text", ["Alle Lagerorte", "Alle Typen"])
+async def test_items_page_filter_shows_all_option(user: TestUser, expected_text: str) -> None:
+    """Test that filters have 'Alle' option."""
     await user.open("/test-items-page-with-filters")
-    await user.should_see("Alle Lagerorte")
+    await user.should_see(expected_text)
 
 
-async def test_items_page_item_type_filter_shows_all_option(user: TestUser) -> None:
-    """Test that item type filter has 'Alle' option."""
-    await user.open("/test-items-page-with-filters")
-    await user.should_see("Alle Typen")
-
-
-async def test_items_page_location_filter_filters_items(user: TestUser) -> None:
-    """Test that selecting a location filters items."""
-    await user.open("/test-items-page-with-location-filter")
-    # Should see item from Tiefkühltruhe
-    await user.should_see("Gefrorene Tomaten")
-    # Should NOT see item from Kühlschrank
-    await user.should_not_see("Frische Milch")
-
-
-async def test_items_page_item_type_filter_filters_items(user: TestUser) -> None:
-    """Test that selecting an item type filters items."""
-    await user.open("/test-items-page-with-type-filter")
-    # Should see homemade frozen item
-    await user.should_see("Selbst Eingefrorenes")
-    # Should NOT see purchased fresh item
-    await user.should_not_see("Frisch Gekauftes")
+@pytest.mark.parametrize(
+    "test_url,visible,hidden",
+    [
+        ("with-location-filter", "Gefrorene Tomaten", "Frische Milch"),
+        ("with-type-filter", "Selbst Eingefrorenes", "Frisch Gekauftes"),
+    ],
+)
+async def test_items_page_filter_filters_items(user: TestUser, test_url: str, visible: str, hidden: str) -> None:
+    """Test that selecting a filter filters items correctly."""
+    await user.open(f"/test-items-page-{test_url}")
+    await user.should_see(visible)
+    await user.should_not_see(hidden)
 
 
 # Sorting functionality tests (Issue #13)

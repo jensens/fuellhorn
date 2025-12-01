@@ -1,4 +1,4 @@
-"""Tests for new item_service functions (Issue #105)."""
+"""Tests for item_service category and expiry info functions (Issue #105, #151)."""
 
 from app.models import ItemType
 from app.models import LocationType
