@@ -243,15 +243,12 @@ pwd  # Sollte zeigen: {worktree_path}
 
 ## Entwicklungs-Workflow
 
-1. Lies CLAUDE.md und TESTING.md
-2. TDD: Tests zuerst schreiben
-3. Qualitätsprüfung vor Commit:
-   ```bash
-   uv run pytest
-   uv run mypy app/
-   uv run ruff check app/
-   uv run ruff format app/
-   ```
+1. Lies CLAUDE.md und befolge es, lese die Testanweisungen in `docs/agent/tests_schreiben.md`.
+2. TDD: Tests zuerst anpassen oder neu schreiben
+3. Nach den Tests (evtl. failing) den App-Code anpassen oder schreiben.
+3. Immer komplette Qualitätsprüfung vor Commit (linter, type check, dann tests)
+3. Prüfe nach den Änderungen ob die Dokumentation noch aktuell ist
+
 
 ## PR erstellen
 
@@ -261,8 +258,8 @@ gh pr create --title "feat: {issue.title}" --body "closes #{issue_number}"
 
 ## Nach PR-Merge (vom Hauptrepo aus)
 
-```bash
-git worktree remove {worktree_path}
+Rufe complete_issue auf
+
 ```
 
 ---

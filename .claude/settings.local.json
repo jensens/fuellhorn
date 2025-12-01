@@ -8,7 +8,9 @@
       "Bash(git push:*)",
       "Bash(sqlite3:*)",
       "Bash(gh run view:*)",
-      "Bash(./scripts/dev-server.sh:*)"
+      "Bash(./scripts/dev-server.sh:*)",
+      "Bash(find:*)",
+      "Bash(git mv:*)"
     ],
     "deny": [],
     "ask": []

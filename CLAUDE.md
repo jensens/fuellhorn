@@ -46,6 +46,7 @@ Immer lesen und befolgen wenn Issues, Epics, ... bearbeitet werden: [docs/agent/
 - **Häufige, kleine Commits** - lieber 10 kleine als 1 großer!
 - **Commit-Typen:** `feat`, `fix`, `test`, `refactor`, `docs`, `chore`
 - **Tidy First:** Strukturelle und verhaltensändernde Änderungen NIEMALS mischen!
+- **Linter, Typecheck, Test** sind grün vor Commit!
 
 ---
 
