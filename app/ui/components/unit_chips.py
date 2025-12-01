@@ -36,8 +36,10 @@ def create_unit_chip_group(
 
             if is_selected:
                 chip.classes(add="active")
+                chip.style("color: white !important;")
             else:
                 chip.classes(remove="active")
+                chip.style("color: var(--sp-charcoal) !important;")
 
     def select_unit(unit: str) -> None:
         """Handle chip selection."""
@@ -59,7 +61,10 @@ def create_unit_chip_group(
                     on_click=lambda _, u=unit: select_unit(u),
                 )
                 .classes("sp-chip sp-chip-unit" + (" active" if is_selected else ""))
-                .style("min-width: 48px;")
+                .style(
+                    "min-width: 48px; "
+                    + ("color: white !important;" if is_selected else "color: var(--sp-charcoal) !important;")
+                )
                 .props("flat no-caps")
             )
 

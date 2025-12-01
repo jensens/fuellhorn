@@ -8,12 +8,14 @@ from ...models.item import ItemType
 from ..components import create_item_type_chip_group
 from ..components import create_unit_chip_group
 from ..components import get_item_type_label
+from ..theme import add_theme_css
 from nicegui import ui
 
 
 @ui.page("/demo/chips")
 def demo_chips() -> None:
     """Demo page for chip components."""
+    add_theme_css()
     # State for displaying current selections
     selected_item_type: list[ItemType | None] = [ItemType.PURCHASED_FRESH]
     selected_unit: list[str | None] = ["g"]
