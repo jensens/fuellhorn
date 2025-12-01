@@ -53,74 +53,76 @@ def _get_location_type_icon(location_type: LocationType) -> str:
 def locations_page() -> None:
     """Locations management page (Mobile-First)."""
 
-    # Header
-    with ui.row().classes("w-full items-center justify-between p-4 bg-white border-b border-gray-200"):
+    # Header (Solarpunk theme)
+    with ui.row().classes("sp-page-header w-full items-center justify-between"):
         with ui.row().classes("items-center gap-2"):
-            ui.button(icon="arrow_back", on_click=lambda: ui.navigate.to("/admin/settings")).props(
-                "flat round color=gray-7"
-            )
-            ui.label("Lagerorte").classes("text-h5 font-bold text-primary")
+            ui.button(icon="arrow_back", on_click=lambda: ui.navigate.to("/admin/settings")).classes(
+                "sp-back-btn"
+            ).props("flat round")
+            ui.label("Lagerorte").classes("sp-page-title")
 
     # Main content with bottom nav spacing
     with create_mobile_page_container():
-        # Section header with "Neuer Lagerort" button
+        # Section header with "Neuer Lagerort" button (Solarpunk theme)
         with ui.row().classes("w-full items-center justify-between mb-3"):
-            ui.label("Lagerorte verwalten").classes("text-h6 font-semibold")
-            ui.button("Neuer Lagerort", icon="add", on_click=_open_create_dialog).props("color=primary size=sm")
+            ui.label("Lagerorte verwalten").classes("text-h6 font-semibold text-fern")
+            ui.button("Neuer Lagerort", icon="add", on_click=_open_create_dialog).classes("sp-btn-primary").props(
+                "size=sm"
+            )
 
         with next(get_session()) as session:
             locations = location_service.get_all_locations(session)
 
             if locations:
-                # Display locations as cards
+                # Display locations as admin list items (Solarpunk theme)
                 for location in locations:
-                    with ui.card().classes("w-full mb-2"):
-                        with ui.row().classes("w-full items-center justify-between"):
-                            with ui.row().classes("items-center gap-3"):
-                                # Color indicator (or fallback to type icon)
-                                if location.color:
-                                    ui.element("div").classes("w-6 h-6 rounded-full").style(
-                                        f"background-color: {location.color}"
-                                    )
-                                else:
-                                    ui.icon(
-                                        _get_location_type_icon(location.location_type),
-                                        size="24px",
-                                    ).classes(f"text-{_get_location_type_color(location.location_type)}")
-                                # Location name
-                                ui.label(location.name).classes("font-medium text-lg")
-                            # Type badge, status, edit and delete buttons
-                            with ui.row().classes("items-center gap-2"):
-                                # Type badge
-                                ui.badge(
-                                    _get_location_type_label(location.location_type),
-                                    color=_get_location_type_color(location.location_type),
-                                ).classes("text-xs")
-                                # Inactive badge (if not active)
-                                if not location.is_active:
-                                    ui.badge("Inaktiv", color="red").classes("text-xs")
+                    with ui.element("div").classes("sp-admin-list-item w-full"):
+                        # Left side: color + name
+                        with ui.row().classes("items-center gap-3 flex-1"):
+                            # Color indicator (Solarpunk admin color dot)
+                            if location.color:
+                                ui.element("div").classes("sp-admin-color-dot").style(
+                                    f"background-color: {location.color}"
+                                )
+                            else:
+                                ui.icon(
+                                    _get_location_type_icon(location.location_type),
+                                    size="24px",
+                                ).classes(f"text-{_get_location_type_color(location.location_type)}")
+                            # Location name
+                            ui.label(location.name).classes("font-medium text-lg text-charcoal")
+                        # Right side: Type badge, status, edit and delete buttons
+                        with ui.row().classes("items-center gap-2"):
+                            # Type badge
+                            ui.badge(
+                                _get_location_type_label(location.location_type),
+                                color=_get_location_type_color(location.location_type),
+                            ).classes("text-xs")
+                            # Inactive badge (if not active)
+                            if not location.is_active:
+                                ui.badge("Inaktiv", color="red").classes("text-xs")
+                            # Action buttons (Solarpunk theme)
+                            with ui.row().classes("sp-admin-actions items-center gap-1"):
                                 # Edit button
                                 ui.button(
                                     icon="edit",
                                     on_click=lambda loc=location: _open_edit_dialog(loc),
-                                ).props("flat round size=sm").classes("min-w-0")
+                                ).props("flat round size=sm").classes("edit min-w-0")
                                 # Delete button
                                 location_id = location.id
                                 location_name = location.name
                                 ui.button(
                                     icon="delete",
                                     on_click=lambda lid=location_id, ln=location_name: _open_delete_dialog(lid, ln),
-                                ).props("flat round color=red-7 size=sm").classes("min-w-0").mark(
-                                    f"delete-{location_name}"
-                                )
+                                ).props("flat round size=sm").classes("delete min-w-0").mark(f"delete-{location_name}")
             else:
-                # Empty state
-                with ui.card().classes("w-full"):
+                # Empty state (Solarpunk theme)
+                with ui.card().classes("sp-dashboard-card w-full"):
                     with ui.column().classes("w-full items-center py-8"):
-                        ui.icon("place", size="48px").classes("text-gray-400 mb-2")
-                        ui.label("Keine Lagerorte vorhanden").classes("text-gray-600 text-center")
+                        ui.icon("place", size="48px").classes("text-stone mb-2")
+                        ui.label("Keine Lagerorte vorhanden").classes("text-charcoal text-center")
                         ui.label("Lagerorte helfen beim Organisieren des Vorrats.").classes(
-                            "text-sm text-gray-500 text-center"
+                            "text-sm text-stone text-center"
                         )
 
 
@@ -133,8 +135,8 @@ def _open_edit_dialog(location: Location) -> None:
         LocationType.AMBIENT: "Raumtemperatur",
     }
 
-    with ui.dialog() as dialog, ui.card().classes("w-full max-w-md"):
-        ui.label("Lagerort bearbeiten").classes("text-h6 font-semibold mb-4")
+    with ui.dialog() as dialog, ui.card().classes("sp-dashboard-card w-full max-w-md"):
+        ui.label("Lagerort bearbeiten").classes("text-h6 font-semibold mb-4 text-fern")
 
         # Name input (required, pre-filled)
         name_input = (
@@ -196,7 +198,7 @@ def _open_edit_dialog(location: Location) -> None:
 
         # Buttons
         with ui.row().classes("w-full justify-end gap-2"):
-            ui.button("Abbrechen", on_click=dialog.close).props("flat")
+            ui.button("Abbrechen", on_click=dialog.close).classes("sp-btn-ghost").props("flat")
 
             def save_location() -> None:
                 """Validate and save the location changes."""
@@ -241,7 +243,7 @@ def _open_edit_dialog(location: Location) -> None:
                         error_label.set_text(error_msg)
                     error_label.set_visibility(True)
 
-            ui.button("Speichern", on_click=save_location).props("color=primary")
+            ui.button("Speichern", on_click=save_location).classes("sp-btn-primary")
 
     dialog.open()
 
@@ -255,8 +257,8 @@ def _open_create_dialog() -> None:
         LocationType.AMBIENT: "Raumtemperatur",
     }
 
-    with ui.dialog() as dialog, ui.card().classes("w-full max-w-md"):
-        ui.label("Neuen Lagerort erstellen").classes("text-h6 font-semibold mb-4")
+    with ui.dialog() as dialog, ui.card().classes("sp-dashboard-card w-full max-w-md"):
+        ui.label("Neuen Lagerort erstellen").classes("text-h6 font-semibold mb-4 text-fern")
 
         # Name input (required)
         name_input = (
@@ -309,9 +311,9 @@ def _open_create_dialog() -> None:
         error_label = ui.label("").classes("text-red-600 text-sm mb-2")
         error_label.set_visibility(False)
 
-        # Buttons
+        # Buttons (Solarpunk theme)
         with ui.row().classes("w-full justify-end gap-2"):
-            ui.button("Abbrechen", on_click=dialog.close).props("flat")
+            ui.button("Abbrechen", on_click=dialog.close).classes("sp-btn-ghost").props("flat")
 
             def save_location() -> None:
                 """Validate and save the new location."""
@@ -355,15 +357,15 @@ def _open_create_dialog() -> None:
                         error_label.set_text(error_msg)
                     error_label.set_visibility(True)
 
-            ui.button("Speichern", on_click=save_location).props("color=primary")
+            ui.button("Speichern", on_click=save_location).classes("sp-btn-primary")
 
     dialog.open()
 
 
 def _open_delete_dialog(location_id: int, location_name: str) -> None:
     """Open confirmation dialog to delete a location."""
-    with ui.dialog() as dialog, ui.card().classes("w-full max-w-md"):
-        ui.label("Lagerort löschen").classes("text-h6 font-semibold mb-4")
+    with ui.dialog() as dialog, ui.card().classes("sp-dashboard-card w-full max-w-md"):
+        ui.label("Lagerort löschen").classes("text-h6 font-semibold mb-4 text-fern")
 
         # Warning message
         ui.label(f"Möchten Sie den Lagerort '{location_name}' wirklich löschen?").classes("mb-2")
@@ -373,9 +375,9 @@ def _open_delete_dialog(location_id: int, location_name: str) -> None:
         error_label = ui.label("").classes("text-red-600 text-sm mb-2")
         error_label.set_visibility(False)
 
-        # Buttons
+        # Buttons (Solarpunk theme)
         with ui.row().classes("w-full justify-end gap-2"):
-            ui.button("Abbrechen", on_click=dialog.close).props("flat")
+            ui.button("Abbrechen", on_click=dialog.close).classes("sp-btn-ghost").props("flat")
 
             def confirm_delete() -> None:
                 """Perform the deletion."""
@@ -399,6 +401,6 @@ def _open_delete_dialog(location_id: int, location_name: str) -> None:
                     error_label.set_text(str(e))
                     error_label.set_visibility(True)
 
-            ui.button("Löschen", on_click=confirm_delete).props("color=red")
+            ui.button("Löschen", on_click=confirm_delete).classes("sp-btn-danger")
 
     dialog.open()

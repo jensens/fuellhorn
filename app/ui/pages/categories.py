@@ -31,20 +31,22 @@ STORAGE_TYPE_LABELS = {
 def categories_page() -> None:
     """Categories management page (Mobile-First)."""
 
-    # Header
-    with ui.row().classes("w-full items-center justify-between p-4 bg-white border-b border-gray-200"):
+    # Header (Solarpunk theme)
+    with ui.row().classes("sp-page-header w-full items-center justify-between"):
         with ui.row().classes("items-center gap-2"):
-            ui.button(icon="arrow_back", on_click=lambda: ui.navigate.to("/admin/settings")).props(
-                "flat round color=gray-7"
-            )
-            ui.label("Kategorien").classes("text-h5 font-bold text-primary")
+            ui.button(icon="arrow_back", on_click=lambda: ui.navigate.to("/admin/settings")).classes(
+                "sp-back-btn"
+            ).props("flat round")
+            ui.label("Kategorien").classes("sp-page-title")
 
     # Main content with bottom nav spacing
     with create_mobile_page_container():
-        # Section header with "Neue Kategorie" button
+        # Section header with "Neue Kategorie" button (Solarpunk theme)
         with ui.row().classes("w-full items-center justify-between mb-3"):
-            ui.label("Kategorien verwalten").classes("text-h6 font-semibold")
-            ui.button("Neue Kategorie", icon="add", on_click=_open_create_dialog).props("color=primary size=sm")
+            ui.label("Kategorien verwalten").classes("text-h6 font-semibold text-fern")
+            ui.button("Neue Kategorie", icon="add", on_click=_open_create_dialog).classes("sp-btn-primary").props(
+                "size=sm"
+            )
 
         _render_categories_list()
 
@@ -125,68 +127,68 @@ def _render_categories_list() -> None:
                 is_first = index == 0
                 is_last = index == len(categories) - 1
 
-                with ui.card().classes("w-full mb-2"):
-                    with ui.row().classes("w-full items-center justify-between"):
-                        # Left side: reorder buttons + color + name
-                        with ui.row().classes("items-center gap-2"):
-                            # Reorder buttons (up/down)
-                            with ui.column().classes("gap-0"):
-                                ui.button(
-                                    icon="keyboard_arrow_up",
-                                    on_click=lambda cid=cat_id: _move_category_up(cid),
-                                ).props(f"flat round dense size=xs {'disabled' if is_first else ''}").classes(
-                                    "h-5"
-                                ).mark(f"move-up-{category.name}")
-                                ui.button(
-                                    icon="keyboard_arrow_down",
-                                    on_click=lambda cid=cat_id: _move_category_down(cid),
-                                ).props(f"flat round dense size=xs {'disabled' if is_last else ''}").classes(
-                                    "h-5"
-                                ).mark(f"move-down-{category.name}")
+                # Admin list item (Solarpunk theme)
+                with ui.element("div").classes("sp-admin-list-item w-full"):
+                    # Left side: reorder buttons + color + name
+                    with ui.row().classes("items-center gap-3 flex-1"):
+                        # Reorder buttons (drag handle style)
+                        with ui.column().classes("gap-0 sp-admin-drag"):
+                            ui.button(
+                                icon="keyboard_arrow_up",
+                                on_click=lambda cid=cat_id: _move_category_up(cid),
+                            ).props(f"flat round dense size=xs {'disabled' if is_first else ''}").classes("h-5").mark(
+                                f"move-up-{category.name}"
+                            )
+                            ui.button(
+                                icon="keyboard_arrow_down",
+                                on_click=lambda cid=cat_id: _move_category_down(cid),
+                            ).props(f"flat round dense size=xs {'disabled' if is_last else ''}").classes("h-5").mark(
+                                f"move-down-{category.name}"
+                            )
 
-                            # Color indicator
-                            if category.color:
-                                ui.element("div").classes("w-6 h-6 rounded-full").style(
-                                    f"background-color: {category.color}"
-                                )
-                            else:
-                                ui.element("div").classes("w-6 h-6 rounded-full bg-gray-300")
-                            # Category name
-                            ui.label(category.name).classes("font-medium text-lg")
+                        # Color indicator (Solarpunk admin color dot)
+                        if category.color:
+                            ui.element("div").classes("sp-admin-color-dot").style(f"background-color: {category.color}")
+                        else:
+                            ui.element("div").classes("sp-admin-color-dot bg-oat")
+                        # Category name
+                        ui.label(category.name).classes("font-medium text-lg text-charcoal")
 
-                        # Right side: shelf life info and buttons
-                        with ui.row().classes("items-center gap-2"):
-                            # Shelf life info (compact display)
-                            _render_shelf_life_badges(shelf_life_dict)
+                    # Right side: shelf life info and buttons
+                    with ui.row().classes("items-center gap-2"):
+                        # Shelf life info (compact display)
+                        _render_shelf_life_badges(shelf_life_dict)
 
-                            # Capture category data for the closures
-                            cat_name = category.name
-                            cat_color = category.color
+                        # Capture category data for the closures
+                        cat_name = category.name
+                        cat_color = category.color
 
+                        # Action buttons (Solarpunk theme)
+                        with ui.row().classes("sp-admin-actions items-center gap-1"):
                             # Edit button
                             ui.button(
                                 icon="edit",
                                 on_click=lambda cid=cat_id, cn=cat_name, cc=cat_color: _open_edit_dialog(cid, cn, cc),
-                            ).props("flat round color=grey-7 size=sm").mark(f"edit-{cat_name}")
+                            ).props("flat round size=sm").classes("edit").mark(f"edit-{cat_name}")
 
                             # Delete button
                             ui.button(
                                 icon="delete",
                                 on_click=lambda cid=cat_id, cn=cat_name: _open_delete_dialog(cid, cn),
-                            ).props("flat round color=red-7 size=sm").mark(f"delete-{cat_name}")
+                            ).props("flat round size=sm").classes("delete").mark(f"delete-{cat_name}")
         else:
-            # Empty state
-            with ui.card().classes("w-full"):
+            # Empty state (Solarpunk theme)
+            with ui.card().classes("sp-dashboard-card w-full"):
                 with ui.column().classes("w-full items-center py-8"):
-                    ui.icon("category", size="48px").classes("text-gray-400 mb-2")
-                    ui.label("Keine Kategorien vorhanden").classes("text-gray-600 text-center")
+                    ui.icon("category", size="48px").classes("text-stone mb-2")
+                    ui.label("Keine Kategorien vorhanden").classes("text-charcoal text-center")
                     ui.label("Kategorien helfen beim Organisieren des Vorrats.").classes(
-                        "text-sm text-gray-500 text-center"
+                        "text-sm text-stone text-center"
                     )
 
 
 def _render_shelf_life_badges(shelf_life_dict: dict) -> None:
-    """Render compact shelf life badges."""
+    """Render compact shelf life badges (Solarpunk theme)."""
     for storage_type in [StorageType.FROZEN, StorageType.CHILLED, StorageType.AMBIENT]:
         if storage_type in shelf_life_dict:
             sl = shelf_life_dict[storage_type]
@@ -197,14 +199,14 @@ def _render_shelf_life_badges(shelf_life_dict: dict) -> None:
                 else ("kitchen" if storage_type == StorageType.CHILLED else "home")
             )
             with ui.row().classes("items-center gap-1"):
-                ui.icon(icon, size="16px").classes("text-gray-500")
-                ui.label(f"{sl.months_min}-{sl.months_max}").classes("text-xs text-gray-600")
+                ui.icon(icon, size="16px").classes("text-stone")
+                ui.label(f"{sl.months_min}-{sl.months_max}").classes("text-xs text-stone")
 
 
 def _open_create_dialog() -> None:
     """Open dialog to create a new category."""
-    with ui.dialog() as dialog, ui.card().classes("w-full max-w-lg"):
-        ui.label("Neue Kategorie erstellen").classes("text-h6 font-semibold mb-4")
+    with ui.dialog() as dialog, ui.card().classes("sp-dashboard-card w-full max-w-lg"):
+        ui.label("Neue Kategorie erstellen").classes("text-h6 font-semibold mb-4 text-fern")
 
         # Name input (required)
         name_input = ui.input(label="Name", placeholder="z.B. Gemüse").classes("w-full mb-2").props("outlined")
@@ -278,9 +280,9 @@ def _open_create_dialog() -> None:
         error_label = ui.label("").classes("text-red-600 text-sm mb-2")
         error_label.set_visibility(False)
 
-        # Buttons
+        # Buttons (Solarpunk theme)
         with ui.row().classes("w-full justify-end gap-2"):
-            ui.button("Abbrechen", on_click=dialog.close).props("flat")
+            ui.button("Abbrechen", on_click=dialog.close).classes("sp-btn-ghost").props("flat")
 
             def save_category() -> None:
                 """Validate and save the new category."""
@@ -360,7 +362,7 @@ def _open_create_dialog() -> None:
                         error_label.set_text(error_msg)
                     error_label.set_visibility(True)
 
-            ui.button("Speichern", on_click=save_category).props("color=primary")
+            ui.button("Speichern", on_click=save_category).classes("sp-btn-primary")
 
     dialog.open()
 
@@ -376,8 +378,8 @@ def _open_edit_dialog(
         shelf_lives = shelf_life_service.get_all_shelf_lives_for_category(session, category_id)
         existing_shelf_lives = {sl.storage_type: sl for sl in shelf_lives}
 
-    with ui.dialog() as dialog, ui.card().classes("w-full max-w-lg"):
-        ui.label("Kategorie bearbeiten").classes("text-h6 font-semibold mb-4")
+    with ui.dialog() as dialog, ui.card().classes("sp-dashboard-card w-full max-w-lg"):
+        ui.label("Kategorie bearbeiten").classes("text-h6 font-semibold mb-4 text-fern")
 
         # Name input (pre-filled)
         name_input = (
@@ -455,9 +457,9 @@ def _open_edit_dialog(
         error_label = ui.label("").classes("text-red-600 text-sm mb-2")
         error_label.set_visibility(False)
 
-        # Buttons
+        # Buttons (Solarpunk theme)
         with ui.row().classes("w-full justify-end gap-2"):
-            ui.button("Abbrechen", on_click=dialog.close).props("flat")
+            ui.button("Abbrechen", on_click=dialog.close).classes("sp-btn-ghost").props("flat")
 
             def save_changes() -> None:
                 """Validate and save the category changes."""
@@ -536,15 +538,15 @@ def _open_edit_dialog(
                         error_label.set_text(error_msg)
                     error_label.set_visibility(True)
 
-            ui.button("Speichern", on_click=save_changes).props("color=primary")
+            ui.button("Speichern", on_click=save_changes).classes("sp-btn-primary")
 
     dialog.open()
 
 
 def _open_delete_dialog(category_id: int, category_name: str) -> None:
     """Open confirmation dialog to delete a category."""
-    with ui.dialog() as dialog, ui.card().classes("w-full max-w-md"):
-        ui.label("Kategorie löschen").classes("text-h6 font-semibold mb-4")
+    with ui.dialog() as dialog, ui.card().classes("sp-dashboard-card w-full max-w-md"):
+        ui.label("Kategorie löschen").classes("text-h6 font-semibold mb-4 text-fern")
 
         # Warning message
         ui.label(f"Möchten Sie die Kategorie '{category_name}' wirklich löschen?").classes("mb-2")
@@ -554,9 +556,9 @@ def _open_delete_dialog(category_id: int, category_name: str) -> None:
         error_label = ui.label("").classes("text-red-600 text-sm mb-2")
         error_label.set_visibility(False)
 
-        # Buttons
+        # Buttons (Solarpunk theme)
         with ui.row().classes("w-full justify-end gap-2"):
-            ui.button("Abbrechen", on_click=dialog.close).props("flat")
+            ui.button("Abbrechen", on_click=dialog.close).classes("sp-btn-ghost").props("flat")
 
             def confirm_delete() -> None:
                 """Perform the deletion."""
@@ -577,6 +579,6 @@ def _open_delete_dialog(category_id: int, category_name: str) -> None:
                     error_label.set_text(str(e))
                     error_label.set_visibility(True)
 
-            ui.button("Löschen", on_click=confirm_delete).props("color=red")
+            ui.button("Löschen", on_click=confirm_delete).classes("sp-btn-danger")
 
     dialog.open()

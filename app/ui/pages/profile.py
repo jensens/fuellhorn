@@ -35,11 +35,13 @@ def profile() -> None:
         ui.navigate.to("/login")
         return
 
-    # Header
-    with ui.row().classes("w-full items-center justify-between p-4 bg-white border-b border-gray-200"):
+    # Header (Solarpunk theme)
+    with ui.row().classes("sp-page-header w-full items-center justify-between"):
         with ui.row().classes("items-center gap-2"):
-            ui.button(icon="arrow_back", on_click=lambda: ui.navigate.to("/dashboard")).props("flat round color=gray-7")
-            ui.label("Profil").classes("text-h5 font-bold text-primary")
+            ui.button(icon="arrow_back", on_click=lambda: ui.navigate.to("/dashboard")).classes("sp-back-btn").props(
+                "flat round"
+            )
+            ui.label("Profil").classes("sp-page-title")
 
     # Main content with bottom nav spacing
     with create_mobile_page_container():
@@ -63,10 +65,10 @@ def profile() -> None:
 
 
 def _render_account_info_section(current_user: User) -> None:
-    """Render account info section with email and username."""
-    ui.label("Konto-Informationen").classes("text-h6 font-semibold mb-3")
+    """Render account info section with email and username (Solarpunk theme)."""
+    ui.label("Konto-Informationen").classes("text-h6 font-semibold mb-3 text-fern")
 
-    with ui.card().classes("w-full p-4"):
+    with ui.card().classes("sp-dashboard-card w-full p-4"):
         # Username (readonly)
         ui.input(
             label="Benutzername",
@@ -103,14 +105,14 @@ def _render_account_info_section(current_user: User) -> None:
             except ValueError as e:
                 ui.notify(str(e), type="negative")
 
-        ui.button("E-Mail speichern", icon="save", on_click=save_email).props("color=primary")
+        ui.button("E-Mail speichern", icon="save", on_click=save_email).classes("sp-btn-primary")
 
 
 def _render_password_change_section(current_user: User) -> None:
-    """Render password change section."""
-    ui.label("Passwort ändern").classes("text-h6 font-semibold mb-3")
+    """Render password change section (Solarpunk theme)."""
+    ui.label("Passwort ändern").classes("text-h6 font-semibold mb-3 text-fern")
 
-    with ui.card().classes("w-full p-4"):
+    with ui.card().classes("sp-dashboard-card w-full p-4"):
         # Current password
         current_pw_input = (
             ui.input(
@@ -184,7 +186,7 @@ def _render_password_change_section(current_user: User) -> None:
             except ValueError as e:
                 ui.notify(str(e), type="negative")
 
-        ui.button("Passwort ändern", icon="lock", on_click=change_password).props("color=primary")
+        ui.button("Passwort ändern", icon="lock", on_click=change_password).classes("sp-btn-primary")
 
 
 def _get_user_preferences(current_user: User) -> dict[str, Any]:
@@ -202,17 +204,17 @@ def _get_user_preferences(current_user: User) -> dict[str, Any]:
 
 
 def _render_smart_defaults_section(current_user: User) -> None:
-    """Render the Smart Default settings section."""
+    """Render the Smart Default settings section (Solarpunk theme)."""
     preferences = _get_user_preferences(current_user)
 
-    ui.label("Smart Default Einstellungen").classes("text-h6 font-semibold mb-3")
+    ui.label("Smart Default Einstellungen").classes("text-h6 font-semibold mb-3 text-fern")
 
-    with ui.card().classes("w-full p-4"):
-        ui.label("Zeitfenster für automatische Vorbelegung").classes("text-body2 text-gray-600 mb-3")
+    with ui.card().classes("sp-dashboard-card w-full p-4"):
+        ui.label("Zeitfenster für automatische Vorbelegung").classes("text-body2 text-charcoal mb-3")
         ui.label(
             "Wenn Sie innerhalb des Zeitfensters einen weiteren Artikel erfassen, "
             "werden die entsprechenden Werte automatisch vorbelegt."
-        ).classes("text-caption text-gray-500 mb-4")
+        ).classes("text-caption text-stone mb-4")
 
         # Item type time window
         item_type_input = ui.number(
@@ -253,4 +255,4 @@ def _render_smart_defaults_section(current_user: User) -> None:
 
             ui.notify("Einstellungen gespeichert", type="positive")
 
-        ui.button("Speichern", icon="save", on_click=save_preferences).props("color=primary")
+        ui.button("Speichern", icon="save", on_click=save_preferences).classes("sp-btn-primary")
