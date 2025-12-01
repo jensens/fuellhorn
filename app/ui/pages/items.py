@@ -50,22 +50,22 @@ ITEM_TYPE_LABELS: dict[str, str] = {
 
 def _render_empty_state() -> None:
     """Render empty state when no items exist or no search results."""
-    with ui.card().classes("w-full p-6 text-center"):
-        ui.icon("inventory_2").classes("text-6xl text-gray-300 mb-4")
-        ui.label("Keine Artikel vorhanden").classes("text-lg text-gray-600 mb-2")
-        ui.label("Erfasse deinen ersten Artikel!").classes("text-sm text-gray-500")
+    with ui.card().classes("sp-dashboard-card w-full p-6 text-center"):
+        ui.icon("inventory_2").classes("text-6xl text-stone mb-4")
+        ui.label("Keine Artikel vorhanden").classes("text-lg text-charcoal mb-2")
+        ui.label("Erfasse deinen ersten Artikel!").classes("text-sm text-stone")
         ui.button(
             "Artikel erfassen",
             on_click=lambda: ui.navigate.to("/add-item"),
-        ).classes("mt-4")
+        ).classes("mt-4 sp-btn-primary")
 
 
 def _render_no_filter_results() -> None:
     """Render message when filters yield no results."""
-    with ui.card().classes("w-full p-6 text-center"):
-        ui.icon("search_off").classes("text-6xl text-gray-300 mb-4")
-        ui.label("Keine Artikel gefunden").classes("text-lg text-gray-600 mb-2")
-        ui.label("Versuche andere Filter oder Suchbegriffe").classes("text-sm text-gray-500")
+    with ui.card().classes("sp-dashboard-card w-full p-6 text-center"):
+        ui.icon("search_off").classes("text-6xl text-stone mb-4")
+        ui.label("Keine Artikel gefunden").classes("text-lg text-charcoal mb-2")
+        ui.label("Versuche andere Filter oder Suchbegriffe").classes("text-sm text-stone")
 
 
 def _build_item_category_map(items: list[Item]) -> dict[int, int | None]:
@@ -309,9 +309,9 @@ def items_page() -> None:
             )
             sheet.open()
 
-    # Header with toggle
-    with ui.row().classes("w-full items-center justify-between p-4 bg-white border-b border-gray-200"):
-        ui.label("Vorrat").classes("text-h5 font-bold text-primary")
+    # Header with toggle (Solarpunk theme)
+    with ui.row().classes("sp-page-header w-full items-center justify-between"):
+        ui.label("Vorrat").classes("sp-page-title")
         # Toggle for showing consumed items
         ui.switch("Entnommene anzeigen", value=show_consumed, on_change=on_toggle_change).classes("text-sm")
 

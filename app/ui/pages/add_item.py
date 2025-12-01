@@ -112,11 +112,11 @@ def add_item() -> None:
         # Clear and rebuild UI for Step 1 (like show_step2 and show_step3)
         content_container.clear()
         with content_container:
-            # Progress Indicator
-            ui.label("Schritt 1 von 3").classes("text-sm text-gray-600 mb-4")
+            # Progress Indicator (Solarpunk theme)
+            ui.label("Schritt 1 von 3").classes("text-sm text-stone mb-4")
 
             # Step 1: Basic Information
-            ui.label("Basisinformationen").classes("text-h6 font-semibold mb-3")
+            ui.label("Basisinformationen").classes("sp-page-title text-base mb-3")
 
             # Product Name
             ui.label("Produktname *").classes("text-sm font-medium mb-1")
@@ -200,13 +200,13 @@ def add_item() -> None:
         # Clear and rebuild UI for Step 2
         content_container.clear()
         with content_container:
-            # Progress Indicator
-            ui.label("Schritt 2 von 3").classes("text-sm text-gray-600 mb-4")
+            # Progress Indicator (Solarpunk theme)
+            ui.label("Schritt 2 von 3").classes("text-sm text-stone mb-4")
 
             # Step 2: Shelf Life Information
-            ui.label("Haltbarkeit").classes("text-h6 font-semibold mb-3")
+            ui.label("Haltbarkeit").classes("sp-page-title text-base mb-3")
 
-            # Summary from Step 1
+            # Summary from Step 1 (Solarpunk summary box)
             item_type_labels = {
                 ItemType.PURCHASED_FRESH: "Frisch eingekauft",
                 ItemType.PURCHASED_FROZEN: "TK-Ware gekauft",
@@ -216,11 +216,11 @@ def add_item() -> None:
             }
             type_label = item_type_labels.get(item_type, "")
 
-            with ui.card().classes("w-full bg-gray-50 p-3 mb-4"):
-                ui.label("Zusammenfassung:").classes("text-sm font-medium mb-2")
+            with ui.element("div").classes("sp-summary-box w-full mb-4"):
+                ui.label("Zusammenfassung:").classes("sp-summary-title")
                 ui.label(
                     f"{form_data['product_name']} • {form_data['quantity']} {form_data['unit']} • {type_label}"
-                ).classes("text-sm")
+                ).classes("sp-summary-content")
 
             # Category Chips (only for types that need shelf life from DB)
             if needs_category:
@@ -228,7 +228,7 @@ def add_item() -> None:
                     categories = category_service.get_all_categories(session)
 
                 ui.label("Kategorie *").classes("text-sm font-medium mb-2")
-                ui.label("Bestimmt die Haltbarkeit").classes("text-xs text-gray-600 mb-2")
+                ui.label("Bestimmt die Haltbarkeit").classes("text-xs text-stone mb-2")
 
                 def on_category_change(category_id: int) -> None:
                     form_data["category_id"] = category_id
@@ -347,13 +347,13 @@ def add_item() -> None:
         # Clear and rebuild UI for Step 3
         content_container.clear()
         with content_container:
-            # Progress Indicator
-            ui.label("Schritt 3 von 3").classes("text-sm text-gray-600 mb-4")
+            # Progress Indicator (Solarpunk theme)
+            ui.label("Schritt 3 von 3").classes("text-sm text-stone mb-4")
 
             # Step 3: Location & Notes
-            ui.label("Lagerort & Notizen").classes("text-h6 font-semibold mb-3")
+            ui.label("Lagerort & Notizen").classes("sp-page-title text-base mb-3")
 
-            # Summary from Steps 1-2
+            # Summary from Steps 1-2 (Solarpunk summary box)
             item_type_labels = {
                 ItemType.PURCHASED_FRESH: "Frisch eingekauft",
                 ItemType.PURCHASED_FROZEN: "TK-Ware gekauft",
@@ -371,8 +371,8 @@ def add_item() -> None:
                     if category:
                         category_name = category.name
 
-            with ui.card().classes("w-full bg-gray-50 p-3 mb-4"):
-                ui.label("Zusammenfassung:").classes("text-sm font-medium mb-2")
+            with ui.element("div").classes("sp-summary-box w-full mb-4"):
+                ui.label("Zusammenfassung:").classes("sp-summary-title")
                 summary_parts = [
                     form_data["product_name"],
                     f"{form_data['quantity']} {form_data['unit']}",
@@ -380,7 +380,7 @@ def add_item() -> None:
                 ]
                 if category_name:
                     summary_parts.append(category_name)
-                ui.label(" • ".join(summary_parts)).classes("text-sm")
+                ui.label(" • ".join(summary_parts)).classes("sp-summary-content")
 
                 # Date info
                 best_before_str = form_data["best_before_date"].strftime("%d.%m.%Y")
@@ -388,7 +388,7 @@ def add_item() -> None:
                 if form_data.get("freeze_date"):
                     freeze_str = form_data["freeze_date"].strftime("%d.%m.%Y")
                     date_info += f" • Eingefroren: {freeze_str}"
-                ui.label(date_info).classes("text-sm")
+                ui.label(date_info).classes("sp-summary-content")
 
             # Fetch locations filtered by item type
             with next(get_session()) as session:
@@ -407,7 +407,7 @@ def add_item() -> None:
                     warning_msg = "Kein Tiefkühl-Lagerort vorhanden. Bitte zuerst einen anlegen."
                 else:
                     warning_msg = "Kein passender Lagerort (Keller/Kühlschrank) vorhanden."
-                ui.label(warning_msg).classes("text-sm text-red-600 mb-2")
+                ui.label(warning_msg).classes("text-sm sp-expiry-critical mb-2")
 
             def on_location_change(location_id: int) -> None:
                 form_data["location_id"] = location_id
@@ -540,19 +540,21 @@ def add_item() -> None:
         # Reset wizard with smart defaults and reload page
         ui.navigate.to("/items/add")
 
-    # Header with title and close button
-    with ui.row().classes("w-full items-center justify-between p-4 bg-white border-b border-gray-200"):
-        ui.label("Artikel erfassen").classes("text-h5 font-bold text-primary")
-        ui.button(icon="close", on_click=lambda: ui.navigate.to("/dashboard")).props("flat round color=gray-7")
+    # Header with title and close button (Solarpunk theme)
+    with ui.row().classes("sp-page-header w-full items-center justify-between"):
+        ui.label("Artikel erfassen").classes("sp-page-title")
+        ui.button(icon="close", on_click=lambda: ui.navigate.to("/dashboard")).classes("sp-back-btn").props(
+            "flat round"
+        )
 
     # Main content container (max-width handled by create_mobile_page_container)
     content_container = create_mobile_page_container()
     with content_container:
-        # Progress Indicator
-        ui.label("Schritt 1 von 3").classes("text-sm text-gray-600 mb-4")
+        # Progress Indicator (Solarpunk theme)
+        ui.label("Schritt 1 von 3").classes("text-sm text-stone mb-4")
 
         # Step 1: Basic Information
-        ui.label("Basisinformationen").classes("text-h6 font-semibold mb-3")
+        ui.label("Basisinformationen").classes("sp-page-title text-base mb-3")
 
         # Product Name
         ui.label("Produktname *").classes("text-sm font-medium mb-1")
