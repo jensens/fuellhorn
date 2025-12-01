@@ -305,6 +305,7 @@ def items_page() -> None:
                 location=location,
                 on_close=refresh_items,
                 on_withdraw=lambda _: refresh_items(),
+                on_edit=lambda i: ui.navigate.to(f"/items/{i.id}/edit"),
                 on_consume=lambda _: refresh_items(),
             )
             sheet.open()
