@@ -45,23 +45,19 @@ def create_location_chip_group(
 
             if is_selected:
                 # Selected state - full background in location color
+                chip.classes(add="active")
                 chip.style(
-                    f"background-color: {color} !important; border: 2px solid {color}; color: {text_color} !important;"
+                    f"--chip-color: {color}; "
+                    f"background-color: {color} !important; border-color: {color}; color: {text_color} !important;"
                 )
                 dot.style(
-                    "width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; "
-                    f"background: radial-gradient(circle, {dot_color} 35%, transparent 35%); "
-                    f"border: 2px solid {dot_color};"
+                    f"border-color: {dot_color}; background: radial-gradient(circle, {dot_color} 35%, transparent 35%);"
                 )
             else:
-                # Default state - colored border, gray background
-                chip.style(
-                    f"background-color: #F3F4F6 !important; border: 2px solid {color}; color: #374151 !important;"
-                )
-                dot.style(
-                    "width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; "
-                    f"background-color: transparent; border: 2px solid {color};"
-                )
+                # Default state - colored border, theme background
+                chip.classes(remove="active")
+                chip.style(f"--chip-color: {color}; border-color: {color};")
+                dot.style(f"border-color: {color}; background: white;")
 
     def select_location(location_id: int) -> None:
         """Handle chip selection."""
@@ -85,18 +81,19 @@ def create_location_chip_group(
             # Store color for update_chip_styles
             location_colors[loc_id] = color
 
-            # Create chip as button for proper click handling
+            # Create chip as button with Solarpunk theme classes
+            # Dynamic colors via CSS custom properties and inline style overrides
             chip = (
                 ui.button(
                     on_click=lambda _, lid=loc_id: select_location(lid),
                 )
-                .classes("rounded-lg cursor-pointer transition-all duration-150 ease-in-out select-none normal-case")
+                .classes("sp-chip sp-chip-category" + (" active" if is_selected else ""))
                 .style(
-                    "min-height: 44px; padding: 0.5rem 0.75rem; "
+                    f"--chip-color: {color}; "
                     + (
-                        f"background-color: {color} !important; border: 2px solid {color}; color: {text_color} !important;"
+                        f"background-color: {color} !important; border-color: {color}; color: {text_color} !important;"
                         if is_selected
-                        else f"background-color: #F3F4F6 !important; border: 2px solid {color}; color: #374151 !important;"
+                        else f"border-color: {color};"
                     )
                 )
                 .props("flat no-caps")
@@ -105,17 +102,21 @@ def create_location_chip_group(
             chip_refs[loc_id] = chip
 
             # Add content to button with explicit flex container
-            # Dot color: same as text for visibility
+            # Dot color: same as text for visibility on dark backgrounds
             dot_color = "white" if text_color == "white" else color
             with chip:
                 with ui.row().classes("items-center gap-2").style("flex-wrap: nowrap;"):
-                    # Ring-dot indicator with location color
-                    dot = ui.element("div").style(
-                        "width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; "
-                        + (
-                            f"background: radial-gradient(circle, {dot_color} 35%, transparent 35%); border: 2px solid {dot_color};"
-                            if is_selected
-                            else f"background-color: transparent; border: 2px solid {color};"
+                    # Ring-dot indicator with Solarpunk theme class and dynamic color
+                    dot = (
+                        ui.element("div")
+                        .classes("sp-ring-dot")
+                        .style(
+                            f"border-color: {dot_color if is_selected else color}; "
+                            + (
+                                f"background: radial-gradient(circle, {dot_color} 35%, transparent 35%);"
+                                if is_selected
+                                else ""
+                            )
                         )
                     )
                     dot_refs[loc_id] = dot

@@ -18,6 +18,15 @@ ITEM_TYPE_LABELS: dict[ItemType, str] = {
     ItemType.HOMEMADE_PRESERVED: "Selbst eingemacht",
 }
 
+# CSS data-type attribute values for Solarpunk theme styling
+ITEM_TYPE_DATA_TYPES: dict[ItemType, str] = {
+    ItemType.PURCHASED_FRESH: "fresh",
+    ItemType.PURCHASED_FROZEN: "frozen",
+    ItemType.PURCHASED_THEN_FROZEN: "frozen",
+    ItemType.HOMEMADE_FROZEN: "homemade",
+    ItemType.HOMEMADE_PRESERVED: "homemade",
+}
+
 
 def create_item_type_chip_group(
     value: ItemType | None = None,
@@ -35,34 +44,16 @@ def create_item_type_chip_group(
     # Store current selection and chip references
     current_value: list[ItemType | None] = [value]
     chip_refs: dict[ItemType, ui.element] = {}
-    dot_refs: dict[ItemType, ui.element] = {}
 
     def update_chip_styles() -> None:
         """Update all chips to reflect current selection."""
         for item_type, chip in chip_refs.items():
             is_selected = item_type == current_value[0]
-            dot = dot_refs[item_type]
 
             if is_selected:
-                # Selected state - white outer ring with colored inner dot
-                chip.classes(
-                    remove="bg-gray-100 text-gray-700 hover:bg-gray-200",
-                    add="bg-primary text-white",
-                )
-                dot.style(
-                    "width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; "
-                    "background: radial-gradient(circle, var(--q-primary, #1976d2) 35%, white 35%);"
-                )
+                chip.classes(add="active")
             else:
-                # Default state - empty ring
-                chip.classes(
-                    remove="bg-primary text-white",
-                    add="bg-gray-100 text-gray-700 hover:bg-gray-200",
-                )
-                dot.style(
-                    "width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; "
-                    "background: transparent; border: 2px solid #9ca3af;"
-                )
+                chip.classes(remove="active")
 
     def select_item_type(item_type: ItemType) -> None:
         """Handle chip selection."""
@@ -77,19 +68,15 @@ def create_item_type_chip_group(
         for item_type in ItemType:
             is_selected = item_type == value
             label_text = ITEM_TYPE_LABELS.get(item_type, item_type.value)
+            data_type = ITEM_TYPE_DATA_TYPES.get(item_type, "fresh")
 
-            # Create chip as button for proper click handling
+            # Create chip as button with Solarpunk theme classes
             chip = (
                 ui.button(
                     on_click=lambda _, it=item_type: select_item_type(it),
                 )
-                .classes(
-                    "rounded-lg cursor-pointer "
-                    "transition-all duration-150 ease-in-out select-none normal-case "
-                    + ("bg-primary text-white" if is_selected else "bg-gray-100 text-gray-700 hover:bg-gray-200")
-                )
-                .style("min-height: 44px; padding: 0.5rem 0.75rem;")
-                .props("flat no-caps")
+                .classes("sp-chip sp-chip-type" + (" active" if is_selected else ""))
+                .props(f'flat no-caps data-type="{data_type}"')
             )
 
             chip_refs[item_type] = chip
@@ -97,16 +84,8 @@ def create_item_type_chip_group(
             # Add content to button with explicit flex container
             with chip:
                 with ui.row().classes("items-center gap-2").style("flex-wrap: nowrap;"):
-                    # Ring-dot indicator
-                    dot = ui.element("div").style(
-                        "width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; "
-                        + (
-                            "background: radial-gradient(circle, var(--q-primary, #1976d2) 35%, white 35%);"
-                            if is_selected
-                            else "background-color: transparent; border: 2px solid #9ca3af;"
-                        )
-                    )
-                    dot_refs[item_type] = dot
+                    # Ring-dot indicator with Solarpunk theme class
+                    ui.element("div").classes("sp-ring-dot")
 
                     # Label
                     ui.label(label_text).classes("text-sm font-medium whitespace-nowrap")
