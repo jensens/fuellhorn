@@ -621,11 +621,8 @@ def test_withdraw_partial_consumed_item_fails(session: Session, test_admin: User
 # =============================================================================
 
 
-def test_withdraw_partial_creates_withdrawal_entry(
-    session: Session, test_admin: User
-) -> None:
+def test_withdraw_partial_creates_withdrawal_entry(session: Session, test_admin: User) -> None:
     """Test: Partial withdrawal creates a Withdrawal record."""
-    from app.models import Withdrawal
 
     location = location_service.create_location(
         session=session,
@@ -672,9 +669,7 @@ def test_withdraw_partial_creates_withdrawal_entry(
     assert withdrawals[0].withdrawn_at is not None
 
 
-def test_mark_item_consumed_creates_withdrawal_entry(
-    session: Session, test_admin: User
-) -> None:
+def test_mark_item_consumed_creates_withdrawal_entry(session: Session, test_admin: User) -> None:
     """Test: Marking item as consumed creates a Withdrawal record with full quantity."""
     location = location_service.create_location(
         session=session,
@@ -713,9 +708,7 @@ def test_mark_item_consumed_creates_withdrawal_entry(
     assert withdrawals[0].withdrawn_by == test_admin.id
 
 
-def test_get_withdrawal_history_returns_all_entries(
-    session: Session, test_admin: User
-) -> None:
+def test_get_withdrawal_history_returns_all_entries(session: Session, test_admin: User) -> None:
     """Test: Withdrawal history returns all entries in chronological order."""
     location = location_service.create_location(
         session=session,
@@ -765,9 +758,7 @@ def test_get_withdrawal_history_returns_all_entries(
     assert withdrawals[1].quantity == 150
 
 
-def test_get_withdrawal_history_empty_for_new_item(
-    session: Session, test_admin: User
-) -> None:
+def test_get_withdrawal_history_empty_for_new_item(session: Session, test_admin: User) -> None:
     """Test: New item has empty withdrawal history."""
     location = location_service.create_location(
         session=session,
@@ -846,7 +837,5 @@ def test_delete_item_cascades_withdrawals(session: Session, test_admin: User) ->
     item_service.delete_item(session, item_id)
 
     # Verify withdrawals are also deleted
-    remaining = list(
-        session.exec(select(Withdrawal).where(Withdrawal.item_id == item_id)).all()
-    )
+    remaining = list(session.exec(select(Withdrawal).where(Withdrawal.item_id == item_id)).all())
     assert len(remaining) == 0
