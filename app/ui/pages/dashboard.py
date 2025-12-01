@@ -106,6 +106,7 @@ def handle_consume(item: Item) -> None:
             location=location,
             on_close=refresh_dashboard,
             on_withdraw=lambda _: refresh_dashboard(),
+            on_edit=lambda i: ui.navigate.to(f"/items/{i.id}/edit"),
             on_consume=lambda _: refresh_dashboard(),
         )
         sheet.open()

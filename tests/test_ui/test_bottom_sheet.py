@@ -390,3 +390,45 @@ async def test_bottom_sheet_withdraw_partial_success(user: User) -> None:
         assert updated_item is not None
         assert updated_item.quantity == 300
         assert updated_item.is_consumed is False
+
+
+# =============================================================================
+# Edit Button Tests (Issue #176)
+# =============================================================================
+
+
+async def test_bottom_sheet_edit_button_calls_callback(user: User) -> None:
+    """Test that clicking 'Bearbeiten' calls the on_edit callback."""
+    from app.database import get_session
+
+    with next(get_session()) as session:
+        location = Location(
+            name="Kühlschrank",
+            location_type=LocationType.CHILLED,
+            created_by=1,
+        )
+        session.add(location)
+        session.commit()
+        session.refresh(location)
+
+        item = Item(
+            product_name="Joghurt",
+            item_type=ItemType.PURCHASED_FRESH,
+            quantity=1,
+            unit="Becher",
+            location_id=location.id,
+            best_before_date=date.today() + timedelta(days=14),
+            created_by=1,
+        )
+        session.add(item)
+        session.commit()
+        session.refresh(item)
+        item_id = item.id
+
+    await user.open(f"/test/bottom-sheet/{item_id}")
+
+    # Click on "Bearbeiten" button
+    user.find("Bearbeiten").click()
+
+    # Verify on_edit callback was triggered (test page shows notify)
+    await user.should_see("Bearbeiten: Joghurt")
