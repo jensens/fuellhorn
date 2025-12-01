@@ -84,8 +84,9 @@ def create_bottom_sheet(
     Returns:
         The dialog element that can be opened with .open()
     """
-    # Create dialog with bottom sheet styling
-    dialog = ui.dialog().props("position=bottom full-width")
+    # Create dialog with bottom sheet styling (max-width for larger screens)
+    dialog = ui.dialog().props("position=bottom").classes("bottom-sheet-dialog")
+    dialog.style("width: 100%; max-width: 800px;")
 
     with dialog:
         with ui.card().classes("w-full rounded-t-2xl p-0"):

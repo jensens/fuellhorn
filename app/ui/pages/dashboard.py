@@ -7,7 +7,9 @@ from ...auth import require_auth
 from ...database import get_session
 from ...models.item import Item
 from ...services import item_service
+from ...services import location_service
 from ..components import create_bottom_nav
+from ..components import create_bottom_sheet
 from ..components import create_mobile_page_container
 from ..components import create_user_dropdown
 from datetime import date
@@ -125,6 +127,19 @@ def dashboard() -> None:
 
 
 def handle_consume(item: Item) -> None:
-    """Handle consuming an item (opens dialog)."""
-    # TODO: Implement consume dialog (Bottom Sheet)
-    ui.notify(f"Entnehmen-Funktion für {item.product_name} wird implementiert", type="info")
+    """Handle consuming an item - opens bottom sheet with details."""
+
+    def refresh_dashboard() -> None:
+        """Refresh dashboard after action."""
+        ui.navigate.to("/dashboard")
+
+    with next(get_session()) as session:
+        location = location_service.get_location(session, item.location_id)
+        sheet = create_bottom_sheet(
+            item=item,
+            location=location,
+            on_close=refresh_dashboard,
+            on_withdraw=lambda _: refresh_dashboard(),
+            on_consume=lambda _: refresh_dashboard(),
+        )
+        sheet.open()
