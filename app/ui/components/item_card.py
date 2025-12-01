@@ -16,18 +16,14 @@ from ...models.item import Item
 from ...models.item import ItemType
 from ...services import item_service
 from ...services import location_service
+from ..theme import ITEM_TYPE_COLORS
+from ..theme import STATUS_COLORS
+from ..theme import get_contrast_text_color
 from datetime import date
 from nicegui import ui
 from sqlmodel import Session
 from typing import Callable
 
-
-# Status color mapping (Tailwind classes)
-STATUS_COLORS = {
-    "critical": "red-500",
-    "warning": "orange-500",
-    "ok": "green-500",
-}
 
 # Item-Type Badge short labels (German)
 ITEM_TYPE_SHORT_LABELS = {
@@ -38,36 +34,10 @@ ITEM_TYPE_SHORT_LABELS = {
     ItemType.HOMEMADE_PRESERVED: "Eingemacht",
 }
 
-# Item-Type Badge colors (softer colors for badges)
-ITEM_TYPE_COLORS = {
-    ItemType.PURCHASED_FRESH: "#7CB342",  # Leaf green
-    ItemType.PURCHASED_FROZEN: "#5BA3C6",  # Info blue
-    ItemType.PURCHASED_THEN_FROZEN: "#5BA3C6",  # Info blue
-    ItemType.HOMEMADE_FROZEN: "#C17F59",  # Terracotta
-    ItemType.HOMEMADE_PRESERVED: "#C17F59",  # Terracotta
-}
-
 
 def get_status_color(status: str) -> str:
     """Get Tailwind color class for status."""
     return STATUS_COLORS.get(status, "gray-500")
-
-
-def _get_contrast_text_color(hex_color: str) -> str:
-    """Return 'white' or dark color based on background color contrast."""
-    hex_color = hex_color.lstrip("#")
-    if len(hex_color) != 6:
-        return "#374151"
-
-    r = int(hex_color[0:2], 16) / 255
-    g = int(hex_color[2:4], 16) / 255
-    b = int(hex_color[4:6], 16) / 255
-
-    def adjust(c: float) -> float:
-        return c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4
-
-    luminance = 0.2126 * adjust(r) + 0.7152 * adjust(g) + 0.0722 * adjust(b)
-    return "white" if luminance < 0.5 else "#1F2937"
 
 
 def _format_expiry_display(expiry_date: date, item_type: ItemType) -> tuple[str, str]:
@@ -201,7 +171,7 @@ def create_item_card(
                     # Category badge (if exists)
                     if category:
                         cat_color = category.color or "#6B7280"
-                        cat_text_color = _get_contrast_text_color(cat_color)
+                        cat_text_color = get_contrast_text_color(cat_color)
                         ui.label(category.name).classes("text-xs px-2 py-0.5 rounded").style(
                             f"background-color: {cat_color}; color: {cat_text_color}; font-weight: 500;"
                         )

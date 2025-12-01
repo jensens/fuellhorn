@@ -6,29 +6,10 @@ Locations are loaded dynamically from the database.
 """
 
 from ...models.location import Location
+from ..theme import get_contrast_text_color
 from collections.abc import Callable
 from collections.abc import Sequence
 from nicegui import ui
-
-
-def _get_contrast_text_color(hex_color: str) -> str:
-    """Return 'white' or dark color based on background color contrast.
-
-    Uses WCAG relative luminance formula to determine optimal text color.
-    """
-    hex_color = hex_color.lstrip("#")
-    if len(hex_color) != 6:
-        return "#374151"
-
-    r = int(hex_color[0:2], 16) / 255
-    g = int(hex_color[2:4], 16) / 255
-    b = int(hex_color[4:6], 16) / 255
-
-    def adjust(c: float) -> float:
-        return c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4
-
-    luminance = 0.2126 * adjust(r) + 0.7152 * adjust(g) + 0.0722 * adjust(b)
-    return "white" if luminance < 0.5 else "#1F2937"
 
 
 def create_location_chip_group(
@@ -58,7 +39,7 @@ def create_location_chip_group(
             is_selected = location_id == current_value[0]
             dot = dot_refs[location_id]
             color = location_colors.get(location_id, "#6B7280")
-            text_color = _get_contrast_text_color(color)
+            text_color = get_contrast_text_color(color)
             # Dot border color: white for dark backgrounds, use location color for light
             dot_color = "white" if text_color == "white" else color
 
@@ -99,7 +80,7 @@ def create_location_chip_group(
             loc_id: int = location.id
             is_selected = loc_id == value
             color = location.color or "#6B7280"  # Default gray if no color
-            text_color = _get_contrast_text_color(color)
+            text_color = get_contrast_text_color(color)
 
             # Store color for update_chip_styles
             location_colors[loc_id] = color
