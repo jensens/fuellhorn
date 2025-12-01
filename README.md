@@ -109,6 +109,26 @@ uv tool install pre-commit
 uv run pre-commit install
 ```
 
+### Dev-Server (für parallele Entwicklung)
+
+Das Dev-Server Script konfiguriert automatisch Port und Testdaten basierend auf dem Git-Worktree:
+
+```bash
+./scripts/dev-server.sh
+```
+
+- **Port**: 8000 + Issue-Nummer (z.B. Issue 123 → Port 8123)
+- **Testdaten**: Admin-User (admin/admin), Kategorien, Lagerorte, Beispiel-Items
+- Jeder Worktree hat eine eigene SQLite-DB
+
+```bash
+# Ohne Testdaten starten
+./scripts/dev-server.sh --no-seed
+
+# Manuell mit spezifischem Port
+PORT=8123 uv run python main.py
+```
+
 ### Tests ausführen
 
 ```bash
@@ -160,14 +180,21 @@ uv run alembic history
 ```
 fuellhorn/
 ├── app/
+│   ├── api/                 # REST API Endpoints (Health-Check)
+│   ├── auth/                # Authentication & Authorization
 │   ├── models/              # SQLModel Entitäten
 │   ├── services/            # Business Logic
-│   ├── auth/                # Authentication & Authorization
+│   ├── static/              # Static Files (CSS)
 │   ├── ui/                  # NiceGUI UI
+│   │   ├── components/      # Wiederverwendbare Komponenten
 │   │   ├── pages/           # UI Pages
-│   │   └── components/      # Wiederverwendbare Komponenten
+│   │   ├── theme/           # Theme-System
+│   │   └── validation/      # Form-Validierung
 │   └── utils/               # Helper Functions
 ├── alembic/                 # Database Migrations
+├── docs/                    # Dokumentation
+│   └── agent/               # Agent-spezifische Docs
+├── scripts/                 # Hilfs-Skripte (dev-server.sh)
 ├── tests/                   # Tests
 ├── data/                    # SQLite DB (development)
 ├── main.py                  # Application Entry Point
@@ -309,7 +336,7 @@ docker run -d \
 
 Bitte lies vor der Entwicklung:
 - [CLAUDE.md](CLAUDE.md) - Entwicklungsregeln und Best Practices
-- [docs/TESTING.md](docs/TESTING.md) - Testing Strategy
+- [docs/agent/tests_schreiben.md](docs/agent/tests_schreiben.md) - Testing Strategy
 
 ### Aufgabenverwaltung
 
