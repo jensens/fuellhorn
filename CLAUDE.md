@@ -26,7 +26,7 @@ uv run ruff format app/          # Formatierung
 - **Test-First Ansatz bevorzugt**: Test schreiben → rot → implementieren → grün
 - **UI-Tests sind Pflicht** mit NiceGUI Testing Framework
 
-**Detaillierte Test-Strategie:** [docs/TESTING.md](docs/TESTING.md)
+WICHTIG: Documennt IMMER vor Implementierungen LESEN, **detaillierte Test-Strategie:** [docs/TESTING.md](docs/TESTING.md)
 
 ### 2. Git Worktrees verwenden
 
