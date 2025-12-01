@@ -42,7 +42,7 @@ def dashboard() -> None:
                     create_item_card(
                         item,
                         session,
-                        on_consume=lambda i=item: handle_consume(i),
+                        on_consume=lambda i=item: handle_consume(i),  # type: ignore[misc]
                     )
             else:
                 ui.label("✅ Keine Artikel laufen in den nächsten 7 Tagen ab!").classes(
