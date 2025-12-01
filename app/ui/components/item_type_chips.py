@@ -27,6 +27,13 @@ ITEM_TYPE_DATA_TYPES: dict[ItemType, str] = {
     ItemType.HOMEMADE_PRESERVED: "homemade",
 }
 
+# Type colors for inline styling (to override Quasar)
+ITEM_TYPE_COLORS: dict[str, str] = {
+    "fresh": "var(--sp-leaf)",
+    "frozen": "var(--sp-status-info)",
+    "homemade": "var(--sp-terracotta)",
+}
+
 
 def create_item_type_chip_group(
     value: ItemType | None = None,
@@ -44,16 +51,20 @@ def create_item_type_chip_group(
     # Store current selection and chip references
     current_value: list[ItemType | None] = [value]
     chip_refs: dict[ItemType, ui.element] = {}
+    chip_colors: dict[ItemType, str] = {}
 
     def update_chip_styles() -> None:
         """Update all chips to reflect current selection."""
         for item_type, chip in chip_refs.items():
             is_selected = item_type == current_value[0]
+            type_color = chip_colors.get(item_type, "var(--sp-leaf)")
 
             if is_selected:
                 chip.classes(add="active")
+                chip.style("color: white !important;")
             else:
                 chip.classes(remove="active")
+                chip.style(f"color: {type_color} !important;")
 
     def select_item_type(item_type: ItemType) -> None:
         """Handle chip selection."""
@@ -69,6 +80,10 @@ def create_item_type_chip_group(
             is_selected = item_type == value
             label_text = ITEM_TYPE_LABELS.get(item_type, item_type.value)
             data_type = ITEM_TYPE_DATA_TYPES.get(item_type, "fresh")
+            type_color = ITEM_TYPE_COLORS.get(data_type, "var(--sp-leaf)")
+
+            # Store color for update_chip_styles
+            chip_colors[item_type] = type_color
 
             # Create chip as button with Solarpunk theme classes
             chip = (
@@ -76,6 +91,7 @@ def create_item_type_chip_group(
                     on_click=lambda _, it=item_type: select_item_type(it),
                 )
                 .classes("sp-chip sp-chip-type" + (" active" if is_selected else ""))
+                .style("color: white !important;" if is_selected else f"color: {type_color} !important;")
                 .props(f'flat no-caps data-type="{data_type}"')
             )
 
