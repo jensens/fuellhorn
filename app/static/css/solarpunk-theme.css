@@ -1,0 +1,707 @@
+/* ========================================
+   FÜLLHORN SOLARPUNK THEME
+   Version 1.0
+   
+   NiceGUI / Quasar Override Styles
+   
+   Usage: Include after Quasar CSS
+   <link href="/static/solarpunk-theme.css" rel="stylesheet">
+   ======================================== */
+
+/* Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Nunito:wght@400;500;600;700&display=swap');
+
+/* ----------------------------------------
+   CSS CUSTOM PROPERTIES
+   ---------------------------------------- */
+:root {
+  /* Primary - Greens */
+  --sp-fern: #4A7C59;
+  --sp-fern-dark: #3D6A4A;
+  --sp-fern-light: #5A8C69;
+  --sp-moss: #5C7F5C;
+  --sp-leaf: #7CB342;
+  --sp-leaf-light: #9DC46A;
+  --sp-sage: #9CAF88;
+  --sp-sage-light: #B8C9A8;
+  
+  /* Secondary - Earth & Gold */
+  --sp-amber: #E6A832;
+  --sp-amber-dark: #D49A28;
+  --sp-amber-light: #F0BC52;
+  --sp-honey: #DAA520;
+  --sp-terracotta: #C17F59;
+  
+  /* Neutrals */
+  --sp-cream: #FAF7F0;
+  --sp-oat: #F5F0E6;
+  --sp-parchment: #EDE8DB;
+  --sp-stone: #A39E93;
+  --sp-stone-dark: #7D796F;
+  --sp-charcoal: #3D3D3D;
+  
+  /* Status Colors */
+  --sp-status-ok: #7CB342;
+  --sp-status-warning: #E6A832;
+  --sp-status-critical: #E07A5F;
+  --sp-status-critical-dark: #C96A4F;
+  --sp-status-info: #5BA3C6;
+  
+  /* Shadows */
+  --sp-shadow-sm: 0 1px 3px rgba(74, 124, 89, 0.08);
+  --sp-shadow-md: 0 4px 12px rgba(74, 124, 89, 0.12);
+  --sp-shadow-lg: 0 8px 24px rgba(74, 124, 89, 0.16);
+  
+  /* Border Radius */
+  --sp-radius-sm: 8px;
+  --sp-radius-md: 12px;
+  --sp-radius-lg: 16px;
+  --sp-radius-xl: 20px;
+  --sp-radius-full: 9999px;
+  
+  /* Typography */
+  --sp-font-display: 'Cormorant Garamond', Georgia, serif;
+  --sp-font-body: 'Nunito', system-ui, sans-serif;
+  
+  /* Quasar Variable Overrides */
+  --q-primary: #4A7C59;
+  --q-secondary: #9CAF88;
+  --q-accent: #E6A832;
+  --q-positive: #7CB342;
+  --q-negative: #E07A5F;
+  --q-warning: #E6A832;
+  --q-info: #5BA3C6;
+  --q-dark: #3D3D3D;
+}
+
+/* ----------------------------------------
+   BASE STYLES
+   ---------------------------------------- */
+body {
+  font-family: var(--sp-font-body);
+  background-color: var(--sp-cream) !important;
+  color: var(--sp-charcoal);
+}
+
+/* ----------------------------------------
+   TYPOGRAPHY
+   ---------------------------------------- */
+.text-h4, .text-h5, .text-h6,
+h1, h2, h3 {
+  font-family: var(--sp-font-display) !important;
+  color: var(--sp-fern) !important;
+  font-weight: 600;
+}
+
+/* Page Title in Header */
+.sp-page-title {
+  font-family: var(--sp-font-display);
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--sp-fern);
+}
+
+/* ----------------------------------------
+   QUASAR CARDS
+   ---------------------------------------- */
+.q-card {
+  background: white !important;
+  border-radius: var(--sp-radius-lg) !important;
+  box-shadow: var(--sp-shadow-sm) !important;
+}
+
+.q-card:hover {
+  box-shadow: var(--sp-shadow-md) !important;
+}
+
+/* ----------------------------------------
+   QUASAR BUTTONS
+   ---------------------------------------- */
+.q-btn {
+  border-radius: var(--sp-radius-md) !important;
+  font-weight: 600 !important;
+  text-transform: none !important;
+  min-height: 48px;
+}
+
+/* Primary Button */
+.q-btn.bg-primary,
+.sp-btn-primary {
+  background: var(--sp-fern) !important;
+  color: white !important;
+}
+.q-btn.bg-primary:hover,
+.sp-btn-primary:hover {
+  background: var(--sp-fern-dark) !important;
+}
+
+/* Secondary/Outline Button */
+.q-btn--outline.text-primary,
+.sp-btn-secondary {
+  color: var(--sp-fern) !important;
+  border: 2px solid var(--sp-fern) !important;
+  background: transparent !important;
+}
+.q-btn--outline.text-primary:hover,
+.sp-btn-secondary:hover {
+  background: var(--sp-fern) !important;
+  color: white !important;
+}
+
+/* Accent/CTA Button */
+.sp-btn-accent {
+  background: var(--sp-amber) !important;
+  color: white !important;
+}
+.sp-btn-accent:hover {
+  background: var(--sp-amber-dark) !important;
+}
+
+/* Positive/Success Button */
+.q-btn.bg-positive {
+  background: var(--sp-amber) !important;
+}
+
+/* Negative/Danger Button */
+.q-btn.bg-negative,
+.sp-btn-danger {
+  background: var(--sp-status-critical) !important;
+  color: white !important;
+}
+.q-btn.bg-negative:hover,
+.sp-btn-danger:hover {
+  background: var(--sp-status-critical-dark) !important;
+}
+
+/* Ghost Button */
+.sp-btn-ghost {
+  background: transparent !important;
+  color: var(--sp-fern) !important;
+}
+.sp-btn-ghost:hover {
+  background: var(--sp-oat) !important;
+}
+
+/* ----------------------------------------
+   QUASAR INPUTS
+   ---------------------------------------- */
+.q-field--outlined .q-field__control {
+  border-radius: var(--sp-radius-md) !important;
+}
+
+.q-field--outlined .q-field__control:before {
+  border-color: var(--sp-sage-light) !important;
+  border-width: 2px !important;
+}
+
+.q-field--outlined:hover .q-field__control:before {
+  border-color: var(--sp-sage) !important;
+}
+
+.q-field--outlined.q-field--focused .q-field__control:after {
+  border-color: var(--sp-fern) !important;
+  border-width: 2px !important;
+}
+
+.q-field__label {
+  color: var(--sp-charcoal) !important;
+  font-weight: 600 !important;
+}
+
+.q-field--float .q-field__label {
+  color: var(--sp-fern) !important;
+}
+
+/* Placeholder */
+.q-field__native::placeholder {
+  color: var(--sp-stone) !important;
+}
+
+/* ----------------------------------------
+   QUASAR SELECT
+   ---------------------------------------- */
+.q-select .q-field__control {
+  border-radius: var(--sp-radius-md) !important;
+}
+
+.q-menu {
+  border-radius: var(--sp-radius-md) !important;
+  box-shadow: var(--sp-shadow-lg) !important;
+}
+
+/* ----------------------------------------
+   QUASAR TOGGLE / SWITCH
+   ---------------------------------------- */
+.q-toggle__inner--truthy {
+  color: var(--sp-fern) !important;
+}
+
+/* ----------------------------------------
+   BOTTOM NAVIGATION
+   ---------------------------------------- */
+.q-footer,
+.sp-bottom-nav {
+  background: white !important;
+  border-top: 1px solid var(--sp-sage-light) !important;
+  box-shadow: 0 -2px 12px rgba(74, 124, 89, 0.1) !important;
+}
+
+.q-tab--active,
+.sp-nav-item.active {
+  color: var(--sp-fern) !important;
+}
+
+.q-tab__indicator {
+  background: var(--sp-fern) !important;
+}
+
+/* Floating Add Button in Nav */
+.sp-nav-add-btn {
+  width: 48px;
+  height: 48px;
+  background: var(--sp-fern);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  box-shadow: var(--sp-shadow-md);
+  margin-top: -12px;
+}
+
+/* ----------------------------------------
+   PAGE HEADER
+   ---------------------------------------- */
+.sp-page-header {
+  background: white;
+  border-bottom: 1px solid var(--sp-sage-light);
+  padding: 16px;
+}
+
+.sp-back-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--sp-fern);
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.sp-back-btn:hover {
+  background: var(--sp-oat);
+}
+
+/* ----------------------------------------
+   ITEM CARDS
+   ---------------------------------------- */
+.sp-item-card {
+  background: white;
+  border-radius: var(--sp-radius-lg);
+  box-shadow: var(--sp-shadow-sm);
+  padding: 16px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-left: 4px solid var(--sp-status-ok);
+}
+
+.sp-item-card:hover {
+  box-shadow: var(--sp-shadow-md);
+  transform: translateY(-1px);
+}
+
+.sp-item-card.status-warning {
+  border-left-color: var(--sp-status-warning);
+}
+
+.sp-item-card.status-critical {
+  border-left-color: var(--sp-status-critical);
+}
+
+/* Status Dot */
+.sp-status-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.sp-status-dot.ok { background: var(--sp-status-ok); }
+.sp-status-dot.warning { background: var(--sp-status-warning); }
+.sp-status-dot.critical { background: var(--sp-status-critical); }
+
+/* Location indicator */
+.sp-location-text {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.8125rem;
+  color: var(--sp-stone);
+}
+
+.sp-location-text .material-icons {
+  font-size: 16px;
+  color: var(--sp-terracotta);
+}
+
+/* Expiry date styling */
+.sp-expiry-ok { color: var(--sp-status-ok); }
+.sp-expiry-warning { color: var(--sp-status-warning); }
+.sp-expiry-critical { color: var(--sp-status-critical); }
+
+/* ----------------------------------------
+   CHIPS - BASE
+   ---------------------------------------- */
+.sp-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 20px;
+  border-radius: var(--sp-radius-full);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-height: 44px;
+  border: 2px solid transparent;
+  gap: 8px;
+}
+
+/* ----------------------------------------
+   CHIPS - UNIT (simple toggle)
+   ---------------------------------------- */
+.sp-chip-unit {
+  background: var(--sp-oat);
+  color: var(--sp-charcoal);
+  border-color: var(--sp-sage-light);
+}
+
+.sp-chip-unit:hover {
+  background: var(--sp-parchment);
+  border-color: var(--sp-sage);
+}
+
+.sp-chip-unit.active {
+  background: var(--sp-fern);
+  color: white;
+  border-color: var(--sp-fern);
+}
+
+/* ----------------------------------------
+   CHIPS - CATEGORY / LOCATION (with ring-dot)
+   ---------------------------------------- */
+.sp-chip-category {
+  background: var(--sp-oat);
+  color: var(--sp-charcoal);
+  padding-left: 14px;
+}
+
+.sp-chip-category:hover {
+  background: var(--sp-parchment);
+}
+
+/* Ring-dot indicator */
+.sp-ring-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  background: white;
+  flex-shrink: 0;
+}
+
+/* When active: filled ring */
+.sp-chip-category.active .sp-ring-dot {
+  border-color: white;
+  background: radial-gradient(circle, white 35%, transparent 35%);
+}
+
+/* ----------------------------------------
+   CHIPS - ITEM TYPE (colored text)
+   ---------------------------------------- */
+.sp-chip-type {
+  background: var(--sp-oat);
+  padding-left: 14px;
+}
+
+.sp-chip-type .sp-ring-dot {
+  border-color: currentColor;
+}
+
+.sp-chip-type.active .sp-ring-dot {
+  background: radial-gradient(circle, currentColor 35%, white 35%);
+}
+
+/* Type-specific colors */
+.sp-chip-type[data-type="fresh"] { color: var(--sp-leaf); }
+.sp-chip-type[data-type="frozen"] { color: var(--sp-status-info); }
+.sp-chip-type[data-type="homemade"] { color: var(--sp-terracotta); }
+
+.sp-chip-type[data-type="fresh"].active { background: var(--sp-leaf); color: white; }
+.sp-chip-type[data-type="frozen"].active { background: var(--sp-status-info); color: white; }
+.sp-chip-type[data-type="homemade"].active { background: var(--sp-terracotta); color: white; }
+
+.sp-chip-type.active .sp-ring-dot {
+  border-color: white;
+  background: radial-gradient(circle, white 35%, transparent 35%);
+}
+
+/* ----------------------------------------
+   QUICK FILTER CHIPS (outlined style)
+   ---------------------------------------- */
+.sp-quick-filter {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 16px;
+  border: 2px solid var(--sp-sage);
+  border-radius: var(--sp-radius-full);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--sp-fern);
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sp-quick-filter:hover {
+  background: var(--sp-oat);
+  border-color: var(--sp-fern);
+}
+
+.sp-quick-filter.active {
+  background: var(--sp-fern);
+  border-color: var(--sp-fern);
+  color: white;
+}
+
+/* ----------------------------------------
+   DASHBOARD CARDS
+   ---------------------------------------- */
+.sp-dashboard-card {
+  background: white;
+  border-radius: var(--sp-radius-lg);
+  box-shadow: var(--sp-shadow-sm);
+  padding: 16px;
+}
+
+.sp-dashboard-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+/* Alert item in dashboard */
+.sp-alert-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  background: var(--sp-oat);
+  border-radius: var(--sp-radius-md);
+  margin-bottom: 8px;
+  border-left: 3px solid var(--sp-status-critical);
+}
+
+/* Stats card */
+.sp-stats-row {
+  display: flex;
+  justify-content: space-around;
+  text-align: center;
+}
+
+.sp-stats-number {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.sp-stats-number.primary { color: var(--sp-fern); }
+.sp-stats-number.warning { color: var(--sp-status-warning); }
+.sp-stats-number.success { color: var(--sp-status-ok); }
+
+.sp-stats-label {
+  font-size: 0.875rem;
+  color: var(--sp-stone);
+  margin-top: 4px;
+}
+
+/* ----------------------------------------
+   SUMMARY BOX (Wizard)
+   ---------------------------------------- */
+.sp-summary-box {
+  background: var(--sp-oat);
+  border-radius: var(--sp-radius-md);
+  padding: 16px;
+  border-left: 4px solid var(--sp-sage);
+}
+
+.sp-summary-title {
+  font-size: 0.8125rem;
+  color: var(--sp-stone);
+  margin-bottom: 4px;
+}
+
+.sp-summary-content {
+  font-weight: 500;
+  color: var(--sp-charcoal);
+}
+
+/* ----------------------------------------
+   ADMIN LIST ITEMS
+   ---------------------------------------- */
+.sp-admin-list-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: white;
+  border-radius: var(--sp-radius-md);
+  box-shadow: var(--sp-shadow-sm);
+  margin-bottom: 8px;
+}
+
+.sp-admin-drag {
+  color: var(--sp-sage);
+  cursor: grab;
+}
+
+.sp-admin-color-dot {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.sp-admin-actions button {
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: transparent;
+  border-radius: var(--sp-radius-sm);
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.sp-admin-actions button:hover {
+  background: var(--sp-oat);
+}
+
+.sp-admin-actions .edit { color: var(--sp-stone); }
+.sp-admin-actions .delete { color: var(--sp-status-critical); }
+
+/* ----------------------------------------
+   BOTTOM SHEET / DIALOG
+   ---------------------------------------- */
+.sp-bottom-sheet {
+  background: white;
+  border-radius: var(--sp-radius-xl) var(--sp-radius-xl) 0 0;
+}
+
+.sp-bottom-sheet-handle {
+  width: 40px;
+  height: 4px;
+  background: var(--sp-sage-light);
+  border-radius: 2px;
+  margin: 12px auto;
+}
+
+.sp-bottom-sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px 16px;
+}
+
+.sp-bottom-sheet-title {
+  font-weight: 600;
+  font-size: 1.125rem;
+}
+
+.sp-bottom-sheet-close {
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: var(--sp-oat);
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--sp-stone);
+}
+
+.sp-bottom-sheet-close:hover {
+  background: var(--sp-parchment);
+  color: var(--sp-charcoal);
+}
+
+.sp-bottom-sheet-body {
+  padding: 16px;
+  border-top: 1px solid var(--sp-sage-light);
+  border-bottom: 1px solid var(--sp-sage-light);
+}
+
+.sp-info-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 8px 0;
+}
+
+.sp-info-row .material-icons {
+  color: var(--sp-fern);
+  font-size: 20px;
+}
+
+.sp-info-label {
+  font-size: 0.8125rem;
+  color: var(--sp-stone);
+}
+
+.sp-info-value {
+  font-weight: 500;
+}
+
+/* ----------------------------------------
+   UTILITY CLASSES
+   ---------------------------------------- */
+
+/* Background colors */
+.bg-cream { background-color: var(--sp-cream) !important; }
+.bg-oat { background-color: var(--sp-oat) !important; }
+.bg-parchment { background-color: var(--sp-parchment) !important; }
+.bg-fern { background-color: var(--sp-fern) !important; }
+.bg-amber { background-color: var(--sp-amber) !important; }
+
+/* Text colors */
+.text-fern { color: var(--sp-fern) !important; }
+.text-fern-dark { color: var(--sp-fern-dark) !important; }
+.text-amber { color: var(--sp-amber) !important; }
+.text-stone { color: var(--sp-stone) !important; }
+.text-charcoal { color: var(--sp-charcoal) !important; }
+.text-terracotta { color: var(--sp-terracotta) !important; }
+
+/* Border colors */
+.border-sage { border-color: var(--sp-sage) !important; }
+.border-sage-light { border-color: var(--sp-sage-light) !important; }
+.border-fern { border-color: var(--sp-fern) !important; }
+
+/* Border radius */
+.rounded-sp-sm { border-radius: var(--sp-radius-sm) !important; }
+.rounded-sp-md { border-radius: var(--sp-radius-md) !important; }
+.rounded-sp-lg { border-radius: var(--sp-radius-lg) !important; }
+.rounded-sp-xl { border-radius: var(--sp-radius-xl) !important; }
+.rounded-sp-full { border-radius: var(--sp-radius-full) !important; }
+
+/* Shadows */
+.shadow-sp-sm { box-shadow: var(--sp-shadow-sm) !important; }
+.shadow-sp-md { box-shadow: var(--sp-shadow-md) !important; }
+.shadow-sp-lg { box-shadow: var(--sp-shadow-lg) !important; }
+
+/* Font family */
+.font-display { font-family: var(--sp-font-display) !important; }
+.font-body { font-family: var(--sp-font-body) !important; }

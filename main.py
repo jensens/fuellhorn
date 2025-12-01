@@ -1,23 +1,29 @@
 """NiceGUI Application - Entry Point."""
 
-from app.config import get_storage_secret
-from app.database import create_db_and_tables
-
-# Import pages to register routes
-import app.ui.pages as _pages  # noqa: F401
 import os
 
+from app.config import get_storage_secret
+from app.database import create_db_and_tables
+from nicegui import app
+
+# Serve static files (CSS, icons, etc.)
+# Theme CSS is available at /static/css/solarpunk-theme.css
+app.add_static_files("/static", "app/static")
+
+# Import pages to register routes
+import app.ui.pages as _pages  # noqa: F401, E402
 
 # Import test pages only during testing (for component tests)
 if os.environ.get("TESTING") == "true":
-    import app.ui.test_pages as _test_pages  # noqa: F401
+    import app.ui.test_pages as _test_pages  # noqa: F401, E402
 
 # Import API routes to register endpoints
-import app.api.health as _api_health  # noqa: F401
-from nicegui import ui
+import app.api.health as _api_health  # noqa: F401, E402
 
 
 if __name__ in {"__main__", "__mp_main__"}:
+    from nicegui import ui
+
     # Datenbank initialisieren
     create_db_and_tables()
 
