@@ -35,17 +35,9 @@ def create_unit_chip_group(
             is_selected = unit == current_value[0]
 
             if is_selected:
-                # Selected state
-                chip.classes(
-                    remove="bg-gray-200 text-gray-800 hover:bg-gray-300",
-                    add="bg-primary text-white",
-                )
+                chip.classes(add="active")
             else:
-                # Default state
-                chip.classes(
-                    remove="bg-primary text-white",
-                    add="bg-gray-200 text-gray-800 hover:bg-gray-300",
-                )
+                chip.classes(remove="active")
 
     def select_unit(unit: str) -> None:
         """Handle chip selection."""
@@ -60,18 +52,14 @@ def create_unit_chip_group(
         for unit in UNITS:
             is_selected = unit == value
 
-            # Chip as button for proper click handling
+            # Chip as button for proper click handling with Solarpunk theme
             chip = (
                 ui.button(
                     unit,
                     on_click=lambda _, u=unit: select_unit(u),
                 )
-                .classes(
-                    "flex items-center justify-center px-3 rounded-lg cursor-pointer "
-                    "transition-all duration-150 ease-in-out select-none font-semibold text-sm "
-                    + ("bg-primary text-white" if is_selected else "bg-gray-200 text-gray-800 hover:bg-gray-300")
-                )
-                .style("min-width: 48px; height: 44px;")
+                .classes("sp-chip sp-chip-unit" + (" active" if is_selected else ""))
+                .style("min-width: 48px;")
                 .props("flat no-caps")
             )
 
