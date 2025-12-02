@@ -339,6 +339,44 @@ def test_wizard_back_button_preserves_data(page: Page, live_server: str) -> None
     expect(page.get_by_placeholder("z.B. 500")).to_have_value("999")
 
 
+def test_wizard_back_button_roundtrip_preserves_summary(page: Page, live_server: str) -> None:
+    """Test: Roundtrip (vor, zurück, vor, vor) behält alle Daten in Zusammenfassung.
+
+    Issue #49: Nach Zurück von Schritt 2 zu Schritt 1 und wieder vor bis
+    zur Zusammenfassung sollten alle Daten korrekt sein.
+    """
+    login(page, live_server)
+    navigate_to_wizard(page, live_server)
+
+    # Step 1 ausfüllen
+    product_name = "Roundtrip Testprodukt"
+    fill_step1(page, product_name, "Frisch eingekauft", "750", "g")
+    click_next(page)
+
+    # Step 2 - Datum setzen
+    expect(page.get_by_text("Schritt 2 von 3")).to_be_visible(timeout=5000)
+    fill_date(page, "31.12.2025")
+
+    # Zurück zu Step 1
+    page.get_by_role("button", name="Zurück").click()
+    expect(page.get_by_text("Schritt 1 von 3")).to_be_visible(timeout=5000)
+
+    # Prüfe dass Daten noch da sind
+    expect(page.get_by_placeholder("z.B. Tomaten aus Garten")).to_have_value(product_name)
+
+    # Wieder vorwärts zu Step 2 und Step 3
+    click_next(page)
+    expect(page.get_by_text("Schritt 2 von 3")).to_be_visible(timeout=5000)
+    click_next(page)
+    expect(page.get_by_text("Schritt 3 von 3")).to_be_visible(timeout=5000)
+
+    # Location auswählen
+    select_location(page, "Kühlschrank")
+
+    # Zusammenfassung prüfen - Produktname sollte korrekt sein
+    expect(page.get_by_text(product_name)).to_be_visible()
+
+
 def test_wizard_cancel_returns_to_dashboard(page: Page, live_server: str) -> None:
     """Test: X-Button schließt den Wizard und geht zum Dashboard."""
     login(page, live_server)
