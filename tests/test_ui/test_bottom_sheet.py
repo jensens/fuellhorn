@@ -432,3 +432,177 @@ async def test_bottom_sheet_edit_button_calls_callback(user: User) -> None:
 
     # Verify on_edit callback was triggered (test page shows notify)
     await user.should_see("Bearbeiten: Joghurt")
+
+
+# =============================================================================
+# Withdrawal History Tests (Issue #168)
+# =============================================================================
+
+
+async def test_bottom_sheet_shows_withdrawal_history(user: User) -> None:
+    """Test that bottom sheet shows withdrawal history when entries exist."""
+    from app.database import get_session
+    from app.models.user import User as UserModel
+    from app.models.withdrawal import Withdrawal
+    from datetime import datetime
+
+    with next(get_session()) as session:
+        # Create test user
+        test_user = UserModel(
+            username="testuser",
+            password_hash="hash",
+            email="testuser@example.com",
+        )
+        session.add(test_user)
+        session.commit()
+        session.refresh(test_user)
+        test_user_id = test_user.id
+
+        # Create location
+        location = Location(
+            name="Tiefkühltruhe",
+            location_type=LocationType.FROZEN,
+            created_by=1,
+        )
+        session.add(location)
+        session.commit()
+        session.refresh(location)
+
+        # Create test item
+        item = Item(
+            product_name="Erbsen",
+            item_type=ItemType.PURCHASED_FROZEN,
+            quantity=300,
+            unit="g",
+            location_id=location.id,
+            best_before_date=date.today() + timedelta(days=180),
+            freeze_date=date.today(),
+            created_by=1,
+        )
+        session.add(item)
+        session.commit()
+        session.refresh(item)
+        item_id = item.id
+
+        # Create withdrawal entry
+        withdrawal = Withdrawal(
+            item_id=item_id,
+            quantity=200,
+            withdrawn_at=datetime(2024, 6, 15, 14, 30),
+            withdrawn_by=test_user_id,
+        )
+        session.add(withdrawal)
+        session.commit()
+
+    await user.open(f"/test/bottom-sheet/{item_id}")
+
+    # Verify history section is shown
+    await user.should_see("Entnahme-Historie")
+    await user.should_see("200")
+    await user.should_see("testuser")
+
+
+async def test_bottom_sheet_no_history_when_empty(user: User) -> None:
+    """Test that bottom sheet doesn't show history section when no entries."""
+    from app.database import get_session
+
+    with next(get_session()) as session:
+        # Create location
+        location = Location(
+            name="Tiefkühltruhe",
+            location_type=LocationType.FROZEN,
+            created_by=1,
+        )
+        session.add(location)
+        session.commit()
+        session.refresh(location)
+
+        # Create test item with no withdrawals
+        item = Item(
+            product_name="Brokkoli",
+            item_type=ItemType.PURCHASED_FROZEN,
+            quantity=500,
+            unit="g",
+            location_id=location.id,
+            best_before_date=date.today() + timedelta(days=180),
+            freeze_date=date.today(),
+            created_by=1,
+        )
+        session.add(item)
+        session.commit()
+        session.refresh(item)
+        item_id = item.id
+
+    await user.open(f"/test/bottom-sheet/{item_id}")
+
+    # Verify item is shown but no history section
+    await user.should_see("Brokkoli")
+    await user.should_not_see("Entnahme-Historie")
+
+
+async def test_bottom_sheet_history_shows_multiple_entries(user: User) -> None:
+    """Test that bottom sheet shows all withdrawal entries sorted by date."""
+    from app.database import get_session
+    from app.models.user import User as UserModel
+    from app.models.withdrawal import Withdrawal
+    from datetime import datetime
+
+    with next(get_session()) as session:
+        # Create test user
+        test_user = UserModel(
+            username="lagermeister",
+            password_hash="hash",
+            email="lagermeister@example.com",
+        )
+        session.add(test_user)
+        session.commit()
+        session.refresh(test_user)
+        test_user_id = test_user.id
+
+        # Create location
+        location = Location(
+            name="Kühlschrank",
+            location_type=LocationType.CHILLED,
+            created_by=1,
+        )
+        session.add(location)
+        session.commit()
+        session.refresh(location)
+
+        # Create test item
+        item = Item(
+            product_name="Joghurt",
+            item_type=ItemType.PURCHASED_FRESH,
+            quantity=2,
+            unit="Becher",
+            location_id=location.id,
+            best_before_date=date.today() + timedelta(days=14),
+            created_by=1,
+        )
+        session.add(item)
+        session.commit()
+        session.refresh(item)
+        item_id = item.id
+
+        # Create multiple withdrawal entries (older first, newer second)
+        withdrawal1 = Withdrawal(
+            item_id=item_id,
+            quantity=1,
+            withdrawn_at=datetime(2024, 6, 10, 10, 0),
+            withdrawn_by=test_user_id,
+        )
+        withdrawal2 = Withdrawal(
+            item_id=item_id,
+            quantity=2,
+            withdrawn_at=datetime(2024, 6, 15, 14, 30),
+            withdrawn_by=test_user_id,
+        )
+        session.add(withdrawal1)
+        session.add(withdrawal2)
+        session.commit()
+
+    await user.open(f"/test/bottom-sheet/{item_id}")
+
+    # Verify history section shows all entries
+    await user.should_see("Entnahme-Historie")
+    await user.should_see("lagermeister")

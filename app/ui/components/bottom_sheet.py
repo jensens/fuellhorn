@@ -10,6 +10,8 @@ Based on UI_KONZEPT.md Section 7: Bottom Sheet
 from ...database import get_session
 from ...models.item import Item
 from ...models.location import Location
+from ...models.withdrawal import Withdrawal
+from ...services import auth_service
 from ...services import item_service
 from ...services.expiry_calculator import get_expiry_status
 from datetime import date
@@ -138,6 +140,17 @@ def create_bottom_sheet(
                         with ui.column().classes("gap-0"):
                             ui.label("Notizen").classes("sp-info-label")
                             ui.label(item.notes).classes("sp-info-value text-stone")
+
+                # Withdrawal history (if any)
+                if item.id is not None:
+                    withdrawals = _get_withdrawal_history_with_users(item.id)
+                    if withdrawals:
+                        with ui.row().classes("sp-info-row"):
+                            ui.icon("history", size="20px").classes("text-fern")
+                            with ui.column().classes("gap-0 w-full"):
+                                ui.label("Entnahme-Historie").classes("sp-info-label")
+                                for withdrawal, username in withdrawals:
+                                    _render_withdrawal_entry(withdrawal, username, item.unit)
 
             # Action buttons
             with ui.row().classes("w-full p-4 gap-3 border-t"):
@@ -312,3 +325,51 @@ def _handle_consume(
         on_consume(item)
     if on_close:
         on_close()
+
+
+def _get_withdrawal_history_with_users(item_id: int) -> list[tuple[Withdrawal, str]]:
+    """Get withdrawal history with usernames.
+
+    Args:
+        item_id: The item ID to get history for
+
+    Returns:
+        List of (Withdrawal, username) tuples, sorted newest first
+    """
+    result: list[tuple[Withdrawal, str]] = []
+
+    with next(get_session()) as session:
+        withdrawals = item_service.get_withdrawal_history(session, item_id)
+
+        # Reverse to show newest first (service returns oldest first)
+        for withdrawal in reversed(withdrawals):
+            try:
+                user = auth_service.get_user(session, withdrawal.withdrawn_by)
+                username = user.username
+            except ValueError:
+                username = "Unbekannt"
+
+            result.append((withdrawal, username))
+
+    return result
+
+
+def _render_withdrawal_entry(withdrawal: Withdrawal, username: str, unit: str) -> None:
+    """Render a single withdrawal entry in the history.
+
+    Args:
+        withdrawal: The withdrawal record
+        username: The username who made the withdrawal
+        unit: The unit of measurement
+    """
+    with ui.row().classes("w-full items-center gap-2 py-1"):
+        # Format date as DD.MM.YYYY HH:MM
+        date_str = withdrawal.withdrawn_at.strftime("%d.%m.%Y %H:%M")
+
+        # Format quantity (integer if whole number)
+        qty = withdrawal.quantity
+        qty_str = str(int(qty)) if qty == int(qty) else str(qty)
+
+        ui.label(f"{date_str}").classes("text-sm text-stone")
+        ui.label(f"{qty_str} {unit}").classes("text-sm font-medium")
+        ui.label(f"({username})").classes("text-sm text-stone")
