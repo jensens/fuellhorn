@@ -153,28 +153,28 @@ def create_bottom_sheet(
                                 for withdrawal, username in withdrawals:
                                     _render_withdrawal_entry(withdrawal, username, item.unit)
 
-            # Action buttons
+            # Action buttons - stacked layout (icon above text) for consistency
             with ui.row().classes("w-full p-4 gap-3 border-t"):
                 # Consume button - marks item as fully consumed
                 ui.button(
                     "Alles entnehmen",
                     icon="check_circle",
                     on_click=lambda: _handle_consume(dialog, item, on_consume, on_close),
-                ).classes("flex-1 min-h-[48px]").props("color=positive")
+                ).classes("flex-1 min-h-[48px]").props("color=positive stack")
 
                 # Withdraw button - partial withdrawal
                 ui.button(
                     "Teilentnahme",
                     icon="remove_circle_outline",
                     on_click=lambda: _handle_withdraw(dialog, item, on_withdraw, on_close),
-                ).classes("flex-1 min-h-[48px]").props("color=primary outline")
+                ).classes("flex-1 min-h-[48px]").props("color=primary outline stack")
 
                 # Edit button - secondary action
                 ui.button(
                     "Bearbeiten",
                     icon="edit",
                     on_click=lambda: _handle_edit(dialog, item, on_edit, on_close),
-                ).classes("flex-1 min-h-[48px]").props("color=secondary outline")
+                ).classes("flex-1 min-h-[48px]").props("color=secondary outline stack")
 
             # Close text for accessibility (screen readers and testing)
             ui.label("Schließen").classes("sr-only")
