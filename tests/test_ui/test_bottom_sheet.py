@@ -392,6 +392,60 @@ async def test_bottom_sheet_withdraw_partial_success(user: User) -> None:
         assert updated_item.is_consumed is False
 
 
+async def test_bottom_sheet_withdraw_creates_withdrawal_entry(logged_in_user: User) -> None:
+    """Test that partial withdrawal creates a withdrawal entry in database."""
+    from app.database import get_session
+    from app.models.withdrawal import Withdrawal
+    from sqlmodel import select
+
+    with next(get_session()) as session:
+        location = Location(
+            name="Tiefkühltruhe",
+            location_type=LocationType.FROZEN,
+            created_by=1,
+        )
+        session.add(location)
+        session.commit()
+        session.refresh(location)
+
+        item = Item(
+            product_name="Brokkoli",
+            item_type=ItemType.PURCHASED_FROZEN,
+            quantity=800,
+            unit="g",
+            location_id=location.id,
+            best_before_date=date.today() + timedelta(days=180),
+            freeze_date=date.today(),
+            created_by=1,
+        )
+        session.add(item)
+        session.commit()
+        session.refresh(item)
+        item_id = item.id
+
+    await logged_in_user.open(f"/test/bottom-sheet/{item_id}")
+
+    # Click on "Entnehmen" button to open dialog
+    logged_in_user.find("Entnehmen").click()
+
+    # Enter valid quantity
+    number_input = list(logged_in_user.find(kind=ui.number).elements)[0]
+    number_input.value = 300
+
+    # Confirm
+    logged_in_user.find("Bestätigen").click()
+
+    # Verify success notification
+    await logged_in_user.should_see("300 g entnommen")
+
+    # Verify withdrawal entry was created in database
+    with next(get_session()) as session:
+        withdrawals = list(session.exec(select(Withdrawal).where(Withdrawal.item_id == item_id)).all())
+        assert len(withdrawals) == 1
+        assert withdrawals[0].quantity == 300
+        assert withdrawals[0].withdrawn_by is not None
+
+
 # =============================================================================
 # Edit Button Tests (Issue #176)
 # =============================================================================

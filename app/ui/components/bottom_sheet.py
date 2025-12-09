@@ -15,6 +15,7 @@ from ...services import auth_service
 from ...services import item_service
 from ...services.expiry_calculator import get_expiry_status
 from datetime import date
+from nicegui import app
 from nicegui import ui
 from typing import Callable
 
@@ -237,10 +238,12 @@ def _handle_withdraw(
                 return
 
             with next(get_session()) as session:
+                user_id = app.storage.user.get("user_id")
                 item_service.withdraw_partial(
                     session=session,
                     item_id=item.id,
                     withdraw_quantity=withdraw_qty,
+                    user_id=user_id,
                 )
 
             # Show success notification
