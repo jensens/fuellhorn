@@ -86,9 +86,9 @@ async def test_bottom_sheet_has_action_buttons(user: User) -> None:
     # Open test page with bottom sheet
     await user.open(f"/test/bottom-sheet/{item_id}")
 
-    # Verify action buttons are present
-    await user.should_see("Entnommen")
-    await user.should_see("Entnehmen")
+    # Verify action buttons are present with clear labels
+    await user.should_see("Alles entnehmen")
+    await user.should_see("Teilentnahme")
     await user.should_see("Bearbeiten")
 
 
@@ -246,9 +246,104 @@ async def test_bottom_sheet_consume_button_present(user: User) -> None:
     # Open test page with bottom sheet
     await user.open(f"/test/bottom-sheet/{item_id}")
 
-    # Verify consume button is present
-    await user.should_see("Entnommen")
+    # Verify consume button is present with clear label
+    await user.should_see("Alles entnehmen")
     await user.should_see("Brokkoli")
+
+
+async def test_bottom_sheet_consume_marks_item_consumed(logged_in_user: User) -> None:
+    """Test that clicking 'Alles entnehmen' marks the item as consumed."""
+    from app.database import get_session
+
+    with next(get_session()) as session:
+        # Create location
+        location = Location(
+            name="Tiefkühltruhe",
+            location_type=LocationType.FROZEN,
+            created_by=1,
+        )
+        session.add(location)
+        session.commit()
+        session.refresh(location)
+
+        # Create test item
+        item = Item(
+            product_name="Spinat",
+            item_type=ItemType.PURCHASED_FROZEN,
+            quantity=500,
+            unit="g",
+            location_id=location.id,
+            best_before_date=date.today() + timedelta(days=180),
+            freeze_date=date.today(),
+            created_by=1,
+        )
+        session.add(item)
+        session.commit()
+        session.refresh(item)
+        item_id = item.id
+
+    await logged_in_user.open(f"/test/bottom-sheet/{item_id}")
+
+    # Click on "Alles entnehmen" button
+    logged_in_user.find("Alles entnehmen").click()
+
+    # Verify success notification
+    await logged_in_user.should_see("Spinat vollständig entnommen")
+
+    # Verify item is marked as consumed in database
+    with next(get_session()) as session:
+        updated_item = session.get(Item, item_id)
+        assert updated_item is not None
+        assert updated_item.is_consumed is True
+
+
+async def test_bottom_sheet_consume_creates_withdrawal_entry(logged_in_user: User) -> None:
+    """Test that 'Alles entnehmen' creates a withdrawal entry for the full quantity."""
+    from app.database import get_session
+    from app.models.withdrawal import Withdrawal
+    from sqlmodel import select
+
+    with next(get_session()) as session:
+        # Create location
+        location = Location(
+            name="Tiefkühltruhe",
+            location_type=LocationType.FROZEN,
+            created_by=1,
+        )
+        session.add(location)
+        session.commit()
+        session.refresh(location)
+
+        # Create test item
+        item = Item(
+            product_name="Himbeeren",
+            item_type=ItemType.HOMEMADE_FROZEN,
+            quantity=350,
+            unit="g",
+            location_id=location.id,
+            best_before_date=date.today() + timedelta(days=180),
+            freeze_date=date.today(),
+            created_by=1,
+        )
+        session.add(item)
+        session.commit()
+        session.refresh(item)
+        item_id = item.id
+
+    await logged_in_user.open(f"/test/bottom-sheet/{item_id}")
+
+    # Click on "Alles entnehmen" button
+    logged_in_user.find("Alles entnehmen").click()
+
+    # Verify success notification
+    await logged_in_user.should_see("Himbeeren vollständig entnommen")
+
+    # Verify withdrawal entry was created in database
+    with next(get_session()) as session:
+        withdrawals = list(session.exec(select(Withdrawal).where(Withdrawal.item_id == item_id)).all())
+        assert len(withdrawals) == 1
+        assert withdrawals[0].quantity == 350
+        assert withdrawals[0].withdrawn_by is not None
 
 
 # =============================================================================
@@ -257,7 +352,7 @@ async def test_bottom_sheet_consume_button_present(user: User) -> None:
 
 
 async def test_bottom_sheet_withdraw_shows_quantity_dialog(user: User) -> None:
-    """Test that clicking 'Entnehmen' shows quantity input dialog."""
+    """Test that clicking 'Teilentnahme' shows quantity input dialog."""
     from app.database import get_session
 
     with next(get_session()) as session:
@@ -287,8 +382,8 @@ async def test_bottom_sheet_withdraw_shows_quantity_dialog(user: User) -> None:
 
     await user.open(f"/test/bottom-sheet/{item_id}")
 
-    # Click on "Entnehmen" button
-    user.find("Entnehmen").click()
+    # Click on "Teilentnahme" button
+    user.find("Teilentnahme").click()
 
     # Verify quantity dialog appears with input field
     await user.should_see("Menge entnehmen")
@@ -326,8 +421,8 @@ async def test_bottom_sheet_withdraw_validates_max_quantity(user: User) -> None:
 
     await user.open(f"/test/bottom-sheet/{item_id}")
 
-    # Click on "Entnehmen" button to open dialog
-    user.find("Entnehmen").click()
+    # Click on "Teilentnahme" button to open dialog
+    user.find("Teilentnahme").click()
 
     # Enter quantity exceeding available - set value directly on the number input
     number_input = list(user.find(kind=ui.number).elements)[0]
@@ -371,8 +466,8 @@ async def test_bottom_sheet_withdraw_partial_success(user: User) -> None:
 
     await user.open(f"/test/bottom-sheet/{item_id}")
 
-    # Click on "Entnehmen" button to open dialog
-    user.find("Entnehmen").click()
+    # Click on "Teilentnahme" button to open dialog
+    user.find("Teilentnahme").click()
 
     # Enter valid quantity - set value directly on the number input
     number_input = list(user.find(kind=ui.number).elements)[0]
@@ -425,8 +520,8 @@ async def test_bottom_sheet_withdraw_creates_withdrawal_entry(logged_in_user: Us
 
     await logged_in_user.open(f"/test/bottom-sheet/{item_id}")
 
-    # Click on "Entnehmen" button to open dialog
-    logged_in_user.find("Entnehmen").click()
+    # Click on "Teilentnahme" button to open dialog
+    logged_in_user.find("Teilentnahme").click()
 
     # Enter valid quantity
     number_input = list(logged_in_user.find(kind=ui.number).elements)[0]
