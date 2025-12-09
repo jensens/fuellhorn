@@ -157,14 +157,14 @@ def create_bottom_sheet(
             with ui.row().classes("w-full p-4 gap-3 border-t"):
                 # Consume button - marks item as fully consumed
                 ui.button(
-                    "Entnommen",
+                    "Alles entnehmen",
                     icon="check_circle",
                     on_click=lambda: _handle_consume(dialog, item, on_consume, on_close),
                 ).classes("flex-1 min-h-[48px]").props("color=positive")
 
                 # Withdraw button - partial withdrawal
                 ui.button(
-                    "Entnehmen",
+                    "Teilentnahme",
                     icon="remove_circle_outline",
                     on_click=lambda: _handle_withdraw(dialog, item, on_withdraw, on_close),
                 ).classes("flex-1 min-h-[48px]").props("color=primary outline")
@@ -322,12 +322,26 @@ def _handle_consume(
     on_consume: Callable[[Item], None] | None,
     on_close: Callable[[], None] | None,
 ) -> None:
-    """Handle consume button click."""
-    dialog.close()
-    if on_consume:
-        on_consume(item)
-    if on_close:
-        on_close()
+    """Handle consume button click - marks item as fully consumed."""
+    if item.id is None:
+        ui.notify("Item-ID nicht gefunden", type="negative")
+        return
+
+    try:
+        with next(get_session()) as session:
+            user_id = app.storage.user.get("user_id")
+            item_service.mark_item_consumed(session, item.id, user_id)
+
+        ui.notify(f"{item.product_name} vollständig entnommen", type="positive")
+
+        dialog.close()
+        if on_consume:
+            on_consume(item)
+        if on_close:
+            on_close()
+
+    except ValueError as e:
+        ui.notify(str(e), type="negative")
 
 
 def _get_withdrawal_history_with_users(item_id: int) -> list[tuple[Withdrawal, str]]:
