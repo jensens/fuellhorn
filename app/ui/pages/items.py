@@ -26,7 +26,7 @@ from nicegui import ui
 from typing import Any
 
 
-# Browser storage key for consumed items filter
+# User storage key for consumed items filter (persisted across page reloads)
 SHOW_CONSUMED_KEY = "show_consumed_items"
 
 
@@ -161,16 +161,17 @@ def _sort_items(items: list[Item], sort_field: str, ascending: bool) -> list[Ite
 def items_page() -> None:
     """Items list page with card layout, search, and all filters (Mobile-First)."""
 
-    # Read filter setting from browser storage (default: False = hide consumed)
-    show_consumed = app.storage.browser.get(SHOW_CONSUMED_KEY, False)
+    # Read filter setting from user storage (persisted server-side per user session)
+    initial_show_consumed = app.storage.user.get(SHOW_CONSUMED_KEY, False)
 
-    # State for filters and sorting
+    # State for filters and sorting (includes show_consumed for immediate updates)
     filter_state: dict[str, Any] = {
         "search_term": "",
         "location_id": 0,  # 0 = all locations
         "item_type": "",  # "" = all types
         "sort_field": "best_before_date",  # Default: sort by best_before_date
         "sort_ascending": True,  # Default: ascending (soonest first)
+        "show_consumed": initial_show_consumed,  # Track toggle state locally
     }
     selected_categories: set[int] = set()
     chip_elements: dict[int, ui.button] = {}
@@ -193,12 +194,11 @@ def items_page() -> None:
             return
 
         items_container.clear()
-        current_show_consumed = app.storage.browser.get(SHOW_CONSUMED_KEY, False)
 
         with items_container:
             with next(get_session()) as session:
-                # Get items based on consumed filter
-                if current_show_consumed:
+                # Get items based on consumed filter (use local state for immediate updates)
+                if filter_state["show_consumed"]:
                     all_items = item_service.get_all_items(session)
                 else:
                     all_items = item_service.get_active_items(session)
@@ -236,8 +236,9 @@ def items_page() -> None:
                     _render_no_filter_results()
 
     def on_toggle_change(e: Any) -> None:
-        """Handle toggle change - store setting and refresh list."""
-        app.storage.browser[SHOW_CONSUMED_KEY] = e.value
+        """Handle toggle change - update local state and persist to user storage."""
+        filter_state["show_consumed"] = e.value
+        app.storage.user[SHOW_CONSUMED_KEY] = e.value
         refresh_items()
 
     def on_search_change(e: Any) -> None:
@@ -314,7 +315,7 @@ def items_page() -> None:
     with ui.row().classes("sp-page-header w-full items-center justify-between"):
         ui.label("Vorrat").classes("sp-page-title")
         # Toggle for showing consumed items
-        ui.switch("Entnommene anzeigen", value=show_consumed, on_change=on_toggle_change).classes("text-sm")
+        ui.switch("Entnommene anzeigen", value=initial_show_consumed, on_change=on_toggle_change).classes("text-sm")
 
     # Main content with bottom nav spacing
     with create_mobile_page_container():
