@@ -185,6 +185,7 @@ def items_page() -> None:
     chip_elements: dict[int, ui.button] = {}
     category_colors: dict[int, str] = {}  # Store category colors for styling
     sort_direction_btn: ui.button | None = None
+    sort_row: ui.row | None = None  # Reference for hiding when consumed toggle is on
 
     # Container reference (for refreshing)
     items_container: Any = None
@@ -252,6 +253,9 @@ def items_page() -> None:
         """Handle toggle change - update local state and persist to user storage."""
         filter_state["show_consumed"] = e.value
         app.storage.user[SHOW_CONSUMED_KEY] = e.value
+        # Hide sort controls when showing consumed (sorted by withdrawal date)
+        if sort_row:
+            sort_row.set_visibility(not e.value)
         refresh_items()
 
     def on_search_change(e: Any) -> None:
@@ -358,8 +362,10 @@ def items_page() -> None:
                 on_change=on_item_type_change,
             ).props("dense outlined").classes("flex-1")
 
-        # Sorting row
-        with ui.row().classes("w-full gap-2 items-center mb-2"):
+        # Sorting row (hidden when showing consumed items - they're sorted by withdrawal date)
+        sort_row = ui.row().classes("w-full gap-2 items-center mb-2")
+        sort_row.set_visibility(not initial_show_consumed)
+        with sort_row:
             ui.select(
                 label="Sortierung",
                 options=SORT_OPTIONS,
