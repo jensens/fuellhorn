@@ -136,3 +136,26 @@ async def test_item_card_shows_entnahme_button(user: TestUser) -> None:
     """Test that item card shows 'Entnahme' button when on_consume is provided."""
     await user.open("/test-item-card-with-consume")
     await user.should_see("Entnahme")
+
+
+# =============================================================================
+# Partial Withdrawal Display Tests (Issue #204)
+# =============================================================================
+
+
+async def test_item_card_shows_initial_quantity_on_partial_withdrawal(
+    user: TestUser,
+) -> None:
+    """Test that item card shows initial quantity when partial withdrawal exists."""
+    await user.open("/test-item-card-partial-withdrawal")
+    # Should show "300/500 g" format
+    await user.should_see("300/500 g")
+
+
+async def test_item_card_no_initial_quantity_without_withdrawal(
+    user: TestUser,
+) -> None:
+    """Test that item card shows only current quantity when no withdrawal exists."""
+    await user.open("/test-item-card-no-withdrawal")
+    # Should show just "500 g" without initial
+    await user.should_see("500 g")

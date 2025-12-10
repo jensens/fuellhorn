@@ -24,6 +24,33 @@ from sqlmodel import Session
 from typing import Callable
 
 
+def _format_quantity_display(
+    current_qty: float,
+    initial_qty: float,
+    unit: str,
+) -> tuple[str, bool]:
+    """Format quantity display with optional initial quantity.
+
+    Args:
+        current_qty: Current item quantity
+        initial_qty: Initial quantity (before withdrawals)
+        unit: Unit string (e.g., "g", "Stück")
+
+    Returns:
+        Tuple of (formatted string, has_withdrawals bool)
+    """
+    # Format numbers: remove decimal if whole number
+    current = int(current_qty) if current_qty == int(current_qty) else current_qty
+    initial = int(initial_qty) if initial_qty == int(initial_qty) else initial_qty
+
+    has_withdrawals = initial_qty > current_qty
+
+    if has_withdrawals:
+        return f"{current}/{initial} {unit}", True
+    else:
+        return f"{current} {unit}", False
+
+
 # Item-Type Badge short labels (German)
 ITEM_TYPE_SHORT_LABELS = {
     ItemType.PURCHASED_FRESH: "Frisch",
@@ -144,8 +171,9 @@ def create_item_card(
     # Get expiry display
     expiry_label, expiry_value = _format_expiry_display(effective_expiry, item.item_type)
 
-    # Format quantity (remove decimal if whole number)
-    qty = int(item.quantity) if item.quantity == int(item.quantity) else item.quantity
+    # Get initial quantity and format display
+    initial_qty = item_service.get_item_initial_quantity(session, item.id)  # type: ignore[arg-type]
+    qty_display, has_withdrawals = _format_quantity_display(item.quantity, initial_qty, item.unit)
 
     # Get item type badge info
     type_label = ITEM_TYPE_SHORT_LABELS.get(item.item_type, str(item.item_type.value))
@@ -166,7 +194,11 @@ def create_item_card(
 
                 # Line 2: Quantity + Item-Type Badge
                 with ui.row().classes("items-center gap-2"):
-                    ui.label(f"{qty} {item.unit}").classes("text-sm text-gray-700")
+                    qty_classes = "text-sm text-gray-700"
+                    if has_withdrawals:
+                        # Visual indicator for partial withdrawal
+                        qty_classes = "text-sm text-amber-700"
+                    ui.label(qty_display).classes(qty_classes)
 
                     # Item-Type Badge with 15% opacity background, text in full color
                     ui.label(type_label).classes("text-xs px-2 py-0.5 rounded").style(

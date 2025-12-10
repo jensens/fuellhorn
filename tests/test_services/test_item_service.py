@@ -770,3 +770,146 @@ def test_delete_item_cascades_withdrawals(session: Session, test_admin: User) ->
     # Verify withdrawals are also deleted
     remaining = list(session.exec(select(Withdrawal).where(Withdrawal.item_id == item_id)).all())
     assert len(remaining) == 0
+
+
+# =============================================================================
+# Initial Quantity Tests (Issue #204)
+# =============================================================================
+
+
+def test_get_item_initial_quantity_no_withdrawals(session: Session, test_admin: User) -> None:
+    """Test: Initial quantity equals current quantity when no withdrawals."""
+    location = location_service.create_location(
+        session=session,
+        name="Gefrierschrank",
+        location_type=LocationType.FROZEN,
+        created_by=test_admin.id,
+    )
+    category = category_service.create_category(
+        session=session,
+        name="Gemüse",
+        created_by=test_admin.id,
+    )
+
+    assert category.id is not None
+
+    item = item_service.create_item(
+        session=session,
+        product_name="Erbsen",
+        best_before_date=date(2025, 1, 1),
+        quantity=500,
+        unit="g",
+        item_type=ItemType.PURCHASED_FROZEN,
+        location_id=location.id,
+        created_by=test_admin.id,
+        category_id=category.id,
+        freeze_date=date(2024, 6, 1),
+    )
+
+    initial_quantity = item_service.get_item_initial_quantity(session, item.id)
+
+    assert initial_quantity == 500
+
+
+def test_get_item_initial_quantity_with_single_withdrawal(
+    session: Session, test_admin: User
+) -> None:
+    """Test: Initial quantity = current + withdrawn when one withdrawal exists."""
+    location = location_service.create_location(
+        session=session,
+        name="Gefrierschrank",
+        location_type=LocationType.FROZEN,
+        created_by=test_admin.id,
+    )
+    category = category_service.create_category(
+        session=session,
+        name="Gemüse",
+        created_by=test_admin.id,
+    )
+
+    assert category.id is not None
+    assert test_admin.id is not None
+
+    item = item_service.create_item(
+        session=session,
+        product_name="Erbsen",
+        best_before_date=date(2025, 1, 1),
+        quantity=500,
+        unit="g",
+        item_type=ItemType.PURCHASED_FROZEN,
+        location_id=location.id,
+        created_by=test_admin.id,
+        category_id=category.id,
+        freeze_date=date(2024, 6, 1),
+    )
+
+    # Withdraw 200g
+    item_service.withdraw_partial(
+        session=session,
+        item_id=item.id,
+        withdraw_quantity=200,
+        user_id=test_admin.id,
+    )
+
+    # Current quantity is 300, initial should be 500
+    initial_quantity = item_service.get_item_initial_quantity(session, item.id)
+
+    assert initial_quantity == 500
+
+
+def test_get_item_initial_quantity_with_multiple_withdrawals(
+    session: Session, test_admin: User
+) -> None:
+    """Test: Initial quantity = current + sum of all withdrawals."""
+    location = location_service.create_location(
+        session=session,
+        name="Gefrierschrank",
+        location_type=LocationType.FROZEN,
+        created_by=test_admin.id,
+    )
+    category = category_service.create_category(
+        session=session,
+        name="Gemüse",
+        created_by=test_admin.id,
+    )
+
+    assert category.id is not None
+    assert test_admin.id is not None
+
+    item = item_service.create_item(
+        session=session,
+        product_name="Erbsen",
+        best_before_date=date(2025, 1, 1),
+        quantity=500,
+        unit="g",
+        item_type=ItemType.PURCHASED_FROZEN,
+        location_id=location.id,
+        created_by=test_admin.id,
+        category_id=category.id,
+        freeze_date=date(2024, 6, 1),
+    )
+
+    # Multiple withdrawals: 100 + 150 = 250
+    item_service.withdraw_partial(
+        session=session,
+        item_id=item.id,
+        withdraw_quantity=100,
+        user_id=test_admin.id,
+    )
+    item_service.withdraw_partial(
+        session=session,
+        item_id=item.id,
+        withdraw_quantity=150,
+        user_id=test_admin.id,
+    )
+
+    # Current quantity is 250, initial should be 500
+    initial_quantity = item_service.get_item_initial_quantity(session, item.id)
+
+    assert initial_quantity == 500
+
+
+def test_get_item_initial_quantity_not_found_fails(session: Session) -> None:
+    """Test: Getting initial quantity for non-existent item fails."""
+    with pytest.raises(ValueError, match="Item with id 999 not found"):
+        item_service.get_item_initial_quantity(session, 999)
