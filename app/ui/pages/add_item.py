@@ -551,7 +551,12 @@ def add_item() -> None:
     # Header with title and close button (Solarpunk theme)
     with ui.row().classes("sp-page-header w-full items-center justify-between"):
         ui.label("Artikel erfassen").classes("sp-page-title")
-        with ui.button(on_click=lambda: ui.navigate.to("/dashboard")).classes("sp-back-btn").props("flat round"):
+        with (
+            ui.button(on_click=lambda: ui.navigate.to("/dashboard"))
+            .classes("sp-back-btn")
+            .props("flat round")
+            .mark("wizard-close")
+        ):
             create_icon("actions/close", size="24px")
 
     # Main content container (max-width handled by create_mobile_page_container)
