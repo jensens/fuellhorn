@@ -68,6 +68,14 @@ def _render_no_filter_results() -> None:
         ui.label("Versuche andere Filter oder Suchbegriffe").classes("text-sm text-stone")
 
 
+def _render_no_consumed_items() -> None:
+    """Render message when no items have been withdrawn yet."""
+    with ui.card().classes("sp-dashboard-card w-full p-6 text-center"):
+        ui.icon("check_circle").classes("text-6xl text-stone mb-4")
+        ui.label("Keine Entnahmen").classes("text-lg text-charcoal mb-2")
+        ui.label("Es wurden noch keine Artikel entnommen.").classes("text-sm text-stone")
+
+
 def _build_item_category_map(items: list[Item]) -> dict[int, int | None]:
     """Build a mapping from item IDs to their category ID.
 
@@ -227,8 +235,11 @@ def items_page() -> None:
                     )
 
                 if not all_items:
-                    # No items at all - show empty state with CTA
-                    _render_empty_state()
+                    # No items - show appropriate empty state
+                    if filter_state["show_consumed"]:
+                        _render_no_consumed_items()
+                    else:
+                        _render_empty_state()
                 elif filtered_items:
                     # Display filtered items as cards with consume button
                     for item in filtered_items:
