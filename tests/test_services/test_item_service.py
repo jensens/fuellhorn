@@ -811,9 +811,7 @@ def test_get_item_initial_quantity_no_withdrawals(session: Session, test_admin: 
     assert initial_quantity == 500
 
 
-def test_get_item_initial_quantity_with_single_withdrawal(
-    session: Session, test_admin: User
-) -> None:
+def test_get_item_initial_quantity_with_single_withdrawal(session: Session, test_admin: User) -> None:
     """Test: Initial quantity = current + withdrawn when one withdrawal exists."""
     location = location_service.create_location(
         session=session,
@@ -857,9 +855,7 @@ def test_get_item_initial_quantity_with_single_withdrawal(
     assert initial_quantity == 500
 
 
-def test_get_item_initial_quantity_with_multiple_withdrawals(
-    session: Session, test_admin: User
-) -> None:
+def test_get_item_initial_quantity_with_multiple_withdrawals(session: Session, test_admin: User) -> None:
     """Test: Initial quantity = current + sum of all withdrawals."""
     location = location_service.create_location(
         session=session,
@@ -920,9 +916,7 @@ def test_get_item_initial_quantity_not_found_fails(session: Session) -> None:
 # =============================================================================
 
 
-def test_get_consumed_items_returns_only_items_with_withdrawals(
-    session: Session, test_admin: User
-) -> None:
+def test_get_consumed_items_returns_only_items_with_withdrawals(session: Session, test_admin: User) -> None:
     """Test: get_consumed_items returns only items that have withdrawals."""
     location = location_service.create_location(
         session=session,
@@ -997,11 +991,8 @@ def test_get_consumed_items_returns_only_items_with_withdrawals(
     assert "Erbsen" not in product_names
 
 
-def test_get_consumed_items_sorted_by_last_withdrawal_descending(
-    session: Session, test_admin: User
-) -> None:
+def test_get_consumed_items_sorted_by_last_withdrawal_descending(session: Session, test_admin: User) -> None:
     """Test: get_consumed_items returns items sorted by last withdrawal date (newest first)."""
-    from datetime import datetime
     from time import sleep
 
     location = location_service.create_location(
@@ -1070,9 +1061,7 @@ def test_get_consumed_items_sorted_by_last_withdrawal_descending(
     assert consumed_items[1].product_name == "Erbsen"
 
 
-def test_get_consumed_items_empty_when_no_withdrawals(
-    session: Session, test_admin: User
-) -> None:
+def test_get_consumed_items_empty_when_no_withdrawals(session: Session, test_admin: User) -> None:
     """Test: get_consumed_items returns empty list when no items have withdrawals."""
     location = location_service.create_location(
         session=session,
