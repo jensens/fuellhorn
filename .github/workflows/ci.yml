@@ -145,6 +145,11 @@ jobs:
           echo "## Coverage Report" >> $GITHUB_STEP_SUMMARY
           uv run coverage report --format=markdown >> $GITHUB_STEP_SUMMARY
 
+      - name: Check coverage thresholds
+        run: |
+          # Check overall coverage >= 80% (target: 90%, stepping up)
+          uv run coverage report --fail-under=80
+
       - name: Upload HTML report
         uses: actions/upload-artifact@v4
         with:
