@@ -10,8 +10,10 @@ Shows remaining days until expiry.
 
 from ...services.expiry_calculator import get_days_until_expiry
 from ...services.expiry_calculator import get_expiry_status
+from ..theme.icons import create_icon
 from datetime import date
 from nicegui import ui
+from typing import Any
 
 
 # Color mapping for expiry status
@@ -28,11 +30,11 @@ STATUS_TEXT_COLORS = {
     "ok": "text-green-500",
 }
 
-# Status icons
-STATUS_ICONS = {
-    "critical": "🔴",
-    "warning": "🟡",
-    "ok": "🟢",
+# Status icons mapping to custom SVG icons
+STATUS_ICON_NAMES = {
+    "critical": "status/critical",
+    "warning": "status/warning",
+    "ok": "status/ok",
 }
 
 
@@ -79,16 +81,27 @@ def create_expiry_badge(expiry_date: date) -> ui.badge:
     return ui.badge(text).classes(f"{color_classes} px-2 py-1 rounded-full text-xs font-medium")
 
 
-def get_status_icon(status: str) -> str:
-    """Get status icon emoji for given status.
+def create_status_icon(
+    status: str,
+    size: str = "20px",
+    classes: str = "",
+) -> Any:
+    """Create a status icon element using custom SVG icons.
+
+    Uses the Solarpunk custom icons for status indicators.
+    Color is controlled via CSS classes (text-red-500, etc.).
 
     Args:
         status: Expiry status ("critical", "warning", "ok")
+        size: CSS size value (e.g., "20px", "1rem")
+        classes: Additional CSS classes for styling
 
     Returns:
-        Emoji icon for the status
+        NiceGUI html element containing the SVG icon
     """
-    return STATUS_ICONS.get(status, "⚪")
+    icon_name = STATUS_ICON_NAMES.get(status, "status/info")
+    color_class = STATUS_TEXT_COLORS.get(status, "text-gray-500")
+    return create_icon(icon_name, size=size, classes=f"{color_class} {classes}")
 
 
 def get_status_text_color(status: str) -> str:

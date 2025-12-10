@@ -9,7 +9,7 @@ from .bottom_sheet import create_bottom_sheet
 from .bottom_sheet import get_expiry_label
 from .category_chips import create_category_chip_group
 from .expiry_badge import create_expiry_badge
-from .expiry_badge import get_status_icon
+from .expiry_badge import create_status_icon
 from .expiry_badge import get_status_text_color
 from .item_card import create_item_card
 from .item_card import get_status_css_class
@@ -31,13 +31,13 @@ __all__ = [
     "create_item_type_chip_group",
     "create_location_chip_group",
     "create_mobile_page_container",
+    "create_status_icon",
     "create_unit_chip_group",
     "create_user_dropdown",
     "get_available_units",
     "get_expiry_label",
     "get_item_type_label",
     "get_status_css_class",
-    "get_status_icon",
     "get_status_text_class",
     "get_status_text_color",
 ]
