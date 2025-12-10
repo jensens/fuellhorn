@@ -81,6 +81,10 @@ parallel = true
 branch = true
 source = ["app"]
 relative_files = true
+omit = [
+    "app/ui/pages/demo_chips.py",
+    "app/ui/test_pages/*",
+]
 
 [tool.coverage.report]
 skip_covered = true

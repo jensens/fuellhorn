@@ -6,7 +6,9 @@ Only loaded when TESTING=true environment variable is set.
 
 from ...database import get_session
 from ...models.item import ItemType
+from ...services import category_service
 from ...services import location_service
+from ..components import create_category_chip_group
 from ..components import create_item_type_chip_group
 from ..components import create_location_chip_group
 from ..components import create_unit_chip_group
@@ -17,6 +19,7 @@ from nicegui import ui
 _last_item_type: list[ItemType | None] = [None]
 _last_unit: list[str | None] = [None]
 _last_location: list[int | None] = [None]
+_last_category: list[int | None] = [None]
 
 
 def _reset_test_state() -> None:
@@ -24,6 +27,7 @@ def _reset_test_state() -> None:
     _last_item_type[0] = None
     _last_unit[0] = None
     _last_location[0] = None
+    _last_category[0] = None
 
 
 @ui.page("/test/item-type-chips")
@@ -140,6 +144,58 @@ def test_location_chips_preselected_page() -> None:
         ui.label("Location Chips Test (Preselected)").classes("text-h6")
         create_location_chip_group(
             locations=locations,
+            value=preselected_id,
+            on_change=on_change,
+        )
+
+
+@ui.page("/test/category-chips")
+def test_category_chips_page() -> None:
+    """Test page for Category chips without initial selection."""
+    _reset_test_state()
+
+    # Label reference for updating
+    selection_label: list[ui.label | None] = [None]
+
+    def on_change(value: int) -> None:
+        _last_category[0] = value
+        if selection_label[0]:
+            selection_label[0].set_text(f"Selected: {value}")
+
+    # Load categories from database
+    with next(get_session()) as session:
+        categories = category_service.get_all_categories(session)
+
+    with ui.column().classes("p-4"):
+        ui.label("Category Chips Test").classes("text-h6")
+        create_category_chip_group(
+            categories=categories,
+            on_change=on_change,
+        )
+        # Display current selection for test verification
+        selection_label[0] = ui.label("Selected: None")
+
+
+@ui.page("/test/category-chips-preselected")
+def test_category_chips_preselected_page() -> None:
+    """Test page for Category chips with initial selection."""
+    _reset_test_state()
+
+    # Load categories from database
+    with next(get_session()) as session:
+        categories = category_service.get_all_categories(session)
+
+    # Use first category as preselected if available
+    preselected_id = categories[0].id if categories else None
+    _last_category[0] = preselected_id
+
+    def on_change(value: int) -> None:
+        _last_category[0] = value
+
+    with ui.column().classes("p-4"):
+        ui.label("Category Chips Test (Preselected)").classes("text-h6")
+        create_category_chip_group(
+            categories=categories,
             value=preselected_id,
             on_change=on_change,
         )

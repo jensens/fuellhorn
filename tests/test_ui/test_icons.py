@@ -3,15 +3,12 @@
 Tests the icon loading, registry, and helper functions.
 """
 
+from app.ui.theme.icons import ICON_CATEGORIES
+from app.ui.theme.icons import get_icon_svg
+from app.ui.theme.icons import get_icon_svg_inline
+from app.ui.theme.icons import icon_exists
+from app.ui.theme.icons import list_icons
 import pytest
-
-from app.ui.theme.icons import (
-    ICON_CATEGORIES,
-    get_icon_svg,
-    get_icon_svg_inline,
-    icon_exists,
-    list_icons,
-)
 
 
 class TestIconRegistry:
