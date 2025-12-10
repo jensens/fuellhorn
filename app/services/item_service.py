@@ -420,3 +420,24 @@ def get_withdrawal_history(session: Session, item_id: int) -> list[Withdrawal]:
             select(Withdrawal).where(Withdrawal.item_id == item_id).order_by(Withdrawal.withdrawn_at)  # type: ignore[arg-type]
         ).all()
     )
+
+
+def get_item_initial_quantity(session: Session, item_id: int) -> float:
+    """Get the initial quantity of an item before any withdrawals.
+
+    Calculates: current_quantity + sum(all withdrawals)
+
+    Args:
+        session: Database session
+        item_id: Item ID
+
+    Returns:
+        Initial quantity
+
+    Raises:
+        ValueError: If item not found
+    """
+    item = get_item(session, item_id)
+    withdrawals = get_withdrawal_history(session, item_id)
+    total_withdrawn = sum(w.quantity for w in withdrawals)
+    return item.quantity + total_withdrawn

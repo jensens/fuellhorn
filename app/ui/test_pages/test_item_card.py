@@ -12,8 +12,10 @@ from ...models.item import Item
 from ...models.item import ItemType
 from ...models.location import Location
 from ...models.location import LocationType
+from ...models.withdrawal import Withdrawal
 from ..components.item_card import create_item_card
 from datetime import date
+from datetime import datetime
 from datetime import timedelta
 from nicegui import ui
 from sqlmodel import Session
@@ -228,3 +230,84 @@ def page_item_card_with_consume() -> None:
         category = _create_test_category(session, with_shelf_life=True)
         item = _create_shelf_life_item(session, location, category, freeze_days_ago=30)
         create_item_card(item, session, on_consume=lambda i: None)
+
+
+# =============================================================================
+# Test pages for partial withdrawal display (Issue #204)
+# =============================================================================
+
+
+def _create_test_user(session: Session) -> int:
+    """Create a test user and return their ID."""
+    from ...models.user import User
+
+    user = session.get(User, 1)
+    if user:
+        return 1
+    user = User(
+        id=1,
+        username="testuser",
+        hashed_password="test",
+        display_name="Test User",
+    )
+    session.add(user)
+    session.commit()
+    return 1
+
+
+def _create_withdrawal(
+    session: Session,
+    item: Item,
+    quantity: float,
+    user_id: int,
+) -> Withdrawal:
+    """Create a withdrawal entry for an item."""
+    withdrawal = Withdrawal(
+        item_id=item.id,
+        quantity=quantity,
+        withdrawn_at=datetime.now(),
+        withdrawn_by=user_id,
+    )
+    session.add(withdrawal)
+    session.commit()
+    return withdrawal
+
+
+@ui.page("/test-item-card-partial-withdrawal")
+def page_item_card_partial_withdrawal() -> None:
+    """Test page for item card with partial withdrawal (shows 300/500 g)."""
+    with next(get_session()) as session:
+        user_id = _create_test_user(session)
+        location = _create_test_location(session)
+        category = _create_test_category(session, with_shelf_life=True)
+
+        freeze_date = date.today() - timedelta(days=30)
+        item = Item(
+            product_name="Erbsen",
+            best_before_date=freeze_date,
+            freeze_date=freeze_date,
+            quantity=300,  # After withdrawal
+            unit="g",
+            item_type=ItemType.HOMEMADE_FROZEN,
+            location_id=location.id,
+            category_id=category.id,
+            created_by=user_id,
+        )
+        session.add(item)
+        session.commit()
+        session.refresh(item)
+
+        # Create withdrawal of 200g (initial was 500g)
+        _create_withdrawal(session, item, quantity=200, user_id=user_id)
+
+        create_item_card(item, session)
+
+
+@ui.page("/test-item-card-no-withdrawal")
+def page_item_card_no_withdrawal() -> None:
+    """Test page for item card without any withdrawal (no initial quantity shown)."""
+    with next(get_session()) as session:
+        location = _create_test_location(session)
+        category = _create_test_category(session, with_shelf_life=True)
+        item = _create_shelf_life_item(session, location, category, freeze_days_ago=30)
+        create_item_card(item, session)
