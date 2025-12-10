@@ -5,8 +5,10 @@ Based on UI_KONZEPT.md Section 4: Bottom Navigation (Mobile)
 - Sticky at bottom
 - 3 main items (Issue #83: removed 'Mehr')
 - Active state with primary color
+- Uses custom Solarpunk SVG icons
 """
 
+from ..theme.icons import create_icon
 from nicegui import ui
 from typing import Any
 
@@ -17,11 +19,11 @@ def create_bottom_nav(current_page: str = "dashboard") -> None:
     Args:
         current_page: Current active page ("dashboard", "add", "inventory")
     """
-    # Navigation items with icons and labels (Issue #83: only 3 items)
+    # Navigation items with custom icons and labels (Issue #83: only 3 items)
     nav_items = [
-        {"id": "dashboard", "icon": "home", "label": "Übersicht", "route": "/dashboard"},
-        {"id": "add", "icon": "add_circle", "label": "Erfassen", "route": "/items/add"},
-        {"id": "inventory", "icon": "inventory_2", "label": "Vorrat", "route": "/items"},
+        {"id": "dashboard", "icon": "navigation/home", "label": "Übersicht", "route": "/dashboard"},
+        {"id": "add", "icon": "navigation/add", "label": "Erfassen", "route": "/items/add"},
+        {"id": "inventory", "icon": "navigation/inventory", "label": "Vorrat", "route": "/items"},
     ]
 
     # Bottom navigation container - sticky at bottom
@@ -41,9 +43,9 @@ def create_bottom_nav(current_page: str = "dashboard") -> None:
                 .style("min-width: 48px; min-height: 48px")
                 .on("click", lambda route=item["route"]: ui.navigate.to(route))
             ):
-                # Icon with active state (theme handles colors via .active class)
+                # Custom SVG icon with active state
                 icon_color = "text-fern" if is_active else "text-stone"
-                ui.icon(item["icon"], size="24px").classes(icon_color)
+                create_icon(item["icon"], size="24px", classes=icon_color)
 
                 # Label with active state (theme handles colors via .active class)
                 label_color = "text-fern" if is_active else "text-stone"
