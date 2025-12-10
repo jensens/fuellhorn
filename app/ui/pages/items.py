@@ -199,7 +199,8 @@ def items_page() -> None:
             with next(get_session()) as session:
                 # Get items based on consumed filter (use local state for immediate updates)
                 if filter_state["show_consumed"]:
-                    all_items = item_service.get_all_items(session)
+                    # Show only consumed/partially withdrawn items, sorted by last withdrawal
+                    all_items = item_service.get_consumed_items(session)
                 else:
                     all_items = item_service.get_active_items(session)
 
@@ -217,12 +218,13 @@ def items_page() -> None:
                 # Apply category filter
                 filtered_items = _filter_items_by_categories(filtered_items, selected_categories, item_category_map)
 
-                # Apply sorting
-                filtered_items = _sort_items(
-                    filtered_items,
-                    filter_state["sort_field"],
-                    filter_state["sort_ascending"],
-                )
+                # Apply sorting (skip when showing consumed - already sorted by withdrawal date)
+                if not filter_state["show_consumed"]:
+                    filtered_items = _sort_items(
+                        filtered_items,
+                        filter_state["sort_field"],
+                        filter_state["sort_ascending"],
+                    )
 
                 if not all_items:
                     # No items at all - show empty state with CTA
