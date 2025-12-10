@@ -382,8 +382,10 @@ def test_wizard_cancel_returns_to_dashboard(page: Page, live_server: str) -> Non
     login(page, live_server)
     navigate_to_wizard(page, live_server)
 
-    # X-Button klicken (uses marker for reliable selection)
-    page.locator("[data-nicegui-marker='wizard-close']").click()
+    # X-Button klicken - find button in page header (right side)
+    close_button = page.locator(".sp-page-header button.sp-back-btn")
+    close_button.wait_for(state="visible", timeout=5000)
+    close_button.click()
 
     # Sollte zum Dashboard navigieren
     page.wait_for_url(f"{live_server}/dashboard", timeout=10000)
