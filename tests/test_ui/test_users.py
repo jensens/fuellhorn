@@ -163,7 +163,7 @@ async def test_new_user_button_opens_dialog(logged_in_user: TestUser) -> None:
     await logged_in_user.open("/admin/users")
 
     # Click the "Neuer Benutzer" button
-    logged_in_user.find("Neuer Benutzer").click()
+    logged_in_user.find(marker="new-user-button").click()
 
     # Should see dialog with form fields
     await logged_in_user.should_see("Neuen Benutzer erstellen")
@@ -182,7 +182,7 @@ async def test_create_user_success(
     await logged_in_user.open("/admin/users")
 
     # Click the "Neuer Benutzer" button
-    logged_in_user.find("Neuer Benutzer").click()
+    logged_in_user.find(marker="new-user-button").click()
 
     # Fill in the form
     logged_in_user.find("Benutzername").type("newuser")
@@ -204,7 +204,7 @@ async def test_create_user_validation_username_required(
     await logged_in_user.open("/admin/users")
 
     # Click the "Neuer Benutzer" button
-    logged_in_user.find("Neuer Benutzer").click()
+    logged_in_user.find(marker="new-user-button").click()
 
     # Fill in only other fields
     logged_in_user.find("E-Mail").type("test@example.com")
@@ -225,7 +225,7 @@ async def test_create_user_validation_email_required(
     await logged_in_user.open("/admin/users")
 
     # Click the "Neuer Benutzer" button
-    logged_in_user.find("Neuer Benutzer").click()
+    logged_in_user.find(marker="new-user-button").click()
 
     # Fill in only other fields
     logged_in_user.find("Benutzername").type("testuser")
@@ -246,7 +246,7 @@ async def test_create_user_validation_password_required(
     await logged_in_user.open("/admin/users")
 
     # Click the "Neuer Benutzer" button
-    logged_in_user.find("Neuer Benutzer").click()
+    logged_in_user.find(marker="new-user-button").click()
 
     # Fill in only other fields
     logged_in_user.find("Benutzername").type("testuser")
@@ -266,7 +266,7 @@ async def test_create_user_validation_passwords_must_match(
     await logged_in_user.open("/admin/users")
 
     # Click the "Neuer Benutzer" button
-    logged_in_user.find("Neuer Benutzer").click()
+    logged_in_user.find(marker="new-user-button").click()
 
     # Fill in form with mismatched passwords
     logged_in_user.find("Benutzername").type("testuser")
@@ -290,7 +290,7 @@ async def test_create_user_validation_unique_username(
     await logged_in_user.open("/admin/users")
 
     # Click the "Neuer Benutzer" button
-    logged_in_user.find("Neuer Benutzer").click()
+    logged_in_user.find(marker="new-user-button").click()
 
     # Try to create user with existing username
     logged_in_user.find("Benutzername").type("admin")
@@ -313,7 +313,7 @@ async def test_create_user_with_admin_role(
     await logged_in_user.open("/admin/users")
 
     # Click the "Neuer Benutzer" button
-    logged_in_user.find("Neuer Benutzer").click()
+    logged_in_user.find(marker="new-user-button").click()
 
     # Fill in the form
     logged_in_user.find("Benutzername").type("newadmin")

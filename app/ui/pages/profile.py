@@ -13,6 +13,7 @@ from ...models.user import User
 from ...services import preferences_service
 from ..components import create_bottom_nav
 from ..components import create_mobile_page_container
+from ..theme.icons import create_icon
 from nicegui import ui
 from sqlmodel import Session
 from typing import Any
@@ -38,9 +39,8 @@ def profile() -> None:
     # Header (Solarpunk theme)
     with ui.row().classes("sp-page-header w-full items-center justify-between"):
         with ui.row().classes("items-center gap-2"):
-            ui.button(icon="arrow_back", on_click=lambda: ui.navigate.to("/dashboard")).classes("sp-back-btn").props(
-                "flat round"
-            )
+            with ui.button(on_click=lambda: ui.navigate.to("/dashboard")).classes("sp-back-btn").props("flat round"):
+                create_icon("actions/back", size="24px")
             ui.label("Profil").classes("sp-page-title")
 
     # Main content with bottom nav spacing
@@ -105,7 +105,10 @@ def _render_account_info_section(current_user: User) -> None:
             except ValueError as e:
                 ui.notify(str(e), type="negative")
 
-        ui.button("E-Mail speichern", icon="save", on_click=save_email).classes("sp-btn-primary")
+        with ui.button(on_click=save_email).classes("sp-btn-primary"):
+            with ui.row().classes("items-center gap-2"):
+                create_icon("actions/save", size="20px")
+                ui.label("E-Mail speichern")
 
 
 def _render_password_change_section(current_user: User) -> None:
@@ -255,4 +258,7 @@ def _render_smart_defaults_section(current_user: User) -> None:
 
             ui.notify("Einstellungen gespeichert", type="positive")
 
-        ui.button("Speichern", icon="save", on_click=save_preferences).classes("sp-btn-primary")
+        with ui.button(on_click=save_preferences).classes("sp-btn-primary"):
+            with ui.row().classes("items-center gap-2"):
+                create_icon("actions/save", size="20px")
+                ui.label("Speichern")

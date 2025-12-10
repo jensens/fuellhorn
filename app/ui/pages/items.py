@@ -21,6 +21,7 @@ from ..components import create_bottom_sheet
 from ..components import create_item_card
 from ..components import create_mobile_page_container
 from ..theme import get_contrast_text_color
+from ..theme.icons import create_icon
 from nicegui import app
 from nicegui import ui
 from typing import Any
@@ -51,7 +52,8 @@ ITEM_TYPE_LABELS: dict[str, str] = {
 def _render_empty_state() -> None:
     """Render empty state when no items exist or no search results."""
     with ui.card().classes("sp-dashboard-card w-full p-6 text-center"):
-        ui.icon("inventory_2").classes("text-6xl text-stone mb-4")
+        with ui.element("div").classes("mb-4"):
+            create_icon("navigation/inventory", size="64px", classes="text-stone")
         ui.label("Keine Artikel vorhanden").classes("text-lg text-charcoal mb-2")
         ui.label("Erfasse deinen ersten Artikel!").classes("text-sm text-stone")
         ui.button(
@@ -71,7 +73,8 @@ def _render_no_filter_results() -> None:
 def _render_no_consumed_items() -> None:
     """Render message when no items have been withdrawn yet."""
     with ui.card().classes("sp-dashboard-card w-full p-6 text-center"):
-        ui.icon("check_circle").classes("text-6xl text-stone mb-4")
+        with ui.element("div").classes("mb-4"):
+            create_icon("status/ok", size="64px", classes="text-stone")
         ui.label("Keine Entnahmen").classes("text-lg text-charcoal mb-2")
         ui.label("Es wurden noch keine Artikel entnommen.").classes("text-sm text-stone")
 
