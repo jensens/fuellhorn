@@ -9,6 +9,39 @@ from nicegui.testing import User as TestUser
 
 
 # =============================================================================
+# Tests for dashboard page with authentication
+# =============================================================================
+
+
+async def test_dashboard_page_loads(logged_in_user: TestUser) -> None:
+    """Test that the dashboard page loads correctly."""
+    await logged_in_user.open("/dashboard")
+
+    # Should see main sections
+    await logged_in_user.should_see("Füllhorn")
+    await logged_in_user.should_see("Bald abgelaufen")
+    await logged_in_user.should_see("Vorrats-Statistik")
+    await logged_in_user.should_see("Schnellfilter")
+
+
+async def test_dashboard_shows_statistics(logged_in_user: TestUser) -> None:
+    """Test that dashboard shows statistics section."""
+    await logged_in_user.open("/dashboard")
+
+    # Should see statistics labels
+    await logged_in_user.should_see("Artikel")
+    await logged_in_user.should_see("Ablauf")
+
+
+async def test_dashboard_has_user_dropdown(logged_in_user: TestUser) -> None:
+    """Test that dashboard shows user dropdown."""
+    await logged_in_user.open("/dashboard")
+
+    # Should see admin user in dropdown
+    await logged_in_user.should_see("admin")
+
+
+# =============================================================================
 # Tests for correct expiry calculation
 # =============================================================================
 
