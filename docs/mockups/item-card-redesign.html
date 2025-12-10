@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Füllhorn Card Redesign – Swipe Mockup</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Solarpunk CI */
+            --fern: #4A7C59;
+            --fern-light: #5a9c6d;
+            --moss: #5C7F5C;
+            --gold: #D4A853;
+            --gold-light: #E8C97B;
+            --terracotta: #C4704B;
+            --cream: #FDF8F3;
+            --cream-warm: #FAF5EE;
+            --stone: #A39E93;
+            --stone-light: #D4CFC7;
+
+            /* Status */
+            --coral: #E07A5F;
+            --coral-light: #F5A68E;
+            --sky: #87CEEB;
+            --water: #5BA3C6;
+            --expired: #C44536;
+            --warning: #E8985A;
+            --ok: #6B9E6B;
+            --fresh: #4A7C59;
+
+            /* Layout */
+            --card-radius: 16px;
+            --shadow-soft: 0 2px 12px rgba(74, 124, 89, 0.08);
+            --shadow-hover: 0 4px 20px rgba(74, 124, 89, 0.12);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: linear-gradient(135deg, var(--cream) 0%, var(--cream-warm) 100%);
+            min-height: 100vh;
+            padding: 24px;
+            color: #3D3D3D;
+        }
+
+        .container {
+            max-width: 440px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            font-family: 'Quicksand', sans-serif;
+            color: var(--fern);
+            font-size: 1.5rem;
+            margin-bottom: 8px;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            color: var(--stone);
+            font-size: 0.9rem;
+            margin-bottom: 24px;
+        }
+
+        .section-label {
+            font-family: 'Quicksand', sans-serif;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--stone);
+            margin: 32px 0 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-label::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg, var(--stone-light), transparent);
+        }
+
+        /* ==================== */
+        /* NEUE CARD STRUKTUR   */
+        /* ==================== */
+
+        .item-card {
+            background: white;
+            border-radius: var(--card-radius);
+            box-shadow: var(--shadow-soft);
+            margin-bottom: 12px;
+            position: relative;
+            overflow: hidden;
+            transition: box-shadow 0.2s ease, transform 0.2s ease;
+        }
+
+        .item-card:hover {
+            box-shadow: var(--shadow-hover);
+        }
+
+        /* Swipe Action Layer (hinter der Card) */
+        .swipe-actions {
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            width: 160px;
+            display: flex;
+            align-items: stretch;
+        }
+
+        .swipe-action {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: white;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .swipe-action.take-partial {
+            background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);
+        }
+
+        .swipe-action.take-all {
+            background: linear-gradient(135deg, var(--fern) 0%, var(--moss) 100%);
+        }
+
+        .swipe-action svg {
+            width: 24px;
+            height: 24px;
+        }
+
+        /* Card Content (slideable) */
+        .card-content {
+            background: white;
+            position: relative;
+            z-index: 2;
+            padding: 16px;
+            display: grid;
+            grid-template-columns: 1fr auto;
+            grid-template-rows: auto auto auto;
+            gap: 8px 16px;
+            transition: transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            cursor: grab;
+            touch-action: pan-y;
+        }
+
+        .card-content.swiped {
+            transform: translateX(-160px);
+        }
+
+        .card-content:active {
+            cursor: grabbing;
+        }
+
+        /* Header Zone: Name + Expiry Badge */
+        .card-header {
+            grid-column: 1 / -1;
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .item-name {
+            font-family: 'Quicksand', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #2D2D2D;
+            line-height: 1.3;
+        }
+
+        .expiry-badge {
+            flex-shrink: 0;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .expiry-badge.expired {
+            background: linear-gradient(135deg, var(--expired), #D85545);
+            color: white;
+        }
+
+        .expiry-badge.warning {
+            background: linear-gradient(135deg, var(--warning), #F0A86A);
+            color: white;
+        }
+
+        .expiry-badge.soon {
+            background: linear-gradient(135deg, var(--gold), var(--gold-light));
+            color: #5A4520;
+        }
+
+        .expiry-badge.ok {
+            background: var(--cream-warm);
+            color: var(--stone);
+            border: 1px solid var(--stone-light);
+        }
+
+        /* Body Zone: Amount + Progress + Tags */
+        .card-body {
+            grid-column: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        /* Amount mit Fortschrittsbalken */
+        .amount-section {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .amount-text {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #4D4D4D;
+            min-width: 70px;
+        }
+
+        .amount-text .fraction {
+            color: var(--stone);
+            font-weight: 400;
+        }
+
+        /* Organischer Fortschrittsbalken */
+        .progress-track {
+            flex: 1;
+            height: 8px;
+            background: var(--cream-warm);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-bar {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            position: relative;
+        }
+
+        .progress-bar.high {
+            background: linear-gradient(90deg, var(--fern), var(--moss));
+        }
+
+        .progress-bar.medium {
+            background: linear-gradient(90deg, var(--gold), var(--gold-light));
+        }
+
+        .progress-bar.low {
+            background: linear-gradient(90deg, var(--coral), var(--coral-light));
+        }
+
+        /* Leaf decoration on progress bar */
+        .progress-bar::after {
+            content: '🌿';
+            position: absolute;
+            right: -2px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+        /* Tags */
+        .tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .tag {
+            padding: 3px 10px;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .tag.state {
+            background: var(--cream-warm);
+            color: var(--stone);
+            border: 1px solid var(--stone-light);
+        }
+
+        .tag.category {
+            background: linear-gradient(135deg, var(--fern), var(--moss));
+            color: white;
+        }
+
+        /* Location (Footer) */
+        .card-footer {
+            grid-column: 1;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--stone);
+            font-size: 0.8rem;
+        }
+
+        .card-footer svg {
+            width: 14px;
+            height: 14px;
+            color: var(--fern);
+        }
+
+        /* Quick Action Button (visible on right) */
+        .quick-action {
+            grid-column: 2;
+            grid-row: 2 / 4;
+            align-self: center;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: 2px solid var(--fern);
+            background: white;
+            color: var(--fern);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .quick-action:hover {
+            background: var(--fern);
+            color: white;
+            transform: scale(1.05);
+        }
+
+        .quick-action:active {
+            transform: scale(0.95);
+        }
+
+        .quick-action svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        /* Swipe Hint */
+        .swipe-hint {
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            color: var(--stone-light);
+            font-size: 0.7rem;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+
+        .item-card:hover .swipe-hint {
+            opacity: 1;
+        }
+
+        .card-content.swiped + .swipe-hint {
+            opacity: 0;
+        }
+
+        /* ==================== */
+        /* ALTE CARD (Vergleich) */
+        /* ==================== */
+
+        .old-card {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: var(--shadow-soft);
+            border-left: 4px solid var(--fern);
+        }
+
+        .old-card .name {
+            font-weight: 700;
+            font-size: 1rem;
+            margin-bottom: 4px;
+        }
+
+        .old-card .meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            font-size: 0.85rem;
+            color: var(--stone);
+        }
+
+        .old-card .expiry {
+            margin-left: auto;
+            color: var(--coral);
+            font-weight: 600;
+        }
+
+        .old-card .action-link {
+            display: block;
+            text-align: right;
+            margin-top: 8px;
+            color: var(--fern);
+            font-size: 0.85rem;
+            text-decoration: none;
+        }
+
+        /* Instructions */
+        .instructions {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 24px;
+            border: 2px dashed var(--stone-light);
+        }
+
+        .instructions h3 {
+            font-family: 'Quicksand', sans-serif;
+            color: var(--fern);
+            margin-bottom: 12px;
+            font-size: 1rem;
+        }
+
+        .instructions ul {
+            list-style: none;
+            font-size: 0.9rem;
+            color: #4D4D4D;
+        }
+
+        .instructions li {
+            padding: 6px 0;
+            padding-left: 24px;
+            position: relative;
+        }
+
+        .instructions li::before {
+            content: '→';
+            position: absolute;
+            left: 0;
+            color: var(--fern);
+        }
+
+        /* Legend */
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid var(--stone-light);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.8rem;
+            color: var(--stone);
+        }
+
+        .legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .legend-dot.high { background: var(--fern); }
+        .legend-dot.medium { background: var(--gold); }
+        .legend-dot.low { background: var(--coral); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌿 Füllhorn Card Redesign</h1>
+        <p class="subtitle">Optimierte Struktur mit Swipe-Aktionen</p>
+
+        <div class="section-label">Neue Struktur</div>
+
+        <!-- NEUE CARD: Abgelaufen -->
+        <div class="item-card">
+            <div class="swipe-actions">
+                <div class="swipe-action take-partial" onclick="showToast('Teilentnahme')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="M12 8v8M8 12h8"/>
+                    </svg>
+                    <span>Teil</span>
+                </div>
+                <div class="swipe-action take-all" onclick="showToast('Alles entnommen!')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 6L9 17l-5-5"/>
+                    </svg>
+                    <span>Alles</span>
+                </div>
+            </div>
+            <div class="card-content" data-swipeable>
+                <div class="card-header">
+                    <span class="item-name">Apfelmus</span>
+                    <span class="expiry-badge expired">Abgelaufen</span>
+                </div>
+                <div class="card-body">
+                    <div class="amount-section">
+                        <span class="amount-text">1<span class="fraction">/3</span> Gläser</span>
+                        <div class="progress-track">
+                            <div class="progress-bar low" style="width: 33%"></div>
+                        </div>
+                    </div>
+                    <div class="tags">
+                        <span class="tag state">Eingemacht</span>
+                        <span class="tag category">Obst</span>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/>
+                        <circle cx="12" cy="10" r="3"/>
+                    </svg>
+                    <span>Keller</span>
+                </div>
+                <button class="quick-action" onclick="showToast('Entnahme-Dialog')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <path d="M5 12h14"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="swipe-hint">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M13 17l5-5-5-5M6 17l5-5-5-5"/>
+                </svg>
+                swipe
+            </div>
+        </div>
+
+        <!-- NEUE CARD: Warnung -->
+        <div class="item-card">
+            <div class="swipe-actions">
+                <div class="swipe-action take-partial" onclick="showToast('Teilentnahme')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="M12 8v8M8 12h8"/>
+                    </svg>
+                    <span>Teil</span>
+                </div>
+                <div class="swipe-action take-all" onclick="showToast('Alles entnommen!')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 6L9 17l-5-5"/>
+                    </svg>
+                    <span>Alles</span>
+                </div>
+            </div>
+            <div class="card-content" data-swipeable>
+                <div class="card-header">
+                    <span class="item-name">Joghurt</span>
+                    <span class="expiry-badge warning">Morgen</span>
+                </div>
+                <div class="card-body">
+                    <div class="amount-section">
+                        <span class="amount-text">4 Stück</span>
+                        <div class="progress-track">
+                            <div class="progress-bar high" style="width: 100%"></div>
+                        </div>
+                    </div>
+                    <div class="tags">
+                        <span class="tag state">Frisch</span>
+                        <span class="tag category">Milchprodukte</span>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/>
+                        <circle cx="12" cy="10" r="3"/>
+                    </svg>
+                    <span>Kühlschrank</span>
+                </div>
+                <button class="quick-action" onclick="showToast('Entnahme-Dialog')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <path d="M5 12h14"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="swipe-hint">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M13 17l5-5-5-5M6 17l5-5-5-5"/>
+                </svg>
+                swipe
+            </div>
+        </div>
+
+        <!-- NEUE CARD: Bald -->
+        <div class="item-card">
+            <div class="swipe-actions">
+                <div class="swipe-action take-partial" onclick="showToast('Teilentnahme')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="M12 8v8M8 12h8"/>
+                    </svg>
+                    <span>Teil</span>
+                </div>
+                <div class="swipe-action take-all" onclick="showToast('Alles entnommen!')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 6L9 17l-5-5"/>
+                    </svg>
+                    <span>Alles</span>
+                </div>
+            </div>
+            <div class="card-content" data-swipeable>
+                <div class="card-header">
+                    <span class="item-name">Hackfleisch (TK)</span>
+                    <span class="expiry-badge soon">in 5 Tagen</span>
+                </div>
+                <div class="card-body">
+                    <div class="amount-section">
+                        <span class="amount-text">250<span class="fraction">/500</span> g</span>
+                        <div class="progress-track">
+                            <div class="progress-bar medium" style="width: 50%"></div>
+                        </div>
+                    </div>
+                    <div class="tags">
+                        <span class="tag state">Eingefroren</span>
+                        <span class="tag category">Fleisch</span>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/>
+                        <circle cx="12" cy="10" r="3"/>
+                    </svg>
+                    <span>Gefriertruhe</span>
+                </div>
+                <button class="quick-action" onclick="showToast('Entnahme-Dialog')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <path d="M5 12h14"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="swipe-hint">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M13 17l5-5-5-5M6 17l5-5-5-5"/>
+                </svg>
+                swipe
+            </div>
+        </div>
+
+        <!-- NEUE CARD: OK -->
+        <div class="item-card">
+            <div class="swipe-actions">
+                <div class="swipe-action take-partial" onclick="showToast('Teilentnahme')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="M12 8v8M8 12h8"/>
+                    </svg>
+                    <span>Teil</span>
+                </div>
+                <div class="swipe-action take-all" onclick="showToast('Alles entnommen!')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 6L9 17l-5-5"/>
+                    </svg>
+                    <span>Alles</span>
+                </div>
+            </div>
+            <div class="card-content" data-swipeable>
+                <div class="card-header">
+                    <span class="item-name">Lachs</span>
+                    <span class="expiry-badge ok">08.02.26</span>
+                </div>
+                <div class="card-body">
+                    <div class="amount-section">
+                        <span class="amount-text">400 g</span>
+                        <div class="progress-track">
+                            <div class="progress-bar high" style="width: 100%"></div>
+                        </div>
+                    </div>
+                    <div class="tags">
+                        <span class="tag state">TK gekauft</span>
+                        <span class="tag category">Fisch</span>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/>
+                        <circle cx="12" cy="10" r="3"/>
+                    </svg>
+                    <span>Gefriertruhe</span>
+                </div>
+                <button class="quick-action" onclick="showToast('Entnahme-Dialog')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <path d="M5 12h14"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="swipe-hint">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M13 17l5-5-5-5M6 17l5-5-5-5"/>
+                </svg>
+                swipe
+            </div>
+        </div>
+
+        <div class="instructions">
+            <h3>🎯 Interaktion</h3>
+            <ul>
+                <li><strong>Swipe nach links</strong> → Schnellaktionen (Teil / Alles)</li>
+                <li><strong>Minus-Button</strong> → Entnahme-Dialog öffnen</li>
+                <li><strong>Tap auf Card</strong> → Detail-Ansicht</li>
+                <li><strong>Fortschrittsbalken</strong> → Zeigt Restmenge visuell</li>
+            </ul>
+
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-dot high"></div>
+                    <span>Voll (>66%)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot medium"></div>
+                    <span>Mittel (33-66%)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot low"></div>
+                    <span>Wenig (<33%)</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-label">Alte Struktur (Vergleich)</div>
+
+        <div class="old-card">
+            <div class="name">Apfelmus</div>
+            <div class="meta">
+                <span>1/3 Gläser</span>
+                <span style="background: #FAE5D3; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem;">Eingemacht</span>
+                <span style="background: #D5F5E3; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem;">Obst</span>
+                <span>📍 Keller</span>
+                <span class="expiry">Abgelaufen</span>
+            </div>
+            <a href="#" class="action-link">Entnahme</a>
+        </div>
+
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" style="
+        position: fixed;
+        bottom: 24px;
+        left: 50%;
+        transform: translateX(-50%) translateY(100px);
+        background: var(--fern);
+        color: white;
+        padding: 12px 24px;
+        border-radius: 24px;
+        font-weight: 600;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        z-index: 1000;
+    "></div>
+
+    <script>
+        // Swipe functionality
+        document.querySelectorAll('[data-swipeable]').forEach(card => {
+            let startX = 0;
+            let currentX = 0;
+            let isDragging = false;
+
+            const onStart = (e) => {
+                isDragging = true;
+                startX = e.type === 'mousedown' ? e.clientX : e.touches[0].clientX;
+                card.style.transition = 'none';
+            };
+
+            const onMove = (e) => {
+                if (!isDragging) return;
+                currentX = e.type === 'mousemove' ? e.clientX : e.touches[0].clientX;
+                const diff = currentX - startX;
+
+                // Only allow left swipe
+                if (diff < 0) {
+                    const translate = Math.max(diff, -160);
+                    card.style.transform = `translateX(${translate}px)`;
+                }
+            };
+
+            const onEnd = () => {
+                if (!isDragging) return;
+                isDragging = false;
+                card.style.transition = 'transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+
+                const diff = currentX - startX;
+                if (diff < -80) {
+                    card.classList.add('swiped');
+                    card.style.transform = 'translateX(-160px)';
+                } else {
+                    card.classList.remove('swiped');
+                    card.style.transform = 'translateX(0)';
+                }
+            };
+
+            // Mouse events
+            card.addEventListener('mousedown', onStart);
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('mouseup', onEnd);
+
+            // Touch events
+            card.addEventListener('touchstart', onStart);
+            card.addEventListener('touchmove', onMove);
+            card.addEventListener('touchend', onEnd);
+
+            // Click outside to close
+            document.addEventListener('click', (e) => {
+                if (!card.contains(e.target) && !card.closest('.item-card').contains(e.target)) {
+                    card.classList.remove('swiped');
+                    card.style.transform = 'translateX(0)';
+                }
+            });
+        });
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.style.transform = 'translateX(-50%) translateY(0)';
+
+            setTimeout(() => {
+                toast.style.transform = 'translateX(-50%) translateY(100px)';
+            }, 2000);
+
+            // Reset swipe
+            document.querySelectorAll('.card-content.swiped').forEach(card => {
+                card.classList.remove('swiped');
+                card.style.transform = 'translateX(0)';
+            });
+        }
+    </script>
+</body>
+</html>
