@@ -8,6 +8,7 @@ from . import expiry_calculator
 from . import shelf_life_service
 from datetime import date
 from datetime import timedelta
+from sqlalchemy import func
 from sqlmodel import Session
 from sqlmodel import select
 
@@ -95,6 +96,38 @@ def get_active_items(session: Session) -> list[Item]:
             .order_by(Item.best_before_date)  # type: ignore[arg-type]
         ).all()
     )
+
+
+def get_consumed_items(session: Session) -> list[Item]:
+    """Get all items that have been (partially) withdrawn.
+
+    Returns items that have at least one withdrawal entry,
+    sorted by last withdrawal date (newest first).
+
+    Args:
+        session: Database session
+
+    Returns:
+        List of items with withdrawals, sorted by last withdrawal date descending
+    """
+    # Subquery to get the max withdrawal date per item
+    max_withdrawal_subquery = (
+        select(
+            Withdrawal.item_id,
+            func.max(Withdrawal.withdrawn_at).label("last_withdrawn"),
+        )
+        .group_by(Withdrawal.item_id)  # type: ignore[arg-type]
+        .subquery()
+    )
+
+    # Join items with their last withdrawal date and sort
+    items_with_withdrawals = session.exec(
+        select(Item)
+        .join(max_withdrawal_subquery, Item.id == max_withdrawal_subquery.c.item_id)  # type: ignore[arg-type]
+        .order_by(max_withdrawal_subquery.c.last_withdrawn.desc())
+    ).all()
+
+    return list(items_with_withdrawals)
 
 
 def get_item(session: Session, id: int) -> Item:

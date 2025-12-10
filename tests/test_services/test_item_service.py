@@ -913,3 +913,195 @@ def test_get_item_initial_quantity_not_found_fails(session: Session) -> None:
     """Test: Getting initial quantity for non-existent item fails."""
     with pytest.raises(ValueError, match="Item with id 999 not found"):
         item_service.get_item_initial_quantity(session, 999)
+
+
+# =============================================================================
+# Consumed Items Filter Tests (Issue #207)
+# =============================================================================
+
+
+def test_get_consumed_items_returns_only_items_with_withdrawals(
+    session: Session, test_admin: User
+) -> None:
+    """Test: get_consumed_items returns only items that have withdrawals."""
+    location = location_service.create_location(
+        session=session,
+        name="Gefrierschrank",
+        location_type=LocationType.FROZEN,
+        created_by=test_admin.id,
+    )
+    category = category_service.create_category(
+        session=session,
+        name="Gemüse",
+        created_by=test_admin.id,
+    )
+
+    assert category.id is not None
+    assert test_admin.id is not None
+
+    # Item without any withdrawal (should NOT appear)
+    item_service.create_item(
+        session=session,
+        product_name="Erbsen",
+        best_before_date=date(2025, 1, 1),
+        quantity=500,
+        unit="g",
+        item_type=ItemType.PURCHASED_FROZEN,
+        location_id=location.id,
+        created_by=test_admin.id,
+        category_id=category.id,
+        freeze_date=date(2024, 6, 1),
+    )
+
+    # Item with partial withdrawal (SHOULD appear)
+    partial_item = item_service.create_item(
+        session=session,
+        product_name="Karotten",
+        best_before_date=date(2025, 2, 1),
+        quantity=300,
+        unit="g",
+        item_type=ItemType.PURCHASED_FROZEN,
+        location_id=location.id,
+        created_by=test_admin.id,
+        category_id=category.id,
+        freeze_date=date(2024, 6, 1),
+    )
+    item_service.withdraw_partial(
+        session=session,
+        item_id=partial_item.id,
+        withdraw_quantity=100,
+        user_id=test_admin.id,
+    )
+
+    # Item fully consumed (SHOULD appear)
+    consumed_item = item_service.create_item(
+        session=session,
+        product_name="Spinat",
+        best_before_date=date(2025, 3, 1),
+        quantity=200,
+        unit="g",
+        item_type=ItemType.PURCHASED_FROZEN,
+        location_id=location.id,
+        created_by=test_admin.id,
+        category_id=category.id,
+        freeze_date=date(2024, 6, 1),
+    )
+    item_service.mark_item_consumed(session, consumed_item.id, user_id=test_admin.id)
+
+    consumed_items = item_service.get_consumed_items(session)
+
+    assert len(consumed_items) == 2
+    product_names = {item.product_name for item in consumed_items}
+    assert "Karotten" in product_names
+    assert "Spinat" in product_names
+    assert "Erbsen" not in product_names
+
+
+def test_get_consumed_items_sorted_by_last_withdrawal_descending(
+    session: Session, test_admin: User
+) -> None:
+    """Test: get_consumed_items returns items sorted by last withdrawal date (newest first)."""
+    from datetime import datetime
+    from time import sleep
+
+    location = location_service.create_location(
+        session=session,
+        name="Gefrierschrank",
+        location_type=LocationType.FROZEN,
+        created_by=test_admin.id,
+    )
+    category = category_service.create_category(
+        session=session,
+        name="Gemüse",
+        created_by=test_admin.id,
+    )
+
+    assert category.id is not None
+    assert test_admin.id is not None
+
+    # First item - withdrawn first
+    item1 = item_service.create_item(
+        session=session,
+        product_name="Erbsen",
+        best_before_date=date(2025, 1, 1),
+        quantity=500,
+        unit="g",
+        item_type=ItemType.PURCHASED_FROZEN,
+        location_id=location.id,
+        created_by=test_admin.id,
+        category_id=category.id,
+        freeze_date=date(2024, 6, 1),
+    )
+    item_service.withdraw_partial(
+        session=session,
+        item_id=item1.id,
+        withdraw_quantity=100,
+        user_id=test_admin.id,
+    )
+
+    # Small delay to ensure different timestamps
+    sleep(0.01)
+
+    # Second item - withdrawn second (should appear first in results)
+    item2 = item_service.create_item(
+        session=session,
+        product_name="Karotten",
+        best_before_date=date(2025, 2, 1),
+        quantity=300,
+        unit="g",
+        item_type=ItemType.PURCHASED_FROZEN,
+        location_id=location.id,
+        created_by=test_admin.id,
+        category_id=category.id,
+        freeze_date=date(2024, 6, 1),
+    )
+    item_service.withdraw_partial(
+        session=session,
+        item_id=item2.id,
+        withdraw_quantity=50,
+        user_id=test_admin.id,
+    )
+
+    consumed_items = item_service.get_consumed_items(session)
+
+    assert len(consumed_items) == 2
+    # Most recently withdrawn should be first
+    assert consumed_items[0].product_name == "Karotten"
+    assert consumed_items[1].product_name == "Erbsen"
+
+
+def test_get_consumed_items_empty_when_no_withdrawals(
+    session: Session, test_admin: User
+) -> None:
+    """Test: get_consumed_items returns empty list when no items have withdrawals."""
+    location = location_service.create_location(
+        session=session,
+        name="Gefrierschrank",
+        location_type=LocationType.FROZEN,
+        created_by=test_admin.id,
+    )
+    category = category_service.create_category(
+        session=session,
+        name="Gemüse",
+        created_by=test_admin.id,
+    )
+
+    assert category.id is not None
+
+    # Create items without withdrawals
+    item_service.create_item(
+        session=session,
+        product_name="Erbsen",
+        best_before_date=date(2025, 1, 1),
+        quantity=500,
+        unit="g",
+        item_type=ItemType.PURCHASED_FROZEN,
+        location_id=location.id,
+        created_by=test_admin.id,
+        category_id=category.id,
+        freeze_date=date(2024, 6, 1),
+    )
+
+    consumed_items = item_service.get_consumed_items(session)
+
+    assert len(consumed_items) == 0
