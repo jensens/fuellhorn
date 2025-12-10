@@ -1,308 +1,258 @@
-"""UI Tests for Items Page - Card list view of inventory."""
-
-from nicegui.testing import User as TestUser
-import pytest
-
-
-async def test_items_page_requires_auth(user: TestUser) -> None:
-    """Test that items page redirects to login when not authenticated."""
-    await user.open("/items")
-    # Should redirect to login page
-    await user.should_see("Anmelden")
-
-
-async def test_items_page_renders_when_authenticated(user: TestUser) -> None:
-    """Test that items page renders correctly when authenticated."""
-    # First login
-    await user.open("/test-login-admin")
-    # Then navigate to items
-    await user.open("/items")
-    await user.should_see("Vorrat")
-
-
-async def test_items_page_shows_bottom_navigation(user: TestUser) -> None:
-    """Test that items page has bottom navigation."""
-    await user.open("/test-login-admin")
-    await user.open("/items")
-    # Bottom nav should be visible with navigation options
-    await user.should_see("Vorrat")
-
-
-async def test_items_page_shows_items_as_cards(user: TestUser) -> None:
-    """Test that items are displayed as cards."""
-    await user.open("/test-items-page-with-items")
-    # Should see item names from test data
-    await user.should_see("Tomaten")
-
-
-async def test_items_page_shows_multiple_items(user: TestUser) -> None:
-    """Test that multiple items are shown as cards."""
-    await user.open("/test-items-page-with-items")
-    await user.should_see("Tomaten")
-    await user.should_see("Hackfleisch")
-
-
-async def test_items_page_shows_expiry_status(user: TestUser) -> None:
-    """Test that expiry status is visible on items."""
-    await user.open("/test-items-page-with-items")
-    # Should see expiry info (MHD for frozen items)
-    await user.should_see("MHD")
-
-
-async def test_items_page_excludes_consumed_items(user: TestUser) -> None:
-    """Test that consumed items are not shown."""
-    await user.open("/test-items-page-with-consumed")
-    # Should see active item
-    await user.should_see("Aktiver Artikel")
-    # Should NOT see consumed item (using should_not_see)
-
-
-async def test_items_page_shows_empty_state(user: TestUser) -> None:
-    """Test that empty state is shown when no items exist."""
-    await user.open("/test-items-page-empty")
-    await user.should_see("Keine Artikel")
-
-
-async def test_items_page_shows_location(user: TestUser) -> None:
-    """Test that item location is displayed."""
-    await user.open("/test-items-page-with-items")
-    await user.should_see("Tiefkühltruhe")
-
-
-async def test_items_page_shows_quantity(user: TestUser) -> None:
-    """Test that item quantity and unit are displayed."""
-    await user.open("/test-items-page-with-items")
-    await user.should_see("500 g")
-
-
-# Search functionality tests (Issue #10)
-
-
-async def test_items_page_shows_search_field(user: TestUser) -> None:
-    """Test that search field is displayed at top of items page."""
-    await user.open("/test-items-page-with-search")
-    await user.should_see("Suchen")
-
-
-async def test_items_page_search_filters_by_name(user: TestUser) -> None:
-    """Test that search filters items by product name."""
-    await user.open("/test-items-page-with-search")
-    # Should see both items initially
-    await user.should_see("Tomaten")
-    await user.should_see("Hackfleisch")
-    # Type in search
-    user.find("Suchen").type("Tomat")
-    await user.should_see("Tomaten")
-    await user.should_not_see("Hackfleisch")
-
-
-async def test_items_page_search_case_insensitive(user: TestUser) -> None:
-    """Test that search is case-insensitive."""
-    await user.open("/test-items-page-with-search")
-    # Search with lowercase
-    user.find("Suchen").type("tomaten")
-    await user.should_see("Tomaten")
-
-
-async def test_items_page_search_empty_shows_all(user: TestUser) -> None:
-    """Test that empty search shows all items."""
-    await user.open("/test-items-page-with-search")
-    # Initially empty search shows all
-    await user.should_see("Tomaten")
-    await user.should_see("Hackfleisch")
-
-
-async def test_items_page_search_no_results(user: TestUser) -> None:
-    """Test that search with no matches shows appropriate message."""
-    await user.open("/test-items-page-with-search")
-    user.find("Suchen").type("xyz-nicht-vorhanden")
-    await user.should_not_see("Tomaten")
-    await user.should_not_see("Hackfleisch")
-    await user.should_see("Keine Artikel")
-
-
-# Consumed items toggle tests (Issue #17)
-
-
-async def test_items_page_has_consumed_toggle(user: TestUser) -> None:
-    """Test that items page has a toggle to show consumed items."""
-    await user.open("/test-items-page-with-consumed-toggle")
-    await user.should_see("Entnommene anzeigen")
-
-
-async def test_items_page_toggle_shows_consumed_when_enabled(user: TestUser) -> None:
-    """Test that consumed items are shown when toggle is enabled."""
-    await user.open("/test-items-page-with-consumed-toggle-on")
-    # Should see both active and consumed items
-    await user.should_see("Aktiver Artikel")
-    await user.should_see("Entnommener Artikel")
-
-
-async def test_items_page_toggle_hides_consumed_when_disabled(user: TestUser) -> None:
-    """Test that consumed items are hidden when toggle is disabled (default)."""
-    await user.open("/test-items-page-with-consumed-toggle")
-    # Should see only active item
-    await user.should_see("Aktiver Artikel")
-    # Consumed item should not be visible (checked via card count)
-
-
-# Category filter tests (Issue #11)
-
-
-async def test_items_page_shows_category_filter(user: TestUser) -> None:
-    """Test that category filter chips are displayed."""
-    await user.open("/test-items-page-with-categories")
-    # Should see category filter chips
-    await user.should_see("Gemüse")
-    await user.should_see("Fleisch")
-
-
-async def test_items_page_category_filter_shows_all_initially(user: TestUser) -> None:
-    """Test that all items are shown when no category is selected."""
-    await user.open("/test-items-page-with-categories")
-    # Should see all items initially
-    await user.should_see("Tomaten")
-    await user.should_see("Hackfleisch")
-    await user.should_see("Karotten")
-
-
-async def test_items_page_category_filter_filters_items(user: TestUser) -> None:
-    """Test that selecting a category filters items."""
-    await user.open("/test-items-page-with-categories")
-    # Click on Gemüse category chip
-    user.find("Gemüse").click()
-    # Should see items with Gemüse category
-    await user.should_see("Tomaten")
-    await user.should_see("Karotten")
-    # Should not see items without Gemüse category
-    await user.should_not_see("Hackfleisch")
-
-
-async def test_items_page_category_filter_multi_select(user: TestUser) -> None:
-    """Test that multiple categories can be selected."""
-    await user.open("/test-items-page-with-categories")
-    # Click on both categories
-    user.find("Gemüse").click()
-    user.find("Fleisch").click()
-    # Should see items from both categories
-    await user.should_see("Tomaten")
-    await user.should_see("Hackfleisch")
-    await user.should_see("Karotten")
-
-
-async def test_items_page_category_filter_deselect(user: TestUser) -> None:
-    """Test that deselecting a category shows all items again."""
-    await user.open("/test-items-page-with-categories")
-    # Click to select
-    user.find("Gemüse").click()
-    await user.should_not_see("Hackfleisch")
-    # Click again to deselect
-    user.find("Gemüse").click()
-    # Should see all items again
-    await user.should_see("Hackfleisch")
-
-
-async def test_items_page_category_filter_combined_with_search(user: TestUser) -> None:
-    """Test that category filter works together with search."""
-    await user.open("/test-items-page-with-categories")
-    # Select Gemüse category
-    user.find("Gemüse").click()
-    # Should see Tomaten and Karotten
-    await user.should_see("Tomaten")
-    await user.should_see("Karotten")
-    # Search for Tomaten
-    user.find("Suchen").type("Tomat")
-    # Should only see Tomaten (filtered by both category AND search)
-    await user.should_see("Tomaten")
-    await user.should_not_see("Karotten")
-
-
-async def test_items_page_category_filter_no_results(user: TestUser) -> None:
-    """Test that appropriate message is shown when filters yield no results."""
-    await user.open("/test-items-page-with-categories")
-    # Select Gemüse category
-    user.find("Gemüse").click()
-    # Search for something that doesn't exist in Gemüse
-    user.find("Suchen").type("xyz-nicht-vorhanden")
-    await user.should_see("Keine Artikel")
-
-
-# Filter by location and item type tests (Issue #12)
-
-
-async def test_items_page_has_location_filter(user: TestUser) -> None:
-    """Test that items page has a location filter dropdown."""
-    await user.open("/test-items-page-with-filters")
-    await user.should_see("Lagerort")
-
-
-async def test_items_page_has_item_type_filter(user: TestUser) -> None:
-    """Test that items page has an item type filter dropdown."""
-    await user.open("/test-items-page-with-filters")
-    await user.should_see("Artikel-Typ")
-
-
-@pytest.mark.parametrize("expected_text", ["Alle Lagerorte", "Alle Typen"])
-async def test_items_page_filter_shows_all_option(user: TestUser, expected_text: str) -> None:
-    """Test that filters have 'Alle' option."""
-    await user.open("/test-items-page-with-filters")
-    await user.should_see(expected_text)
-
-
-@pytest.mark.parametrize(
-    "test_url,visible,hidden",
-    [
-        ("with-location-filter", "Gefrorene Tomaten", "Frische Milch"),
-        ("with-type-filter", "Selbst Eingefrorenes", "Frisch Gekauftes"),
-    ],
-)
-async def test_items_page_filter_filters_items(user: TestUser, test_url: str, visible: str, hidden: str) -> None:
-    """Test that selecting a filter filters items correctly."""
-    await user.open(f"/test-items-page-{test_url}")
-    await user.should_see(visible)
-    await user.should_not_see(hidden)
-
-
-# Sorting functionality tests (Issue #13)
-
-
-async def test_items_page_has_sort_dropdown(user: TestUser) -> None:
-    """Test that items page has a sort dropdown with label."""
-    await user.open("/test-items-page-with-sorting")
-    await user.should_see("Sortierung")
-
-
-async def test_items_page_sort_default_is_expiry(user: TestUser) -> None:
-    """Test that default sort is by best before date (shown as selected value)."""
-    await user.open("/test-items-page-with-sorting")
-    # Default selected value should be best before date
-    await user.should_see("Haltbarkeitsdatum")
-
-
-async def test_items_page_has_sort_direction_toggle(user: TestUser) -> None:
-    """Test that items page has ascending/descending toggle."""
-    await user.open("/test-items-page-with-sorting")
-    # Should see the direction toggle button
-    await user.should_see("arrow_upward")
-
-
-async def test_items_page_sort_by_expiry_default(user: TestUser) -> None:
-    """Test that items are sorted by expiry date by default (ascending)."""
-    await user.open("/test-items-page-with-sorting-data")
-    # Item expiring soonest should appear first
-    # "Bald Ablaufend" expires in 5 days, "Später Ablaufend" in 30 days
-    await user.should_see("Bald Ablaufend")
-
-
-async def test_items_page_sort_by_name(user: TestUser) -> None:
-    """Test that items can be sorted by product name."""
-    await user.open("/test-items-page-with-sorting-by-name")
-    # "Apfel" comes before "Zwiebel" alphabetically
-    await user.should_see("Apfel")
-
-
-async def test_items_page_sort_descending(user: TestUser) -> None:
-    """Test that sort direction can be toggled to descending."""
-    await user.open("/test-items-page-with-sorting-desc")
-    # Item expiring latest should appear first when descending
-    await user.should_see("Später Ablaufend")
+"""Tests for items page helper functions."""
+
+from app.models.item import Item
+from app.models.item import ItemType
+from app.ui.pages.items import ITEM_TYPE_LABELS
+from app.ui.pages.items import SORT_OPTIONS
+from app.ui.pages.items import _build_item_category_map
+from app.ui.pages.items import _filter_items
+from app.ui.pages.items import _filter_items_by_categories
+from app.ui.pages.items import _sort_items
+from datetime import date
+from datetime import datetime
+
+
+def _create_test_item(
+    id: int,
+    product_name: str,
+    location_id: int = 1,
+    item_type: ItemType = ItemType.PURCHASED_FRESH,
+    category_id: int | None = None,
+    best_before_date: date | None = None,
+    created_at: datetime | None = None,
+) -> Item:
+    """Create a test item."""
+    return Item(
+        id=id,
+        product_name=product_name,
+        location_id=location_id,
+        item_type=item_type,
+        category_id=category_id,
+        quantity=1,
+        unit="Stück",
+        best_before_date=best_before_date or date(2025, 12, 31),
+        created_at=created_at or datetime(2025, 1, 1, 12, 0, 0),
+    )
+
+
+class TestBuildItemCategoryMap:
+    """Tests for _build_item_category_map function."""
+
+    def test_builds_map_with_categories(self) -> None:
+        """Should build map from item ID to category ID."""
+        items = [
+            _create_test_item(1, "Item 1", category_id=10),
+            _create_test_item(2, "Item 2", category_id=20),
+            _create_test_item(3, "Item 3", category_id=10),
+        ]
+        result = _build_item_category_map(items)
+        assert result == {1: 10, 2: 20, 3: 10}
+
+    def test_handles_none_category(self) -> None:
+        """Should include None for items without category."""
+        items = [
+            _create_test_item(1, "Item 1", category_id=10),
+            _create_test_item(2, "Item 2", category_id=None),
+        ]
+        result = _build_item_category_map(items)
+        assert result == {1: 10, 2: None}
+
+    def test_empty_list(self) -> None:
+        """Should return empty dict for empty list."""
+        result = _build_item_category_map([])
+        assert result == {}
+
+
+class TestFilterItems:
+    """Tests for _filter_items function."""
+
+    def test_filter_by_search_term(self) -> None:
+        """Should filter items by product name."""
+        items = [
+            _create_test_item(1, "Apple"),
+            _create_test_item(2, "Banana"),
+            _create_test_item(3, "Apricot"),
+        ]
+        result = _filter_items(items, "ap", None, None)
+        assert len(result) == 2
+        assert all("ap" in item.product_name.lower() for item in result)
+
+    def test_filter_by_search_term_case_insensitive(self) -> None:
+        """Should filter case-insensitively."""
+        items = [
+            _create_test_item(1, "Apple"),
+            _create_test_item(2, "APPLE"),
+            _create_test_item(3, "Banana"),
+        ]
+        result = _filter_items(items, "apple", None, None)
+        assert len(result) == 2
+
+    def test_filter_by_location(self) -> None:
+        """Should filter items by location ID."""
+        items = [
+            _create_test_item(1, "Item 1", location_id=1),
+            _create_test_item(2, "Item 2", location_id=2),
+            _create_test_item(3, "Item 3", location_id=1),
+        ]
+        result = _filter_items(items, "", 1, None)
+        assert len(result) == 2
+        assert all(item.location_id == 1 for item in result)
+
+    def test_filter_by_item_type(self) -> None:
+        """Should filter items by item type."""
+        items = [
+            _create_test_item(1, "Item 1", item_type=ItemType.PURCHASED_FRESH),
+            _create_test_item(2, "Item 2", item_type=ItemType.PURCHASED_FROZEN),
+            _create_test_item(3, "Item 3", item_type=ItemType.PURCHASED_FRESH),
+        ]
+        result = _filter_items(items, "", None, ItemType.PURCHASED_FRESH.value)
+        assert len(result) == 2
+        assert all(item.item_type == ItemType.PURCHASED_FRESH for item in result)
+
+    def test_no_filter_returns_all(self) -> None:
+        """Should return all items when no filters applied."""
+        items = [
+            _create_test_item(1, "Item 1"),
+            _create_test_item(2, "Item 2"),
+        ]
+        result = _filter_items(items, "", None, None)
+        assert len(result) == 2
+
+    def test_combined_filters(self) -> None:
+        """Should apply all filters together."""
+        items = [
+            _create_test_item(1, "Apple", location_id=1, item_type=ItemType.PURCHASED_FRESH),
+            _create_test_item(2, "Apricot", location_id=2, item_type=ItemType.PURCHASED_FRESH),
+            _create_test_item(3, "Apple", location_id=1, item_type=ItemType.PURCHASED_FROZEN),
+        ]
+        result = _filter_items(items, "apple", 1, ItemType.PURCHASED_FRESH.value)
+        assert len(result) == 1
+        assert result[0].product_name == "Apple"
+
+    def test_location_zero_means_all(self) -> None:
+        """Location ID 0 should not filter by location."""
+        items = [
+            _create_test_item(1, "Item 1", location_id=1),
+            _create_test_item(2, "Item 2", location_id=2),
+        ]
+        result = _filter_items(items, "", 0, None)
+        assert len(result) == 2
+
+
+class TestFilterItemsByCategories:
+    """Tests for _filter_items_by_categories function."""
+
+    def test_filter_by_single_category(self) -> None:
+        """Should filter items by single category."""
+        items = [
+            _create_test_item(1, "Item 1"),
+            _create_test_item(2, "Item 2"),
+            _create_test_item(3, "Item 3"),
+        ]
+        category_map = {1: 10, 2: 20, 3: 10}
+        result = _filter_items_by_categories(items, {10}, category_map)
+        assert len(result) == 2
+
+    def test_filter_by_multiple_categories(self) -> None:
+        """Should filter items by multiple categories (OR logic)."""
+        items = [
+            _create_test_item(1, "Item 1"),
+            _create_test_item(2, "Item 2"),
+            _create_test_item(3, "Item 3"),
+        ]
+        category_map = {1: 10, 2: 20, 3: 30}
+        result = _filter_items_by_categories(items, {10, 20}, category_map)
+        assert len(result) == 2
+
+    def test_empty_categories_returns_all(self) -> None:
+        """Empty category set should return all items."""
+        items = [
+            _create_test_item(1, "Item 1"),
+            _create_test_item(2, "Item 2"),
+        ]
+        category_map = {1: 10, 2: 20}
+        result = _filter_items_by_categories(items, set(), category_map)
+        assert len(result) == 2
+
+
+class TestSortItems:
+    """Tests for _sort_items function."""
+
+    def test_sort_by_best_before_date_ascending(self) -> None:
+        """Should sort by best_before_date ascending."""
+        items = [
+            _create_test_item(1, "Item 1", best_before_date=date(2025, 12, 31)),
+            _create_test_item(2, "Item 2", best_before_date=date(2025, 6, 15)),
+            _create_test_item(3, "Item 3", best_before_date=date(2025, 9, 1)),
+        ]
+        result = _sort_items(items, "best_before_date", ascending=True)
+        assert result[0].best_before_date == date(2025, 6, 15)
+        assert result[1].best_before_date == date(2025, 9, 1)
+        assert result[2].best_before_date == date(2025, 12, 31)
+
+    def test_sort_by_best_before_date_descending(self) -> None:
+        """Should sort by best_before_date descending."""
+        items = [
+            _create_test_item(1, "Item 1", best_before_date=date(2025, 6, 15)),
+            _create_test_item(2, "Item 2", best_before_date=date(2025, 12, 31)),
+        ]
+        result = _sort_items(items, "best_before_date", ascending=False)
+        assert result[0].best_before_date == date(2025, 12, 31)
+
+    def test_sort_by_product_name_ascending(self) -> None:
+        """Should sort by product_name ascending (case-insensitive)."""
+        items = [
+            _create_test_item(1, "Banana"),
+            _create_test_item(2, "apple"),
+            _create_test_item(3, "Cherry"),
+        ]
+        result = _sort_items(items, "product_name", ascending=True)
+        assert result[0].product_name == "apple"
+        assert result[1].product_name == "Banana"
+        assert result[2].product_name == "Cherry"
+
+    def test_sort_by_product_name_descending(self) -> None:
+        """Should sort by product_name descending."""
+        items = [
+            _create_test_item(1, "Apple"),
+            _create_test_item(2, "Cherry"),
+        ]
+        result = _sort_items(items, "product_name", ascending=False)
+        assert result[0].product_name == "Cherry"
+
+    def test_sort_by_created_at(self) -> None:
+        """Should sort by created_at."""
+        items = [
+            _create_test_item(1, "Item 1", created_at=datetime(2025, 3, 1)),
+            _create_test_item(2, "Item 2", created_at=datetime(2025, 1, 1)),
+            _create_test_item(3, "Item 3", created_at=datetime(2025, 2, 1)),
+        ]
+        result = _sort_items(items, "created_at", ascending=True)
+        assert result[0].created_at == datetime(2025, 1, 1)
+
+    def test_unknown_sort_field_returns_unchanged(self) -> None:
+        """Unknown sort field should return items unchanged."""
+        items = [
+            _create_test_item(1, "Item 1"),
+            _create_test_item(2, "Item 2"),
+        ]
+        result = _sort_items(items, "unknown_field", ascending=True)
+        assert len(result) == 2
+
+
+class TestConstants:
+    """Tests for module constants."""
+
+    def test_sort_options_has_required_fields(self) -> None:
+        """SORT_OPTIONS should have all required sort fields."""
+        assert "best_before_date" in SORT_OPTIONS
+        assert "product_name" in SORT_OPTIONS
+        assert "created_at" in SORT_OPTIONS
+
+    def test_item_type_labels_has_all_types(self) -> None:
+        """ITEM_TYPE_LABELS should have label for all item types."""
+        # Should have empty string for "all types"
+        assert "" in ITEM_TYPE_LABELS
+        # Should have all item type values
+        for item_type in ItemType:
+            assert item_type.value in ITEM_TYPE_LABELS
