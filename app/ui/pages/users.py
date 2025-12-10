@@ -13,6 +13,7 @@ from ...database import get_session
 from ...models.user import Role
 from ...services import auth_service
 from ..components import create_mobile_page_container
+from ..theme.icons import create_icon
 from nicegui import ui
 
 
@@ -23,9 +24,10 @@ def users_page() -> None:
     # Header (Solarpunk theme)
     with ui.row().classes("sp-page-header w-full items-center justify-between"):
         with ui.row().classes("items-center gap-2"):
-            ui.button(icon="arrow_back", on_click=lambda: ui.navigate.to("/admin/settings")).classes(
-                "sp-back-btn"
-            ).props("flat round")
+            with (
+                ui.button(on_click=lambda: ui.navigate.to("/admin/settings")).classes("sp-back-btn").props("flat round")
+            ):
+                create_icon("actions/back", size="24px")
             ui.label("Benutzer").classes("sp-page-title")
 
     # Main content with bottom nav spacing
@@ -33,9 +35,15 @@ def users_page() -> None:
         # Section header with "Neuer Benutzer" button (Solarpunk theme)
         with ui.row().classes("w-full items-center justify-between mb-3"):
             ui.label("Benutzer verwalten").classes("text-h6 font-semibold text-fern")
-            ui.button("Neuer Benutzer", icon="add", on_click=_open_create_dialog).classes("sp-btn-primary").props(
-                "size=sm"
-            )
+            with (
+                ui.button(on_click=_open_create_dialog)
+                .classes("sp-btn-primary")
+                .props("size=sm")
+                .mark("new-user-button")
+            ):
+                with ui.row().classes("items-center gap-2"):
+                    create_icon("navigation/add", size="20px")
+                    ui.label("Neuer Benutzer")
 
         _render_users_list()
 
@@ -85,21 +93,31 @@ def _render_users_list() -> None:
                             email = user.email
                             role = user.role
                             is_active = user.is_active
-                            ui.button(
-                                icon="edit",
-                                on_click=lambda uid=user_id,
-                                un=username,
-                                em=email,
-                                ro=role,
-                                ia=is_active: _open_edit_dialog(uid, un, em, ro, ia),
-                            ).props("flat round size=sm").classes("edit").mark(f"edit-{username}")
+                            with (
+                                ui.button(
+                                    on_click=lambda uid=user_id,
+                                    un=username,
+                                    em=email,
+                                    ro=role,
+                                    ia=is_active: _open_edit_dialog(uid, un, em, ro, ia),
+                                )
+                                .props("flat round size=sm")
+                                .classes("edit")
+                                .mark(f"edit-{username}")
+                            ):
+                                create_icon("actions/edit", size="20px")
 
                             # Delete button - only if not current user
                             if user_id != current_user_id:
-                                ui.button(
-                                    icon="delete",
-                                    on_click=lambda uid=user_id, un=username: _open_delete_dialog(uid, un),
-                                ).props("flat round size=sm").classes("delete").mark(f"delete-{username}")
+                                with (
+                                    ui.button(
+                                        on_click=lambda uid=user_id, un=username: _open_delete_dialog(uid, un),
+                                    )
+                                    .props("flat round size=sm")
+                                    .classes("delete")
+                                    .mark(f"delete-{username}")
+                                ):
+                                    create_icon("actions/delete", size="20px")
         else:
             # Empty state (Solarpunk theme)
             with ui.card().classes("sp-dashboard-card w-full"):

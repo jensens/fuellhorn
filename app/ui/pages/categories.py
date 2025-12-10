@@ -15,6 +15,7 @@ from ...models.category_shelf_life import StorageType
 from ...services import category_service
 from ...services import shelf_life_service
 from ..components import create_mobile_page_container
+from ..theme.icons import create_icon
 from nicegui import ui
 
 
@@ -34,9 +35,10 @@ def categories_page() -> None:
     # Header (Solarpunk theme)
     with ui.row().classes("sp-page-header w-full items-center justify-between"):
         with ui.row().classes("items-center gap-2"):
-            ui.button(icon="arrow_back", on_click=lambda: ui.navigate.to("/admin/settings")).classes(
-                "sp-back-btn"
-            ).props("flat round")
+            with (
+                ui.button(on_click=lambda: ui.navigate.to("/admin/settings")).classes("sp-back-btn").props("flat round")
+            ):
+                create_icon("actions/back", size="24px")
             ui.label("Kategorien").classes("sp-page-title")
 
     # Main content with bottom nav spacing
@@ -44,9 +46,15 @@ def categories_page() -> None:
         # Section header with "Neue Kategorie" button (Solarpunk theme)
         with ui.row().classes("w-full items-center justify-between mb-3"):
             ui.label("Kategorien verwalten").classes("text-h6 font-semibold text-fern")
-            ui.button("Neue Kategorie", icon="add", on_click=_open_create_dialog).classes("sp-btn-primary").props(
-                "size=sm"
-            )
+            with (
+                ui.button(on_click=_open_create_dialog)
+                .classes("sp-btn-primary")
+                .props("size=sm")
+                .mark("new-category-button")
+            ):
+                with ui.row().classes("items-center gap-2"):
+                    create_icon("navigation/add", size="20px")
+                    ui.label("Neue Kategorie")
 
         _render_categories_list()
 
@@ -166,16 +174,28 @@ def _render_categories_list() -> None:
                         # Action buttons (Solarpunk theme)
                         with ui.row().classes("sp-admin-actions items-center gap-1"):
                             # Edit button
-                            ui.button(
-                                icon="edit",
-                                on_click=lambda cid=cat_id, cn=cat_name, cc=cat_color: _open_edit_dialog(cid, cn, cc),
-                            ).props("flat round size=sm").classes("edit").mark(f"edit-{cat_name}")
+                            with (
+                                ui.button(
+                                    on_click=lambda cid=cat_id, cn=cat_name, cc=cat_color: _open_edit_dialog(
+                                        cid, cn, cc
+                                    ),
+                                )
+                                .props("flat round size=sm")
+                                .classes("edit")
+                                .mark(f"edit-{cat_name}")
+                            ):
+                                create_icon("actions/edit", size="20px")
 
                             # Delete button
-                            ui.button(
-                                icon="delete",
-                                on_click=lambda cid=cat_id, cn=cat_name: _open_delete_dialog(cid, cn),
-                            ).props("flat round size=sm").classes("delete").mark(f"delete-{cat_name}")
+                            with (
+                                ui.button(
+                                    on_click=lambda cid=cat_id, cn=cat_name: _open_delete_dialog(cid, cn),
+                                )
+                                .props("flat round size=sm")
+                                .classes("delete")
+                                .mark(f"delete-{cat_name}")
+                            ):
+                                create_icon("actions/delete", size="20px")
         else:
             # Empty state (Solarpunk theme)
             with ui.card().classes("sp-dashboard-card w-full"):

@@ -14,6 +14,7 @@ from ...models.withdrawal import Withdrawal
 from ...services import auth_service
 from ...services import item_service
 from ...services.expiry_calculator import get_expiry_status
+from ..theme.icons import create_icon
 from datetime import date
 from nicegui import app
 from nicegui import ui
@@ -101,16 +102,20 @@ def create_bottom_sheet(
                 ui.label(item.product_name).classes("sp-bottom-sheet-title")
 
                 # Close button - uses theme styling
-                ui.button(
-                    icon="close",
-                    on_click=lambda: _close_sheet(dialog, on_close),
-                ).classes("sp-bottom-sheet-close").props("flat round")
+                with (
+                    ui.button(
+                        on_click=lambda: _close_sheet(dialog, on_close),
+                    )
+                    .classes("sp-bottom-sheet-close")
+                    .props("flat round")
+                ):
+                    create_icon("actions/close", size="24px")
 
             # Item details body
             with ui.column().classes("sp-bottom-sheet-body w-full"):
                 # Quantity and unit
                 with ui.row().classes("sp-info-row"):
-                    ui.icon("scale", size="20px").classes("text-fern")
+                    create_icon("misc/scale", size="20px", classes="text-fern")
                     with ui.column().classes("gap-0"):
                         ui.label("Menge").classes("sp-info-label")
                         ui.label(f"{item.quantity} {item.unit}").classes("sp-info-value")
@@ -125,7 +130,7 @@ def create_bottom_sheet(
                 # Expiry date with status badge (using best_before_date as fallback)
                 expiry_status = get_expiry_status(item.best_before_date)
                 with ui.row().classes("sp-info-row"):
-                    ui.icon("event", size="20px").classes("text-fern")
+                    create_icon("status/calendar", size="20px", classes="text-fern")
                     with ui.column().classes("gap-0"):
                         ui.label("Haltbarkeit").classes("sp-info-label")
                         with ui.row().classes("items-center gap-2"):
@@ -137,7 +142,7 @@ def create_bottom_sheet(
                 # Notes (if present)
                 if item.notes:
                     with ui.row().classes("sp-info-row"):
-                        ui.icon("notes", size="20px").classes("text-fern")
+                        create_icon("misc/notes", size="20px", classes="text-fern")
                         with ui.column().classes("gap-0"):
                             ui.label("Notizen").classes("sp-info-label")
                             ui.label(item.notes).classes("sp-info-value text-stone")
@@ -156,11 +161,17 @@ def create_bottom_sheet(
             # Action buttons - stacked layout (icon above text) for consistency
             with ui.row().classes("w-full p-4 gap-3 border-t"):
                 # Consume button - marks item as fully consumed
-                ui.button(
-                    "Alles entnehmen",
-                    icon="check_circle",
-                    on_click=lambda: _handle_consume(dialog, item, on_consume, on_close),
-                ).classes("flex-1 min-h-[48px]").props("color=positive stack")
+                with (
+                    ui.button(
+                        on_click=lambda: _handle_consume(dialog, item, on_consume, on_close),
+                    )
+                    .classes("flex-1 min-h-[48px]")
+                    .props("color=positive")
+                    .mark("consume-button")
+                ):
+                    with ui.column().classes("items-center gap-1"):
+                        create_icon("status/ok", size="20px")
+                        ui.label("Alles entnehmen").classes("text-xs")
 
                 # Withdraw button - partial withdrawal
                 ui.button(
@@ -170,11 +181,17 @@ def create_bottom_sheet(
                 ).classes("flex-1 min-h-[48px]").props("color=primary outline stack")
 
                 # Edit button - secondary action
-                ui.button(
-                    "Bearbeiten",
-                    icon="edit",
-                    on_click=lambda: _handle_edit(dialog, item, on_edit, on_close),
-                ).classes("flex-1 min-h-[48px]").props("color=secondary outline stack")
+                with (
+                    ui.button(
+                        on_click=lambda: _handle_edit(dialog, item, on_edit, on_close),
+                    )
+                    .classes("flex-1 min-h-[48px]")
+                    .props("color=secondary outline")
+                    .mark("edit-button")
+                ):
+                    with ui.column().classes("items-center gap-1"):
+                        create_icon("actions/edit", size="20px")
+                        ui.label("Bearbeiten").classes("text-xs")
 
             # Close text for accessibility (screen readers and testing)
             ui.label("Schließen").classes("sr-only")

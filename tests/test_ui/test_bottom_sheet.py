@@ -284,8 +284,8 @@ async def test_bottom_sheet_consume_marks_item_consumed(logged_in_user: User) ->
 
     await logged_in_user.open(f"/test/bottom-sheet/{item_id}")
 
-    # Click on "Alles entnehmen" button
-    logged_in_user.find("Alles entnehmen").click()
+    # Click on "Alles entnehmen" button (using marker for custom icon button)
+    logged_in_user.find(marker="consume-button").click()
 
     # Verify success notification
     await logged_in_user.should_see("Spinat vollständig entnommen")
@@ -332,8 +332,8 @@ async def test_bottom_sheet_consume_creates_withdrawal_entry(logged_in_user: Use
 
     await logged_in_user.open(f"/test/bottom-sheet/{item_id}")
 
-    # Click on "Alles entnehmen" button
-    logged_in_user.find("Alles entnehmen").click()
+    # Click on "Alles entnehmen" button (using marker for custom icon button)
+    logged_in_user.find(marker="consume-button").click()
 
     # Verify success notification
     await logged_in_user.should_see("Himbeeren vollständig entnommen")
@@ -576,8 +576,8 @@ async def test_bottom_sheet_edit_button_calls_callback(user: User) -> None:
 
     await user.open(f"/test/bottom-sheet/{item_id}")
 
-    # Click on "Bearbeiten" button
-    user.find("Bearbeiten").click()
+    # Click on "Bearbeiten" button (using marker for custom icon button)
+    user.find(marker="edit-button").click()
 
     # Verify on_edit callback was triggered (test page shows notify)
     await user.should_see("Bearbeiten: Joghurt")

@@ -347,7 +347,7 @@ async def test_create_dialog_opens(logged_in_user: TestUser) -> None:
     await logged_in_user.open("/admin/locations")
 
     # Click the create button
-    logged_in_user.find("Neuer Lagerort").click()
+    logged_in_user.find(marker="new-location-button").click()
 
     # Should see the create dialog
     await logged_in_user.should_see("Neuen Lagerort erstellen")
@@ -361,7 +361,7 @@ async def test_create_location_validation_empty_name(logged_in_user: TestUser) -
     await logged_in_user.open("/admin/locations")
 
     # Click the create button
-    logged_in_user.find("Neuer Lagerort").click()
+    logged_in_user.find(marker="new-location-button").click()
 
     # Wait for dialog
     await logged_in_user.should_see("Neuen Lagerort erstellen")
@@ -392,7 +392,7 @@ async def test_create_location_validation_duplicate_name(
     await logged_in_user.open("/admin/locations")
 
     # Click the create button
-    logged_in_user.find("Neuer Lagerort").click()
+    logged_in_user.find(marker="new-location-button").click()
 
     # Wait for dialog
     await logged_in_user.should_see("Neuen Lagerort erstellen")
@@ -413,7 +413,7 @@ async def test_create_location_success(logged_in_user: TestUser) -> None:
     await logged_in_user.open("/admin/locations")
 
     # Click the create button
-    logged_in_user.find("Neuer Lagerort").click()
+    logged_in_user.find(marker="new-location-button").click()
 
     # Wait for dialog
     await logged_in_user.should_see("Neuen Lagerort erstellen")
@@ -597,7 +597,7 @@ async def test_create_location_dialog_shows_color_preview(user: TestUser) -> Non
     await user.open("/admin/locations")
 
     # Click the "Neuer Lagerort" button
-    user.find("Neuer Lagerort").click()
+    user.find(marker="new-location-button").click()
 
     # Should see color preview element (marker: color-preview)
     preview = user.find(marker="color-preview")

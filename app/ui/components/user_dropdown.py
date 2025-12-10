@@ -9,6 +9,7 @@ from ...auth import Permission
 from ...auth import get_current_user
 from ...auth import get_permissions_for_user
 from ..auth import logout
+from ..theme.icons import create_icon
 from nicegui import app
 from nicegui import ui
 
@@ -31,23 +32,26 @@ def create_user_dropdown() -> None:
         is_admin = Permission.CONFIG_MANAGE in permissions
 
     # Clickable username with dropdown
-    with ui.button(username, icon="person").props("flat no-caps color=gray-7").classes("text-sm"):
+    with ui.button(on_click=lambda: None).props("flat no-caps color=gray-7").classes("text-sm"):
+        with ui.row().classes("items-center gap-2"):
+            create_icon("misc/user", size="20px")
+            ui.label(username)
         with ui.menu().classes("min-w-40"):
             # Profile link (all users)
-            ui.menu_item(
-                "Profil",
-                on_click=lambda: ui.navigate.to("/profile"),
-            ).props("icon=account_circle")
+            with ui.menu_item(on_click=lambda: ui.navigate.to("/profile")):
+                with ui.row().classes("items-center gap-2"):
+                    create_icon("misc/user", size="20px")
+                    ui.label("Profil")
 
             # Settings link (admin only)
             if is_admin:
-                ui.menu_item(
-                    "Einstellungen",
-                    on_click=lambda: ui.navigate.to("/admin/settings"),
-                ).props("icon=settings")
+                with ui.menu_item(on_click=lambda: ui.navigate.to("/admin/settings")):
+                    with ui.row().classes("items-center gap-2"):
+                        create_icon("misc/settings", size="20px")
+                        ui.label("Einstellungen")
 
             # Logout option
-            ui.menu_item(
-                "Abmelden",
-                on_click=logout,
-            ).props("icon=logout")
+            with ui.menu_item(on_click=logout):
+                with ui.row().classes("items-center gap-2"):
+                    create_icon("misc/logout", size="20px")
+                    ui.label("Abmelden")

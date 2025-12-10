@@ -17,6 +17,7 @@ from ..smart_defaults import get_default_category
 from ..smart_defaults import get_default_item_type
 from ..smart_defaults import get_default_location
 from ..smart_defaults import get_default_unit
+from ..theme.icons import create_icon
 from ..validation import is_step1_valid
 from ..validation import is_step2_valid
 from ..validation import is_step3_valid
@@ -268,7 +269,8 @@ def add_item() -> None:
                 .style("max-width: 500px") as date_input
             ):
                 with date_input.add_slot("append"):
-                    with ui.icon("event").classes("cursor-pointer"):
+                    with ui.element("div").classes("cursor-pointer"):
+                        create_icon("status/calendar", size="24px")
                         with ui.menu() as date_menu:
                             date_picker = ui.date().bind_value(date_input).props('locale="de" mask="DD.MM.YYYY"')
 
@@ -293,7 +295,8 @@ def add_item() -> None:
                     .style("max-width: 500px") as freeze_date_input
                 ):
                     with freeze_date_input.add_slot("append"):
-                        with ui.icon("event").classes("cursor-pointer"):
+                        with ui.element("div").classes("cursor-pointer"):
+                            create_icon("status/calendar", size="24px")
                             with ui.menu() as freeze_date_menu:
                                 freeze_date_picker = (
                                     ui.date().bind_value(freeze_date_input).props('locale="de" mask="DD.MM.YYYY"')
@@ -317,9 +320,10 @@ def add_item() -> None:
 
             # Navigation
             with ui.row().classes("w-full justify-between mt-6 gap-2"):
-                ui.button("Zurück", icon="arrow_back", on_click=show_step1).props("flat color=gray-7 size=lg").style(
-                    "min-height: 48px"
-                )
+                with ui.button(on_click=show_step1).props("flat color=gray-7 size=lg").style("min-height: 48px"):
+                    with ui.row().classes("items-center gap-2"):
+                        create_icon("actions/back", size="20px")
+                        ui.label("Zurück")
 
                 nonlocal step2_next_button
                 step2_next_button = (
@@ -428,16 +432,20 @@ def add_item() -> None:
 
             # Navigation
             with ui.row().classes("w-full justify-between mt-6 gap-2"):
-                ui.button("Zurück", icon="arrow_back", on_click=show_step2).props("flat color=gray-7 size=lg").style(
-                    "min-height: 48px"
-                )
+                with ui.button(on_click=show_step2).props("flat color=gray-7 size=lg").style("min-height: 48px"):
+                    with ui.row().classes("items-center gap-2"):
+                        create_icon("actions/back", size="20px")
+                        ui.label("Zurück")
 
                 nonlocal step3_submit_button
-                step3_submit_button = (
-                    ui.button("Speichern", icon="save", on_click=save_item)
+                with (
+                    ui.button(on_click=save_item)
                     .props("color=primary size=lg disabled")
-                    .style("min-height: 48px")
-                )
+                    .style("min-height: 48px") as step3_submit_button
+                ):
+                    with ui.row().classes("items-center gap-2"):
+                        create_icon("actions/save", size="20px")
+                        ui.label("Speichern")
 
             # "Speichern & Nächster" Button (most important for bulk capture!)
             with ui.row().classes("w-full justify-center mt-4"):
@@ -543,9 +551,8 @@ def add_item() -> None:
     # Header with title and close button (Solarpunk theme)
     with ui.row().classes("sp-page-header w-full items-center justify-between"):
         ui.label("Artikel erfassen").classes("sp-page-title")
-        ui.button(icon="close", on_click=lambda: ui.navigate.to("/dashboard")).classes("sp-back-btn").props(
-            "flat round"
-        )
+        with ui.button(on_click=lambda: ui.navigate.to("/dashboard")).classes("sp-back-btn").props("flat round"):
+            create_icon("actions/close", size="24px")
 
     # Main content container (max-width handled by create_mobile_page_container)
     content_container = create_mobile_page_container()

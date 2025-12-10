@@ -130,8 +130,8 @@ async def test_new_category_button_opens_dialog(user: TestUser) -> None:
     # Navigate to categories page
     await user.open("/admin/categories")
 
-    # Click the "Neue Kategorie" button
-    user.find("Neue Kategorie").click()
+    # Click the "Neue Kategorie" button (using marker for custom icon button)
+    user.find(marker="new-category-button").click()
 
     # Should see dialog with form fields
     await user.should_see("Neue Kategorie erstellen")
@@ -149,8 +149,8 @@ async def test_create_category_success(user: TestUser, isolated_test_database) -
     # Navigate to categories page
     await user.open("/admin/categories")
 
-    # Click the "Neue Kategorie" button
-    user.find("Neue Kategorie").click()
+    # Click the "Neue Kategorie" button (using marker for custom icon button)
+    user.find(marker="new-category-button").click()
 
     # Fill in the form
     user.find("Name").type("Gemüse")
@@ -174,7 +174,7 @@ async def test_create_category_validation_name_required(user: TestUser) -> None:
     await user.open("/admin/categories")
 
     # Click the "Neue Kategorie" button
-    user.find("Neue Kategorie").click()
+    user.find(marker="new-category-button").click()
 
     # Try to save without entering name
     user.find("Speichern").click()
@@ -204,7 +204,7 @@ async def test_create_category_validation_unique_name(user: TestUser, isolated_t
     await user.open("/admin/categories")
 
     # Click the "Neue Kategorie" button
-    user.find("Neue Kategorie").click()
+    user.find(marker="new-category-button").click()
 
     # Try to create category with duplicate name
     user.find("Name").type("Fleisch")
@@ -714,7 +714,7 @@ async def test_create_dialog_shows_shelf_life_section(user: TestUser) -> None:
     await user.open("/admin/categories")
 
     # Click the "Neue Kategorie" button
-    user.find("Neue Kategorie").click()
+    user.find(marker="new-category-button").click()
 
     # Should see shelf life section
     await user.should_see("Haltbarkeit")
@@ -735,7 +735,7 @@ async def test_create_dialog_has_min_max_fields(user: TestUser) -> None:
     await user.open("/admin/categories")
 
     # Click the "Neue Kategorie" button
-    user.find("Neue Kategorie").click()
+    user.find(marker="new-category-button").click()
 
     # Should see Min/Max labels
     await user.should_see("Min")
@@ -761,7 +761,7 @@ async def test_create_category_with_shelf_life(
     await user.open("/admin/categories")
 
     # Click the "Neue Kategorie" button
-    user.find("Neue Kategorie").click()
+    user.find(marker="new-category-button").click()
 
     # Fill in the form
     user.find("Name").type("Fleisch")
@@ -810,7 +810,7 @@ async def test_create_category_shelf_life_validation_min_greater_than_max(
     await user.open("/admin/categories")
 
     # Click the "Neue Kategorie" button
-    user.find("Neue Kategorie").click()
+    user.find(marker="new-category-button").click()
 
     # Fill in the form
     user.find("Name").type("Obst")
@@ -845,7 +845,7 @@ async def test_create_dialog_shows_color_preview(user: TestUser) -> None:
     await user.open("/admin/categories")
 
     # Click the "Neue Kategorie" button
-    user.find("Neue Kategorie").click()
+    user.find(marker="new-category-button").click()
 
     # Should see color preview element (marker: color-preview)
     preview = user.find(marker="color-preview")
@@ -866,7 +866,7 @@ async def test_create_dialog_color_preview_updates_on_selection(
     await user.open("/admin/categories")
 
     # Click the "Neue Kategorie" button
-    user.find("Neue Kategorie").click()
+    user.find(marker="new-category-button").click()
 
     # Find color input and set a value
     color_input = user.find(marker="color-input")

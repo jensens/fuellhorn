@@ -15,6 +15,7 @@ from ...models.location import LocationType
 from ...services import item_service
 from ...services import location_service
 from ..components import create_mobile_page_container
+from ..theme.icons import create_icon
 from nicegui import ui
 
 
@@ -56,9 +57,10 @@ def locations_page() -> None:
     # Header (Solarpunk theme)
     with ui.row().classes("sp-page-header w-full items-center justify-between"):
         with ui.row().classes("items-center gap-2"):
-            ui.button(icon="arrow_back", on_click=lambda: ui.navigate.to("/admin/settings")).classes(
-                "sp-back-btn"
-            ).props("flat round")
+            with (
+                ui.button(on_click=lambda: ui.navigate.to("/admin/settings")).classes("sp-back-btn").props("flat round")
+            ):
+                create_icon("actions/back", size="24px")
             ui.label("Lagerorte").classes("sp-page-title")
 
     # Main content with bottom nav spacing
@@ -66,9 +68,15 @@ def locations_page() -> None:
         # Section header with "Neuer Lagerort" button (Solarpunk theme)
         with ui.row().classes("w-full items-center justify-between mb-3"):
             ui.label("Lagerorte verwalten").classes("text-h6 font-semibold text-fern")
-            ui.button("Neuer Lagerort", icon="add", on_click=_open_create_dialog).classes("sp-btn-primary").props(
-                "size=sm"
-            )
+            with (
+                ui.button(on_click=_open_create_dialog)
+                .classes("sp-btn-primary")
+                .props("size=sm")
+                .mark("new-location-button")
+            ):
+                with ui.row().classes("items-center gap-2"):
+                    create_icon("navigation/add", size="20px")
+                    ui.label("Neuer Lagerort")
 
         with next(get_session()) as session:
             locations = location_service.get_all_locations(session)
@@ -104,17 +112,27 @@ def locations_page() -> None:
                             # Action buttons (Solarpunk theme)
                             with ui.row().classes("sp-admin-actions items-center gap-1"):
                                 # Edit button
-                                ui.button(
-                                    icon="edit",
-                                    on_click=lambda loc=location: _open_edit_dialog(loc),
-                                ).props("flat round size=sm").classes("edit min-w-0")
+                                with (
+                                    ui.button(
+                                        on_click=lambda loc=location: _open_edit_dialog(loc),
+                                    )
+                                    .props("flat round size=sm")
+                                    .classes("edit min-w-0")
+                                    .mark("edit")
+                                ):
+                                    create_icon("actions/edit", size="20px")
                                 # Delete button
                                 location_id = location.id
                                 location_name = location.name
-                                ui.button(
-                                    icon="delete",
-                                    on_click=lambda lid=location_id, ln=location_name: _open_delete_dialog(lid, ln),
-                                ).props("flat round size=sm").classes("delete min-w-0").mark(f"delete-{location_name}")
+                                with (
+                                    ui.button(
+                                        on_click=lambda lid=location_id, ln=location_name: _open_delete_dialog(lid, ln),
+                                    )
+                                    .props("flat round size=sm")
+                                    .classes("delete min-w-0")
+                                    .mark(f"delete-{location_name}")
+                                ):
+                                    create_icon("actions/delete", size="20px")
             else:
                 # Empty state (Solarpunk theme)
                 with ui.card().classes("sp-dashboard-card w-full"):
