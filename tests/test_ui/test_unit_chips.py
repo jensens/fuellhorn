@@ -1,30 +1,49 @@
-"""UI Tests for Unit Chip Group component."""
+"""Tests for unit chips component."""
 
-from nicegui.testing import User
-
-
-async def test_unit_chips_displays_all_units(user: User) -> None:
-    """Test that all 6 units are displayed."""
-    await user.open("/test/unit-chips")
-
-    # Verify all unit labels are visible
-    await user.should_see("g")
-    await user.should_see("kg")
-    await user.should_see("ml")
-    await user.should_see("l")
-    await user.should_see("Stück")
-    await user.should_see("Packung")
+from app.ui.components.unit_chips import UNITS
+from app.ui.components.unit_chips import get_available_units
 
 
-async def test_unit_chips_preselected_value(user: User) -> None:
-    """Test that preselected value is displayed correctly."""
-    await user.open("/test/unit-chips-preselected")
+class TestGetAvailableUnits:
+    """Tests for get_available_units function."""
 
-    # The page has "kg" preselected
-    await user.should_see("kg")
+    def test_returns_list(self) -> None:
+        """Should return a list."""
+        result = get_available_units()
+        assert isinstance(result, list)
+
+    def test_contains_standard_units(self) -> None:
+        """Should contain standard units."""
+        result = get_available_units()
+        assert "g" in result
+        assert "kg" in result
+        assert "ml" in result
+        assert "l" in result
+        assert "Stück" in result
+        assert "Packung" in result
+
+    def test_returns_copy_not_original(self) -> None:
+        """Should return a copy, not the original list."""
+        result = get_available_units()
+        result.append("test")
+        # Original should not be modified
+        assert "test" not in get_available_units()
+        assert "test" not in UNITS
+
+    def test_has_correct_count(self) -> None:
+        """Should have 6 units."""
+        result = get_available_units()
+        assert len(result) == 6
 
 
-async def test_unit_chips_page_title(user: User) -> None:
-    """Test that the test page has correct title."""
-    await user.open("/test/unit-chips")
-    await user.should_see("Unit Chips Test")
+class TestUnitsConstant:
+    """Tests for UNITS constant."""
+
+    def test_units_is_list(self) -> None:
+        """UNITS should be a list."""
+        assert isinstance(UNITS, list)
+
+    def test_units_has_all_standard_units(self) -> None:
+        """UNITS should have all standard units."""
+        expected = ["g", "kg", "ml", "l", "Stück", "Packung"]
+        assert UNITS == expected
