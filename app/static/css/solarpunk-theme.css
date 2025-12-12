@@ -739,3 +739,38 @@ h1, h2, h3 {
 /* Font family */
 .font-display { font-family: var(--sp-font-display) !important; }
 .font-body { font-family: var(--sp-font-body) !important; }
+
+/* ----------------------------------------
+   QUICK-ACTION BUTTON (Issue #213)
+   Round minus button for consume action
+   ---------------------------------------- */
+.sp-quick-action {
+  width: 44px !important;
+  height: 44px !important;
+  min-width: 44px !important;
+  min-height: 44px !important;
+  border-radius: 50% !important;
+  border: 2px solid var(--sp-fern) !important;
+  background: white !important;
+  color: var(--sp-fern) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer;
+  transition: all 0.2s ease !important;
+  padding: 0 !important;
+}
+
+.sp-quick-action:hover {
+  background: var(--sp-fern) !important;
+  color: white !important;
+  transform: scale(1.05);
+}
+
+.sp-quick-action:active {
+  transform: scale(0.95);
+}
+
+.sp-quick-action .q-icon {
+  font-size: 20px !important;
+}

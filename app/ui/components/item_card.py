@@ -360,13 +360,12 @@ def create_item_card(
                 .classes("quick-action-zone")
                 .style("grid-column: 2; grid-row: 2 / 4; display: flex; align-items: center; justify-content: center;")
             ):
-                # Consume button (if callback provided)
+                # Round minus button for consume action (Issue #213)
                 if on_consume:
-                    btn_color = "negative" if status == "critical" else "warning" if status == "warning" else "positive"
                     ui.button(
-                        "Entnahme",
+                        icon="remove",
                         on_click=lambda i=item: on_consume(i),
-                    ).props(f"size=sm dense flat color={btn_color}")
+                    ).classes("sp-quick-action").props("round flat")
 
             # === FOOTER ZONE ===
             # Location only

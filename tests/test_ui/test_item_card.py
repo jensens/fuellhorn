@@ -148,14 +148,23 @@ async def test_item_card_fresh_warning_shows_relative_badge(user: TestUser) -> N
 
 
 # =============================================================================
-# Consume Button Tests
+# Quick-Action Button Tests (Issue #213)
 # =============================================================================
 
 
-async def test_item_card_shows_entnahme_button(user: TestUser) -> None:
-    """Test that item card shows 'Entnahme' button when on_consume is provided."""
+async def test_item_card_shows_quick_action_button(user: TestUser) -> None:
+    """Test that item card shows round minus button when on_consume is provided."""
     await user.open("/test-item-card-with-consume")
-    await user.should_see("Entnahme")
+    # Quick-action button should be visible (round button with minus icon)
+    # The button uses q-btn with round prop and remove icon
+    await user.should_see("remove")  # Material icon name for minus
+
+
+async def test_item_card_no_quick_action_without_consume(user: TestUser) -> None:
+    """Test that item card does NOT show quick-action button without on_consume."""
+    await user.open("/test-item-card")
+    # Should NOT see the minus icon when no consume callback
+    await user.should_not_see("remove")
 
 
 # =============================================================================
