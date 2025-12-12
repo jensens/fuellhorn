@@ -55,6 +55,38 @@ def _format_quantity_display(
         return f"{current} {unit}", False
 
 
+def _calculate_progress_percentage(current_qty: float, initial_qty: float) -> int:
+    """Calculate progress percentage (current/initial * 100).
+
+    Args:
+        current_qty: Current item quantity
+        initial_qty: Initial quantity (before withdrawals)
+
+    Returns:
+        Integer percentage (0-100)
+    """
+    if initial_qty <= 0:
+        return 100
+    percentage = (current_qty / initial_qty) * 100
+    return int(round(percentage))
+
+
+def _get_progress_color(percentage: int) -> str:
+    """Get Quasar color name based on fill percentage.
+
+    Args:
+        percentage: Fill percentage (0-100)
+
+    Returns:
+        Quasar color name: "positive" (green), "warning" (gold), or "negative" (coral)
+    """
+    if percentage > 66:
+        return "positive"  # Fern green
+    elif percentage > 33:
+        return "warning"  # Gold
+    return "negative"  # Coral
+
+
 # Item-Type Badge short labels (German)
 ITEM_TYPE_SHORT_LABELS = {
     ItemType.PURCHASED_FRESH: "Frisch",
@@ -224,17 +256,34 @@ def create_item_card(
                     ui.label(expiry_value).classes(f"text-sm font-bold {status_text_class}")
 
             # === BODY ZONE ===
-            # Quantity + Tags (left side)
+            # Quantity + Progress Bar + Tags (left side)
             with (
                 ui.element("div")
                 .classes("card-body")
                 .style("grid-column: 1; display: flex; flex-direction: column; gap: 8px;")
             ):
-                # Quantity display
-                qty_classes = "text-sm text-gray-700"
-                if has_withdrawals:
-                    qty_classes = "text-sm text-amber-700"
-                ui.label(qty_display).classes(qty_classes).style("font-weight: 600;")
+                # Amount section: Quantity + Progress bar (if partial withdrawal)
+                with ui.row().classes("items-center gap-3 w-full"):
+                    # Quantity display
+                    qty_classes = "text-sm text-gray-700"
+                    if has_withdrawals:
+                        qty_classes = "text-sm text-amber-700"
+                    ui.label(qty_display).classes(qty_classes).style("font-weight: 600; min-width: 70px;")
+
+                    # Progress bar (only shown when partial withdrawal exists)
+                    if has_withdrawals:
+                        percentage = _calculate_progress_percentage(item.quantity, initial_qty)
+                        progress_color = _get_progress_color(percentage)
+                        # Quasar linear progress with aria-label for accessibility
+                        ui.linear_progress(
+                            value=percentage / 100,
+                            color=progress_color,
+                            size="8px",
+                        ).props(f'aria-label="Restmenge: {percentage}%" rounded').classes("flex-1").style(
+                            "border-radius: 10px;"
+                        )
+                        # Show percentage text for accessibility
+                        ui.label(f"{percentage}%").classes("text-xs text-stone").style("min-width: 35px;")
 
                 # Tags: Item-Type + Category
                 with ui.row().classes("items-center gap-2 flex-wrap"):
