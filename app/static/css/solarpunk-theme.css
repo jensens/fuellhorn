@@ -353,6 +353,40 @@ h1, h2, h3 {
 .sp-expiry-critical { color: var(--sp-status-critical); }
 
 /* ----------------------------------------
+   EXPIRY BADGES (Issue #212)
+   Color-coded badges for expiry status
+   ---------------------------------------- */
+.expiry-badge {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.expiry-badge.expired {
+  background: linear-gradient(135deg, #C44536, #D85545);
+  color: white;
+}
+
+.expiry-badge.warning {
+  background: linear-gradient(135deg, #E8985A, #F0A86A);
+  color: white;
+}
+
+.expiry-badge.soon {
+  background: linear-gradient(135deg, #D4A853, #E8C97B);
+  color: #5A4520;
+}
+
+.expiry-badge.ok {
+  background: var(--sp-cream, #FAF5EE);
+  color: var(--sp-stone, #A39E93);
+  border: 1px solid var(--sp-stone-light, #D4CFC7);
+}
+
+/* ----------------------------------------
    CHIPS - BASE
    ---------------------------------------- */
 .sp-chip {
