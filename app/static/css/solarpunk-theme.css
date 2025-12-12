@@ -800,12 +800,12 @@ h1, h2, h3 {
 }
 
 .swipe-card-actions-left {
-  left: 0;
+  right: 0;  /* Revealed when swiping LEFT (card moves left, reveals right side) */
   width: 50%;
 }
 
 .swipe-card-actions-right {
-  right: 0;
+  left: 0;  /* Revealed when swiping RIGHT (card moves right, reveals left side) */
   width: 25%;
 }
 
