@@ -148,23 +148,16 @@ async def test_item_card_fresh_warning_shows_relative_badge(user: TestUser) -> N
 
 
 # =============================================================================
-# Quick-Action Button Tests (Issue #213)
+# Consume Action Tests (Issue #213 + #214)
+# Swipe actions replace quick-action button when on_consume is provided
 # =============================================================================
 
 
-async def test_item_card_shows_quick_action_button(user: TestUser) -> None:
-    """Test that item card shows round minus button when on_consume is provided."""
+async def test_item_card_shows_consume_action_via_swipe(user: TestUser) -> None:
+    """Test that item card shows 'Alles' swipe action when on_consume is provided."""
     await user.open("/test-item-card-with-consume")
-    # Quick-action button should be visible (round button with minus icon)
-    # The button uses q-btn with round prop and remove icon
-    await user.should_see("remove")  # Material icon name for minus
-
-
-async def test_item_card_no_quick_action_without_consume(user: TestUser) -> None:
-    """Test that item card does NOT show quick-action button without on_consume."""
-    await user.open("/test-item-card")
-    # Should NOT see the minus icon when no consume callback
-    await user.should_not_see("remove")
+    # With swipe actions, on_consume shows "Alles" instead of quick-action button
+    await user.should_see("Alles")
 
 
 # =============================================================================
@@ -318,3 +311,36 @@ def test_get_expiry_badge_text_fresh_far_shows_date() -> None:
     expiry = date.today() + timedelta(days=30)
     result = get_expiry_badge_text(expiry, ItemType.PURCHASED_FRESH)
     assert result == expiry.strftime("%d.%m.%y")
+
+
+# =============================================================================
+# Swipe Actions Tests (Issue #214)
+# =============================================================================
+
+
+async def test_item_card_swipe_shows_edit_action(user: TestUser) -> None:
+    """Test that swipe actions layer contains Edit action."""
+    await user.open("/test-item-card-with-swipe")
+    await user.should_see("Edit")
+
+
+async def test_item_card_swipe_shows_partial_consume_action(user: TestUser) -> None:
+    """Test that swipe actions layer contains 'Teil' (partial consume) action."""
+    await user.open("/test-item-card-with-swipe")
+    await user.should_see("Teil")
+
+
+async def test_item_card_swipe_shows_full_consume_action(user: TestUser) -> None:
+    """Test that swipe actions layer contains 'Alles' (full consume) action."""
+    await user.open("/test-item-card-with-swipe")
+    await user.should_see("Alles")
+
+
+async def test_item_card_swipe_actions_hidden_without_callbacks(
+    user: TestUser,
+) -> None:
+    """Test that swipe actions are not shown when no callbacks provided."""
+    await user.open("/test-item-card")
+    await user.should_not_see("Edit")
+    await user.should_not_see("Teil")
+    await user.should_not_see("Alles")

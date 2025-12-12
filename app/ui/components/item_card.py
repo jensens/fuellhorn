@@ -5,15 +5,22 @@ Same component used in both Dashboard and Vorrat views.
 
 Card Structure (3-zone layout):
 ┌─────────────────────────────────────────────────┐
-│ HEADER: Name                    [Expiry Info]   │
+│ HEADER: Name                    [Expiry Badge]  │
 ├─────────────────────────────────────────────────┤
 │ BODY:                                           │
-│   Menge                                    [-]  │
+│   Menge [Progress Bar]                          │
 │   [Tag: State] [Tag: Category]                  │
 ├─────────────────────────────────────────────────┤
 │ FOOTER: 📍 Lagerort                             │
 └─────────────────────────────────────────────────┘
   ↑ Status-Border (4px, colored by expiry status)
+
+Swipe Actions (Issue #214):
+┌──────────────┬────────────────────────┬──────────────┬──────────────┐
+│    Edit      │      Card Content      │    Teil      │    Alles     │
+│   (blau)     │       (swipeable)      │   (gold)     │   (grün)     │
+└──────────────┴────────────────────────┴──────────────┴──────────────┘
+  Swipe →                                              ← Swipe
 """
 
 from ...models.item import Item
@@ -115,37 +122,6 @@ def get_status_text_class(status: str) -> str:
     return "sp-expiry-ok"
 
 
-def _format_expiry_display(expiry_date: date, item_type: ItemType) -> tuple[str, str]:
-    """Calculate expiry display label and value.
-
-    Returns:
-        Tuple of (label, value) for display.
-        Label is "MHD" or "Ablauf".
-        Value is either date format or relative text.
-    """
-    today = date.today()
-    days_until = (expiry_date - today).days
-
-    # Frozen items always show date format
-    is_frozen = item_type in (
-        ItemType.PURCHASED_FROZEN,
-        ItemType.PURCHASED_THEN_FROZEN,
-        ItemType.HOMEMADE_FROZEN,
-    )
-
-    if is_frozen or days_until > 7:
-        # Show date format: TT.MM.JJ
-        return "MHD", expiry_date.strftime("%d.%m.%y")
-    elif days_until < 0:
-        return "Ablauf", "Abgelaufen"
-    elif days_until == 0:
-        return "Ablauf", "Heute"
-    elif days_until == 1:
-        return "Ablauf", "Morgen"
-    else:
-        return "Ablauf", f"in {days_until} Tagen"
-
-
 def _calculate_status(days_until: int) -> str:
     """Calculate status based on days until expiry."""
     if days_until < 3:
@@ -211,22 +187,158 @@ def get_expiry_badge_text(expiry_date: date, item_type: ItemType) -> str:
         return expiry_date.strftime("%d.%m.%y")
 
 
+# Track if swipe JS has been added to avoid duplicates
+_swipe_js_added = False
+
+
+def _add_swipe_javascript() -> None:
+    """Add JavaScript for bidirectional swipe gestures on item cards.
+
+    This function adds event listeners for touch and mouse events to enable
+    swiping on cards marked with data-swipeable attribute.
+
+    Swipe behavior:
+    - Swipe left (negative X): Shows consume actions (Teil/Alles)
+    - Swipe right (positive X): Shows edit action
+    - Threshold based snapping
+    - Click outside to close
+    """
+    global _swipe_js_added
+    if _swipe_js_added:
+        return
+    _swipe_js_added = True
+
+    swipe_js = """
+    (function() {
+        // Only initialize once
+        if (window._fuellhornSwipeInitialized) return;
+        window._fuellhornSwipeInitialized = true;
+
+        function initSwipeCards() {
+            document.querySelectorAll('[data-swipeable]').forEach(card => {
+                // Skip already initialized cards
+                if (card._swipeInitialized) return;
+                card._swipeInitialized = true;
+
+                let startX = 0;
+                let currentX = 0;
+                let isDragging = false;
+
+                const maxLeft = parseInt(card.dataset.maxLeft || '-160');
+                const maxRight = parseInt(card.dataset.maxRight || '80');
+
+                const onStart = (e) => {
+                    // Don't start swipe if clicking a button
+                    if (e.target.closest('button')) return;
+
+                    isDragging = true;
+                    startX = e.type === 'mousedown' ? e.clientX : e.touches[0].clientX;
+                    currentX = startX;
+                    card.style.transition = 'none';
+                    card.style.cursor = 'grabbing';
+                };
+
+                const onMove = (e) => {
+                    if (!isDragging) return;
+                    currentX = e.type === 'mousemove' ? e.clientX : e.touches[0].clientX;
+                    const diff = currentX - startX;
+
+                    // Clamp to max values
+                    const translate = Math.max(maxLeft, Math.min(maxRight, diff));
+                    card.style.transform = `translateX(${translate}px)`;
+                };
+
+                const onEnd = () => {
+                    if (!isDragging) return;
+                    isDragging = false;
+                    card.style.cursor = 'grab';
+                    card.style.transition = 'transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+
+                    const diff = currentX - startX;
+
+                    // Threshold-based snapping
+                    if (diff < -80 && maxLeft < 0) {
+                        // Swiped left enough -> show consume actions
+                        card.style.transform = `translateX(${maxLeft}px)`;
+                        card.dataset.swiped = 'left';
+                    } else if (diff > 40 && maxRight > 0) {
+                        // Swiped right enough -> show edit action
+                        card.style.transform = `translateX(${maxRight}px)`;
+                        card.dataset.swiped = 'right';
+                    } else {
+                        // Not enough swipe -> reset
+                        card.style.transform = 'translateX(0)';
+                        card.dataset.swiped = '';
+                    }
+                };
+
+                // Mouse events
+                card.addEventListener('mousedown', onStart);
+                document.addEventListener('mousemove', onMove);
+                document.addEventListener('mouseup', onEnd);
+
+                // Touch events
+                card.addEventListener('touchstart', onStart, { passive: true });
+                card.addEventListener('touchmove', onMove, { passive: true });
+                card.addEventListener('touchend', onEnd);
+
+                // Click outside to close
+                document.addEventListener('click', (e) => {
+                    if (card.dataset.swiped && !card.contains(e.target)) {
+                        card.style.transition = 'transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+                        card.style.transform = 'translateX(0)';
+                        card.dataset.swiped = '';
+                    }
+                });
+            });
+        }
+
+        // Initialize on DOM ready and after NiceGUI updates
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initSwipeCards);
+        } else {
+            initSwipeCards();
+        }
+
+        // Re-initialize after page updates (NiceGUI dynamic content)
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.addedNodes.length) {
+                    setTimeout(initSwipeCards, 100);
+                }
+            });
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
+    })();
+    """
+
+    ui.run_javascript(swipe_js)
+
+
 def create_item_card(
     item: Item,
     session: Session,
     on_click: Callable[[Item], None] | None = None,
     on_consume: Callable[[Item], None] | None = None,
+    on_partial_consume: Callable[[Item], None] | None = None,
+    on_edit: Callable[[Item], None] | None = None,
 ) -> None:
-    """Create a unified, mobile-optimized item card component.
+    """Create a unified, mobile-optimized item card component with swipe actions.
 
     Used in both Dashboard and Vorrat views. Dashboard provides on_consume
     callback to show the consume button.
+
+    Swipe Actions (Issue #214):
+    - Swipe right: Shows "Edit" button (requires on_edit callback)
+    - Swipe left: Shows "Teil" and "Alles" buttons (requires on_partial_consume/on_consume)
 
     Args:
         item: The item to display
         session: Database session for fetching related data
         on_click: Optional callback when card is clicked
-        on_consume: Optional callback for consume button (shows button if provided)
+        on_consume: Optional callback for full consume action
+        on_partial_consume: Optional callback for partial consume action
+        on_edit: Optional callback for edit action
     """
     # Get related data
     try:
@@ -258,7 +370,7 @@ def create_item_card(
     status = _calculate_status(days_until)
     status_css_class = get_status_css_class(status)
 
-    # Get expiry badge info
+    # Get expiry badge info (Issue #212)
     badge_class = get_expiry_badge_class(days_until)
     badge_text = get_expiry_badge_text(effective_expiry, item.item_type)
 
@@ -270,116 +382,200 @@ def create_item_card(
     type_label = ITEM_TYPE_SHORT_LABELS.get(item.item_type, str(item.item_type.value))
     type_color = ITEM_TYPE_COLORS.get(item.item_type, "#6B7280")
 
+    # Determine if swipe actions should be enabled
+    has_swipe_actions = on_edit or on_partial_consume or on_consume
+
     # Create card with status border using Solarpunk theme classes
     card_classes = f"sp-item-card w-full {status_css_class}"
 
-    with ui.card().classes(card_classes):
-        # 3-Zone Grid Layout: header, body, footer
-        # Grid: 2 columns (content + action), 3 rows (header, body, footer)
-        with (
-            ui.element("div")
-            .classes("card-content")
-            .style(
-                "display: grid; "
-                "grid-template-columns: 1fr auto; "
-                "grid-template-rows: auto auto auto; "
-                "gap: 8px 16px; "
-                "width: 100%;"
-            )
-        ):
-            # === HEADER ZONE ===
-            # Name + Expiry (spans full width)
+    # Swipe container wrapper
+    with (
+        ui.element("div")
+        .classes("sp-swipe-container")
+        .style("position: relative; overflow: hidden; border-radius: var(--sp-radius-lg, 16px); margin-bottom: 8px;")
+    ):
+        # === SWIPE ACTIONS LEFT (Edit) - shown on swipe right ===
+        if on_edit:
             with (
                 ui.element("div")
-                .classes("card-header")
+                .classes("sp-swipe-actions-left")
                 .style(
-                    "grid-column: 1 / -1; "
-                    "display: flex; "
-                    "align-items: flex-start; "
-                    "justify-content: space-between; "
-                    "gap: 12px;"
+                    "position: absolute; top: 0; left: 0; bottom: 0; width: 80px; "
+                    "display: flex; align-items: stretch; z-index: 1;"
                 )
             ):
-                # Product name (truncate on overflow)
-                ui.label(item.product_name).classes("font-semibold text-base truncate").style(
-                    "line-height: 1.3; flex: 1; min-width: 0;"
+                ui.button(
+                    "Edit",
+                    icon="edit",
+                    on_click=lambda i=item: on_edit(i),
+                ).classes("sp-swipe-action-edit").style(
+                    "flex: 1; border-radius: 0; "
+                    "background: linear-gradient(135deg, #5BA3C6 0%, #87CEEB 100%); "
+                    "color: white; display: flex; flex-direction: column; "
+                    "align-items: center; justify-content: center; gap: 4px;"
+                ).props("flat unelevated")
+
+        # === SWIPE ACTIONS RIGHT (Teil/Alles) - shown on swipe left ===
+        if on_partial_consume or on_consume:
+            with (
+                ui.element("div")
+                .classes("sp-swipe-actions-right")
+                .style(
+                    "position: absolute; top: 0; right: 0; bottom: 0; width: 160px; "
+                    "display: flex; align-items: stretch; z-index: 1;"
                 )
-
-                # Expiry badge (color-coded, Issue #212)
-                ui.label(badge_text).classes(f"expiry-badge {badge_class}")
-
-            # === BODY ZONE ===
-            # Quantity + Progress Bar + Tags (left side)
-            with (
-                ui.element("div")
-                .classes("card-body")
-                .style("grid-column: 1; display: flex; flex-direction: column; gap: 8px;")
             ):
-                # Amount section: Quantity + Progress bar (if partial withdrawal)
-                with ui.row().classes("items-center gap-3 w-full"):
-                    # Quantity display
-                    qty_classes = "text-sm text-gray-700"
-                    if has_withdrawals:
-                        qty_classes = "text-sm text-amber-700"
-                    ui.label(qty_display).classes(qty_classes).style("font-weight: 600; min-width: 70px;")
+                if on_partial_consume:
+                    ui.button(
+                        "Teil",
+                        icon="add_circle_outline",
+                        on_click=lambda i=item: on_partial_consume(i),
+                    ).classes("sp-swipe-action-partial").style(
+                        "flex: 1; border-radius: 0; "
+                        "background: linear-gradient(135deg, #D4A853 0%, #E8C97B 100%); "
+                        "color: white; display: flex; flex-direction: column; "
+                        "align-items: center; justify-content: center; gap: 4px;"
+                    ).props("flat unelevated")
 
-                    # Progress bar (only shown when partial withdrawal exists)
-                    if has_withdrawals:
-                        percentage = _calculate_progress_percentage(item.quantity, initial_qty)
-                        progress_color = _get_progress_color(percentage)
-                        # Quasar linear progress with aria-label for accessibility
-                        ui.linear_progress(
-                            value=percentage / 100,
-                            color=progress_color,
-                            size="8px",
-                            show_value=False,
-                        ).props(f'aria-label="Restmenge: {percentage}%" rounded').classes("flex-1").style(
-                            "border-radius: 10px;"
-                        )
-                        # Show percentage text for accessibility
-                        ui.label(f"{percentage}%").classes("text-xs text-stone").style("min-width: 35px;")
-
-                # Tags: Item-Type + Category
-                with ui.row().classes("items-center gap-2 flex-wrap"):
-                    # Item-Type Badge with 15% opacity background
-                    ui.label(type_label).classes("text-xs px-2 py-0.5 rounded").style(
-                        f"background-color: {type_color}26; color: {type_color}; font-weight: 500;"
-                    )
-
-                    # Category badge (if exists)
-                    if category:
-                        cat_color = category.color or "#6B7280"
-                        cat_text_color = get_contrast_text_color(cat_color)
-                        ui.label(category.name).classes("text-xs px-2 py-0.5 rounded").style(
-                            f"background-color: {cat_color}; color: {cat_text_color}; font-weight: 500;"
-                        )
-
-            # Quick-Action Button (right side, spans body + footer rows)
-            with (
-                ui.element("div")
-                .classes("quick-action-zone")
-                .style("grid-column: 2; grid-row: 2 / 4; display: flex; align-items: center; justify-content: center;")
-            ):
-                # Round minus button for consume action (Issue #213)
                 if on_consume:
                     ui.button(
-                        icon="remove",
+                        "Alles",
+                        icon="check",
                         on_click=lambda i=item: on_consume(i),
-                    ).classes("sp-quick-action").props("round flat")
+                    ).classes("sp-swipe-action-full").style(
+                        "flex: 1; border-radius: 0; "
+                        "background: linear-gradient(135deg, #4A7C59 0%, #5C7F5C 100%); "
+                        "color: white; display: flex; flex-direction: column; "
+                        "align-items: center; justify-content: center; gap: 4px;"
+                    ).props("flat unelevated")
 
-            # === FOOTER ZONE ===
-            # Location only
+        # === CARD CONTENT (slideable) ===
+        card_content_style = (
+            "background: white; position: relative; z-index: 2; "
+            "transition: transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94); "
+            "touch-action: pan-y;"
+        )
+        if has_swipe_actions:
+            card_content_style += " cursor: grab;"
+
+        with ui.card().classes(card_classes).style(card_content_style) as card:
+            # Add swipeable data attribute for JS
+            if has_swipe_actions:
+                card._props["data-swipeable"] = "true"
+                # Calculate max swipe distances based on available actions
+                max_left = -160 if (on_partial_consume or on_consume) else 0
+                max_right = 80 if on_edit else 0
+                card._props["data-max-left"] = str(max_left)
+                card._props["data-max-right"] = str(max_right)
+
+            # 3-Zone Grid Layout: header, body, footer
             with (
                 ui.element("div")
-                .classes("card-footer")
-                .style("grid-column: 1; display: flex; align-items: center; gap: 6px;")
+                .classes("card-content")
+                .style(
+                    "display: grid; "
+                    "grid-template-columns: 1fr auto; "
+                    "grid-template-rows: auto auto auto; "
+                    "gap: 8px 16px; "
+                    "width: 100%;"
+                )
             ):
-                location_style = "font-size: 0.8rem; color: var(--stone, #A39E93);"
-                if location_color:
-                    location_style = f"font-size: 0.8rem; color: {location_color};"
-                ui.label(f"📍 {location_name}").style(location_style)
+                # === HEADER ZONE ===
+                # Name + Expiry Badge (spans full width)
+                with (
+                    ui.element("div")
+                    .classes("card-header")
+                    .style(
+                        "grid-column: 1 / -1; "
+                        "display: flex; "
+                        "align-items: flex-start; "
+                        "justify-content: space-between; "
+                        "gap: 12px;"
+                    )
+                ):
+                    # Product name (truncate on overflow)
+                    ui.label(item.product_name).classes("font-semibold text-base truncate").style(
+                        "line-height: 1.3; flex: 1; min-width: 0;"
+                    )
 
-        # Click handler for entire card (if provided)
-        if on_click:
-            # Make card clickable
-            ui.card().on("click", lambda: on_click(item))
+                    # Expiry badge (color-coded, Issue #212)
+                    ui.label(badge_text).classes(f"expiry-badge {badge_class}")
+
+                # === BODY ZONE ===
+                # Quantity + Progress Bar + Tags (left side)
+                with (
+                    ui.element("div")
+                    .classes("card-body")
+                    .style("grid-column: 1; display: flex; flex-direction: column; gap: 8px;")
+                ):
+                    # Amount section: Quantity + Progress bar (if partial withdrawal)
+                    with ui.row().classes("items-center gap-3 w-full"):
+                        # Quantity display
+                        qty_classes = "text-sm text-gray-700"
+                        if has_withdrawals:
+                            qty_classes = "text-sm text-amber-700"
+                        ui.label(qty_display).classes(qty_classes).style("font-weight: 600; min-width: 70px;")
+
+                        # Progress bar (only shown when partial withdrawal exists)
+                        if has_withdrawals:
+                            percentage = _calculate_progress_percentage(item.quantity, initial_qty)
+                            progress_color = _get_progress_color(percentage)
+                            # Quasar linear progress with aria-label for accessibility
+                            ui.linear_progress(
+                                value=percentage / 100,
+                                color=progress_color,
+                                size="8px",
+                                show_value=False,
+                            ).props(f'aria-label="Restmenge: {percentage}%" rounded').classes("flex-1").style(
+                                "border-radius: 10px;"
+                            )
+                            # Show percentage text for accessibility
+                            ui.label(f"{percentage}%").classes("text-xs text-stone").style("min-width: 35px;")
+
+                    # Tags: Item-Type + Category
+                    with ui.row().classes("items-center gap-2 flex-wrap"):
+                        # Item-Type Badge with 15% opacity background
+                        ui.label(type_label).classes("text-xs px-2 py-0.5 rounded").style(
+                            f"background-color: {type_color}26; color: {type_color}; font-weight: 500;"
+                        )
+
+                        # Category badge (if exists)
+                        if category:
+                            cat_color = category.color or "#6B7280"
+                            cat_text_color = get_contrast_text_color(cat_color)
+                            ui.label(category.name).classes("text-xs px-2 py-0.5 rounded").style(
+                                f"background-color: {cat_color}; color: {cat_text_color}; font-weight: 500;"
+                            )
+
+                # Quick-Action Button zone (right side, spans body + footer rows)
+                # Swipe actions replace quick action button when swipe callbacks present
+                if not has_swipe_actions:
+                    with (
+                        ui.element("div")
+                        .classes("quick-action-zone")
+                        .style(
+                            "grid-column: 2; grid-row: 2 / 4; "
+                            "display: flex; align-items: center; justify-content: center;"
+                        )
+                    ):
+                        pass  # Placeholder for non-swipe mode
+
+                # === FOOTER ZONE ===
+                # Location only
+                with (
+                    ui.element("div")
+                    .classes("card-footer")
+                    .style("grid-column: 1; display: flex; align-items: center; gap: 6px;")
+                ):
+                    location_style = "font-size: 0.8rem; color: var(--stone, #A39E93);"
+                    if location_color:
+                        location_style = f"font-size: 0.8rem; color: {location_color};"
+                    ui.label(f"📍 {location_name}").style(location_style)
+
+            # Click handler for entire card (if provided)
+            if on_click:
+                card.on("click", lambda: on_click(item))
+
+    # Add swipe JavaScript if swipe actions are enabled
+    if has_swipe_actions:
+        _add_swipe_javascript()

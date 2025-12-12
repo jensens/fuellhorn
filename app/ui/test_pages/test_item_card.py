@@ -375,3 +375,24 @@ def page_item_card_progress_low() -> None:
         # 100/500 = 20% -> low (coral)
         item = _create_item_with_withdrawal(session, current_qty=100, withdrawn_qty=400)
         create_item_card(item, session)
+
+
+# =============================================================================
+# Test pages for swipe actions (Issue #214)
+# =============================================================================
+
+
+@ui.page("/test-item-card-with-swipe")
+def page_item_card_with_swipe() -> None:
+    """Test page for item card with swipe actions (Edit/Teil/Alles)."""
+    with next(get_session()) as session:
+        location = _create_test_location(session)
+        category = _create_test_category(session, with_shelf_life=True)
+        item = _create_shelf_life_item(session, location, category, freeze_days_ago=30)
+        create_item_card(
+            item,
+            session,
+            on_edit=lambda i: None,
+            on_partial_consume=lambda i: None,
+            on_consume=lambda i: None,
+        )
