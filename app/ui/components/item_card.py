@@ -1,14 +1,18 @@
 """Unified Item Card Component - Mobile-First Card for displaying inventory items.
 
-Based on Issue #173: Einheitliches Card-Design für Dashboard & Vorrat.
+Based on Issue #173 and #210: 3-Zonen-Struktur für Card Redesign.
 Same component used in both Dashboard and Vorrat views.
 
-Card Structure (3-line version):
-┌───────────────────────────────────────────────────────────────┐
-│ ▌ Name                                MHD      [Entnahme] │
-│ ▌ Menge · [Item-Type Badge]           Morgen                  │
-│ ▌ 📍 Lagerort   [Kategorie]                                   │
-└───────────────────────────────────────────────────────────────┘
+Card Structure (3-zone layout):
+┌─────────────────────────────────────────────────┐
+│ HEADER: Name                    [Expiry Info]   │
+├─────────────────────────────────────────────────┤
+│ BODY:                                           │
+│   Menge                                    [-]  │
+│   [Tag: State] [Tag: Category]                  │
+├─────────────────────────────────────────────────┤
+│ FOOTER: 📍 Lagerort                             │
+└─────────────────────────────────────────────────┘
   ↑ Status-Border (4px, colored by expiry status)
 """
 
@@ -183,35 +187,61 @@ def create_item_card(
     card_classes = f"sp-item-card w-full {status_css_class}"
 
     with ui.card().classes(card_classes):
-        # Main grid: left content + right column (date + button)
-        with ui.row().classes("w-full items-start justify-between gap-2"):
-            # Left column: 3 lines of item info
-            with ui.column().classes("flex-1 gap-0.5 min-w-0"):
-                # Line 1: Product name (truncate on overflow)
-                ui.label(item.product_name).classes("font-semibold text-base truncate w-full").style(
-                    "line-height: 1.3;"
+        # 3-Zone Grid Layout: header, body, footer
+        # Grid: 2 columns (content + action), 3 rows (header, body, footer)
+        with (
+            ui.element("div")
+            .classes("card-content")
+            .style(
+                "display: grid; "
+                "grid-template-columns: 1fr auto; "
+                "grid-template-rows: auto auto auto; "
+                "gap: 8px 16px; "
+                "width: 100%;"
+            )
+        ):
+            # === HEADER ZONE ===
+            # Name + Expiry (spans full width)
+            with (
+                ui.element("div")
+                .classes("card-header")
+                .style(
+                    "grid-column: 1 / -1; "
+                    "display: flex; "
+                    "align-items: flex-start; "
+                    "justify-content: space-between; "
+                    "gap: 12px;"
+                )
+            ):
+                # Product name (truncate on overflow)
+                ui.label(item.product_name).classes("font-semibold text-base truncate").style(
+                    "line-height: 1.3; flex: 1; min-width: 0;"
                 )
 
-                # Line 2: Quantity + Item-Type Badge
-                with ui.row().classes("items-center gap-2"):
-                    qty_classes = "text-sm text-gray-700"
-                    if has_withdrawals:
-                        # Visual indicator for partial withdrawal
-                        qty_classes = "text-sm text-amber-700"
-                    ui.label(qty_display).classes(qty_classes)
+                # Expiry info (label + value stacked)
+                with ui.column().classes("items-end gap-0 shrink-0"):
+                    ui.label(expiry_label).classes("text-xs text-stone")
+                    ui.label(expiry_value).classes(f"text-sm font-bold {status_text_class}")
 
-                    # Item-Type Badge with 15% opacity background, text in full color
+            # === BODY ZONE ===
+            # Quantity + Tags (left side)
+            with (
+                ui.element("div")
+                .classes("card-body")
+                .style("grid-column: 1; display: flex; flex-direction: column; gap: 8px;")
+            ):
+                # Quantity display
+                qty_classes = "text-sm text-gray-700"
+                if has_withdrawals:
+                    qty_classes = "text-sm text-amber-700"
+                ui.label(qty_display).classes(qty_classes).style("font-weight: 600;")
+
+                # Tags: Item-Type + Category
+                with ui.row().classes("items-center gap-2 flex-wrap"):
+                    # Item-Type Badge with 15% opacity background
                     ui.label(type_label).classes("text-xs px-2 py-0.5 rounded").style(
                         f"background-color: {type_color}26; color: {type_color}; font-weight: 500;"
                     )
-
-                # Line 3: Location + Category
-                with ui.row().classes("items-center gap-2 flex-wrap"):
-                    # Location with icon
-                    location_style = ""
-                    if location_color:
-                        location_style = f"color: {location_color};"
-                    ui.label(f"📍 {location_name}").classes("text-xs text-gray-600").style(location_style)
 
                     # Category badge (if exists)
                     if category:
@@ -221,22 +251,31 @@ def create_item_card(
                             f"background-color: {cat_color}; color: {cat_text_color}; font-weight: 500;"
                         )
 
-            # Right column: Expiry info + optional button
-            with ui.column().classes("items-end gap-1 shrink-0"):
-                # Expiry label (small, muted)
-                ui.label(expiry_label).classes("text-xs text-stone")
-
-                # Expiry value (bold, colored by status using theme classes)
-                ui.label(expiry_value).classes(f"text-sm font-bold {status_text_class}")
-
+            # Quick-Action Button (right side, spans body + footer rows)
+            with (
+                ui.element("div")
+                .classes("quick-action-zone")
+                .style("grid-column: 2; grid-row: 2 / 4; display: flex; align-items: center; justify-content: center;")
+            ):
                 # Consume button (if callback provided)
                 if on_consume:
-                    # Map status to Quasar color prop
                     btn_color = "negative" if status == "critical" else "warning" if status == "warning" else "positive"
                     ui.button(
                         "Entnahme",
                         on_click=lambda i=item: on_consume(i),
                     ).props(f"size=sm dense flat color={btn_color}")
+
+            # === FOOTER ZONE ===
+            # Location only
+            with (
+                ui.element("div")
+                .classes("card-footer")
+                .style("grid-column: 1; display: flex; align-items: center; gap: 6px;")
+            ):
+                location_style = "font-size: 0.8rem; color: var(--stone, #A39E93);"
+                if location_color:
+                    location_style = f"font-size: 0.8rem; color: {location_color};"
+                ui.label(f"📍 {location_name}").style(location_style)
 
         # Click handler for entire card (if provided)
         if on_click:
