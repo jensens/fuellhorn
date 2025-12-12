@@ -156,6 +156,61 @@ def _calculate_status(days_until: int) -> str:
         return "ok"
 
 
+def get_expiry_badge_class(days_until: int) -> str:
+    """Get CSS class for expiry badge based on days until expiry.
+
+    Badge variants:
+    - expired: days < 0 (red gradient, white text)
+    - warning: days = 0-1 (orange gradient, white text)
+    - soon: days = 2-7 (gold gradient, dark text)
+    - ok: days > 7 (cream background, stone text)
+    """
+    if days_until < 0:
+        return "expired"
+    elif days_until <= 1:
+        return "warning"
+    elif days_until <= 7:
+        return "soon"
+    else:
+        return "ok"
+
+
+def get_expiry_badge_text(expiry_date: date, item_type: ItemType) -> str:
+    """Get display text for expiry badge.
+
+    Args:
+        expiry_date: The expiry/best-before date
+        item_type: Type of item (frozen items always show date format)
+
+    Returns:
+        Badge text: "Abgelaufen", "Heute", "Morgen", "in X Tagen", or date format
+    """
+    today = date.today()
+    days_until = (expiry_date - today).days
+
+    # Frozen items always show date format
+    is_frozen = item_type in (
+        ItemType.PURCHASED_FROZEN,
+        ItemType.PURCHASED_THEN_FROZEN,
+        ItemType.HOMEMADE_FROZEN,
+    )
+
+    if is_frozen:
+        return expiry_date.strftime("%d.%m.%y")
+
+    # Non-frozen items show relative text for near dates
+    if days_until < 0:
+        return "Abgelaufen"
+    elif days_until == 0:
+        return "Heute"
+    elif days_until == 1:
+        return "Morgen"
+    elif days_until <= 7:
+        return f"in {days_until} Tagen"
+    else:
+        return expiry_date.strftime("%d.%m.%y")
+
+
 def create_item_card(
     item: Item,
     session: Session,
@@ -202,10 +257,10 @@ def create_item_card(
     days_until = (effective_expiry - date.today()).days
     status = _calculate_status(days_until)
     status_css_class = get_status_css_class(status)
-    status_text_class = get_status_text_class(status)
 
-    # Get expiry display
-    expiry_label, expiry_value = _format_expiry_display(effective_expiry, item.item_type)
+    # Get expiry badge info
+    badge_class = get_expiry_badge_class(days_until)
+    badge_text = get_expiry_badge_text(effective_expiry, item.item_type)
 
     # Get initial quantity and format display
     initial_qty = item_service.get_item_initial_quantity(session, item.id)  # type: ignore[arg-type]
@@ -250,10 +305,8 @@ def create_item_card(
                     "line-height: 1.3; flex: 1; min-width: 0;"
                 )
 
-                # Expiry info (label + value stacked)
-                with ui.column().classes("items-end gap-0 shrink-0"):
-                    ui.label(expiry_label).classes("text-xs text-stone")
-                    ui.label(expiry_value).classes(f"text-sm font-bold {status_text_class}")
+                # Expiry badge (color-coded, Issue #212)
+                ui.label(badge_text).classes(f"expiry-badge {badge_class}")
 
             # === BODY ZONE ===
             # Quantity + Progress Bar + Tags (left side)
