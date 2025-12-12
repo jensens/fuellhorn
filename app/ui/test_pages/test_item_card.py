@@ -311,3 +311,67 @@ def page_item_card_no_withdrawal() -> None:
         category = _create_test_category(session, with_shelf_life=True)
         item = _create_shelf_life_item(session, location, category, freeze_days_ago=30)
         create_item_card(item, session)
+
+
+# =============================================================================
+# Test pages for progress bar (Issue #211)
+# =============================================================================
+
+
+def _create_item_with_withdrawal(
+    session: Session,
+    current_qty: float,
+    withdrawn_qty: float,
+) -> Item:
+    """Create an item with a withdrawal (initial = current + withdrawn)."""
+    user_id = _create_test_user(session)
+    location = _create_test_location(session)
+    category = _create_test_category(session, with_shelf_life=True)
+
+    freeze_date = date.today() - timedelta(days=30)
+    item = Item(
+        product_name="Erbsen",
+        best_before_date=freeze_date,
+        freeze_date=freeze_date,
+        quantity=current_qty,
+        unit="g",
+        item_type=ItemType.HOMEMADE_FROZEN,
+        location_id=location.id,
+        category_id=category.id,
+        created_by=user_id,
+    )
+    session.add(item)
+    session.commit()
+    session.refresh(item)
+
+    # Create withdrawal
+    _create_withdrawal(session, item, quantity=withdrawn_qty, user_id=user_id)
+
+    return item
+
+
+@ui.page("/test-item-card-progress-high")
+def page_item_card_progress_high() -> None:
+    """Test page for progress bar with high level (>66% = green)."""
+    with next(get_session()) as session:
+        # 400/500 = 80% -> high (green)
+        item = _create_item_with_withdrawal(session, current_qty=400, withdrawn_qty=100)
+        create_item_card(item, session)
+
+
+@ui.page("/test-item-card-progress-medium")
+def page_item_card_progress_medium() -> None:
+    """Test page for progress bar with medium level (33-66% = gold)."""
+    with next(get_session()) as session:
+        # 250/500 = 50% -> medium (gold)
+        item = _create_item_with_withdrawal(session, current_qty=250, withdrawn_qty=250)
+        create_item_card(item, session)
+
+
+@ui.page("/test-item-card-progress-low")
+def page_item_card_progress_low() -> None:
+    """Test page for progress bar with low level (<33% = coral)."""
+    with next(get_session()) as session:
+        # 100/500 = 20% -> low (coral)
+        item = _create_item_with_withdrawal(session, current_qty=100, withdrawn_qty=400)
+        create_item_card(item, session)

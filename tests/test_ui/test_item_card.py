@@ -159,3 +159,53 @@ async def test_item_card_no_initial_quantity_without_withdrawal(
     await user.open("/test-item-card-no-withdrawal")
     # Should show just "500 g" without initial
     await user.should_see("500 g")
+
+
+# =============================================================================
+# Progress Bar Tests (Issue #211)
+# =============================================================================
+
+
+async def test_item_card_progress_bar_shown_on_partial_withdrawal(
+    user: TestUser,
+) -> None:
+    """Test that progress bar is shown when partial withdrawal exists."""
+    await user.open("/test-item-card-partial-withdrawal")
+    # Progress bar should be visible
+    await user.should_see("60%")  # aria-label percentage
+
+
+async def test_item_card_progress_bar_hidden_without_withdrawal(
+    user: TestUser,
+) -> None:
+    """Test that progress bar is NOT shown when item is full (no withdrawal)."""
+    await user.open("/test-item-card-no-withdrawal")
+    # Should NOT see a progress indicator when item is at full quantity
+    await user.should_not_see("100%")
+
+
+async def test_item_card_progress_bar_high_level_color(
+    user: TestUser,
+) -> None:
+    """Test that progress bar shows green when >66% full."""
+    await user.open("/test-item-card-progress-high")
+    # 400/500 = 80% -> should be "positive" (green)
+    await user.should_see("80%")
+
+
+async def test_item_card_progress_bar_medium_level_color(
+    user: TestUser,
+) -> None:
+    """Test that progress bar shows gold when 33-66% full."""
+    await user.open("/test-item-card-progress-medium")
+    # 250/500 = 50% -> should be "warning" (gold)
+    await user.should_see("50%")
+
+
+async def test_item_card_progress_bar_low_level_color(
+    user: TestUser,
+) -> None:
+    """Test that progress bar shows coral when <33% full."""
+    await user.open("/test-item-card-progress-low")
+    # 100/500 = 20% -> should be "negative" (coral)
+    await user.should_see("20%")
