@@ -787,6 +787,7 @@ h1, h2, h3 {
   box-shadow: var(--sp-shadow-sm);
   margin-bottom: 12px;
   touch-action: pan-y;
+  width: 100%;
 }
 
 /* Action buttons behind content */

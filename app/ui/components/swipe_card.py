@@ -5,7 +5,7 @@ Provides a reusable swipe card with bidirectional actions:
 - Swipe right: Edit
 
 Features:
-- 400ms dwell-time trigger with radial progress ring
+- 500ms dwell-time trigger with radial progress ring
 - Swipe-through trigger for Alles/Edit (not Teil)
 - Only one card open at a time
 - Touch + Mouse support
