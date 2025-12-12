@@ -279,6 +279,7 @@ def create_item_card(
                             value=percentage / 100,
                             color=progress_color,
                             size="8px",
+                            show_value=False,
                         ).props(f'aria-label="Restmenge: {percentage}%" rounded').classes("flex-1").style(
                             "border-radius: 10px;"
                         )
