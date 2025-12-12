@@ -80,16 +80,17 @@ def create_swipe_card(
 
     with container:
         # Left actions (behind content, revealed on left swipe)
+        # Order: Alles first (left, revealed at 50%), Teil second (right, revealed at 25%)
         with ui.element("div").classes("swipe-card-actions-left"):
-            # Teil button (first, closer to content)
-            with ui.element("button").classes("swipe-action-btn swipe-action-teil").props('data-action="teil"'):
-                ui.html(ICON_TEIL, sanitize=False)
-                ui.label(teil_label)
-
-            # Alles button (second, further from content)
+            # Alles button (left side, revealed when swiping further)
             with ui.element("button").classes("swipe-action-btn swipe-action-alles").props('data-action="alles"'):
                 ui.html(ICON_ALLES, sanitize=False)
                 ui.label(alles_label)
+
+            # Teil button (right side, revealed first when starting to swipe)
+            with ui.element("button").classes("swipe-action-btn swipe-action-teil").props('data-action="teil"'):
+                ui.html(ICON_TEIL, sanitize=False)
+                ui.label(teil_label)
 
         # Right action (behind content, revealed on right swipe)
         with ui.element("div").classes("swipe-card-actions-right"):
