@@ -10,10 +10,11 @@ from nicegui import app, ui
 app.add_static_files("/static", "app/static")
 
 
-# Load Solarpunk theme CSS for each client connection
+# Load Solarpunk theme CSS and JavaScript for each client connection
 @app.on_connect
 def _load_theme() -> None:
     ui.add_head_html('<link rel="stylesheet" href="/static/css/solarpunk-theme.css">')
+    ui.add_head_html('<script src="/static/js/swipe-card.js"></script>')
 
 
 # Import pages to register routes
