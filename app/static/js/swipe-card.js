@@ -4,7 +4,7 @@
  * Custom swipe-to-reveal actions for touch and mouse.
  * Features:
  * - Bidirectional swipe (left: Teil/Alles, right: Edit)
- * - 300ms dwell-time trigger with radial progress ring
+ * - 400ms dwell-time trigger with radial progress ring
  * - Swipe-through trigger for Alles/Edit
  * - Only one card open at a time
  */
@@ -20,7 +20,7 @@
     leftAction1Threshold: 0.25, // Teil position (25%)
     leftAction2Threshold: 0.50, // Alles position (50%)
     rightActionThreshold: 0.25, // Edit position (25%)
-    dwellTime: 300, // ms
+    dwellTime: 400, // ms
     swipeThroughMultiplier: 1.2, // 120% of threshold = swipe-through
   };
 

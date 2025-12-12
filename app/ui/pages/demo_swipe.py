@@ -67,10 +67,10 @@ def demo_swipe() -> None:
             ui.html(
                 """
                 <ul>
-                    <li><strong>Swipe links</strong> → Teil (300ms) oder Alles</li>
+                    <li><strong>Swipe links</strong> → Teil (400ms) oder Alles</li>
                     <li><strong>Swipe rechts</strong> → Edit</li>
                     <li><strong>Durchswipen</strong> für Edit/Alles</li>
-                    <li><strong>Verweilen (300ms)</strong> löst Aktion aus</li>
+                    <li><strong>Verweilen (400ms)</strong> löst Aktion aus</li>
                 </ul>
             """,
                 sanitize=False,
@@ -141,7 +141,7 @@ def demo_swipe() -> None:
             ui.markdown("""
 **Interaktions-Matrix:**
 
-| Aktion | Einrasten + 300ms | Durchswipen |
+| Aktion | Einrasten + 400ms | Durchswipen |
 |--------|:-----------------:|:-----------:|
 | Teil (links 1) | ✓ | ✗ |
 | Alles (links 2) | ✓ | ✓ |

@@ -3,7 +3,7 @@
 Diese Tests prüfen die Swipe-Komponente im echten Browser:
 - Demo-Seite rendert korrekt
 - Swipe-Interaktionen (links/rechts)
-- 300ms Dwell-Time Trigger
+- 400ms Dwell-Time Trigger
 - Durchswipen-Trigger
 - Nur eine Card gleichzeitig offen
 """
@@ -93,7 +93,7 @@ class TestSwipeDemo:
         expect(page.get_by_text("Event-Log")).to_be_visible()
 
     def test_swipe_left_partial_with_dwell(self, page: Page, live_server: str) -> None:
-        """Test: Swipe links + 300ms Verweilen löst Teil aus."""
+        """Test: Swipe links + 400ms Verweilen löst Teil aus."""
         page.goto(f"{live_server}/demo/swipe")
 
         # Wait for JS to initialize
@@ -104,7 +104,7 @@ class TestSwipeDemo:
         box = card.bounding_box()
         if box:
             delta_x = -box["width"] * 0.25
-            _swipe_element(page, "#demo-card-1 .swipe-card-content", int(delta_x), 400)
+            _swipe_element(page, "#demo-card-1 .swipe-card-content", int(delta_x), 500)
 
         # Check that partial action was triggered (notification or event log)
         page.wait_for_timeout(200)
@@ -112,7 +112,7 @@ class TestSwipeDemo:
         expect(page.get_by_text("partial_consume").or_(page.get_by_text("Teil"))).to_be_visible(timeout=2000)
 
     def test_swipe_left_full_with_dwell(self, page: Page, live_server: str) -> None:
-        """Test: Swipe links komplett + 300ms Verweilen löst Alles aus."""
+        """Test: Swipe links komplett + 400ms Verweilen löst Alles aus."""
         page.goto(f"{live_server}/demo/swipe")
         page.wait_for_timeout(500)
 
@@ -121,7 +121,7 @@ class TestSwipeDemo:
         box = card.bounding_box()
         if box:
             delta_x = -box["width"] * 0.5
-            _swipe_element(page, "#demo-card-1 .swipe-card-content", int(delta_x), 400)
+            _swipe_element(page, "#demo-card-1 .swipe-card-content", int(delta_x), 500)
 
         page.wait_for_timeout(200)
         expect(page.get_by_text("consume_all").or_(page.get_by_text("Alles"))).to_be_visible(timeout=2000)
@@ -138,7 +138,7 @@ class TestSwipeDemo:
         expect(page.get_by_text("consume_all").or_(page.get_by_text("Alles"))).to_be_visible(timeout=2000)
 
     def test_swipe_right_with_dwell(self, page: Page, live_server: str) -> None:
-        """Test: Swipe rechts + 300ms Verweilen löst Edit aus."""
+        """Test: Swipe rechts + 400ms Verweilen löst Edit aus."""
         page.goto(f"{live_server}/demo/swipe")
         page.wait_for_timeout(500)
 
@@ -147,7 +147,7 @@ class TestSwipeDemo:
         box = card.bounding_box()
         if box:
             delta_x = box["width"] * 0.25
-            _swipe_element(page, "#demo-card-1 .swipe-card-content", int(delta_x), 400)
+            _swipe_element(page, "#demo-card-1 .swipe-card-content", int(delta_x), 500)
 
         page.wait_for_timeout(200)
         expect(page.get_by_text("edit")).to_be_visible(timeout=2000)
