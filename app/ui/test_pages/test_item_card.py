@@ -375,3 +375,72 @@ def page_item_card_progress_low() -> None:
         # 100/500 = 20% -> low (coral)
         item = _create_item_with_withdrawal(session, current_qty=100, withdrawn_qty=400)
         create_item_card(item, session)
+
+
+# =============================================================================
+# Test pages for Item Card Swipe (Issue #214)
+# =============================================================================
+
+
+@ui.page("/test-item-card-swipe")
+def page_item_card_swipe() -> None:
+    """Test page for item card with swipe functionality."""
+    # Event log for tracking callbacks
+    event_log: list[str] = []
+
+    def log_event(event: str) -> None:
+        event_log.append(event)
+        log_container.clear()
+        with log_container:
+            for e in event_log[-5:]:
+                ui.label(e).classes("text-sm")
+
+    with next(get_session()) as session:
+        location = _create_test_location(session)
+        category = _create_test_category(session, with_shelf_life=True)
+        item = _create_shelf_life_item(session, location, category, freeze_days_ago=30)
+
+        ui.label("Item Card Swipe Test").classes("text-xl font-bold mb-4")
+
+        create_item_card(
+            item,
+            session,
+            on_partial_consume=lambda i: log_event("partial_consume"),
+            on_consume_all=lambda i: log_event("consume_all"),
+            on_edit=lambda i: log_event("edit"),
+        )
+
+        ui.label("Event Log:").classes("mt-4 font-bold")
+        log_container = ui.column().classes("mt-2")
+
+
+@ui.page("/test-item-card-swipe-with-consume")
+def page_item_card_swipe_with_consume() -> None:
+    """Test page for item card with swipe and quick-action button."""
+    event_log: list[str] = []
+
+    def log_event(event: str) -> None:
+        event_log.append(event)
+        log_container.clear()
+        with log_container:
+            for e in event_log[-5:]:
+                ui.label(e).classes("text-sm")
+
+    with next(get_session()) as session:
+        location = _create_test_location(session)
+        category = _create_test_category(session, with_shelf_life=True)
+        item = _create_shelf_life_item(session, location, category, freeze_days_ago=30)
+
+        ui.label("Item Card Swipe + Quick Action Test").classes("text-xl font-bold mb-4")
+
+        create_item_card(
+            item,
+            session,
+            on_consume=lambda i: log_event("quick_consume"),
+            on_partial_consume=lambda i: log_event("partial_consume"),
+            on_consume_all=lambda i: log_event("consume_all"),
+            on_edit=lambda i: log_event("edit"),
+        )
+
+        ui.label("Event Log:").classes("mt-4 font-bold")
+        log_container = ui.column().classes("mt-2")

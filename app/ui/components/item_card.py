@@ -22,6 +22,7 @@ from ...services import item_service
 from ...services import location_service
 from ..theme import ITEM_TYPE_COLORS
 from ..theme import get_contrast_text_color
+from .swipe_card import create_swipe_card
 from datetime import date
 from nicegui import ui
 from sqlmodel import Session
@@ -216,17 +217,27 @@ def create_item_card(
     session: Session,
     on_click: Callable[[Item], None] | None = None,
     on_consume: Callable[[Item], None] | None = None,
+    on_partial_consume: Callable[[Item], None] | None = None,
+    on_consume_all: Callable[[Item], None] | None = None,
+    on_edit: Callable[[Item], None] | None = None,
 ) -> None:
     """Create a unified, mobile-optimized item card component.
 
     Used in both Dashboard and Vorrat views. Dashboard provides on_consume
     callback to show the consume button.
 
+    Swipe actions (Issue #214):
+    - Swipe left: Teil (partial) + Alles (consume all)
+    - Swipe right: Edit
+
     Args:
         item: The item to display
         session: Database session for fetching related data
         on_click: Optional callback when card is clicked
         on_consume: Optional callback for consume button (shows button if provided)
+        on_partial_consume: Optional callback for swipe partial consume action
+        on_consume_all: Optional callback for swipe consume all action
+        on_edit: Optional callback for swipe edit action
     """
     # Get related data
     try:
@@ -273,113 +284,131 @@ def create_item_card(
     # Create card with status border using Solarpunk theme classes
     card_classes = f"sp-item-card w-full {status_css_class}"
 
-    with ui.card().classes(card_classes):
-        # 3-Zone Grid Layout: header, body, footer
-        # Grid: 2 columns (content + action), 3 rows (header, body, footer)
-        with (
-            ui.element("div")
-            .classes("card-content")
-            .style(
-                "display: grid; "
-                "grid-template-columns: 1fr auto; "
-                "grid-template-rows: auto auto auto; "
-                "gap: 8px 16px; "
-                "width: 100%;"
-            )
-        ):
-            # === HEADER ZONE ===
-            # Name + Expiry (spans full width)
+    # Check if swipe actions are enabled
+    has_swipe = on_partial_consume or on_consume_all or on_edit
+
+    def _create_card_content() -> None:
+        """Create the card content (used inside swipe wrapper or standalone)."""
+        with ui.card().classes(card_classes):
+            # 3-Zone Grid Layout: header, body, footer
+            # Grid: 2 columns (content + action), 3 rows (header, body, footer)
             with (
                 ui.element("div")
-                .classes("card-header")
+                .classes("card-content")
                 .style(
-                    "grid-column: 1 / -1; "
-                    "display: flex; "
-                    "align-items: flex-start; "
-                    "justify-content: space-between; "
-                    "gap: 12px;"
+                    "display: grid; "
+                    "grid-template-columns: 1fr auto; "
+                    "grid-template-rows: auto auto auto; "
+                    "gap: 8px 16px; "
+                    "width: 100%;"
                 )
             ):
-                # Product name (truncate on overflow)
-                ui.label(item.product_name).classes("font-semibold text-base truncate").style(
-                    "line-height: 1.3; flex: 1; min-width: 0;"
-                )
-
-                # Expiry badge (color-coded, Issue #212)
-                ui.label(badge_text).classes(f"expiry-badge {badge_class}")
-
-            # === BODY ZONE ===
-            # Quantity + Progress Bar + Tags (left side)
-            with (
-                ui.element("div")
-                .classes("card-body")
-                .style("grid-column: 1; display: flex; flex-direction: column; gap: 8px;")
-            ):
-                # Amount section: Quantity + Progress bar (if partial withdrawal)
-                with ui.row().classes("items-center gap-3 w-full"):
-                    # Quantity display
-                    qty_classes = "text-sm text-gray-700"
-                    if has_withdrawals:
-                        qty_classes = "text-sm text-amber-700"
-                    ui.label(qty_display).classes(qty_classes).style("font-weight: 600; min-width: 70px;")
-
-                    # Progress bar (only shown when partial withdrawal exists)
-                    if has_withdrawals:
-                        percentage = _calculate_progress_percentage(item.quantity, initial_qty)
-                        progress_color = _get_progress_color(percentage)
-                        # Quasar linear progress with aria-label for accessibility
-                        ui.linear_progress(
-                            value=percentage / 100,
-                            color=progress_color,
-                            size="8px",
-                            show_value=False,
-                        ).props(f'aria-label="Restmenge: {percentage}%" rounded').classes("flex-1").style(
-                            "border-radius: 10px;"
-                        )
-                        # Show percentage text for accessibility
-                        ui.label(f"{percentage}%").classes("text-xs text-stone").style("min-width: 35px;")
-
-                # Tags: Item-Type + Category
-                with ui.row().classes("items-center gap-2 flex-wrap"):
-                    # Item-Type Badge with 15% opacity background
-                    ui.label(type_label).classes("text-xs px-2 py-0.5 rounded").style(
-                        f"background-color: {type_color}26; color: {type_color}; font-weight: 500;"
+                # === HEADER ZONE ===
+                # Name + Expiry (spans full width)
+                with (
+                    ui.element("div")
+                    .classes("card-header")
+                    .style(
+                        "grid-column: 1 / -1; "
+                        "display: flex; "
+                        "align-items: flex-start; "
+                        "justify-content: space-between; "
+                        "gap: 12px;"
+                    )
+                ):
+                    # Product name (truncate on overflow)
+                    ui.label(item.product_name).classes("font-semibold text-base truncate").style(
+                        "line-height: 1.3; flex: 1; min-width: 0;"
                     )
 
-                    # Category badge (if exists)
-                    if category:
-                        cat_color = category.color or "#6B7280"
-                        cat_text_color = get_contrast_text_color(cat_color)
-                        ui.label(category.name).classes("text-xs px-2 py-0.5 rounded").style(
-                            f"background-color: {cat_color}; color: {cat_text_color}; font-weight: 500;"
+                    # Expiry badge (color-coded, Issue #212)
+                    ui.label(badge_text).classes(f"expiry-badge {badge_class}")
+
+                # === BODY ZONE ===
+                # Quantity + Progress Bar + Tags (left side)
+                with (
+                    ui.element("div")
+                    .classes("card-body")
+                    .style("grid-column: 1; display: flex; flex-direction: column; gap: 8px;")
+                ):
+                    # Amount section: Quantity + Progress bar (if partial withdrawal)
+                    with ui.row().classes("items-center gap-3 w-full"):
+                        # Quantity display
+                        qty_classes = "text-sm text-gray-700"
+                        if has_withdrawals:
+                            qty_classes = "text-sm text-amber-700"
+                        ui.label(qty_display).classes(qty_classes).style("font-weight: 600; min-width: 70px;")
+
+                        # Progress bar (only shown when partial withdrawal exists)
+                        if has_withdrawals:
+                            percentage = _calculate_progress_percentage(item.quantity, initial_qty)
+                            progress_color = _get_progress_color(percentage)
+                            # Quasar linear progress with aria-label for accessibility
+                            ui.linear_progress(
+                                value=percentage / 100,
+                                color=progress_color,
+                                size="8px",
+                                show_value=False,
+                            ).props(f'aria-label="Restmenge: {percentage}%" rounded').classes("flex-1").style(
+                                "border-radius: 10px;"
+                            )
+                            # Show percentage text for accessibility
+                            ui.label(f"{percentage}%").classes("text-xs text-stone").style("min-width: 35px;")
+
+                    # Tags: Item-Type + Category
+                    with ui.row().classes("items-center gap-2 flex-wrap"):
+                        # Item-Type Badge with 15% opacity background
+                        ui.label(type_label).classes("text-xs px-2 py-0.5 rounded").style(
+                            f"background-color: {type_color}26; color: {type_color}; font-weight: 500;"
                         )
 
-            # Quick-Action Button (right side, spans body + footer rows)
-            with (
-                ui.element("div")
-                .classes("quick-action-zone")
-                .style("grid-column: 2; grid-row: 2 / 4; display: flex; align-items: center; justify-content: center;")
-            ):
-                # Round minus button for consume action (Issue #213)
-                if on_consume:
-                    ui.button(
-                        icon="remove",
-                        on_click=lambda i=item: on_consume(i),
-                    ).classes("sp-quick-action").props("round flat")
+                        # Category badge (if exists)
+                        if category:
+                            cat_color = category.color or "#6B7280"
+                            cat_text_color = get_contrast_text_color(cat_color)
+                            ui.label(category.name).classes("text-xs px-2 py-0.5 rounded").style(
+                                f"background-color: {cat_color}; color: {cat_text_color}; font-weight: 500;"
+                            )
 
-            # === FOOTER ZONE ===
-            # Location only
-            with (
-                ui.element("div")
-                .classes("card-footer")
-                .style("grid-column: 1; display: flex; align-items: center; gap: 6px;")
-            ):
-                location_style = "font-size: 0.8rem; color: var(--stone, #A39E93);"
-                if location_color:
-                    location_style = f"font-size: 0.8rem; color: {location_color};"
-                ui.label(f"📍 {location_name}").style(location_style)
+                # Quick-Action Button (right side, spans body + footer rows)
+                with (
+                    ui.element("div")
+                    .classes("quick-action-zone")
+                    .style(
+                        "grid-column: 2; grid-row: 2 / 4; display: flex; align-items: center; justify-content: center;"
+                    )
+                ):
+                    # Round minus button for consume action (Issue #213)
+                    if on_consume:
+                        ui.button(
+                            icon="remove",
+                            on_click=lambda i=item: on_consume(i),
+                        ).classes("sp-quick-action").props("round flat")
 
-        # Click handler for entire card (if provided)
-        if on_click:
-            # Make card clickable
-            ui.card().on("click", lambda: on_click(item))
+                # === FOOTER ZONE ===
+                # Location only
+                with (
+                    ui.element("div")
+                    .classes("card-footer")
+                    .style("grid-column: 1; display: flex; align-items: center; gap: 6px;")
+                ):
+                    location_style = "font-size: 0.8rem; color: var(--stone, #A39E93);"
+                    if location_color:
+                        location_style = f"font-size: 0.8rem; color: {location_color};"
+                    ui.label(f"📍 {location_name}").style(location_style)
+
+            # Click handler for entire card (if provided)
+            if on_click:
+                # Make card clickable
+                ui.card().on("click", lambda: on_click(item))
+
+    # Render with or without swipe wrapper
+    if has_swipe:
+        create_swipe_card(
+            content=_create_card_content,
+            on_partial=lambda: on_partial_consume(item) if on_partial_consume else None,
+            on_consume_all=lambda: on_consume_all(item) if on_consume_all else None,
+            on_edit=lambda: on_edit(item) if on_edit else None,
+        )
+    else:
+        _create_card_content()
