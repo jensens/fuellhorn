@@ -10,7 +10,9 @@
       "Bash(gh run view:*)",
       "Bash(./scripts/dev-server.sh:*)",
       "Bash(find:*)",
-      "Bash(git mv:*)"
+      "Bash(git mv:*)",
+      "Bash(gh issue edit:*)",
+      "Bash(uv pip install:*)"
     ],
     "deny": [],
     "ask": []
