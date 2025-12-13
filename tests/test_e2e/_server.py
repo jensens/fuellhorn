@@ -45,7 +45,12 @@ def main() -> None:
     from app.models import User
     from app.models.location import LocationType
     import app.ui.pages as _pages  # noqa: F401
+    from nicegui import app
     from nicegui import ui
+
+    # Static files konfigurieren (wie in main.py)
+    # Wichtig: Der Pfad muss relativ zum PROJECT_ROOT sein
+    app.add_static_files("/static", str(PROJECT_ROOT / "app" / "static"))
 
     # Datenbank initialisieren (in-memory SQLite)
     create_db_and_tables()
