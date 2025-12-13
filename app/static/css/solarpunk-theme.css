@@ -321,6 +321,13 @@ h1, h2, h3 {
   border-left-color: var(--sp-status-critical);
 }
 
+/* Item Card inside Swipe Card - remove conflicting styles */
+.swipe-card-content .sp-item-card {
+  margin-bottom: 0;
+  box-shadow: none;
+  border-radius: 0;
+}
+
 /* Status Dot */
 .sp-status-dot {
   width: 12px;

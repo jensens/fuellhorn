@@ -385,6 +385,10 @@ def page_item_card_progress_low() -> None:
 @ui.page("/test-item-card-swipe")
 def page_item_card_swipe() -> None:
     """Test page for item card with swipe functionality."""
+    # Load swipe card CSS and JS
+    ui.add_head_html('<link rel="stylesheet" href="/static/css/solarpunk-theme.css">')
+    ui.add_head_html('<script src="/static/js/swipe-card.js"></script>')
+
     # Event log for tracking callbacks
     event_log: list[str] = []
 
@@ -417,6 +421,10 @@ def page_item_card_swipe() -> None:
 @ui.page("/test-item-card-swipe-with-consume")
 def page_item_card_swipe_with_consume() -> None:
     """Test page for item card with swipe and quick-action button."""
+    # Load swipe card CSS and JS
+    ui.add_head_html('<link rel="stylesheet" href="/static/css/solarpunk-theme.css">')
+    ui.add_head_html('<script src="/static/js/swipe-card.js"></script>')
+
     event_log: list[str] = []
 
     def log_event(event: str) -> None:
