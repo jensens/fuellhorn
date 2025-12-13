@@ -195,6 +195,7 @@ def mark_item_consumed(session: Session, id: int, user_id: int | None = None) ->
     """Mark item as consumed.
 
     Creates a Withdrawal entry to track when and by whom the item was consumed.
+    Sets quantity to 0 to ensure correct initial quantity calculation.
 
     Args:
         session: Database session
@@ -218,6 +219,8 @@ def mark_item_consumed(session: Session, id: int, user_id: int | None = None) ->
         )
         session.add(withdrawal)
 
+    # Set quantity to 0 (Bug #222: was missing, causing wrong initial quantity calc)
+    item.quantity = 0
     item.is_consumed = True
 
     session.add(item)
