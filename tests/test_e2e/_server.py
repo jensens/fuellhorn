@@ -36,7 +36,6 @@ def main() -> None:
             del os.environ[var]
 
     # Importiere die App erst hier damit Umgebungsvariablen wirken
-    # HINWEIS: test_pages wird NICHT importiert da wir echte UI testen
     import app.api.health as _api_health  # noqa: F401
     from app.database import create_db_and_tables
     from app.database import get_session
@@ -45,8 +44,8 @@ def main() -> None:
     from app.models import User
     from app.models.location import LocationType
     import app.ui.pages as _pages  # noqa: F401
-    from nicegui import app
-    from nicegui import ui
+    import app.ui.test_pages as _test_pages  # noqa: F401  # Test pages für E2E tests
+    from nicegui import app, ui
 
     # Static files konfigurieren (wie in main.py)
     # Wichtig: Der Pfad muss relativ zum PROJECT_ROOT sein
