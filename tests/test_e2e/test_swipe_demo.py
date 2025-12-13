@@ -10,7 +10,6 @@ Diese Tests prüfen die Swipe-Komponente im echten Browser:
 
 from playwright.sync_api import Page
 from playwright.sync_api import expect
-import time
 
 
 def _swipe_element(
@@ -41,7 +40,10 @@ def _swipe_element(
     page.mouse.move(center_x + delta_x, center_y, steps=10)
 
     if hold_ms > 0:
-        time.sleep(hold_ms / 1000)
+        # IMPORTANT: Use page.wait_for_timeout instead of time.sleep!
+        # time.sleep pauses Python but doesn't allow browser timers to run.
+        # page.wait_for_timeout tells Playwright to let browser time pass.
+        page.wait_for_timeout(hold_ms)
 
     page.mouse.up()
 
@@ -106,10 +108,10 @@ class TestSwipeDemo:
             delta_x = -box["width"] * 0.25
             _swipe_element(page, "#demo-card-1 .swipe-card-content", int(delta_x), 600)
 
-        # Check that partial action was triggered (notification or event log)
+        # Check that partial action was triggered (look for specific event in log)
         page.wait_for_timeout(200)
-        # Look for "Teil" in the last event or notification
-        expect(page.get_by_text("partial_consume").or_(page.get_by_text("Teil"))).to_be_visible(timeout=2000)
+        # Use specific selector for event log items containing "partial_consume"
+        expect(page.locator(".swipe-demo-event-item", has_text="partial_consume")).to_be_visible(timeout=2000)
 
     def test_swipe_left_full_with_dwell(self, page: Page, live_server: str) -> None:
         """Test: Swipe links komplett + 500ms Verweilen löst Alles aus."""
@@ -123,8 +125,9 @@ class TestSwipeDemo:
             delta_x = -box["width"] * 0.5
             _swipe_element(page, "#demo-card-1 .swipe-card-content", int(delta_x), 600)
 
+        # Check that consume_all action was triggered
         page.wait_for_timeout(200)
-        expect(page.get_by_text("consume_all").or_(page.get_by_text("Alles"))).to_be_visible(timeout=2000)
+        expect(page.locator(".swipe-demo-event-item", has_text="consume_all")).to_be_visible(timeout=2000)
 
     def test_swipe_left_through_triggers_all(self, page: Page, live_server: str) -> None:
         """Test: Durchswipen nach links löst Alles aus."""
@@ -134,8 +137,9 @@ class TestSwipeDemo:
         # Quick swipe through to the left
         _swipe_through(page, "#demo-card-1 .swipe-card-content", "left")
 
+        # Check that consume_all action was triggered
         page.wait_for_timeout(200)
-        expect(page.get_by_text("consume_all").or_(page.get_by_text("Alles"))).to_be_visible(timeout=2000)
+        expect(page.locator(".swipe-demo-event-item", has_text="consume_all")).to_be_visible(timeout=2000)
 
     def test_swipe_right_with_dwell(self, page: Page, live_server: str) -> None:
         """Test: Swipe rechts + 500ms Verweilen löst Edit aus."""
@@ -149,8 +153,9 @@ class TestSwipeDemo:
             delta_x = box["width"] * 0.25
             _swipe_element(page, "#demo-card-1 .swipe-card-content", int(delta_x), 600)
 
+        # Check that edit action was triggered
         page.wait_for_timeout(200)
-        expect(page.get_by_text("edit")).to_be_visible(timeout=2000)
+        expect(page.locator(".swipe-demo-event-item", has_text="edit")).to_be_visible(timeout=2000)
 
     def test_swipe_right_through_triggers_edit(self, page: Page, live_server: str) -> None:
         """Test: Durchswipen nach rechts löst Edit aus."""
@@ -160,8 +165,9 @@ class TestSwipeDemo:
         # Quick swipe through to the right
         _swipe_through(page, "#demo-card-1 .swipe-card-content", "right")
 
+        # Check that edit action was triggered
         page.wait_for_timeout(200)
-        expect(page.get_by_text("edit")).to_be_visible(timeout=2000)
+        expect(page.locator(".swipe-demo-event-item", has_text="edit")).to_be_visible(timeout=2000)
 
     def test_swipe_back_cancels(self, page: Page, live_server: str) -> None:
         """Test: Zurückswipen ohne Verweilen bricht ab."""

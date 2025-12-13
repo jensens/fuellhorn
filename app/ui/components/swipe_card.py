@@ -11,11 +11,10 @@ Features:
 - Touch + Mouse support
 """
 
-import uuid
+from nicegui import ui
 from typing import Any
 from typing import Callable
-
-from nicegui import ui
+import uuid
 
 
 # SVG icons for action buttons

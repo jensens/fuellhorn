@@ -49,7 +49,7 @@
       currentX: 0,
       translateX: 0,
       cardWidth: 0,
-      dwellTimer: null,
+      dwellIntervalId: null,  // setInterval for reliable timing in tests
       dwellStartTime: null,
       activeAction: null,
       progressRing: null,
@@ -97,9 +97,9 @@
 
     // Clear dwell timer and hide progress ring
     function clearDwellTimer() {
-      if (state.dwellTimer) {
-        clearTimeout(state.dwellTimer);
-        state.dwellTimer = null;
+      if (state.dwellIntervalId) {
+        clearInterval(state.dwellIntervalId);
+        state.dwellIntervalId = null;
       }
       state.dwellStartTime = null;
       state.activeAction = null;
@@ -160,18 +160,33 @@
       });
     }
 
-    // Start dwell timer for action
+    // Start dwell timer for action using setInterval + performance.now()
+    // This is more reliable in automated tests than setTimeout or requestAnimationFrame
+    // because setInterval runs even when the browser isn't rendering frames
     function startDwellTimer(action) {
       clearDwellTimer();
       state.activeAction = action;
-      state.dwellStartTime = Date.now();
+      state.dwellStartTime = performance.now();
       showProgressRing(action);
 
-      state.dwellTimer = setTimeout(() => {
-        // Dwell time completed - trigger action
-        triggerAction(action);
-        resetCard();
-      }, config.dwellTime);
+      // Check every 50ms if dwell time has elapsed
+      state.dwellIntervalId = setInterval(function() {
+        // Check if timer was cancelled
+        if (state.dwellStartTime === null || state.activeAction !== action) {
+          clearInterval(state.dwellIntervalId);
+          state.dwellIntervalId = null;
+          return;
+        }
+
+        const elapsed = performance.now() - state.dwellStartTime;
+        if (elapsed >= config.dwellTime) {
+          // Dwell time completed - trigger action
+          clearInterval(state.dwellIntervalId);
+          state.dwellIntervalId = null;
+          triggerAction(action);
+          resetCard();
+        }
+      }, 50);
     }
 
     // Trigger action callback
