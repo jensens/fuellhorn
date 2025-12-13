@@ -1094,3 +1094,88 @@ def test_get_consumed_items_empty_when_no_withdrawals(session: Session, test_adm
     consumed_items = item_service.get_consumed_items(session)
 
     assert len(consumed_items) == 0
+
+
+# =============================================================================
+# Bug Fix Tests (Issue #222)
+# =============================================================================
+
+
+def test_mark_item_consumed_sets_quantity_to_zero(session: Session, test_admin: User) -> None:
+    """Test: mark_item_consumed sets quantity to 0.
+
+    Bug #222: When marking item as consumed, quantity was not set to 0,
+    causing get_item_initial_quantity to calculate wrong value (current + withdrawn).
+    """
+    location = location_service.create_location(
+        session=session,
+        name="Kühlschrank",
+        location_type=LocationType.CHILLED,
+        created_by=test_admin.id,
+    )
+    category = category_service.create_category(
+        session=session,
+        name="Milch",
+        created_by=test_admin.id,
+    )
+
+    assert category.id is not None
+    assert test_admin.id is not None
+
+    item = item_service.create_item(
+        session=session,
+        product_name="Milch",
+        best_before_date=date(2024, 12, 10),
+        quantity=1.0,
+        unit="L",
+        item_type=ItemType.PURCHASED_FRESH,
+        location_id=location.id,
+        created_by=test_admin.id,
+        category_id=category.id,
+    )
+
+    updated = item_service.mark_item_consumed(session, item.id, user_id=test_admin.id)
+
+    # quantity must be 0 after marking as consumed
+    assert updated.quantity == 0
+    assert updated.is_consumed is True
+
+
+def test_get_initial_quantity_correct_after_mark_consumed(session: Session, test_admin: User) -> None:
+    """Test: get_item_initial_quantity returns correct value after mark_item_consumed.
+
+    Bug #222: Initial quantity was calculated as current + withdrawn.
+    If quantity wasn't set to 0, this would return 1 + 1 = 2 instead of 1.
+    """
+    location = location_service.create_location(
+        session=session,
+        name="Kühlschrank",
+        location_type=LocationType.CHILLED,
+        created_by=test_admin.id,
+    )
+    category = category_service.create_category(
+        session=session,
+        name="Milch",
+        created_by=test_admin.id,
+    )
+
+    assert category.id is not None
+    assert test_admin.id is not None
+
+    item = item_service.create_item(
+        session=session,
+        product_name="Milch",
+        best_before_date=date(2024, 12, 10),
+        quantity=1.0,
+        unit="L",
+        item_type=ItemType.PURCHASED_FRESH,
+        location_id=location.id,
+        created_by=test_admin.id,
+        category_id=category.id,
+    )
+
+    item_service.mark_item_consumed(session, item.id, user_id=test_admin.id)
+
+    # Initial quantity should be 1 (not 2!)
+    initial_qty = item_service.get_item_initial_quantity(session, item.id)
+    assert initial_qty == 1.0
