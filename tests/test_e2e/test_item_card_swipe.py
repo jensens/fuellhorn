@@ -137,7 +137,7 @@ class TestItemCardSwipe:
         if box:
             _swipe_element(page, ".swipe-card-content", int(box["width"] * 0.25), 600)
         page.wait_for_timeout(200)
-        expect(page.get_by_text("edit")).to_be_visible(timeout=2000)
+        expect(page.get_by_text("edit", exact=True)).to_be_visible(timeout=2000)
 
     def test_item_card_swipe_through_right_triggers_edit(self, page: Page, live_server: str) -> None:
         """Test: Swipe through right triggers edit callback."""
@@ -145,7 +145,7 @@ class TestItemCardSwipe:
         page.wait_for_timeout(500)
         _swipe_through(page, ".swipe-card-content", "right")
         page.wait_for_timeout(200)
-        expect(page.get_by_text("edit")).to_be_visible(timeout=2000)
+        expect(page.get_by_text("edit", exact=True)).to_be_visible(timeout=2000)
 
     def test_item_card_quick_action_preserved(self, page: Page, live_server: str) -> None:
         """Test: Quick-action button functionality is preserved."""
