@@ -8,6 +8,7 @@ from . import categories  # noqa: F401
 from . import dashboard  # noqa: F401
 from . import demo_chips  # noqa: F401  # Temporary demo page
 from . import demo_swipe  # noqa: F401  # Swipe component demo page
+from . import edit_item  # noqa: F401
 from . import items  # noqa: F401
 from . import locations  # noqa: F401
 from . import login  # noqa: F401

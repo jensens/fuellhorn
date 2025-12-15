@@ -156,6 +156,12 @@ def update_item(
     id: int,
     product_name: str | None = None,
     quantity: float | None = None,
+    unit: str | None = None,
+    best_before_date: date | None = None,
+    freeze_date: date | None = None,
+    location_id: int | None = None,
+    category_id: int | None = None,
+    item_type: ItemType | None = None,
     notes: str | None = None,
 ) -> Item:
     """Update item.
@@ -165,6 +171,12 @@ def update_item(
         id: Item ID
         product_name: New product name
         quantity: New quantity
+        unit: New unit
+        best_before_date: New best before date
+        freeze_date: New freeze date
+        location_id: New location ID
+        category_id: New category ID
+        item_type: New item type
         notes: New notes
 
     Returns:
@@ -180,6 +192,24 @@ def update_item(
 
     if quantity is not None:
         item.quantity = quantity
+
+    if unit is not None:
+        item.unit = unit
+
+    if best_before_date is not None:
+        item.best_before_date = best_before_date
+
+    if freeze_date is not None:
+        item.freeze_date = freeze_date
+
+    if location_id is not None:
+        item.location_id = location_id
+
+    if category_id is not None:
+        item.category_id = category_id
+
+    if item_type is not None:
+        item.item_type = item_type
 
     if notes is not None:
         item.notes = notes
