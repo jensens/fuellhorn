@@ -43,6 +43,7 @@ def dashboard() -> None:
                         item,
                         session,
                         on_consume=lambda i=item: handle_consume(i),  # type: ignore[misc]
+                        on_edit=lambda i=item: ui.navigate.to(f"/items/{i.id}/edit"),  # type: ignore[misc]
                     )
             else:
                 ui.label("Keine Artikel laufen in den nächsten 7 Tagen ab!").classes(
