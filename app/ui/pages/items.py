@@ -171,6 +171,9 @@ def _sort_items(items: list[Item], sort_field: str, ascending: bool) -> list[Ite
 @require_auth
 def items_page() -> None:
     """Items list page with card layout, search, and all filters (Mobile-First)."""
+    # Load swipe card CSS and JS (required for item card swipe actions)
+    ui.add_head_html('<link rel="stylesheet" href="/static/css/solarpunk-theme.css">')
+    ui.add_head_html('<script src="/static/js/swipe-card.js"></script>')
 
     # Read filter setting from user storage (persisted server-side per user session)
     initial_show_consumed = app.storage.user.get(SHOW_CONSUMED_KEY, False)
