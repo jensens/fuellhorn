@@ -245,9 +245,14 @@ def items_page() -> None:
                     else:
                         _render_empty_state()
                 elif filtered_items:
-                    # Display filtered items as cards with consume button
+                    # Display filtered items as cards with consume button and swipe edit
                     for item in filtered_items:
-                        create_item_card(item, session, on_consume=handle_consume)
+                        create_item_card(
+                            item,
+                            session,
+                            on_consume=handle_consume,
+                            on_edit=lambda i=item: ui.navigate.to(f"/items/{i.id}/edit"),  # type: ignore[misc]
+                        )
                 else:
                     # Filters yielded no results
                     _render_no_filter_results()
