@@ -27,7 +27,7 @@ Automatische Freischaltung via GitHub Action wenn Blocker geschlossen wird.
 
 ### MCP Server für Task-Management
 
-Ein MCP Server (`fuellhorn-tasks`) ermöglicht automatisierte Issue-Verwaltung:
+Der MCP Server [Tributary](https://git.bluedynamics.eu/jensens/tributary) ermöglicht automatisierte Issue-Verwaltung:
 
 | Tool | Beschreibung |
 |------|-------------|
@@ -36,8 +36,10 @@ Ein MCP Server (`fuellhorn-tasks`) ermöglicht automatisierte Issue-Verwaltung:
 | `get_issue_briefing` | Briefing mit Worktree-Anweisungen |
 | `assign_issue` | Issue übernehmen |
 | `complete_issue` | Nach PR-Merge aufräumen |
+| `get_workflow_guide` | Workflow-Erklärung für Agents |
+| `get_project_config` | Projekt-Konfiguration und Befehle |
 
-**Installation:** [tools/mcp-task-server/README.md](tools/mcp-task-server/README.md)
+**Konfiguration:** `.tributary.yaml` im Projekt-Root
 
 **Typischer Workflow:**
 1. `list_ready_issues` → Verfügbare Issues sehen

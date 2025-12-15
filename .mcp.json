@@ -1,10 +1,13 @@
 {
   "mcpServers": {
-    "fuellhorn-tasks": {
-      "command": "uv",
-      "args": ["run", "--directory", "/home/jensens/ws/jwk/fuellhorn/tools/mcp-task-server", "python", "server.py"],
+    "tributary": {
+      "type": "stdio",
+      "command": "/home/jensens/ws/kup/tributary/.venv/bin/trib",
+      "args": [
+        "serve"
+      ],
       "env": {
-        "FUELLHORN_REPO": "jensens/fuellhorn"
+        "GITHUB_TOKEN": "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"
       }
     }
   }
