@@ -31,6 +31,41 @@ from typing import Any
 SHOW_CONSUMED_KEY = "show_consumed_items"
 
 
+# Default filter state (used for reset functionality)
+DEFAULT_FILTER_STATE: dict[str, str | int | bool] = {
+    "search_term": "",
+    "location_id": 0,  # 0 = all locations
+    "item_type": "",  # "" = all types
+    "sort_field": "best_before_date",
+    "sort_ascending": True,
+}
+
+
+def has_active_filters(filter_state: dict[str, Any], selected_categories: set[int]) -> bool:
+    """Check if any filters are different from default values.
+
+    Args:
+        filter_state: Current filter state dictionary
+        selected_categories: Set of selected category IDs
+
+    Returns:
+        True if any filter is active (different from default)
+    """
+    if filter_state.get("search_term", ""):
+        return True
+    if filter_state.get("location_id", 0) != 0:
+        return True
+    if filter_state.get("item_type", ""):
+        return True
+    if filter_state.get("sort_field", "best_before_date") != "best_before_date":
+        return True
+    if filter_state.get("sort_ascending", True) is not True:
+        return True
+    if selected_categories:
+        return True
+    return False
+
+
 # Sorting options
 SORT_OPTIONS: dict[str, str] = {
     "best_before_date": "Haltbarkeitsdatum",
@@ -192,6 +227,13 @@ def items_page() -> None:
     category_colors: dict[int, str] = {}  # Store category colors for styling
     sort_direction_btn: ui.button | None = None
     sort_row: ui.row | None = None  # Reference for hiding when consumed toggle is on
+    reset_btn: ui.button | None = None  # Reference for reset button visibility
+
+    # UI element references (for resetting)
+    search_input: ui.input | None = None
+    location_select: ui.select | None = None
+    item_type_select: ui.select | None = None
+    sort_select: ui.select | None = None
 
     # Container reference (for refreshing)
     items_container: Any = None
@@ -274,21 +316,25 @@ def items_page() -> None:
     def on_search_change(e: Any) -> None:
         """Handle search input change."""
         filter_state["search_term"] = e.value or ""
+        update_reset_button_visibility()
         refresh_items()
 
     def on_location_change(e: Any) -> None:
         """Handle location filter change."""
         filter_state["location_id"] = e.value if e.value else 0
+        update_reset_button_visibility()
         refresh_items()
 
     def on_item_type_change(e: Any) -> None:
         """Handle item type filter change."""
         filter_state["item_type"] = e.value if e.value else ""
+        update_reset_button_visibility()
         refresh_items()
 
     def on_sort_field_change(e: Any) -> None:
         """Handle sort field change."""
         filter_state["sort_field"] = e.value if e.value else "best_before_date"
+        update_reset_button_visibility()
         refresh_items()
 
     def toggle_sort_direction() -> None:
@@ -299,6 +345,44 @@ def items_page() -> None:
         if sort_direction_btn:
             new_icon = "arrow_upward" if filter_state["sort_ascending"] else "arrow_downward"
             sort_direction_btn.props(f"icon={new_icon}")
+        update_reset_button_visibility()
+        refresh_items()
+
+    def update_reset_button_visibility() -> None:
+        """Update visibility of reset button based on active filters."""
+        if reset_btn:
+            is_active = has_active_filters(filter_state, selected_categories)
+            reset_btn.set_visibility(is_active)
+
+    def reset_filters() -> None:
+        """Reset all filters to default values."""
+        nonlocal sort_direction_btn, search_input, location_select, item_type_select, sort_select
+
+        # Reset filter state
+        filter_state["search_term"] = DEFAULT_FILTER_STATE["search_term"]
+        filter_state["location_id"] = DEFAULT_FILTER_STATE["location_id"]
+        filter_state["item_type"] = DEFAULT_FILTER_STATE["item_type"]
+        filter_state["sort_field"] = DEFAULT_FILTER_STATE["sort_field"]
+        filter_state["sort_ascending"] = DEFAULT_FILTER_STATE["sort_ascending"]
+
+        # Reset UI elements
+        if search_input:
+            search_input.set_value("")
+        if location_select:
+            location_select.set_value(0)
+        if item_type_select:
+            item_type_select.set_value("")
+        if sort_select:
+            sort_select.set_value("best_before_date")
+        if sort_direction_btn:
+            sort_direction_btn.props("icon=arrow_upward")
+
+        # Reset category selection and chip styles
+        selected_categories.clear()
+        for cat_id in chip_elements:
+            update_chip_style(cat_id)
+
+        update_reset_button_visibility()
         refresh_items()
 
     def update_chip_style(cat_id: int) -> None:
@@ -325,6 +409,7 @@ def items_page() -> None:
         else:
             selected_categories.add(cat_id)
         update_chip_style(cat_id)
+        update_reset_button_visibility()
         refresh_items()
 
     def handle_consume(item: Item) -> None:
@@ -358,40 +443,56 @@ def items_page() -> None:
     with create_mobile_page_container():
         # Search input field at top
         with ui.row().classes("w-full mb-2"):
-            ui.input(
-                label="Suchen",
-                placeholder="Produktname...",
-                on_change=on_search_change,
-            ).props("clearable dense outlined").classes("w-full")
+            search_input = (
+                ui.input(
+                    label="Suchen",
+                    placeholder="Produktname...",
+                    on_change=on_search_change,
+                )
+                .props("clearable dense outlined")
+                .classes("w-full")
+            )
 
         # Filter dropdowns row
         with ui.row().classes("w-full gap-2 mb-2"):
             # Location filter
-            ui.select(
-                label="Lagerort",
-                options=location_options,
-                value=0,
-                on_change=on_location_change,
-            ).props("dense outlined").classes("flex-1")
+            location_select = (
+                ui.select(
+                    label="Lagerort",
+                    options=location_options,
+                    value=0,
+                    on_change=on_location_change,
+                )
+                .props("dense outlined")
+                .classes("flex-1")
+            )
 
             # Item type filter
-            ui.select(
-                label="Artikel-Typ",
-                options=ITEM_TYPE_LABELS,
-                value="",
-                on_change=on_item_type_change,
-            ).props("dense outlined").classes("flex-1")
+            item_type_select = (
+                ui.select(
+                    label="Artikel-Typ",
+                    options=ITEM_TYPE_LABELS,
+                    value="",
+                    on_change=on_item_type_change,
+                )
+                .props("dense outlined")
+                .classes("flex-1")
+            )
 
         # Sorting row (hidden when showing consumed items - they're sorted by withdrawal date)
         sort_row = ui.row().classes("w-full gap-2 items-center mb-2")
         sort_row.set_visibility(not initial_show_consumed)
         with sort_row:
-            ui.select(
-                label="Sortierung",
-                options=SORT_OPTIONS,
-                value="best_before_date",
-                on_change=on_sort_field_change,
-            ).props("dense outlined").classes("flex-1")
+            sort_select = (
+                ui.select(
+                    label="Sortierung",
+                    options=SORT_OPTIONS,
+                    value="best_before_date",
+                    on_change=on_sort_field_change,
+                )
+                .props("dense outlined")
+                .classes("flex-1")
+            )
 
             # Direction toggle button
             sort_direction_btn = ui.button(
@@ -425,6 +526,14 @@ def items_page() -> None:
                             f"background-color: #E5E7EB !important; border: 2px solid {color}; color: #374151 !important;"
                         )
                         chip_elements[cat.id] = chip
+
+        # Reset filters button (only visible when filters are active)
+        reset_btn = (
+            ui.button("Filter zurücksetzen", icon="refresh", on_click=reset_filters)
+            .props("flat dense no-caps")
+            .classes("text-sm mb-2")
+        )
+        reset_btn.set_visibility(False)  # Initially hidden
 
         items_container = ui.column().classes("w-full gap-2")
         refresh_items()
