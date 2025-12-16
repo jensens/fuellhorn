@@ -248,12 +248,14 @@ def items_page() -> None:
                     else:
                         _render_empty_state()
                 elif filtered_items:
-                    # Display filtered items as cards with consume button and swipe edit
+                    # Display filtered items as cards with consume button and swipe actions
                     for item in filtered_items:
                         create_item_card(
                             item,
                             session,
                             on_consume=handle_consume,
+                            on_partial_consume=handle_consume,  # Swipe "Teil" -> opens dialog
+                            on_consume_all=handle_consume_all,  # Swipe "Alles" -> consume all
                             on_edit=lambda i=item: ui.navigate.to(f"/items/{i.id}/edit"),  # type: ignore[misc]
                         )
                 else:
@@ -338,6 +340,13 @@ def items_page() -> None:
                 on_consume=lambda _: refresh_items(),
             )
             sheet.open()
+
+    def handle_consume_all(item: Item) -> None:
+        """Handle consuming all of an item via swipe action (Issue #226)."""
+        with next(get_session()) as session:
+            item_service.mark_item_consumed(session, item.id)  # type: ignore[arg-type]
+            ui.notify(f"{item.product_name} komplett entnommen", type="positive")
+        refresh_items()
 
     # Header with toggle (Solarpunk theme)
     with ui.row().classes("sp-page-header w-full items-center justify-between"):
