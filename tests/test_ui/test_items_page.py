@@ -2,12 +2,14 @@
 
 from app.models.item import Item
 from app.models.item import ItemType
+from app.ui.pages.items import DEFAULT_FILTER_STATE
 from app.ui.pages.items import ITEM_TYPE_LABELS
 from app.ui.pages.items import SORT_OPTIONS
 from app.ui.pages.items import _build_item_category_map
 from app.ui.pages.items import _filter_items
 from app.ui.pages.items import _filter_items_by_categories
 from app.ui.pages.items import _sort_items
+from app.ui.pages.items import has_active_filters
 from datetime import date
 from datetime import datetime
 
@@ -256,3 +258,111 @@ class TestConstants:
         # Should have all item type values
         for item_type in ItemType:
             assert item_type.value in ITEM_TYPE_LABELS
+
+    def test_default_filter_state_has_required_keys(self) -> None:
+        """DEFAULT_FILTER_STATE should have all required filter keys."""
+        assert "search_term" in DEFAULT_FILTER_STATE
+        assert "location_id" in DEFAULT_FILTER_STATE
+        assert "item_type" in DEFAULT_FILTER_STATE
+        assert "sort_field" in DEFAULT_FILTER_STATE
+        assert "sort_ascending" in DEFAULT_FILTER_STATE
+
+    def test_default_filter_state_values(self) -> None:
+        """DEFAULT_FILTER_STATE should have correct default values."""
+        assert DEFAULT_FILTER_STATE["search_term"] == ""
+        assert DEFAULT_FILTER_STATE["location_id"] == 0
+        assert DEFAULT_FILTER_STATE["item_type"] == ""
+        assert DEFAULT_FILTER_STATE["sort_field"] == "best_before_date"
+        assert DEFAULT_FILTER_STATE["sort_ascending"] is True
+
+
+class TestHasActiveFilters:
+    """Tests for has_active_filters function."""
+
+    def test_no_active_filters(self) -> None:
+        """Should return False when no filters are active."""
+        filter_state = {
+            "search_term": "",
+            "location_id": 0,
+            "item_type": "",
+            "sort_field": "best_before_date",
+            "sort_ascending": True,
+        }
+        assert has_active_filters(filter_state, set()) is False
+
+    def test_search_term_active(self) -> None:
+        """Should return True when search term is set."""
+        filter_state = {
+            "search_term": "apple",
+            "location_id": 0,
+            "item_type": "",
+            "sort_field": "best_before_date",
+            "sort_ascending": True,
+        }
+        assert has_active_filters(filter_state, set()) is True
+
+    def test_location_filter_active(self) -> None:
+        """Should return True when location filter is set."""
+        filter_state = {
+            "search_term": "",
+            "location_id": 1,
+            "item_type": "",
+            "sort_field": "best_before_date",
+            "sort_ascending": True,
+        }
+        assert has_active_filters(filter_state, set()) is True
+
+    def test_item_type_filter_active(self) -> None:
+        """Should return True when item type filter is set."""
+        filter_state = {
+            "search_term": "",
+            "location_id": 0,
+            "item_type": "purchased_fresh",
+            "sort_field": "best_before_date",
+            "sort_ascending": True,
+        }
+        assert has_active_filters(filter_state, set()) is True
+
+    def test_sort_field_changed(self) -> None:
+        """Should return True when sort field is changed from default."""
+        filter_state = {
+            "search_term": "",
+            "location_id": 0,
+            "item_type": "",
+            "sort_field": "product_name",
+            "sort_ascending": True,
+        }
+        assert has_active_filters(filter_state, set()) is True
+
+    def test_sort_direction_changed(self) -> None:
+        """Should return True when sort direction is changed from default."""
+        filter_state = {
+            "search_term": "",
+            "location_id": 0,
+            "item_type": "",
+            "sort_field": "best_before_date",
+            "sort_ascending": False,
+        }
+        assert has_active_filters(filter_state, set()) is True
+
+    def test_categories_selected(self) -> None:
+        """Should return True when categories are selected."""
+        filter_state = {
+            "search_term": "",
+            "location_id": 0,
+            "item_type": "",
+            "sort_field": "best_before_date",
+            "sort_ascending": True,
+        }
+        assert has_active_filters(filter_state, {1, 2}) is True
+
+    def test_multiple_filters_active(self) -> None:
+        """Should return True when multiple filters are active."""
+        filter_state = {
+            "search_term": "test",
+            "location_id": 1,
+            "item_type": "purchased_fresh",
+            "sort_field": "product_name",
+            "sort_ascending": False,
+        }
+        assert has_active_filters(filter_state, {1}) is True
