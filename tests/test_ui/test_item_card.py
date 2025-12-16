@@ -318,3 +318,32 @@ def test_get_expiry_badge_text_fresh_far_shows_date() -> None:
     expiry = date.today() + timedelta(days=30)
     result = get_expiry_badge_text(expiry, ItemType.PURCHASED_FRESH)
     assert result == expiry.strftime("%d.%m.%y")
+
+
+# =============================================================================
+# Location Temperature Icon Tests (Issue #197)
+# =============================================================================
+
+
+def test_get_location_icon_frozen() -> None:
+    """Test that FROZEN location type returns freezer icon."""
+    from app.models.location import LocationType
+    from app.ui.components.item_card import get_location_icon_name
+
+    assert get_location_icon_name(LocationType.FROZEN) == "locations/freezer"
+
+
+def test_get_location_icon_chilled() -> None:
+    """Test that CHILLED location type returns fridge icon."""
+    from app.models.location import LocationType
+    from app.ui.components.item_card import get_location_icon_name
+
+    assert get_location_icon_name(LocationType.CHILLED) == "locations/fridge"
+
+
+def test_get_location_icon_ambient() -> None:
+    """Test that AMBIENT location type returns pantry icon."""
+    from app.models.location import LocationType
+    from app.ui.components.item_card import get_location_icon_name
+
+    assert get_location_icon_name(LocationType.AMBIENT) == "locations/pantry"

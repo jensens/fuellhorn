@@ -18,15 +18,37 @@ Card Structure (3-zone layout):
 
 from ...models.item import Item
 from ...models.item import ItemType
+from ...models.location import LocationType
 from ...services import item_service
 from ...services import location_service
 from ..theme import ITEM_TYPE_COLORS
 from ..theme import get_contrast_text_color
+from ..theme.icons import create_icon
 from .swipe_card import create_swipe_card
 from datetime import date
 from nicegui import ui
 from sqlmodel import Session
 from typing import Callable
+
+
+# Location type to icon name mapping (Issue #197)
+LOCATION_TYPE_ICONS: dict[LocationType, str] = {
+    LocationType.FROZEN: "locations/freezer",
+    LocationType.CHILLED: "locations/fridge",
+    LocationType.AMBIENT: "locations/pantry",
+}
+
+
+def get_location_icon_name(location_type: LocationType) -> str:
+    """Get the icon name for a location type.
+
+    Args:
+        location_type: The temperature zone of the storage location
+
+    Returns:
+        Icon name in format "category/icon-name" for use with create_icon()
+    """
+    return LOCATION_TYPE_ICONS.get(location_type, "locations/pantry")
 
 
 def _format_quantity_display(
@@ -244,9 +266,11 @@ def create_item_card(
         location = location_service.get_location(session, item.location_id)
         location_name = location.name
         location_color = location.color
+        location_type = location.location_type
     except ValueError:
         location_name = f"Lagerort {item.location_id}"
         location_color = None
+        location_type = LocationType.AMBIENT  # Default fallback
 
     category = item_service.get_item_category(session, item.id)  # type: ignore[arg-type]
 
@@ -386,16 +410,18 @@ def create_item_card(
                         ).classes("sp-quick-action").props("round flat")
 
                 # === FOOTER ZONE ===
-                # Location only
+                # Location with temperature icon (Issue #197)
                 with (
                     ui.element("div")
                     .classes("card-footer")
                     .style("grid-column: 1; display: flex; align-items: center; gap: 6px;")
                 ):
-                    location_style = "font-size: 0.8rem; color: var(--stone, #A39E93);"
-                    if location_color:
-                        location_style = f"font-size: 0.8rem; color: {location_color};"
-                    ui.label(f"📍 {location_name}").style(location_style)
+                    location_text_color = location_color or "var(--stone, #A39E93)"
+                    # Temperature icon based on location type
+                    icon_name = get_location_icon_name(location_type)
+                    create_icon(icon_name, size="16px").style(f"color: {location_text_color};")
+                    # Location name text
+                    ui.label(location_name).style(f"font-size: 0.8rem; color: {location_text_color};")
 
             # Click handler for entire card (if provided)
             if on_click:
