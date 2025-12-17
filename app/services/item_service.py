@@ -507,3 +507,65 @@ def get_item_initial_quantity(session: Session, item_id: int) -> float:
     withdrawals = get_withdrawal_history(session, item_id)
     total_withdrawn = sum(w.quantity for w in withdrawals)
     return item.quantity + total_withdrawn
+
+
+def get_recently_added_items(session: Session, limit: int = 5) -> list[Item]:
+    """Get the most recently added active items.
+
+    Args:
+        session: Database session
+        limit: Maximum number of items to return (default 5)
+
+    Returns:
+        List of items sorted by created_at descending (newest first)
+    """
+    return list(
+        session.exec(
+            select(Item)
+            .where(Item.is_consumed.is_(False))  # type: ignore
+            .order_by(Item.created_at.desc())  # type: ignore[attr-defined]
+            .limit(limit)
+        ).all()
+    )
+
+
+def get_item_count_by_location(session: Session) -> dict[int, int]:
+    """Get count of active items per location.
+
+    Args:
+        session: Database session
+
+    Returns:
+        Dictionary mapping location_id to item count
+    """
+    results = session.exec(
+        select(Item.location_id, func.count())
+        .where(Item.is_consumed.is_(False))  # type: ignore
+        .group_by(Item.location_id)  # type: ignore[arg-type]
+    ).all()
+
+    return {location_id: count for location_id, count in results}
+
+
+def get_item_count_by_category(session: Session) -> dict[int, int]:
+    """Get count of active items per category.
+
+    Items without a category are excluded.
+
+    Args:
+        session: Database session
+
+    Returns:
+        Dictionary mapping category_id to item count
+    """
+    results = session.exec(
+        select(Item.category_id, func.count())
+        .where(
+            Item.is_consumed.is_(False),  # type: ignore
+            Item.category_id.is_not(None),  # type: ignore
+        )
+        .group_by(Item.category_id)  # type: ignore[arg-type]
+    ).all()
+
+    # category_id is guaranteed non-None due to the WHERE clause
+    return {category_id: count for category_id, count in results if category_id is not None}
