@@ -1179,3 +1179,440 @@ def test_get_initial_quantity_correct_after_mark_consumed(session: Session, test
     # Initial quantity should be 1 (not 2!)
     initial_qty = item_service.get_item_initial_quantity(session, item.id)
     assert initial_qty == 1.0
+
+
+# =============================================================================
+# Dashboard Statistics Tests (Issue #243)
+# =============================================================================
+
+
+def test_get_recently_added_items_returns_newest_first(session: Session, test_admin: User) -> None:
+    """Test: get_recently_added_items returns items sorted by created_at descending."""
+    from time import sleep
+
+    location = location_service.create_location(
+        session=session,
+        name="Kühlschrank",
+        location_type=LocationType.CHILLED,
+        created_by=test_admin.id,
+    )
+    category = category_service.create_category(
+        session=session,
+        name="Lebensmittel",
+        created_by=test_admin.id,
+    )
+
+    assert category.id is not None
+
+    # Create items with slight delay to ensure different timestamps
+    item1 = item_service.create_item(
+        session=session,
+        product_name="Erstes Item",
+        best_before_date=date(2025, 6, 1),
+        quantity=1,
+        unit="Stück",
+        item_type=ItemType.PURCHASED_FRESH,
+        location_id=location.id,
+        created_by=test_admin.id,
+        category_id=category.id,
+    )
+
+    sleep(0.01)
+
+    item2 = item_service.create_item(
+        session=session,
+        product_name="Zweites Item",
+        best_before_date=date(2025, 6, 1),
+        quantity=1,
+        unit="Stück",
+        item_type=ItemType.PURCHASED_FRESH,
+        location_id=location.id,
+        created_by=test_admin.id,
+        category_id=category.id,
+    )
+
+    sleep(0.01)
+
+    item3 = item_service.create_item(
+        session=session,
+        product_name="Drittes Item",
+        best_before_date=date(2025, 6, 1),
+        quantity=1,
+        unit="Stück",
+        item_type=ItemType.PURCHASED_FRESH,
+        location_id=location.id,
+        created_by=test_admin.id,
+        category_id=category.id,
+    )
+
+    items = item_service.get_recently_added_items(session, limit=5)
+
+    assert len(items) == 3
+    # Newest first
+    assert items[0].id == item3.id
+    assert items[1].id == item2.id
+    assert items[2].id == item1.id
+
+
+def test_get_recently_added_items_respects_limit(session: Session, test_admin: User) -> None:
+    """Test: get_recently_added_items returns at most 'limit' items."""
+    location = location_service.create_location(
+        session=session,
+        name="Kühlschrank",
+        location_type=LocationType.CHILLED,
+        created_by=test_admin.id,
+    )
+    category = category_service.create_category(
+        session=session,
+        name="Lebensmittel",
+        created_by=test_admin.id,
+    )
+
+    assert category.id is not None
+
+    # Create 5 items
+    for i in range(5):
+        item_service.create_item(
+            session=session,
+            product_name=f"Item {i}",
+            best_before_date=date(2025, 6, 1),
+            quantity=1,
+            unit="Stück",
+            item_type=ItemType.PURCHASED_FRESH,
+            location_id=location.id,
+            created_by=test_admin.id,
+            category_id=category.id,
+        )
+
+    items = item_service.get_recently_added_items(session, limit=3)
+
+    assert len(items) == 3
+
+
+def test_get_recently_added_items_excludes_consumed(session: Session, test_admin: User) -> None:
+    """Test: get_recently_added_items excludes consumed items."""
+    location = location_service.create_location(
+        session=session,
+        name="Kühlschrank",
+        location_type=LocationType.CHILLED,
+        created_by=test_admin.id,
+    )
+    category = category_service.create_category(
+        session=session,
+        name="Lebensmittel",
+        created_by=test_admin.id,
+    )
+
+    assert category.id is not None
+
+    # Active item
+    active_item = item_service.create_item(
+        session=session,
+        product_name="Aktives Item",
+        best_before_date=date(2025, 6, 1),
+        quantity=1,
+        unit="Stück",
+        item_type=ItemType.PURCHASED_FRESH,
+        location_id=location.id,
+        created_by=test_admin.id,
+        category_id=category.id,
+    )
+
+    # Consumed item
+    consumed_item = item_service.create_item(
+        session=session,
+        product_name="Verbrauchtes Item",
+        best_before_date=date(2025, 6, 1),
+        quantity=1,
+        unit="Stück",
+        item_type=ItemType.PURCHASED_FRESH,
+        location_id=location.id,
+        created_by=test_admin.id,
+        category_id=category.id,
+    )
+    item_service.mark_item_consumed(session, consumed_item.id)
+
+    items = item_service.get_recently_added_items(session, limit=5)
+
+    assert len(items) == 1
+    assert items[0].id == active_item.id
+
+
+def test_get_recently_added_items_empty_database(session: Session) -> None:
+    """Test: get_recently_added_items returns empty list when no items exist."""
+    items = item_service.get_recently_added_items(session, limit=5)
+
+    assert len(items) == 0
+
+
+def test_get_item_count_by_location(session: Session, test_admin: User) -> None:
+    """Test: get_item_count_by_location returns correct counts per location."""
+    location1 = location_service.create_location(
+        session=session,
+        name="Kühlschrank",
+        location_type=LocationType.CHILLED,
+        created_by=test_admin.id,
+    )
+    location2 = location_service.create_location(
+        session=session,
+        name="Gefrierschrank",
+        location_type=LocationType.FROZEN,
+        created_by=test_admin.id,
+    )
+    category = category_service.create_category(
+        session=session,
+        name="Lebensmittel",
+        created_by=test_admin.id,
+    )
+
+    assert category.id is not None
+
+    # 3 items in location1
+    for i in range(3):
+        item_service.create_item(
+            session=session,
+            product_name=f"Kühlschrank Item {i}",
+            best_before_date=date(2025, 6, 1),
+            quantity=1,
+            unit="Stück",
+            item_type=ItemType.PURCHASED_FRESH,
+            location_id=location1.id,
+            created_by=test_admin.id,
+            category_id=category.id,
+        )
+
+    # 2 items in location2
+    for i in range(2):
+        item_service.create_item(
+            session=session,
+            product_name=f"Gefrierschrank Item {i}",
+            best_before_date=date(2025, 6, 1),
+            quantity=1,
+            unit="Stück",
+            item_type=ItemType.PURCHASED_FROZEN,
+            location_id=location2.id,
+            created_by=test_admin.id,
+            category_id=category.id,
+            freeze_date=date(2024, 6, 1),
+        )
+
+    counts = item_service.get_item_count_by_location(session)
+
+    assert counts[location1.id] == 3
+    assert counts[location2.id] == 2
+
+
+def test_get_item_count_by_location_excludes_consumed(session: Session, test_admin: User) -> None:
+    """Test: get_item_count_by_location excludes consumed items."""
+    location = location_service.create_location(
+        session=session,
+        name="Kühlschrank",
+        location_type=LocationType.CHILLED,
+        created_by=test_admin.id,
+    )
+    category = category_service.create_category(
+        session=session,
+        name="Lebensmittel",
+        created_by=test_admin.id,
+    )
+
+    assert category.id is not None
+
+    # 2 active items
+    for i in range(2):
+        item_service.create_item(
+            session=session,
+            product_name=f"Aktives Item {i}",
+            best_before_date=date(2025, 6, 1),
+            quantity=1,
+            unit="Stück",
+            item_type=ItemType.PURCHASED_FRESH,
+            location_id=location.id,
+            created_by=test_admin.id,
+            category_id=category.id,
+        )
+
+    # 1 consumed item
+    consumed_item = item_service.create_item(
+        session=session,
+        product_name="Verbrauchtes Item",
+        best_before_date=date(2025, 6, 1),
+        quantity=1,
+        unit="Stück",
+        item_type=ItemType.PURCHASED_FRESH,
+        location_id=location.id,
+        created_by=test_admin.id,
+        category_id=category.id,
+    )
+    item_service.mark_item_consumed(session, consumed_item.id)
+
+    counts = item_service.get_item_count_by_location(session)
+
+    assert counts[location.id] == 2
+
+
+def test_get_item_count_by_location_empty_database(session: Session) -> None:
+    """Test: get_item_count_by_location returns empty dict when no items exist."""
+    counts = item_service.get_item_count_by_location(session)
+
+    assert counts == {}
+
+
+def test_get_item_count_by_category(session: Session, test_admin: User) -> None:
+    """Test: get_item_count_by_category returns correct counts per category."""
+    location = location_service.create_location(
+        session=session,
+        name="Kühlschrank",
+        location_type=LocationType.CHILLED,
+        created_by=test_admin.id,
+    )
+    category1 = category_service.create_category(
+        session=session,
+        name="Gemüse",
+        created_by=test_admin.id,
+    )
+    category2 = category_service.create_category(
+        session=session,
+        name="Obst",
+        created_by=test_admin.id,
+    )
+
+    assert category1.id is not None
+    assert category2.id is not None
+
+    # 3 items in category1
+    for i in range(3):
+        item_service.create_item(
+            session=session,
+            product_name=f"Gemüse {i}",
+            best_before_date=date(2025, 6, 1),
+            quantity=1,
+            unit="Stück",
+            item_type=ItemType.PURCHASED_FRESH,
+            location_id=location.id,
+            created_by=test_admin.id,
+            category_id=category1.id,
+        )
+
+    # 2 items in category2
+    for i in range(2):
+        item_service.create_item(
+            session=session,
+            product_name=f"Obst {i}",
+            best_before_date=date(2025, 6, 1),
+            quantity=1,
+            unit="Stück",
+            item_type=ItemType.PURCHASED_FRESH,
+            location_id=location.id,
+            created_by=test_admin.id,
+            category_id=category2.id,
+        )
+
+    counts = item_service.get_item_count_by_category(session)
+
+    assert counts[category1.id] == 3
+    assert counts[category2.id] == 2
+
+
+def test_get_item_count_by_category_excludes_consumed(session: Session, test_admin: User) -> None:
+    """Test: get_item_count_by_category excludes consumed items."""
+    location = location_service.create_location(
+        session=session,
+        name="Kühlschrank",
+        location_type=LocationType.CHILLED,
+        created_by=test_admin.id,
+    )
+    category = category_service.create_category(
+        session=session,
+        name="Lebensmittel",
+        created_by=test_admin.id,
+    )
+
+    assert category.id is not None
+
+    # 2 active items
+    for i in range(2):
+        item_service.create_item(
+            session=session,
+            product_name=f"Aktives Item {i}",
+            best_before_date=date(2025, 6, 1),
+            quantity=1,
+            unit="Stück",
+            item_type=ItemType.PURCHASED_FRESH,
+            location_id=location.id,
+            created_by=test_admin.id,
+            category_id=category.id,
+        )
+
+    # 1 consumed item
+    consumed_item = item_service.create_item(
+        session=session,
+        product_name="Verbrauchtes Item",
+        best_before_date=date(2025, 6, 1),
+        quantity=1,
+        unit="Stück",
+        item_type=ItemType.PURCHASED_FRESH,
+        location_id=location.id,
+        created_by=test_admin.id,
+        category_id=category.id,
+    )
+    item_service.mark_item_consumed(session, consumed_item.id)
+
+    counts = item_service.get_item_count_by_category(session)
+
+    assert counts[category.id] == 2
+
+
+def test_get_item_count_by_category_excludes_items_without_category(session: Session, test_admin: User) -> None:
+    """Test: get_item_count_by_category excludes items without a category."""
+    location = location_service.create_location(
+        session=session,
+        name="Kühlschrank",
+        location_type=LocationType.CHILLED,
+        created_by=test_admin.id,
+    )
+    category = category_service.create_category(
+        session=session,
+        name="Lebensmittel",
+        created_by=test_admin.id,
+    )
+
+    assert category.id is not None
+
+    # Item with category
+    item_service.create_item(
+        session=session,
+        product_name="Mit Kategorie",
+        best_before_date=date(2025, 6, 1),
+        quantity=1,
+        unit="Stück",
+        item_type=ItemType.PURCHASED_FRESH,
+        location_id=location.id,
+        created_by=test_admin.id,
+        category_id=category.id,
+    )
+
+    # Item without category
+    item_service.create_item(
+        session=session,
+        product_name="Ohne Kategorie",
+        best_before_date=date(2025, 6, 1),
+        quantity=1,
+        unit="Stück",
+        item_type=ItemType.PURCHASED_FRESH,
+        location_id=location.id,
+        created_by=test_admin.id,
+        category_id=None,
+    )
+
+    counts = item_service.get_item_count_by_category(session)
+
+    assert counts[category.id] == 1
+    assert len(counts) == 1  # Only the category with items should be in the dict
+
+
+def test_get_item_count_by_category_empty_database(session: Session) -> None:
+    """Test: get_item_count_by_category returns empty dict when no items exist."""
+    counts = item_service.get_item_count_by_category(session)
+
+    assert counts == {}
