@@ -40,6 +40,18 @@ Immer lesen und befolgen wenn Code hinzugefügt/geändert wird: [docs/agent/test
 
 Immer lesen und befolgen wenn Issues, Epics, ... bearbeitet werden: [docs/agent/aufgabenverwaltung.md](docs/agent/aufgabenverwaltung.md)
 
+### MCP Server (tributary)
+
+Für alle GitHub-Operationen den `tributary` MCP-Server verwenden:
+- Issues lesen/erstellen/bearbeiten
+- PRs erstellen
+- Labels setzen
+- Kommentare schreiben
+
+Verfügbare Tools: `mcp__tributary_*`
+
+**Nicht** `gh` CLI direkt nutzen, sondern immer die MCP-Tools.
+
 
 ### Commit-Regeln
 
