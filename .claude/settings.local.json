@@ -1,6 +1,7 @@
 {
   "permissions": {
     "allow": [
+      "mcp__tributary",
       "Bash(gh label create:*)",
       "Bash(gh issue list:*)",
       "Bash(gh pr checks:*)",
@@ -12,7 +13,15 @@
       "Bash(find:*)",
       "Bash(git mv:*)",
       "Bash(gh issue edit:*)",
-      "Bash(uv pip install:*)"
+      "Bash(uv pip install:*)",
+      "Bash(uv run ruff format:*)",
+      "Bash(uv run ruff check:*)",
+      "Bash(uv run pytest:*)",
+      "Bash(git checkout:*)",
+      "Bash(git add:*)",
+      "Bash(git worktree:*)",
+      "Bash(git fetch:*)",
+      "Bash(uv run mypy:*)"
     ],
     "deny": [],
     "ask": []
