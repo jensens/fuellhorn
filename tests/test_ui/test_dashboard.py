@@ -19,7 +19,7 @@ async def test_dashboard_page_loads(logged_in_user: TestUser) -> None:
 
     # Should see main sections
     await logged_in_user.should_see("Füllhorn")
-    await logged_in_user.should_see("Bald abgelaufen")
+    await logged_in_user.should_see("Bald ablaufend")
     await logged_in_user.should_see("Vorrats-Statistik")
     await logged_in_user.should_see("Schnellfilter")
 
@@ -81,6 +81,32 @@ async def test_dashboard_shows_correct_days_for_shelf_life_item(user: TestUser) 
 
 
 async def test_dashboard_no_expiring_items_message(user: TestUser) -> None:
-    """Test that message is shown when no items are expiring soon."""
+    """Test that empty state shows positive message (Issue #244)."""
     await user.open("/test-dashboard-no-expiring")
+    await user.should_see("Alles frisch!")
     await user.should_see("Keine Artikel laufen in den nächsten 7 Tagen ab")
+
+
+# =============================================================================
+# Tests for Issue #244: Improved "Bald ablaufend" section
+# =============================================================================
+
+
+async def test_dashboard_expiring_section_has_view_all_link(user: TestUser) -> None:
+    """Test that 'Alle anzeigen' link is shown when items are expiring (Issue #244)."""
+    await user.open("/test-dashboard-with-expiring-items")
+    await user.should_see("Alle anzeigen")
+
+
+async def test_dashboard_expiring_section_shows_count_badge(user: TestUser) -> None:
+    """Test that expiring section title shows count badge (Issue #244)."""
+    await user.open("/test-dashboard-with-expiring-items")
+    # Title should include count in parentheses
+    await user.should_see("Bald ablaufend (")
+
+
+async def test_dashboard_empty_state_has_leaf_icon(user: TestUser) -> None:
+    """Test that empty state has visual leaf indicator (Issue #244)."""
+    await user.open("/test-dashboard-no-expiring")
+    # The empty state card should be styled with the sp-empty-state class
+    await user.should_see("Alles frisch!")

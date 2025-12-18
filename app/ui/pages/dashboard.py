@@ -32,12 +32,13 @@ def dashboard() -> None:
 
     # Main content with bottom nav spacing
     with create_mobile_page_container():
-        # Expiring items section
-        ui.label("Bald abgelaufen").classes("sp-page-title text-base mb-3")
-
         with next(get_session()) as session:
             # Get items expiring in next 7 days
             expiring_items = item_service.get_items_expiring_soon(session, days=7)
+            expiring_count = len(expiring_items)
+
+            # Expiring items section with count badge (Issue #244)
+            ui.label(f"Bald ablaufend ({expiring_count})").classes("sp-page-title text-base mb-3")
 
             if expiring_items:
                 # Display expiring items using unified card component
@@ -50,10 +51,17 @@ def dashboard() -> None:
                         on_consume_all=lambda i=item: handle_consume_all(i),  # type: ignore[misc]
                         on_edit=lambda i=item: ui.navigate.to(f"/items/{i.id}/edit"),  # type: ignore[misc]
                     )
-            else:
-                ui.label("Keine Artikel laufen in den nächsten 7 Tagen ab!").classes(
-                    "sp-expiry-ok p-4 bg-oat rounded-sp-md"
+
+                # "Alle anzeigen" link (Issue #244)
+                ui.link("Alle anzeigen", "/items?filter=expiring").classes(
+                    "text-sm text-leaf hover:text-leaf-dark mt-2 block"
                 )
+            else:
+                # Improved empty state with leaf icon (Issue #244)
+                with ui.card().classes("sp-dashboard-card w-full p-6 text-center"):
+                    ui.icon("eco").classes("text-4xl text-leaf mb-2")
+                    ui.label("Alles frisch!").classes("text-lg text-charcoal font-medium")
+                    ui.label("Keine Artikel laufen in den nächsten 7 Tagen ab.").classes("text-sm text-stone")
 
             # Statistics section
             ui.label("Vorrats-Statistik").classes("sp-page-title text-base mb-3 mt-6")

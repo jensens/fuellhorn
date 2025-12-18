@@ -30,5 +30,5 @@ async def test_root_redirects_to_dashboard_when_authenticated(logged_in_user: Te
     """Test that / redirects to /dashboard when authenticated."""
     await logged_in_user.open("/")
     # Should redirect to dashboard
-    await logged_in_user.should_see("Bald abgelaufen")
+    await logged_in_user.should_see("Bald ablaufend")
     await logged_in_user.should_see("Vorrats-Statistik")
