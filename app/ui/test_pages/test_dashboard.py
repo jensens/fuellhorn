@@ -174,6 +174,19 @@ def page_dashboard_no_expiring() -> None:
     _render_dashboard_content()
 
 
+@ui.page("/test-dashboard-with-expiring-items")
+def page_dashboard_with_expiring_items() -> None:
+    """Test page: Items expiring in next 7 days (Issue #244)."""
+    with next(get_session()) as session:
+        location = _create_test_location(session, LocationType.CHILLED)
+        # Create 3 items expiring soon (within 7 days)
+        _create_mhd_item(session, location, mhd_days_from_now=2)
+        _create_mhd_item(session, location, mhd_days_from_now=4)
+        _create_mhd_item(session, location, mhd_days_from_now=6)
+
+    _render_dashboard_content()
+
+
 def _render_dashboard_content() -> None:
     """Render dashboard content for testing (without auth)."""
     from ...services import item_service
@@ -181,6 +194,10 @@ def _render_dashboard_content() -> None:
     # Inline rendering of dashboard content (simplified for testing)
     with next(get_session()) as session:
         expiring_items = item_service.get_items_expiring_soon(session, days=7)
+        expiring_count = len(expiring_items)
+
+        # Section title with count badge (Issue #244)
+        ui.label(f"Bald ablaufend ({expiring_count})").classes("sp-page-title text-base mb-3")
 
         if expiring_items:
             for item in expiring_items[:5]:
@@ -214,5 +231,12 @@ def _render_dashboard_content() -> None:
                     status_text = f"Läuft ab: in {days_until_expiry} Tagen"
 
                 ui.label(f"{item.product_name}: {status_text}")
+
+            # "Alle anzeigen" link (Issue #244)
+            ui.link("Alle anzeigen", "/items?filter=expiring").classes("text-sm text-leaf hover:text-leaf-dark mt-2")
         else:
-            ui.label("Keine Artikel laufen in den nächsten 7 Tagen ab!")
+            # Improved empty state (Issue #244)
+            with ui.card().classes("sp-dashboard-card w-full p-6 text-center"):
+                ui.icon("eco").classes("text-4xl text-leaf mb-2")
+                ui.label("Alles frisch!").classes("text-lg text-charcoal font-medium")
+                ui.label("Keine Artikel laufen in den nächsten 7 Tagen ab.").classes("text-sm text-stone")

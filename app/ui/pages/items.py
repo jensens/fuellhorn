@@ -61,6 +61,8 @@ def has_active_filters(filter_state: dict[str, Any], selected_categories: set[in
         return True
     if filter_state.get("sort_ascending", True) is not True:
         return True
+    if filter_state.get("expiring_only", False):
+        return True
     if selected_categories:
         return True
     return False
@@ -204,11 +206,19 @@ def _sort_items(items: list[Item], sort_field: str, ascending: bool) -> list[Ite
 
 @ui.page("/items")
 @require_auth
-def items_page() -> None:
-    """Items list page with card layout, search, and all filters (Mobile-First)."""
+def items_page(filter: str | None = None) -> None:  # noqa: A002
+    """Items list page with card layout, search, and all filters (Mobile-First).
+
+    Args:
+        filter: Optional filter parameter from URL query string.
+                "expiring" = show only items expiring in 7 days (Issue #244)
+    """
     # Load swipe card CSS and JS (required for item card swipe actions)
     ui.add_head_html('<link rel="stylesheet" href="/static/css/solarpunk-theme.css">')
     ui.add_head_html('<script src="/static/js/swipe-card.js"></script>')
+
+    # Check for "expiring" filter from URL (Issue #244)
+    show_expiring_only = filter == "expiring"
 
     # Read filter setting from user storage (persisted server-side per user session)
     initial_show_consumed = app.storage.user.get(SHOW_CONSUMED_KEY, False)
@@ -221,6 +231,7 @@ def items_page() -> None:
         "sort_field": "best_before_date",  # Default: sort by best_before_date
         "sort_ascending": True,  # Default: ascending (soonest first)
         "show_consumed": initial_show_consumed,  # Track toggle state locally
+        "expiring_only": show_expiring_only,  # Filter for expiring items (Issue #244)
     }
     selected_categories: set[int] = set()
     chip_elements: dict[int, ui.button] = {}
@@ -258,6 +269,9 @@ def items_page() -> None:
                 if filter_state["show_consumed"]:
                     # Show only consumed/partially withdrawn items, sorted by last withdrawal
                     all_items = item_service.get_consumed_items(session)
+                elif filter_state.get("expiring_only"):
+                    # Show only items expiring in next 7 days (Issue #244)
+                    all_items = item_service.get_items_expiring_soon(session, days=7)
                 else:
                     all_items = item_service.get_active_items(session)
 
@@ -364,6 +378,7 @@ def items_page() -> None:
         filter_state["item_type"] = DEFAULT_FILTER_STATE["item_type"]
         filter_state["sort_field"] = DEFAULT_FILTER_STATE["sort_field"]
         filter_state["sort_ascending"] = DEFAULT_FILTER_STATE["sort_ascending"]
+        filter_state["expiring_only"] = False  # Reset expiring filter (Issue #244)
 
         # Reset UI elements
         if search_input:
@@ -384,6 +399,9 @@ def items_page() -> None:
 
         update_reset_button_visibility()
         refresh_items()
+
+        # Update URL to remove filter parameter (Issue #244)
+        ui.navigate.to("/items")
 
     def update_chip_style(cat_id: int) -> None:
         """Update chip appearance based on selection state and category color."""
