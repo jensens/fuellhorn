@@ -7,11 +7,13 @@ Only loaded when TESTING=true environment variable is set.
 from ...database import get_session
 from ...models.item import ItemType
 from ...services import category_service
+from ...services import item_service
 from ...services import location_service
 from ..components import create_category_chip_group
 from ..components import create_item_type_chip_group
 from ..components import create_location_chip_group
 from ..components import create_unit_chip_group
+from ..components.location_overview import create_location_overview_chips
 from nicegui import ui
 
 
@@ -198,4 +200,22 @@ def test_category_chips_preselected_page() -> None:
             categories=categories,
             value=preselected_id,
             on_change=on_change,
+        )
+
+
+@ui.page("/test/location-overview")
+def test_location_overview_page() -> None:
+    """Test page for Location Overview chips (Issue #246).
+
+    Displays horizontal scrollable location chips with icons and item counts.
+    """
+    with next(get_session()) as session:
+        locations = location_service.get_all_locations(session)
+        item_counts = item_service.get_item_count_by_location(session)
+
+    with ui.column().classes("p-4 w-full"):
+        ui.label("Location Overview Test").classes("text-h6")
+        create_location_overview_chips(
+            locations=locations,
+            item_counts=item_counts,
         )
