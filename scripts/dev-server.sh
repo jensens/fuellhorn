@@ -11,7 +11,7 @@ set -e
 CURRENT_DIR=$(pwd)
 ISSUE_NUM=""
 
-if [[ "$CURRENT_DIR" =~ worktrees/issue-([0-9]+) ]]; then
+if [[ "$CURRENT_DIR" =~ \.worktrees/fuellhorn-([0-9]+) ]]; then
     ISSUE_NUM="${BASH_REMATCH[1]}"
     PORT=$((8000 + ISSUE_NUM))
     echo "📂 Worktree für Issue #$ISSUE_NUM erkannt"
