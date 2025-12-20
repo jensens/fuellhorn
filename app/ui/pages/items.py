@@ -206,12 +206,13 @@ def _sort_items(items: list[Item], sort_field: str, ascending: bool) -> list[Ite
 
 @ui.page("/items")
 @require_auth
-def items_page(filter: str | None = None) -> None:  # noqa: A002
+def items_page(filter: str | None = None, location: int | None = None) -> None:  # noqa: A002
     """Items list page with card layout, search, and all filters (Mobile-First).
 
     Args:
         filter: Optional filter parameter from URL query string.
                 "expiring" = show only items expiring in 7 days (Issue #244)
+        location: Optional location ID to pre-filter by (Issue #246)
     """
     # Load swipe card CSS and JS (required for item card swipe actions)
     ui.add_head_html('<link rel="stylesheet" href="/static/css/solarpunk-theme.css">')
@@ -220,13 +221,16 @@ def items_page(filter: str | None = None) -> None:  # noqa: A002
     # Check for "expiring" filter from URL (Issue #244)
     show_expiring_only = filter == "expiring"
 
+    # Check for location filter from URL (Issue #246)
+    initial_location_id = location if location else 0
+
     # Read filter setting from user storage (persisted server-side per user session)
     initial_show_consumed = app.storage.user.get(SHOW_CONSUMED_KEY, False)
 
     # State for filters and sorting (includes show_consumed for immediate updates)
     filter_state: dict[str, Any] = {
         "search_term": "",
-        "location_id": 0,  # 0 = all locations
+        "location_id": initial_location_id,  # 0 = all locations, or from URL
         "item_type": "",  # "" = all types
         "sort_field": "best_before_date",  # Default: sort by best_before_date
         "sort_ascending": True,  # Default: ascending (soonest first)
@@ -478,7 +482,7 @@ def items_page(filter: str | None = None) -> None:  # noqa: A002
                 ui.select(
                     label="Lagerort",
                     options=location_options,
-                    value=0,
+                    value=initial_location_id,  # Issue #246: Pre-select from URL
                     on_change=on_location_change,
                 )
                 .props("dense outlined")
@@ -551,7 +555,8 @@ def items_page(filter: str | None = None) -> None:  # noqa: A002
             .props("flat dense no-caps")
             .classes("text-sm mb-2")
         )
-        reset_btn.set_visibility(False)  # Initially hidden
+        # Show reset button if location filter is pre-set from URL (Issue #246)
+        reset_btn.set_visibility(initial_location_id > 0 or show_expiring_only)
 
         items_container = ui.column().classes("w-full gap-2")
         refresh_items()
