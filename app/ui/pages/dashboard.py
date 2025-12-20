@@ -14,6 +14,7 @@ from ..components import create_bottom_sheet
 from ..components import create_item_card
 from ..components import create_mobile_page_container
 from ..components import create_user_dropdown
+from ..components.location_overview import create_location_overview_chips
 from nicegui import ui
 
 
@@ -82,25 +83,17 @@ def dashboard() -> None:
                         ui.label(str(len(consumed_items))).classes("sp-stats-number success")
                         ui.label("Entn.").classes("sp-stats-label")
 
-            # Quick filters section
-            ui.label("Schnellfilter").classes("sp-page-title text-base mb-3 mt-6")
+            # Location overview section (Issue #246)
+            ui.label("Lagerorte").classes("sp-page-title text-base mb-3 mt-6")
 
-            # Get unique locations with names
-            location_items: dict[int, str] = {}
-            for item in active_items:
-                if item.location_id not in location_items:
-                    try:
-                        loc = location_service.get_location(session, item.location_id)
-                        location_items[item.location_id] = loc.name
-                    except ValueError:
-                        location_items[item.location_id] = f"Lagerort {item.location_id}"
+            # Get all locations and item counts
+            locations = location_service.get_all_locations(session)
+            item_counts = item_service.get_item_count_by_location(session)
 
-            with ui.row().classes("w-full gap-2 flex-wrap"):
-                for loc_id, loc_name in list(location_items.items())[:4]:  # Show max 4 quick filters
-                    ui.button(
-                        loc_name,
-                        on_click=lambda loc=loc_id: ui.navigate.to(f"/items?location={loc}"),
-                    ).classes("sp-quick-filter").props("flat no-caps")
+            create_location_overview_chips(
+                locations=locations,
+                item_counts=item_counts,
+            )
 
     # Bottom Navigation (always visible)
     create_bottom_nav(current_page="dashboard")

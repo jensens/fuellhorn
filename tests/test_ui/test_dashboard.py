@@ -21,7 +21,7 @@ async def test_dashboard_page_loads(logged_in_user: TestUser) -> None:
     await logged_in_user.should_see("Füllhorn")
     await logged_in_user.should_see("Bald ablaufend")
     await logged_in_user.should_see("Vorrats-Statistik")
-    await logged_in_user.should_see("Schnellfilter")
+    await logged_in_user.should_see("Lagerorte")  # Issue #246: Renamed from Schnellfilter
 
 
 async def test_dashboard_shows_statistics(logged_in_user: TestUser) -> None:
