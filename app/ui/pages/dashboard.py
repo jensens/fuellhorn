@@ -7,6 +7,7 @@ Uses unified ItemCard component from Issue #173.
 from ...auth import require_auth
 from ...database import get_session
 from ...models.item import Item
+from ...services import category_service
 from ...services import item_service
 from ...services import location_service
 from ..components import create_bottom_nav
@@ -64,30 +65,66 @@ def dashboard() -> None:
                     ui.label("Alles frisch!").classes("text-lg text-charcoal font-medium")
                     ui.label("Keine Artikel laufen in den nächsten 7 Tagen ab.").classes("text-sm text-stone")
 
-            # Statistics section
-            ui.label("Vorrats-Statistik").classes("sp-page-title text-base mb-3 mt-6")
+            # "Auf einen Blick" section - 2x2 tile grid (Issue #245)
+            ui.label("Auf einen Blick").classes("sp-page-title text-base mb-3 mt-6")
 
             all_items = item_service.get_all_items(session)
-            consumed_items = [i for i in all_items if i.is_consumed]
             active_items = [i for i in all_items if not i.is_consumed]
+            locations = location_service.get_all_locations(session)
+            categories = category_service.get_all_categories(session)
 
-            with ui.card().classes("sp-dashboard-card w-full"):
-                with ui.row().classes("sp-stats-row w-full"):
-                    with ui.column():
-                        ui.label(str(len(active_items))).classes("sp-stats-number primary")
-                        ui.label("Artikel").classes("sp-stats-label")
-                    with ui.column():
-                        ui.label(str(len(expiring_items))).classes("sp-stats-number warning")
-                        ui.label("Ablauf").classes("sp-stats-label")
-                    with ui.column():
-                        ui.label(str(len(consumed_items))).classes("sp-stats-number success")
-                        ui.label("Entn.").classes("sp-stats-label")
+            with ui.element("div").classes("grid grid-cols-2 gap-3"):
+                # Tile 1: Artikel -> navigates to /items
+                with (
+                    ui.card()
+                    .classes("sp-dashboard-card text-center cursor-pointer hover:shadow-sp-md transition-shadow")
+                    .on("click", lambda: ui.navigate.to("/items"))
+                ):
+                    ui.label(str(len(active_items))).classes("sp-stats-number primary")
+                    ui.label("Artikel").classes("sp-stats-label")
+
+                # Tile 2: Ablauf -> navigates to /items?filter=expiring
+                with (
+                    ui.card()
+                    .classes("sp-dashboard-card text-center cursor-pointer hover:shadow-sp-md transition-shadow")
+                    .on("click", lambda: ui.navigate.to("/items?filter=expiring"))
+                ):
+                    ui.label(str(expiring_count)).classes("sp-stats-number warning")
+                    ui.label("Ablauf").classes("sp-stats-label")
+
+                # Tile 3: Lagerorte -> scrolls to Lagerorte section
+                with (
+                    ui.card()
+                    .classes("sp-dashboard-card text-center cursor-pointer hover:shadow-sp-md transition-shadow")
+                    .on(
+                        "click",
+                        lambda: ui.run_javascript(
+                            "document.getElementById('locations-section').scrollIntoView({behavior: 'smooth'})"
+                        ),
+                    )
+                ):
+                    ui.label(str(len(locations))).classes("sp-stats-number primary")
+                    ui.label("Lagerorte").classes("sp-stats-label")
+
+                # Tile 4: Kategorien -> scrolls to Kategorien section (future)
+                with (
+                    ui.card()
+                    .classes("sp-dashboard-card text-center cursor-pointer hover:shadow-sp-md transition-shadow")
+                    .on(
+                        "click",
+                        lambda: ui.run_javascript(
+                            "document.getElementById('categories-section')?.scrollIntoView({behavior: 'smooth'})"
+                        ),
+                    )
+                ):
+                    ui.label(str(len(categories))).classes("sp-stats-number primary")
+                    ui.label("Kategorien").classes("sp-stats-label")
 
             # Location overview section (Issue #246)
-            ui.label("Lagerorte").classes("sp-page-title text-base mb-3 mt-6")
+            with ui.element("div").props('id="locations-section"'):
+                ui.label("Lagerorte").classes("sp-page-title text-base mb-3 mt-6")
 
-            # Get all locations and item counts
-            locations = location_service.get_all_locations(session)
+            # Get item counts for locations (locations already fetched above)
             item_counts = item_service.get_item_count_by_location(session)
 
             create_location_overview_chips(

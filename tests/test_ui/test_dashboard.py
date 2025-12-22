@@ -20,7 +20,7 @@ async def test_dashboard_page_loads(logged_in_user: TestUser) -> None:
     # Should see main sections
     await logged_in_user.should_see("Füllhorn")
     await logged_in_user.should_see("Bald ablaufend")
-    await logged_in_user.should_see("Vorrats-Statistik")
+    await logged_in_user.should_see("Auf einen Blick")  # Issue #245: Replaced Vorrats-Statistik
     await logged_in_user.should_see("Lagerorte")  # Issue #246: Renamed from Schnellfilter
 
 
@@ -110,3 +110,38 @@ async def test_dashboard_empty_state_has_leaf_icon(user: TestUser) -> None:
     await user.open("/test-dashboard-no-expiring")
     # The empty state card should be styled with the sp-empty-state class
     await user.should_see("Alles frisch!")
+
+
+# =============================================================================
+# Tests for Issue #245: Dashboard "Auf einen Blick" Tiles
+# =============================================================================
+
+
+async def test_dashboard_shows_at_a_glance_section(logged_in_user: TestUser) -> None:
+    """Test that dashboard shows 'Auf einen Blick' section title (Issue #245)."""
+    await logged_in_user.open("/dashboard")
+    await logged_in_user.should_see("Auf einen Blick")
+
+
+async def test_dashboard_at_a_glance_shows_article_count(user: TestUser) -> None:
+    """Test that 'Auf einen Blick' shows article count tile (Issue #245)."""
+    await user.open("/test-dashboard-at-a-glance")
+    await user.should_see("Artikel")
+
+
+async def test_dashboard_at_a_glance_shows_expiring_count(user: TestUser) -> None:
+    """Test that 'Auf einen Blick' shows expiring items count tile (Issue #245)."""
+    await user.open("/test-dashboard-at-a-glance")
+    await user.should_see("Ablauf")
+
+
+async def test_dashboard_at_a_glance_shows_locations_count(user: TestUser) -> None:
+    """Test that 'Auf einen Blick' shows locations count tile (Issue #245)."""
+    await user.open("/test-dashboard-at-a-glance")
+    await user.should_see("Lagerorte")
+
+
+async def test_dashboard_at_a_glance_shows_categories_count(user: TestUser) -> None:
+    """Test that 'Auf einen Blick' shows categories count tile (Issue #245)."""
+    await user.open("/test-dashboard-at-a-glance")
+    await user.should_see("Kategorien")

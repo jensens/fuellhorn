@@ -187,6 +187,65 @@ def page_dashboard_with_expiring_items() -> None:
     _render_dashboard_content()
 
 
+@ui.page("/test-dashboard-at-a-glance")
+def page_dashboard_at_a_glance() -> None:
+    """Test page: Dashboard 'Auf einen Blick' tiles (Issue #245)."""
+    with next(get_session()) as session:
+        # Create locations
+        location_frozen = _create_test_location(session, LocationType.FROZEN)
+        location_chilled = _create_test_location(session, LocationType.CHILLED)
+
+        # Create category
+        category = _create_test_category(session, with_shelf_life=True)
+
+        # Create some items
+        _create_mhd_item(session, location_chilled, mhd_days_from_now=3)  # expiring
+        _create_mhd_item(session, location_chilled, mhd_days_from_now=30)  # not expiring
+        _create_shelf_life_item(session, location_frozen, category, freeze_days_ago=30)
+
+    _render_at_a_glance_section()
+
+
+def _render_at_a_glance_section() -> None:
+    """Render 'Auf einen Blick' section for testing (Issue #245)."""
+    from ...services import category_service
+    from ...services import item_service
+    from ...services import location_service
+
+    with next(get_session()) as session:
+        # Get counts
+        all_items = item_service.get_all_items(session)
+        active_items = [i for i in all_items if not i.is_consumed]
+        expiring_items = item_service.get_items_expiring_soon(session, days=7)
+        locations = location_service.get_all_locations(session)
+        categories = category_service.get_all_categories(session)
+
+        # Section title
+        ui.label("Auf einen Blick").classes("sp-page-title text-base mb-3")
+
+        # 2x2 Grid
+        with ui.element("div").classes("grid grid-cols-2 gap-3"):
+            # Tile 1: Artikel
+            with ui.card().classes("sp-dashboard-card text-center cursor-pointer"):
+                ui.label(str(len(active_items))).classes("sp-stats-number primary")
+                ui.label("Artikel").classes("sp-stats-label")
+
+            # Tile 2: Ablauf
+            with ui.card().classes("sp-dashboard-card text-center cursor-pointer"):
+                ui.label(str(len(expiring_items))).classes("sp-stats-number warning")
+                ui.label("Ablauf").classes("sp-stats-label")
+
+            # Tile 3: Lagerorte
+            with ui.card().classes("sp-dashboard-card text-center cursor-pointer"):
+                ui.label(str(len(locations))).classes("sp-stats-number primary")
+                ui.label("Lagerorte").classes("sp-stats-label")
+
+            # Tile 4: Kategorien
+            with ui.card().classes("sp-dashboard-card text-center cursor-pointer"):
+                ui.label(str(len(categories))).classes("sp-stats-number primary")
+                ui.label("Kategorien").classes("sp-stats-label")
+
+
 def _render_dashboard_content() -> None:
     """Render dashboard content for testing (without auth)."""
     from ...services import item_service
