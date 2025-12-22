@@ -73,7 +73,7 @@ def dashboard() -> None:
             locations = location_service.get_all_locations(session)
             categories = category_service.get_all_categories(session)
 
-            with ui.element("div").classes("grid grid-cols-2 sm:grid-cols-4 gap-3"):
+            with ui.element("div").classes("grid grid-cols-2 min-[480px]:grid-cols-4 gap-3 w-full"):
                 # Tile 1: Artikel -> navigates to /items
                 with (
                     ui.card()
