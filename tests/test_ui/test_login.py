@@ -31,4 +31,4 @@ async def test_root_redirects_to_dashboard_when_authenticated(logged_in_user: Te
     await logged_in_user.open("/")
     # Should redirect to dashboard
     await logged_in_user.should_see("Bald ablaufend")
-    await logged_in_user.should_see("Vorrats-Statistik")
+    await logged_in_user.should_see("Auf einen Blick")  # Issue #245
