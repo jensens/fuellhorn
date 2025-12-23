@@ -100,7 +100,7 @@ jobs:
         run: uv run playwright install chromium
 
       - name: Run E2E tests
-        run: uv run pytest tests/test_e2e/ -v --run-e2e
+        run: uv run pytest tests/test_e2e/ -v --run-e2e -n auto
         env:
           SECRET_KEY: test-secret-key-for-ci-only
           FUELLHORN_SECRET: test-fuellhorn-secret-for-ci-only
