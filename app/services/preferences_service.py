@@ -21,6 +21,8 @@ HARDCODED_DEFAULTS = {
     "item_type_time_window": 30,  # Minutes
     "category_time_window": 30,  # Minutes
     "location_time_window": 60,  # Minutes
+    "expiry_critical_days": 3,  # Days before expiry for critical status
+    "expiry_warning_days": 7,  # Days before expiry for warning status
 }
 
 # Minimum password length
@@ -270,3 +272,24 @@ def get_last_item_entry(session: Session, user: User) -> dict[str, Any] | None:
         return None
 
     return user.preferences.get("last_item_entry")
+
+
+def get_expiry_thresholds(session: Session) -> tuple[int, int]:
+    """Get expiry threshold settings from database.
+
+    Returns the configured critical and warning days for expiry status calculation.
+    Falls back to hardcoded defaults if not set.
+
+    Args:
+        session: Database session.
+
+    Returns:
+        Tuple of (critical_days, warning_days).
+    """
+    critical_setting = get_system_setting(session, "expiry_critical_days")
+    warning_setting = get_system_setting(session, "expiry_warning_days")
+
+    critical_days = int(critical_setting.value) if critical_setting else HARDCODED_DEFAULTS["expiry_critical_days"]
+    warning_days = int(warning_setting.value) if warning_setting else HARDCODED_DEFAULTS["expiry_warning_days"]
+
+    return (critical_days, warning_days)

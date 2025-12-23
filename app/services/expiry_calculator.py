@@ -59,21 +59,25 @@ def get_expiry_status_minmax(
     optimal_date: date | None,
     max_date: date | None,
     best_before_date: date | None = None,
+    critical_days: int = 3,
+    warning_days: int = 7,
 ) -> ExpiryStatus:
     """Get expiry status based on optimal and maximum dates.
 
     Status logic:
     - ok: today < optimal_date
-    - warning: optimal_date <= today < max_date - 3 days
-    - critical: today >= max_date - 3 days
+    - warning: optimal_date <= today < max_date - critical_days
+    - critical: today >= max_date - critical_days
 
     If best_before_date is provided (for items with MHD), it takes precedence
-    using the old 3/7 day thresholds.
+    using the critical_days/warning_days thresholds.
 
     Args:
         optimal_date: Optimal consumption date (from months_min)
         max_date: Maximum storage date (from months_max)
         best_before_date: Best before date from package (MHD)
+        critical_days: Days before expiry for critical status (default: 3)
+        warning_days: Days before expiry for warning status (default: 7)
 
     Returns:
         ExpiryStatus: "critical", "warning", or "ok"
@@ -84,9 +88,9 @@ def get_expiry_status_minmax(
     # (for PURCHASED_FRESH, PURCHASED_FROZEN with MHD)
     if best_before_date is not None:
         days_until_best_before = (best_before_date - today).days
-        if days_until_best_before < 3:
+        if days_until_best_before < critical_days:
             return "critical"
-        elif days_until_best_before <= 7:
+        elif days_until_best_before <= warning_days:
             return "warning"
         else:
             return "ok"
@@ -94,7 +98,7 @@ def get_expiry_status_minmax(
     # If only max_date is provided (no optimal)
     if optimal_date is None and max_date is not None:
         days_until_max = (max_date - today).days
-        if days_until_max <= 3:
+        if days_until_max <= critical_days:
             return "critical"
         else:
             return "ok"
@@ -116,8 +120,8 @@ def get_expiry_status_minmax(
     days_until_optimal = (optimal_date - today).days
     days_until_max = (max_date - today).days
 
-    # Critical: within 3 days of max_date (or past it)
-    if days_until_max <= 3:
+    # Critical: within critical_days of max_date (or past it)
+    if days_until_max <= critical_days:
         return "critical"
 
     # Ok: before optimal_date
