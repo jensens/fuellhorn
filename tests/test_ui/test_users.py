@@ -31,32 +31,10 @@ async def test_users_page_shows_user_list(logged_in_user: TestUser) -> None:
 
 async def test_users_page_displays_multiple_users(
     logged_in_user: TestUser,
-    isolated_test_database,
+    standard_users,
 ) -> None:
     """Test that users page displays all users with their details."""
-    # Create additional test users
-    with Session(isolated_test_database) as session:
-        user1 = User(
-            username="testuser1",
-            email="testuser1@example.com",
-            is_active=True,
-            role="user",
-            last_login=datetime(2025, 11, 25, 10, 30),
-        )
-        user1.set_password("password123")
-
-        user2 = User(
-            username="testuser2",
-            email="testuser2@example.com",
-            is_active=False,
-            role="admin",
-        )
-        user2.set_password("password123")
-
-        session.add(user1)
-        session.add(user2)
-        session.commit()
-
+    # standard_users provides: testuser1 (active, user), testuser2 (inactive, admin)
     # Navigate to users page (already logged in via fixture)
     await logged_in_user.open("/admin/users")
 
@@ -339,52 +317,30 @@ async def test_create_user_with_admin_role(
 
 async def test_users_page_has_edit_buttons(
     logged_in_user: TestUser,
-    isolated_test_database,
+    standard_users,
 ) -> None:
     """Test that each user card has an edit button."""
-    # Create an additional user
-    with Session(isolated_test_database) as session:
-        test_user = User(
-            username="editableuser",
-            email="editable@example.com",
-            is_active=True,
-            role="user",
-        )
-        test_user.set_password("password123")
-        session.add(test_user)
-        session.commit()
-
+    # standard_users provides: testuser1, testuser2
     await logged_in_user.open("/admin/users")
 
     # Should see edit buttons (icon buttons with edit icon)
-    await logged_in_user.should_see("editableuser")
+    await logged_in_user.should_see("testuser1")
 
 
 async def test_edit_button_opens_dialog(
     logged_in_user: TestUser,
-    isolated_test_database,
+    standard_users,
 ) -> None:
     """Test that clicking edit button opens dialog with pre-filled form."""
-    # Create a user to edit
-    with Session(isolated_test_database) as session:
-        test_user = User(
-            username="usertoedit",
-            email="usertoedit@example.com",
-            is_active=True,
-            role="user",
-        )
-        test_user.set_password("password123")
-        session.add(test_user)
-        session.commit()
-
+    # standard_users provides: testuser1, testuser2
     await logged_in_user.open("/admin/users")
 
     # Click the edit button for the user (using marker)
-    logged_in_user.find(marker="edit-usertoedit").click()
+    logged_in_user.find(marker="edit-testuser1").click()
 
     # Should see dialog with pre-filled values
     await logged_in_user.should_see("Benutzer bearbeiten")
-    await logged_in_user.should_see("usertoedit")
+    await logged_in_user.should_see("testuser1")
 
 
 async def test_edit_user_change_username(
@@ -423,25 +379,14 @@ async def test_edit_user_change_username(
 
 async def test_edit_user_change_role(
     logged_in_user: TestUser,
-    isolated_test_database,
+    standard_users,
 ) -> None:
     """Test that role can be changed."""
-    # Create a regular user to edit
-    with Session(isolated_test_database) as session:
-        test_user = User(
-            username="roleuser",
-            email="roleuser@example.com",
-            is_active=True,
-            role="user",
-        )
-        test_user.set_password("password123")
-        session.add(test_user)
-        session.commit()
-
+    # standard_users provides: testuser1 (user role), testuser2 (admin role)
     await logged_in_user.open("/admin/users")
 
-    # Click the edit button
-    logged_in_user.find(marker="edit-roleuser").click()
+    # Click the edit button for testuser1
+    logged_in_user.find(marker="edit-testuser1").click()
 
     # Change role to Admin
     logged_in_user.find(marker="edit-role").click()
@@ -451,7 +396,7 @@ async def test_edit_user_change_role(
     logged_in_user.find("Speichern").click()
 
     # Page should reload and show updated user
-    await logged_in_user.should_see("roleuser")
+    await logged_in_user.should_see("testuser1")
 
 
 async def test_edit_user_change_password(
@@ -557,84 +502,51 @@ async def test_edit_user_toggle_active_status(
 
 async def test_delete_button_visible_for_users(
     logged_in_user: TestUser,
-    isolated_test_database,
+    standard_users,
 ) -> None:
     """Test that delete button is visible for each user."""
-    # Create a test user
-    with Session(isolated_test_database) as session:
-        test_user = User(
-            username="deletetest",
-            email="deletetest@example.com",
-            is_active=True,
-            role="user",
-        )
-        test_user.set_password("password123")
-        session.add(test_user)
-        session.commit()
-
+    # standard_users provides: testuser1, testuser2
     await logged_in_user.open("/admin/users")
 
     # Delete button should be visible (via marker)
-    logged_in_user.find(marker="delete-deletetest")
+    logged_in_user.find(marker="delete-testuser1")
 
 
 async def test_delete_user_opens_confirmation_dialog(
     logged_in_user: TestUser,
-    isolated_test_database,
+    standard_users,
 ) -> None:
     """Test that clicking delete button opens confirmation dialog."""
-    # Create a test user
-    with Session(isolated_test_database) as session:
-        test_user = User(
-            username="confirmdelete",
-            email="confirmdelete@example.com",
-            is_active=True,
-            role="user",
-        )
-        test_user.set_password("password123")
-        session.add(test_user)
-        session.commit()
-
+    # standard_users provides: testuser1, testuser2
     await logged_in_user.open("/admin/users")
 
     # Click delete button
-    logged_in_user.find(marker="delete-confirmdelete").click()
+    logged_in_user.find(marker="delete-testuser1").click()
 
     # Should see confirmation dialog
     await logged_in_user.should_see("Benutzer löschen")
-    await logged_in_user.should_see("confirmdelete")
+    await logged_in_user.should_see("testuser1")
 
 
 async def test_delete_user_successfully(
     logged_in_user: TestUser,
-    isolated_test_database,
+    standard_users,
 ) -> None:
     """Test that user can be deleted successfully."""
-    # Create a test user
-    with Session(isolated_test_database) as session:
-        test_user = User(
-            username="deleteme",
-            email="deleteme@example.com",
-            is_active=True,
-            role="user",
-        )
-        test_user.set_password("password123")
-        session.add(test_user)
-        session.commit()
-
+    # standard_users provides: testuser1, testuser2
     await logged_in_user.open("/admin/users")
 
     # Verify user is visible
-    await logged_in_user.should_see("deleteme")
+    await logged_in_user.should_see("testuser2")
 
     # Click delete button
-    logged_in_user.find(marker="delete-deleteme").click()
+    logged_in_user.find(marker="delete-testuser2").click()
 
     # Confirm deletion
     logged_in_user.find("Löschen").click()
 
     # User should no longer be visible
-    await logged_in_user.should_not_see("deleteme")
+    await logged_in_user.should_not_see("testuser2")
 
 
 async def test_cannot_delete_yourself(
@@ -663,28 +575,17 @@ async def test_cannot_delete_yourself(
 
 async def test_delete_dialog_can_be_cancelled(
     logged_in_user: TestUser,
-    isolated_test_database,
+    standard_users,
 ) -> None:
     """Test that delete operation can be cancelled."""
-    # Create a test user
-    with Session(isolated_test_database) as session:
-        test_user = User(
-            username="canceldelete",
-            email="canceldelete@example.com",
-            is_active=True,
-            role="user",
-        )
-        test_user.set_password("password123")
-        session.add(test_user)
-        session.commit()
-
+    # standard_users provides: testuser1, testuser2
     await logged_in_user.open("/admin/users")
 
     # Click delete button
-    logged_in_user.find(marker="delete-canceldelete").click()
+    logged_in_user.find(marker="delete-testuser1").click()
 
     # Cancel deletion
     logged_in_user.find("Abbrechen").click()
 
     # User should still be visible
-    await logged_in_user.should_see("canceldelete")
+    await logged_in_user.should_see("testuser1")
