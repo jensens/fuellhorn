@@ -28,7 +28,13 @@ def main() -> None:
     # und NICEGUI_SCREEN_TEST_PORT erwartet
     os.environ["SECRET_KEY"] = "test-secret-key-for-e2e-tests"
     os.environ["FUELLHORN_SECRET"] = "test-fuellhorn-secret-for-e2e-tests"
-    os.environ["DATABASE_URL"] = "sqlite:///:memory:"
+    # Verwende temporäre Datei statt in-memory für bessere Stabilität
+    import tempfile
+
+    temp_db = tempfile.NamedTemporaryFile(suffix=".db", delete=False)
+    temp_db.close()
+    os.environ["DATABASE_URL"] = f"sqlite:///{temp_db.name}"
+    os.environ["_E2E_TEMP_DB"] = temp_db.name  # Für cleanup
 
     # Entferne NiceGUI Test-Mode Variablen die von pytest geerbt werden könnten
     for var in list(os.environ.keys()):
@@ -39,9 +45,14 @@ def main() -> None:
     import app.api.health as _api_health  # noqa: F401
     from app.database import create_db_and_tables
     from app.database import get_session
+
+    # WICHTIG: Alle Models importieren damit create_db_and_tables() alle Tabellen erstellt
     from app.models import Category
+    from app.models import Item  # noqa: F401 - needed for table creation
     from app.models import Location
+    from app.models import LoginAttempt  # noqa: F401 - needed for table creation
     from app.models import User
+    from app.models import Withdrawal  # noqa: F401 - needed for table creation
     from app.models.location import LocationType
     import app.ui.pages as _pages  # noqa: F401
     import app.ui.test_pages as _test_pages  # noqa: F401  # Test pages für E2E tests
@@ -99,6 +110,28 @@ def main() -> None:
         ]
         session.add_all(locations)
         session.commit()
+
+    # ==========================================================================
+    # ACHTUNG: Reset-Endpoint NUR für E2E Tests!
+    # Dieser Endpoint existiert nur in _server.py (tests/test_e2e/_server.py)
+    # und wird NIEMALS in der Produktions-App (main.py) registriert.
+    # ==========================================================================
+    from sqlalchemy import text
+
+    def _reset_test_data() -> dict:
+        """Reset database to initial seed state for test isolation."""
+        from app.database import get_engine
+
+        # Use engine directly to ensure same connection as table creation
+        with get_engine().connect() as conn:
+            # Delete with Raw SQL - use execute on connection directly
+            conn.execute(text("DELETE FROM withdrawal"))
+            conn.execute(text("DELETE FROM item"))
+            conn.execute(text("DELETE FROM login_attempt"))
+            conn.commit()
+        return {"status": "reset", "message": "Test data cleared"}
+
+    app.add_api_route("/api/test/reset", _reset_test_data, methods=["GET"])
 
     # Server starten
     ui.run(
