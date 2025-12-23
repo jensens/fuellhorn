@@ -15,13 +15,6 @@ import sys
 os.environ["TESTING"] = "true"
 
 
-# ============================================================================
-# NiceGUI Testing Plugin
-# ============================================================================
-
-pytest_plugins = ["nicegui.testing.plugin"]
-
-
 @pytest.fixture(name="session")
 def session_fixture() -> Generator[Session, None, None]:
     """Create In-Memory SQLite session for tests."""
