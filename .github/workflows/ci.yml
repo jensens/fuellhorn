@@ -27,7 +27,7 @@ jobs:
         run: uv sync
 
       - name: Run service tests (parallel)
-        run: uv run pytest tests/test_services tests/test_api tests/test_database_isolation.py -n auto --cov=app --cov-report=
+        run: uv run pytest tests/test_services tests/test_api tests/test_unit tests/test_database_isolation.py -n auto --cov=app --cov-report=
         env:
           SECRET_KEY: test-secret-key-for-ci-only
           FUELLHORN_SECRET: test-fuellhorn-secret-for-ci-only
