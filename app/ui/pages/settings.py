@@ -22,6 +22,10 @@ DEFAULT_ITEM_TYPE_TIME_WINDOW = 30
 DEFAULT_CATEGORY_TIME_WINDOW = 30
 DEFAULT_LOCATION_TIME_WINDOW = 60
 
+# Default expiry thresholds in days (hardcoded fallback)
+DEFAULT_EXPIRY_CRITICAL_DAYS = 3
+DEFAULT_EXPIRY_WARNING_DAYS = 7
+
 
 @ui.page("/admin/settings")
 @require_permissions(Permission.CONFIG_MANAGE)
@@ -79,6 +83,8 @@ def _get_system_defaults() -> dict:
         item_type_setting = preferences_service.get_system_setting(session, "item_type_time_window")
         category_setting = preferences_service.get_system_setting(session, "category_time_window")
         location_setting = preferences_service.get_system_setting(session, "location_time_window")
+        expiry_critical_setting = preferences_service.get_system_setting(session, "expiry_critical_days")
+        expiry_warning_setting = preferences_service.get_system_setting(session, "expiry_warning_days")
 
         return {
             "item_type_time_window": int(item_type_setting.value)
@@ -86,6 +92,12 @@ def _get_system_defaults() -> dict:
             else DEFAULT_ITEM_TYPE_TIME_WINDOW,
             "category_time_window": int(category_setting.value) if category_setting else DEFAULT_CATEGORY_TIME_WINDOW,
             "location_time_window": int(location_setting.value) if location_setting else DEFAULT_LOCATION_TIME_WINDOW,
+            "expiry_critical_days": int(expiry_critical_setting.value)
+            if expiry_critical_setting
+            else DEFAULT_EXPIRY_CRITICAL_DAYS,
+            "expiry_warning_days": int(expiry_warning_setting.value)
+            if expiry_warning_setting
+            else DEFAULT_EXPIRY_WARNING_DAYS,
         }
 
 
@@ -130,7 +142,7 @@ def _render_system_defaults_section() -> None:
             max=120,
         ).classes("w-full mb-4")
 
-        # Save button
+        # Save button for time windows
         def save_system_defaults() -> None:
             if current_user is None or current_user.id is None:
                 ui.notify("Nicht authentifiziert", type="negative")
@@ -154,6 +166,63 @@ def _render_system_defaults_section() -> None:
             ui.notify("System-Standardwerte gespeichert", type="positive")
 
         with ui.button(on_click=save_system_defaults).classes("sp-btn-primary"):
+            with ui.row().classes("items-center gap-2"):
+                create_icon("actions/save", size="20px")
+                ui.label("Speichern")
+
+    # Expiry thresholds section (Issue #135)
+    ui.label("Ablauf-Schwellwerte").classes("text-h6 font-semibold mb-3 mt-6 text-fern")
+
+    with ui.card().classes("sp-dashboard-card w-full p-4"):
+        ui.label("Schwellwerte für Ablaufstatus").classes("text-body2 text-charcoal mb-2")
+        ui.label(
+            "Diese Werte bestimmen, ab wann Artikel als 'kritisch' (rot) oder 'Warnung' (gelb) "
+            "angezeigt werden, basierend auf dem Ablaufdatum."
+        ).classes("text-caption text-stone mb-4")
+
+        # Critical days threshold
+        critical_days_input = ui.number(
+            label="Kritisch (Tage vor Ablauf)",
+            value=defaults["expiry_critical_days"],
+            min=0,
+            max=30,
+        ).classes("w-full mb-2")
+
+        # Warning days threshold
+        warning_days_input = ui.number(
+            label="Warnung (Tage vor Ablauf)",
+            value=defaults["expiry_warning_days"],
+            min=0,
+            max=90,
+        ).classes("w-full mb-4")
+
+        # Save button for expiry thresholds
+        def save_expiry_thresholds() -> None:
+            if current_user is None or current_user.id is None:
+                ui.notify("Nicht authentifiziert", type="negative")
+                return
+
+            critical_val = int(critical_days_input.value) if critical_days_input.value else DEFAULT_EXPIRY_CRITICAL_DAYS
+            warning_val = int(warning_days_input.value) if warning_days_input.value else DEFAULT_EXPIRY_WARNING_DAYS
+
+            # Validate that critical < warning (typical case)
+            if critical_val >= warning_val:
+                ui.notify(
+                    "Hinweis: Kritisch-Schwelle ist größer/gleich Warnung-Schwelle",
+                    type="warning",
+                )
+
+            with Session(get_engine()) as session:
+                preferences_service.set_system_setting(
+                    session, "expiry_critical_days", str(critical_val), current_user.id
+                )
+                preferences_service.set_system_setting(
+                    session, "expiry_warning_days", str(warning_val), current_user.id
+                )
+
+            ui.notify("Ablauf-Schwellwerte gespeichert", type="positive")
+
+        with ui.button(on_click=save_expiry_thresholds).classes("sp-btn-primary"):
             with ui.row().classes("items-center gap-2"):
                 create_icon("actions/save", size="20px")
                 ui.label("Speichern")
