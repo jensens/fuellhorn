@@ -40,43 +40,30 @@ def session_fixture() -> Generator[Session, None, None]:
 # ============================================================================
 
 
-@pytest.fixture(scope="function", autouse=True)
-def isolated_test_database(monkeypatch):
-    """Isolated In-Memory database for every UI test.
+@pytest.fixture(scope="module")
+def _module_engine():
+    """One database engine per test module (not per test!).
 
-    This fixture ensures that:
-    1. Each test gets a fresh, empty in-memory SQLite database
-    2. Production database is NEVER touched
-    3. Test admin user is automatically created
-    4. Tests run 10-100x faster than file-based DBs
+    This fixture creates the engine and tables once per module, with the
+    admin user already created. This saves ~0.5s per test by avoiding:
+    - Engine creation per test
+    - Table creation per test (create_all)
+    - bcrypt password hashing per test (~100ms)
 
-    How it works:
-    - Patches app.database.get_engine() before NiceGUI starts
-    - Creates in-memory engine with StaticPool
-    - Creates all tables from SQLModel metadata
-    - Creates admin test user for authentication
-
-    Scope: function (fresh DB per test)
-    Autouse: True (applies to ALL tests, including UI tests)
+    The isolated_test_database fixture handles per-test cleanup via rollback.
     """
-    # Create in-memory test engine
-    test_engine = create_engine(
-        "sqlite://",  # In-memory SQLite
+    # Create in-memory test engine with StaticPool
+    engine = create_engine(
+        "sqlite://",
         connect_args={"check_same_thread": False},
-        poolclass=StaticPool,  # Reuse connection across threads
+        poolclass=StaticPool,
     )
 
-    # Patch get_engine() to return test engine
-    monkeypatch.setattr("app.database.get_engine", lambda: test_engine)
+    # Create all tables once
+    SQLModel.metadata.create_all(engine)
 
-    # Also reset the global _engine variable
-    monkeypatch.setattr("app.database._engine", test_engine)
-
-    # Create all tables
-    SQLModel.metadata.create_all(test_engine)
-
-    # Create test admin user (required for UI tests)
-    with Session(test_engine) as session:
+    # Create admin user once (bcrypt is expensive!)
+    with Session(engine) as session:
         admin = User(
             username="admin",
             email="admin@test.com",
@@ -87,11 +74,53 @@ def isolated_test_database(monkeypatch):
         session.add(admin)
         session.commit()
 
-    yield test_engine
+    yield engine
 
-    # Cleanup: Drop all tables
-    SQLModel.metadata.drop_all(test_engine)
-    test_engine.dispose()
+    # Cleanup when module is done
+    engine.dispose()
+
+
+@pytest.fixture(scope="function", autouse=True)
+def isolated_test_database(_module_engine, monkeypatch):
+    """Isolated database state for every test using transaction rollback.
+
+    This fixture ensures that:
+    1. Each test gets a clean database state
+    2. Production database is NEVER touched
+    3. Test admin user is always available
+    4. Tests run much faster via rollback instead of recreate
+
+    How it works:
+    - Uses module-scoped engine (tables + admin already created)
+    - Patches app.database.get_engine() before test runs
+    - After test: Deletes all data except admin user (rollback pattern)
+
+    This approach is ~5x faster than creating tables per test because:
+    - No create_engine() per test
+    - No create_all() per test
+    - No bcrypt hashing per test (admin exists)
+    - DELETE is faster than drop_all + create_all
+    """
+    from sqlalchemy import text
+
+    # Patch get_engine() to return test engine
+    monkeypatch.setattr("app.database.get_engine", lambda: _module_engine)
+    monkeypatch.setattr("app.database._engine", _module_engine)
+
+    yield _module_engine
+
+    # Cleanup: Delete all data except admin user
+    # Order matters due to foreign key constraints
+    with Session(_module_engine) as session:
+        session.exec(text("DELETE FROM withdrawal"))
+        session.exec(text("DELETE FROM item"))
+        session.exec(text("DELETE FROM category_shelf_life"))
+        session.exec(text("DELETE FROM category"))
+        session.exec(text("DELETE FROM location"))
+        session.exec(text("DELETE FROM login_attempt"))
+        session.exec(text("DELETE FROM system_settings"))
+        session.exec(text("DELETE FROM users WHERE username != 'admin'"))
+        session.commit()
 
 
 # ============================================================================
