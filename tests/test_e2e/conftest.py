@@ -3,8 +3,17 @@
 Diese Fixtures starten einen echten Server als separaten Prozess
 und verwenden Playwright für Browser-Automatisierung.
 
+Performance-Optimierung:
+- Server wird pro Test-MODUL gestartet (nicht pro Test)
+- Datenbank wird vor jedem Test zurückgesetzt
+- Spart ~2-3s Server-Startup pro Test
+
+Parallelisierung:
+- Maximal 4 Worker für E2E Tests (um System-Overload zu vermeiden)
+- Jeder Worker bekommt eigenen Server-Prozess
+
 Jeder Test bekommt:
-- Frischen Server mit eigener in-memory SQLite DB
+- Frischen DB-Zustand (via Reset-Endpoint)
 - Admin-User ist automatisch angelegt
 - Perfekte Test-Isolation
 
@@ -20,6 +29,20 @@ import socket
 import subprocess
 import sys
 import time
+
+
+# Maximum parallel workers for E2E tests to prevent system overload
+E2E_MAX_WORKERS = 4
+
+
+def pytest_xdist_auto_num_workers(config) -> int:
+    """Limit xdist auto-workers for E2E tests to prevent system overload.
+
+    When running with -n auto, xdist uses CPU count. For E2E tests,
+    we limit this to E2E_MAX_WORKERS (4) to prevent system overload
+    since each worker starts its own server process.
+    """
+    return E2E_MAX_WORKERS
 
 
 def pytest_collection_modifyitems(config, items):
@@ -68,25 +91,11 @@ def _wait_for_server(url: str, timeout: float = 30.0) -> bool:
     return False
 
 
-@pytest.fixture(scope="function")
-def live_server():
-    """Starte einen frischen Server für jeden Test.
+@pytest.fixture(scope="module")
+def _module_server():
+    """Interner Fixture: Startet Server einmal pro Test-Modul.
 
-    Yields:
-        str: Die Base-URL des Servers (z.B. "http://127.0.0.1:8765")
-
-    Jeder Test bekommt:
-    - Frischen Server in eigenem Prozess
-    - Eigene in-memory SQLite DB
-    - Admin-User automatisch angelegt (username: admin, password: admin)
-    - Perfekte Isolation von anderen Tests
-
-    Beispiel:
-        def test_login(page, live_server):
-            page.goto(f"{live_server}/login")
-            page.fill("input[type='text']", "admin")
-            page.fill("input[type='password']", "admin")
-            page.click("button:has-text('Anmelden')")
+    Nicht direkt verwenden - nutze stattdessen `live_server`.
     """
     port = _find_free_port()
     url = f"http://127.0.0.1:{port}"
@@ -127,3 +136,41 @@ def live_server():
     except subprocess.TimeoutExpired:
         proc.kill()
         proc.wait(timeout=5)
+
+
+def _reset_test_data(url: str) -> None:
+    """Reset database to initial seed state."""
+    import httpx
+
+    response = httpx.get(f"{url}/api/test/reset", timeout=5.0)
+    if response.status_code != 200:
+        raise RuntimeError(f"Failed to reset test data: {response.text}")
+
+
+@pytest.fixture(scope="function")
+def live_server(_module_server: str):
+    """Server-URL für E2E Tests mit frischem DB-Zustand.
+
+    Yields:
+        str: Die Base-URL des Servers (z.B. "http://127.0.0.1:8765")
+
+    Jeder Test bekommt:
+    - Frischen DB-Zustand (Items, Withdrawals, LoginAttempts gelöscht)
+    - Admin-User automatisch angelegt (username: admin, password: admin)
+    - Kategorien und Lagerorte vorhanden
+    - Perfekte Isolation von anderen Tests
+
+    Performance:
+    - Server startet nur einmal pro Test-Modul
+    - Nur DB-Reset zwischen Tests (~50ms statt ~3s Server-Neustart)
+
+    Beispiel:
+        def test_login(page, live_server):
+            page.goto(f"{live_server}/login")
+            page.fill("input[type='text']", "admin")
+            page.fill("input[type='password']", "admin")
+            page.click("button:has-text('Anmelden')")
+    """
+    # Reset DB vor jedem Test für sauberen Zustand
+    _reset_test_data(_module_server)
+    yield _module_server
