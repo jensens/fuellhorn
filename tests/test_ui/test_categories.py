@@ -32,26 +32,11 @@ async def test_categories_page_shows_empty_state(logged_in_user: TestUser) -> No
 
 async def test_categories_page_displays_categories(
     logged_in_user: TestUser,
-    isolated_test_database,
+    standard_categories,
 ) -> None:
     """Test that categories page displays categories with name and color."""
-    # Create test categories
-    with Session(isolated_test_database) as session:
-        cat1 = Category(
-            name="Gemüse",
-            color="#00FF00",
-            created_by=1,  # admin user from fixture
-        )
-        cat2 = Category(
-            name="Fleisch",
-            color="#FF0000",
-            created_by=1,
-        )
-        session.add(cat1)
-        session.add(cat2)
-        session.commit()
-
     # Navigate to categories page (already logged in via fixture)
+    # standard_categories provides: Gemüse, Fleisch, Obst
     await logged_in_user.open("/admin/categories")
 
     # Should see categories
@@ -221,19 +206,10 @@ async def test_create_category_validation_unique_name(user: TestUser, isolated_t
 
 async def test_categories_page_has_edit_buttons(
     logged_in_user: TestUser,
-    isolated_test_database,
+    standard_categories,
 ) -> None:
     """Test that each category card has an edit button."""
-    # Create a category
-    with Session(isolated_test_database) as session:
-        cat = Category(
-            name="Gemüse",
-            color="#00FF00",
-            created_by=1,
-        )
-        session.add(cat)
-        session.commit()
-
+    # standard_categories provides: Gemüse, Fleisch, Obst
     await logged_in_user.open("/admin/categories")
 
     # Should see the category
@@ -242,19 +218,10 @@ async def test_categories_page_has_edit_buttons(
 
 async def test_edit_button_opens_dialog(
     logged_in_user: TestUser,
-    isolated_test_database,
+    standard_categories,
 ) -> None:
     """Test that clicking edit button opens dialog with pre-filled form."""
-    # Create a category to edit
-    with Session(isolated_test_database) as session:
-        cat = Category(
-            name="Obst",
-            color="#FF5733",
-            created_by=1,
-        )
-        session.add(cat)
-        session.commit()
-
+    # standard_categories provides: Gemüse, Fleisch, Obst
     await logged_in_user.open("/admin/categories")
 
     # Click the edit button for the category (using marker)
@@ -327,29 +294,16 @@ async def test_edit_category_validation_name_required(
 
 async def test_edit_category_validation_unique_name(
     logged_in_user: TestUser,
-    isolated_test_database,
+    standard_categories,
 ) -> None:
     """Test that duplicate category names are rejected when editing."""
-    # Create two categories
-    with Session(isolated_test_database) as session:
-        cat1 = Category(
-            name="Fleisch",
-            created_by=1,
-        )
-        cat2 = Category(
-            name="Fisch",
-            created_by=1,
-        )
-        session.add(cat1)
-        session.add(cat2)
-        session.commit()
-
+    # standard_categories provides: Gemüse, Fleisch, Obst
     await logged_in_user.open("/admin/categories")
 
-    # Click the edit button for Fisch
-    logged_in_user.find(marker="edit-Fisch").click()
+    # Click the edit button for Obst
+    logged_in_user.find(marker="edit-Obst").click()
 
-    # Try to rename to existing name
+    # Try to rename to existing name (Fleisch)
     logged_in_user.find(marker="edit-name").clear()
     logged_in_user.find(marker="edit-name").type("Fleisch")
 
@@ -362,22 +316,14 @@ async def test_edit_category_validation_unique_name(
 
 async def test_edit_category_cancel_closes_dialog(
     logged_in_user: TestUser,
-    isolated_test_database,
+    standard_categories,
 ) -> None:
     """Test that cancel button closes the dialog without saving."""
-    # Create a category
-    with Session(isolated_test_database) as session:
-        cat = Category(
-            name="Milchprodukte",
-            created_by=1,
-        )
-        session.add(cat)
-        session.commit()
-
+    # standard_categories provides: Gemüse, Fleisch, Obst
     await logged_in_user.open("/admin/categories")
 
     # Click the edit button
-    logged_in_user.find(marker="edit-Milchprodukte").click()
+    logged_in_user.find(marker="edit-Gemüse").click()
 
     # Should see dialog
     await logged_in_user.should_see("Kategorie bearbeiten")
@@ -386,7 +332,7 @@ async def test_edit_category_cancel_closes_dialog(
     logged_in_user.find("Abbrechen").click()
 
     # Dialog should be closed, original name should still be there
-    await logged_in_user.should_see("Milchprodukte")
+    await logged_in_user.should_see("Gemüse")
 
 
 # =============================================================================
@@ -396,98 +342,66 @@ async def test_edit_category_cancel_closes_dialog(
 
 async def test_categories_page_has_delete_buttons(
     logged_in_user: TestUser,
-    isolated_test_database,
+    standard_categories,
 ) -> None:
     """Test that each category card has a delete button."""
-    # Create a category
-    with Session(isolated_test_database) as session:
-        cat = Category(
-            name="Löschbar",
-            created_by=1,
-        )
-        session.add(cat)
-        session.commit()
-
+    # standard_categories provides: Gemüse, Fleisch, Obst
     await logged_in_user.open("/admin/categories")
 
-    # Should see the category
-    await logged_in_user.should_see("Löschbar")
+    # Should see the categories
+    await logged_in_user.should_see("Gemüse")
 
 
 async def test_delete_button_opens_confirmation_dialog(
     logged_in_user: TestUser,
-    isolated_test_database,
+    standard_categories,
 ) -> None:
     """Test that clicking delete button opens confirmation dialog."""
-    # Create a category
-    with Session(isolated_test_database) as session:
-        cat = Category(
-            name="ZuLöschen",
-            created_by=1,
-        )
-        session.add(cat)
-        session.commit()
-
+    # standard_categories provides: Gemüse, Fleisch, Obst
     await logged_in_user.open("/admin/categories")
 
     # Click the delete button
-    logged_in_user.find(marker="delete-ZuLöschen").click()
+    logged_in_user.find(marker="delete-Gemüse").click()
 
     # Should see confirmation dialog
     await logged_in_user.should_see("Kategorie löschen")
-    await logged_in_user.should_see("ZuLöschen")
+    await logged_in_user.should_see("Gemüse")
 
 
 async def test_delete_category_success(
     logged_in_user: TestUser,
-    isolated_test_database,
+    standard_categories,
 ) -> None:
     """Test that deleting a category works correctly."""
-    # Create a category
-    with Session(isolated_test_database) as session:
-        cat = Category(
-            name="WirdGelöscht",
-            created_by=1,
-        )
-        session.add(cat)
-        session.commit()
-
+    # standard_categories provides: Gemüse, Fleisch, Obst
     await logged_in_user.open("/admin/categories")
 
     # Click the delete button
-    logged_in_user.find(marker="delete-WirdGelöscht").click()
+    logged_in_user.find(marker="delete-Fleisch").click()
 
     # Confirm deletion
     logged_in_user.find("Löschen").click()
 
     # Category should be gone
-    await logged_in_user.should_not_see("WirdGelöscht")
+    await logged_in_user.should_not_see("Fleisch")
 
 
 async def test_delete_category_cancel(
     logged_in_user: TestUser,
-    isolated_test_database,
+    standard_categories,
 ) -> None:
     """Test that canceling delete keeps the category."""
-    # Create a category
-    with Session(isolated_test_database) as session:
-        cat = Category(
-            name="NichtLöschen",
-            created_by=1,
-        )
-        session.add(cat)
-        session.commit()
-
+    # standard_categories provides: Gemüse, Fleisch, Obst
     await logged_in_user.open("/admin/categories")
 
     # Click the delete button
-    logged_in_user.find(marker="delete-NichtLöschen").click()
+    logged_in_user.find(marker="delete-Obst").click()
 
     # Cancel deletion
     logged_in_user.find("Abbrechen").click()
 
     # Category should still be there
-    await logged_in_user.should_see("NichtLöschen")
+    await logged_in_user.should_see("Obst")
 
 
 # =============================================================================
@@ -497,18 +411,10 @@ async def test_delete_category_cancel(
 
 async def test_edit_dialog_shows_shelf_life_section(
     logged_in_user: TestUser,
-    isolated_test_database,
+    standard_categories,
 ) -> None:
     """Test that edit dialog shows shelf life configuration section."""
-    # Create a category
-    with Session(isolated_test_database) as session:
-        cat = Category(
-            name="Fleisch",
-            created_by=1,
-        )
-        session.add(cat)
-        session.commit()
-
+    # standard_categories provides: Gemüse, Fleisch, Obst
     await logged_in_user.open("/admin/categories")
 
     # Click the edit button
@@ -523,18 +429,10 @@ async def test_edit_dialog_shows_shelf_life_section(
 
 async def test_shelf_life_inputs_have_min_max_fields(
     logged_in_user: TestUser,
-    isolated_test_database,
+    standard_categories,
 ) -> None:
     """Test that shelf life section has min and max input fields."""
-    # Create a category
-    with Session(isolated_test_database) as session:
-        cat = Category(
-            name="Gemüse",
-            created_by=1,
-        )
-        session.add(cat)
-        session.commit()
-
+    # standard_categories provides: Gemüse, Fleisch, Obst
     await logged_in_user.open("/admin/categories")
 
     # Click the edit button
@@ -547,21 +445,15 @@ async def test_shelf_life_inputs_have_min_max_fields(
 
 async def test_save_shelf_life_for_category(
     logged_in_user: TestUser,
+    standard_categories,
     isolated_test_database,
 ) -> None:
     """Test that shelf life can be saved for a category."""
     from app.models.category_shelf_life import CategoryShelfLife
     from app.models.category_shelf_life import StorageType
 
-    # Create a category
-    with Session(isolated_test_database) as session:
-        cat = Category(
-            name="Fleisch",
-            created_by=1,
-        )
-        session.add(cat)
-        session.commit()
-        cat_id = cat.id
+    # standard_categories provides: Gemüse (100), Fleisch (101), Obst (102)
+    cat_id = 101  # Fleisch
 
     await logged_in_user.open("/admin/categories")
 
@@ -595,18 +487,10 @@ async def test_save_shelf_life_for_category(
 
 async def test_shelf_life_validation_min_greater_than_max(
     logged_in_user: TestUser,
-    isolated_test_database,
+    standard_categories,
 ) -> None:
     """Test that validation error is shown when min > max."""
-    # Create a category
-    with Session(isolated_test_database) as session:
-        cat = Category(
-            name="Obst",
-            created_by=1,
-        )
-        session.add(cat)
-        session.commit()
-
+    # standard_categories provides: Gemüse, Fleisch, Obst
     await logged_in_user.open("/admin/categories")
 
     # Click the edit button
@@ -628,24 +512,18 @@ async def test_shelf_life_validation_min_greater_than_max(
 
 async def test_category_list_shows_shelf_life_info(
     logged_in_user: TestUser,
+    standard_categories,
     isolated_test_database,
 ) -> None:
     """Test that category list shows configured shelf life info."""
     from app.models.category_shelf_life import CategoryShelfLife
     from app.models.category_shelf_life import StorageType
 
-    # Create a category with shelf life
+    # standard_categories provides: Gemüse (100), Fleisch (101), Obst (102)
+    # Add shelf life to Fleisch
     with Session(isolated_test_database) as session:
-        cat = Category(
-            name="Milch",
-            created_by=1,
-        )
-        session.add(cat)
-        session.commit()
-        session.refresh(cat)
-
         shelf_life = CategoryShelfLife(
-            category_id=cat.id,
+            category_id=101,  # Fleisch
             storage_type=StorageType.FROZEN,
             months_min=6,
             months_max=12,
@@ -656,30 +534,24 @@ async def test_category_list_shows_shelf_life_info(
     await logged_in_user.open("/admin/categories")
 
     # Should see shelf life info in the list
-    await logged_in_user.should_see("Milch")
+    await logged_in_user.should_see("Fleisch")
     await logged_in_user.should_see("6-12")
 
 
 async def test_edit_dialog_shows_existing_shelf_life(
     logged_in_user: TestUser,
+    standard_categories,
     isolated_test_database,
 ) -> None:
     """Test that edit dialog shows existing shelf life values."""
     from app.models.category_shelf_life import CategoryShelfLife
     from app.models.category_shelf_life import StorageType
 
-    # Create a category with shelf life
+    # standard_categories provides: Gemüse (100), Fleisch (101), Obst (102)
+    # Add shelf life to Obst
     with Session(isolated_test_database) as session:
-        cat = Category(
-            name="Fisch",
-            created_by=1,
-        )
-        session.add(cat)
-        session.commit()
-        session.refresh(cat)
-
         shelf_life = CategoryShelfLife(
-            category_id=cat.id,
+            category_id=102,  # Obst
             storage_type=StorageType.FROZEN,
             months_min=3,
             months_max=6,
@@ -690,7 +562,7 @@ async def test_edit_dialog_shows_existing_shelf_life(
     await logged_in_user.open("/admin/categories")
 
     # Click the edit button
-    logged_in_user.find(marker="edit-Fisch").click()
+    logged_in_user.find(marker="edit-Obst").click()
 
     # Should see existing values in the inputs
     await logged_in_user.should_see("Haltbarkeit")
@@ -882,23 +754,14 @@ async def test_create_dialog_color_preview_updates_on_selection(
 
 async def test_edit_dialog_shows_color_preview(
     logged_in_user: TestUser,
-    isolated_test_database,
+    standard_categories,
 ) -> None:
     """Test that edit dialog shows a color preview element."""
-    # Create a category with color
-    with Session(isolated_test_database) as session:
-        cat = Category(
-            name="Farbtest",
-            color="#00FF00",
-            created_by=1,
-        )
-        session.add(cat)
-        session.commit()
-
+    # standard_categories provides: Gemüse (#00FF00), Fleisch (#FF0000), Obst (#FFA500)
     await logged_in_user.open("/admin/categories")
 
     # Click the edit button
-    logged_in_user.find(marker="edit-Farbtest").click()
+    logged_in_user.find(marker="edit-Gemüse").click()
 
     # Should see color preview element
     preview = logged_in_user.find(marker="color-preview")
@@ -907,23 +770,14 @@ async def test_edit_dialog_shows_color_preview(
 
 async def test_edit_dialog_color_preview_shows_existing_color(
     logged_in_user: TestUser,
-    isolated_test_database,
+    standard_categories,
 ) -> None:
     """Test that edit dialog preview shows the existing category color."""
-    # Create a category with a specific color
-    with Session(isolated_test_database) as session:
-        cat = Category(
-            name="GrüneKategorie",
-            color="#00FF00",
-            created_by=1,
-        )
-        session.add(cat)
-        session.commit()
-
+    # standard_categories provides: Gemüse (#00FF00), Fleisch (#FF0000), Obst (#FFA500)
     await logged_in_user.open("/admin/categories")
 
-    # Click the edit button
-    logged_in_user.find(marker="edit-GrüneKategorie").click()
+    # Click the edit button for Gemüse (which has #00FF00)
+    logged_in_user.find(marker="edit-Gemüse").click()
 
     # The preview should show the existing color
     preview = logged_in_user.find(marker="color-preview")

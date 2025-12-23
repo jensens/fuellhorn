@@ -1,6 +1,9 @@
 """Pytest configuration and fixtures for Fuellhorn tests."""
 
 from app.models import User
+from app.models.category import Category
+from app.models.location import Location
+from app.models.location import LocationType
 from collections.abc import Generator
 import os
 import pytest
@@ -211,3 +214,129 @@ def test_user_fixture(session: Session) -> User:
     session.commit()
     session.refresh(user)
     return user
+
+
+# ============================================================================
+# Shared Test Data Fixtures
+# ============================================================================
+
+
+@pytest.fixture
+def standard_categories(isolated_test_database) -> list[Category]:
+    """Standard categories for tests.
+
+    Creates 3 categories with fixed IDs (100, 101, 102) to avoid conflicts
+    with dynamically created objects.
+
+    Returns:
+        List of Category objects: Gemüse, Fleisch, Obst
+    """
+    with Session(isolated_test_database) as session:
+        categories = [
+            Category(id=100, name="Gemüse", color="#00FF00", created_by=1),
+            Category(id=101, name="Fleisch", color="#FF0000", created_by=1),
+            Category(id=102, name="Obst", color="#FFA500", created_by=1),
+        ]
+        session.add_all(categories)
+        session.commit()
+        for cat in categories:
+            session.refresh(cat)
+        return categories
+
+
+@pytest.fixture
+def standard_locations(isolated_test_database) -> list[Location]:
+    """Standard locations for tests.
+
+    Creates 3 locations with fixed IDs (100, 101, 102) to avoid conflicts
+    with dynamically created objects.
+
+    Returns:
+        List of Location objects: Kühlschrank, Tiefkühler, Speisekammer
+    """
+    with Session(isolated_test_database) as session:
+        locations = [
+            Location(
+                id=100,
+                name="Kühlschrank",
+                location_type=LocationType.CHILLED,
+                color="#0000FF",
+                created_by=1,
+            ),
+            Location(
+                id=101,
+                name="Tiefkühler",
+                location_type=LocationType.FROZEN,
+                color="#00FFFF",
+                created_by=1,
+            ),
+            Location(
+                id=102,
+                name="Speisekammer",
+                location_type=LocationType.AMBIENT,
+                color="#8B4513",
+                created_by=1,
+            ),
+        ]
+        session.add_all(locations)
+        session.commit()
+        for loc in locations:
+            session.refresh(loc)
+        return locations
+
+
+@pytest.fixture
+def standard_users(isolated_test_database) -> list[User]:
+    """Standard test users for tests.
+
+    Creates 2 additional users with fixed IDs (100, 101) to avoid conflicts.
+    Note: Admin user (id=1) already exists from _module_engine.
+
+    Returns:
+        List of User objects: testuser1, testuser2
+    """
+    with Session(isolated_test_database) as session:
+        users = []
+        user1 = User(
+            id=100,
+            username="testuser1",
+            email="testuser1@example.com",
+            is_active=True,
+            role="user",
+        )
+        user1.set_password("password123")
+        users.append(user1)
+
+        user2 = User(
+            id=101,
+            username="testuser2",
+            email="testuser2@example.com",
+            is_active=False,
+            role="admin",
+        )
+        user2.set_password("password123")
+        users.append(user2)
+
+        session.add_all(users)
+        session.commit()
+        for user in users:
+            session.refresh(user)
+        return users
+
+
+@pytest.fixture
+def seeded_database(
+    standard_categories,
+    standard_locations,
+    isolated_test_database,
+):
+    """Fully seeded test database.
+
+    Contains:
+    - Admin user (from isolated_test_database)
+    - 3 categories (Gemüse, Fleisch, Obst)
+    - 3 locations (Kühlschrank, Tiefkühler, Speisekammer)
+
+    Use this when a test needs all standard test data.
+    """
+    return isolated_test_database
