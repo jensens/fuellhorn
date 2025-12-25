@@ -20,6 +20,28 @@ uv run pytest -m e2e --run-e2e
 uv run pytest tests/test_services/test_item_service.py -v
 ```
 
+### Parallele Ausführung mit pytest-xdist
+
+Tests können mit mehreren Workern parallel ausgeführt werden:
+
+```bash
+# Mit 4 parallelen Workern
+uv run pytest -n 4
+
+# Automatisch (nutzt alle CPU-Kerne)
+uv run pytest -n auto
+
+# E2E parallel (empfohlen, ~75% schneller)
+uv run pytest -m e2e --run-e2e -n auto
+```
+
+**Warum funktioniert das?**
+- Jeder Test bekommt eigenen Port (`_find_free_port()`)
+- Separate in-memory SQLite-DB pro Test
+- Eigene Browser-Instanz pro E2E-Test
+
+**CI:** E2E-Tests laufen im CI automatisch mit `-n auto`.
+
 ## Fixtures
 
 Definiert in `tests/conftest.py` - einfach als Parameter verwenden:
