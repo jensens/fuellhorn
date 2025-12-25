@@ -67,14 +67,18 @@ def main() -> None:
     create_db_and_tables()
 
     # Admin-User erstellen
+    # Pre-computed bcrypt hash für "admin" - vermeidet ~100-200ms bcrypt pro Test
+    # Generiert mit: bcrypt.hashpw(b'admin', bcrypt.gensalt()).decode('utf-8')
+    ADMIN_PASSWORD_HASH = "$2b$12$8wqw9nFQlSAdV3SPd9bLZuUzOtK2.YowC9dXnjNvkCkp/1iSQenke"
+
     with next(get_session()) as session:
         admin = User(
             username="admin",
             email="admin@test.com",
             is_active=True,
             role="admin",
+            password_hash=ADMIN_PASSWORD_HASH,  # Pre-hashed für Performance
         )
-        admin.set_password("admin")  # Einfaches Passwort für E2E Tests
         session.add(admin)
         session.commit()
         session.refresh(admin)
