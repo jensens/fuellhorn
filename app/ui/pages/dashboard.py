@@ -16,6 +16,7 @@ from ..components import create_item_card
 from ..components import create_mobile_page_container
 from ..components import create_user_dropdown
 from ..components.location_overview import create_location_overview_chips
+from ..components.recently_added import create_recently_added_section
 from nicegui import ui
 
 
@@ -64,6 +65,9 @@ def dashboard() -> None:
                     ui.icon("eco").classes("text-4xl text-leaf mb-2")
                     ui.label("Alles frisch!").classes("text-lg text-charcoal font-medium")
                     ui.label("Keine Artikel laufen in den nächsten 7 Tagen ab.").classes("text-sm text-stone")
+
+            # "Kürzlich hinzugefügt" section - recently added items (Issue #248)
+            create_recently_added_section(session)
 
             # "Auf einen Blick" section - 2x2 tile grid (Issue #245)
             ui.label("Auf einen Blick").classes("sp-page-title text-base mb-3 mt-6")
