@@ -299,3 +299,126 @@ def _render_dashboard_content() -> None:
                 ui.icon("eco").classes("text-4xl text-leaf mb-2")
                 ui.label("Alles frisch!").classes("text-lg text-charcoal font-medium")
                 ui.label("Keine Artikel laufen in den nächsten 7 Tagen ab.").classes("text-sm text-stone")
+
+
+# =============================================================================
+# Test pages for "Kürzlich hinzugefügt" section (Issue #248)
+# =============================================================================
+
+
+def _create_test_location_with_name(
+    session: Session,
+    location_type: LocationType,
+    name: str,
+    location_id: int,
+) -> Location:
+    """Create a test location with specific name and ID."""
+    location = session.get(Location, location_id)
+    if location:
+        return location
+
+    location = Location(
+        id=location_id,
+        name=name,
+        location_type=location_type,
+        created_by=1,
+    )
+    session.add(location)
+    session.commit()
+    session.refresh(location)
+    return location
+
+
+def _create_recently_added_item(
+    session: Session,
+    location: Location,
+    product_name: str,
+    days_ago: int = 0,
+) -> Item:
+    """Create an item with created_at set to specific days ago."""
+    from datetime import datetime
+
+    # Create item with best_before_date in the future
+    best_before = date.today() + timedelta(days=30)
+    item = Item(
+        product_name=product_name,
+        best_before_date=best_before,
+        quantity=1,
+        unit="Stück",
+        item_type=ItemType.PURCHASED_FRESH,
+        location_id=location.id,
+        created_by=1,
+    )
+    session.add(item)
+    session.commit()
+    session.refresh(item)
+
+    # Update created_at to simulate item added X days ago
+    if days_ago > 0:
+        new_created_at = datetime.now() - timedelta(days=days_ago)
+        item.created_at = new_created_at
+        session.add(item)
+        session.commit()
+        session.refresh(item)
+
+    return item
+
+
+@ui.page("/test-dashboard-recently-added")
+def page_dashboard_recently_added() -> None:
+    """Test page: Recently added items section (Issue #248)."""
+    with next(get_session()) as session:
+        # Create locations
+        location_frozen = _create_test_location_with_name(session, LocationType.FROZEN, "Tiefkühltruhe", 1)
+        location_ambient = _create_test_location_with_name(session, LocationType.AMBIENT, "Vorratsraum", 3)
+
+        # Create recently added items
+        _create_recently_added_item(session, location_frozen, "Tomatensoße", days_ago=0)
+        _create_recently_added_item(session, location_ambient, "Apfelmus", days_ago=1)
+
+    _render_recently_added_section()
+
+
+@ui.page("/test-dashboard-recently-added-today")
+def page_dashboard_recently_added_today() -> None:
+    """Test page: Item added today shows 'Heute' (Issue #248)."""
+    with next(get_session()) as session:
+        location = _create_test_location(session, LocationType.CHILLED)
+        _create_recently_added_item(session, location, "Frischer Joghurt", days_ago=0)
+
+    _render_recently_added_section()
+
+
+@ui.page("/test-dashboard-recently-added-yesterday")
+def page_dashboard_recently_added_yesterday() -> None:
+    """Test page: Item added yesterday shows 'Gestern' (Issue #248)."""
+    with next(get_session()) as session:
+        location = _create_test_location(session, LocationType.CHILLED)
+        _create_recently_added_item(session, location, "Gestern gekauft", days_ago=1)
+
+    _render_recently_added_section()
+
+
+@ui.page("/test-dashboard-recently-added-weekday")
+def page_dashboard_recently_added_weekday() -> None:
+    """Test page: Item added 3 days ago shows weekday (Issue #248)."""
+    with next(get_session()) as session:
+        location = _create_test_location(session, LocationType.CHILLED)
+        _create_recently_added_item(session, location, "Vor 3 Tagen gekauft", days_ago=3)
+
+    _render_recently_added_section()
+
+
+@ui.page("/test-dashboard-recently-added-empty")
+def page_dashboard_recently_added_empty() -> None:
+    """Test page: No recently added items (section hidden) (Issue #248)."""
+    # Don't create any items - section should be hidden
+    _render_recently_added_section()
+
+
+def _render_recently_added_section() -> None:
+    """Render 'Kürzlich hinzugefügt' section for testing (Issue #248)."""
+    from ..components.recently_added import create_recently_added_section
+
+    with next(get_session()) as session:
+        create_recently_added_section(session)
