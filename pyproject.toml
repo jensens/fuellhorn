@@ -1,6 +1,6 @@
 [project]
 name = "fuellhorn"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Lebensmittelvorrats-Verwaltung - Self-hosted inventory management for food storage"
 license = {text = "AGPL-3.0-or-later"}
 authors = [
@@ -111,3 +111,23 @@ force-sort-within-sections = true
 case-sensitive = false
 lines-after-imports = 2
 no-sections = true
+
+[build-system]
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+[tool.hatch.version]
+source = "vcs"
+raw-options = { local_scheme = "no-local-version" }
+
+[tool.hatch.build.hooks.vcs]
+version-file = "app/_version.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"alembic.ini" = "app/alembic.ini"
+
+[project.scripts]
+fuellhorn = "app.cli:main"
