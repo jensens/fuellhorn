@@ -45,6 +45,9 @@ data/*.db-journal
 # Alembic
 alembic/versions/*.pyc
 
+# Generated version file
+app/_version.py
+
 # NiceGUI
 .nicegui/
 
