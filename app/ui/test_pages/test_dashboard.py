@@ -422,3 +422,120 @@ def _render_recently_added_section() -> None:
 
     with next(get_session()) as session:
         create_recently_added_section(session)
+
+
+# =============================================================================
+# Test pages for "Kategorien" bar chart section (Issue #247)
+# =============================================================================
+
+
+def _create_test_category_with_color(
+    session: Session,
+    name: str,
+    color: str,
+    category_id: int,
+) -> Category:
+    """Create a test category with specific name, color and ID."""
+    category = session.get(Category, category_id)
+    if category:
+        return category
+
+    category = Category(
+        id=category_id,
+        name=name,
+        color=color,
+        created_by=1,
+    )
+    session.add(category)
+    session.commit()
+    session.refresh(category)
+    return category
+
+
+def _create_item_with_category(
+    session: Session,
+    location: Location,
+    category: Category,
+    product_name: str,
+) -> Item:
+    """Create a test item with a category."""
+    best_before = date.today() + timedelta(days=30)
+    item = Item(
+        product_name=product_name,
+        best_before_date=best_before,
+        quantity=1,
+        unit="Stück",
+        item_type=ItemType.PURCHASED_FRESH,
+        location_id=location.id,
+        category_id=category.id,
+        created_by=1,
+    )
+    session.add(item)
+    session.commit()
+    session.refresh(item)
+    return item
+
+
+@ui.page("/test-dashboard-category-bars")
+def page_dashboard_category_bars() -> None:
+    """Test page: Category bar chart with multiple categories (Issue #247)."""
+    with next(get_session()) as session:
+        # Create location
+        location = _create_test_location(session, LocationType.CHILLED)
+
+        # Create categories with different colors
+        cat_gemuese = _create_test_category_with_color(session, "Gemüse", "#22C55E", 10)
+        cat_fleisch = _create_test_category_with_color(session, "Fleisch", "#EF4444", 11)
+        cat_eingemachtes = _create_test_category_with_color(session, "Eingemachtes", "#F59E0B", 12)
+
+        # Create items: Gemüse=5, Fleisch=3, Eingemachtes=8
+        for i in range(5):
+            _create_item_with_category(session, location, cat_gemuese, f"Gemüse Item {i}")
+        for i in range(3):
+            _create_item_with_category(session, location, cat_fleisch, f"Fleisch Item {i}")
+        for i in range(8):
+            _create_item_with_category(session, location, cat_eingemachtes, f"Eingemachtes Item {i}")
+
+    _render_category_bars_section()
+
+
+@ui.page("/test-dashboard-category-bars-order")
+def page_dashboard_category_bars_order() -> None:
+    """Test page: Category bar chart sorting (Issue #247)."""
+    with next(get_session()) as session:
+        location = _create_test_location(session, LocationType.CHILLED)
+
+        # Create categories - Eingemachtes should be first (most items)
+        cat_gemuese = _create_test_category_with_color(session, "Gemüse", "#22C55E", 10)
+        cat_eingemachtes = _create_test_category_with_color(session, "Eingemachtes", "#F59E0B", 12)
+
+        # Eingemachtes=10, Gemüse=2
+        for i in range(2):
+            _create_item_with_category(session, location, cat_gemuese, f"Gemüse Item {i}")
+        for i in range(10):
+            _create_item_with_category(session, location, cat_eingemachtes, f"Eingemachtes Item {i}")
+
+    _render_category_bars_section()
+
+
+@ui.page("/test-dashboard-category-bars-empty")
+def page_dashboard_category_bars_empty() -> None:
+    """Test page: Category bar chart with no items (Issue #247)."""
+    # Don't create any items - section should be hidden
+    _render_category_bars_section()
+
+
+def _render_category_bars_section() -> None:
+    """Render 'Kategorien' bar chart section for testing (Issue #247)."""
+    from ...services import category_service
+    from ...services import item_service
+    from ..components.category_bar_chart import create_category_bar_chart
+
+    with next(get_session()) as session:
+        categories = category_service.get_all_categories(session)
+        item_counts = item_service.get_item_count_by_category(session)
+
+        create_category_bar_chart(
+            categories=categories,
+            item_counts=item_counts,
+        )

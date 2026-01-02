@@ -145,3 +145,45 @@ async def test_dashboard_at_a_glance_shows_categories_count(user: TestUser) -> N
     """Test that 'Auf einen Blick' shows categories count tile (Issue #245)."""
     await user.open("/test-dashboard-at-a-glance")
     await user.should_see("Kategorien")
+
+
+# =============================================================================
+# Tests for Issue #247: Dashboard Kategorien-Balkendiagramm
+# =============================================================================
+
+
+async def test_dashboard_shows_categories_section(user: TestUser) -> None:
+    """Test that dashboard shows 'Kategorien' section (Issue #247)."""
+    await user.open("/test-dashboard-category-bars")
+    await user.should_see("Kategorien")
+
+
+async def test_dashboard_category_bars_show_category_names(user: TestUser) -> None:
+    """Test that category bar chart shows category names (Issue #247)."""
+    await user.open("/test-dashboard-category-bars")
+    await user.should_see("Gemüse")
+    await user.should_see("Fleisch")
+    await user.should_see("Eingemachtes")
+
+
+async def test_dashboard_category_bars_show_item_counts(user: TestUser) -> None:
+    """Test that category bar chart shows item counts (Issue #247)."""
+    await user.open("/test-dashboard-category-bars")
+    # Counts: Gemüse=5, Fleisch=3, Eingemachtes=8
+    await user.should_see("5")
+    await user.should_see("3")
+    await user.should_see("8")
+
+
+async def test_dashboard_category_bars_sorted_descending(user: TestUser) -> None:
+    """Test that categories are sorted by count descending (Issue #247)."""
+    await user.open("/test-dashboard-category-bars-order")
+    # First category should be the one with most items
+    await user.should_see("Eingemachtes")
+
+
+async def test_dashboard_category_bars_empty_state(user: TestUser) -> None:
+    """Test that empty category section is hidden (Issue #247)."""
+    await user.open("/test-dashboard-category-bars-empty")
+    # Section should not appear when no categories with items
+    await user.should_not_see("Kategorien")

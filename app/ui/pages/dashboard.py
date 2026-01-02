@@ -15,6 +15,7 @@ from ..components import create_bottom_sheet
 from ..components import create_item_card
 from ..components import create_mobile_page_container
 from ..components import create_user_dropdown
+from ..components.category_bar_chart import create_category_bar_chart
 from ..components.location_overview import create_location_overview_chips
 from ..components.recently_added import create_recently_added_section
 from nicegui import ui
@@ -134,6 +135,13 @@ def dashboard() -> None:
             create_location_overview_chips(
                 locations=locations,
                 item_counts=item_counts,
+            )
+
+            # Categories bar chart section (Issue #247)
+            category_counts = item_service.get_item_count_by_category(session)
+            create_category_bar_chart(
+                categories=categories,
+                item_counts=category_counts,
             )
 
     # Bottom Navigation (always visible)
