@@ -48,6 +48,9 @@ app/alembic/versions/*.pyc
 # Generated version file
 app/_version.py
 
+# Generated version file
+app/_version.py
+
 # NiceGUI
 .nicegui/
 
