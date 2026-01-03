@@ -1,0 +1,84 @@
+# Fuellhorn Helm Chart Values
+
+replicaCount: 1
+
+image:
+  repository: ghcr.io/jensens/fuellhorn
+  tag: "latest"
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+service:
+  type: ClusterIP
+  port: 8080
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: fuellhorn.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+# Datenbank-Konfiguration
+database:
+  # "postgresql" oder "sqlite"
+  type: postgresql
+
+  # Externe PostgreSQL (wenn type: postgresql)
+  external:
+    host: ""
+    port: 5432
+    database: fuellhorn
+    username: fuellhorn
+    # existingSecret: Name eines bestehenden Secrets mit key "password"
+    existingSecret: ""
+    # Oder direkt (nicht empfohlen für Production)
+    password: ""
+
+# Secrets (MÜSSEN gesetzt werden!)
+secrets:
+  # Für Production: existingSecret verwenden
+  existingSecret: ""
+  # Oder direkt setzen (nur für Testing)
+  secretKey: ""
+  fuellhornSecret: ""
+
+# SQLite Persistence (nur wenn database.type: sqlite)
+persistence:
+  enabled: true
+  storageClass: ""
+  size: 1Gi
+  accessMode: ReadWriteOnce
+
+resources:
+  limits:
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 256Mi
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# Health Checks
+livenessProbe:
+  httpGet:
+    path: /api/health
+    port: http
+  initialDelaySeconds: 30
+  periodSeconds: 10
+
+readinessProbe:
+  httpGet:
+    path: /api/health
+    port: http
+  initialDelaySeconds: 5
+  periodSeconds: 5
