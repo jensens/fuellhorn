@@ -1,18 +1,16 @@
 # Fuellhorn - Lebensmittelvorrats-Verwaltung
 # SPDX-License-Identifier: AGPL-3.0-or-later
 #
-# Docker Compose Setup for Production with PostgreSQL
-# Uses the published GHCR image
+# Docker Compose Setup for Local Development
+# Builds from source using Dockerfile.dev
 #
 # Usage:
-#   1. Copy .env.example to .env and configure secrets
-#   2. docker compose up -d
-#   3. Access at http://localhost:8080
-#
-# For local development with source build, use:
 #   docker compose -f docker-compose.local.yml up
 #
-# Note: First run will execute Alembic migrations automatically
+# Features:
+#   - Builds from source (Dockerfile.dev)
+#   - Volume mount for live code changes
+#   - Default development secrets (change for any real usage!)
 
 services:
   db:
@@ -21,7 +19,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-fuellhorn}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fuellhorn}
       POSTGRES_DB: ${POSTGRES_DB:-fuellhorn}
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -35,7 +33,9 @@ services:
       - fuellhorn-network
 
   app:
-    image: ghcr.io/jensens/fuellhorn:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
     container_name: fuellhorn-app
     restart: unless-stopped
     depends_on:
@@ -44,14 +44,16 @@ services:
     environment:
       # Database Configuration
       DB_TYPE: postgresql
-      DATABASE_URL: postgresql://${POSTGRES_USER:-fuellhorn}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-fuellhorn}
-      # Security (REQUIRED - set in .env file)
-      SECRET_KEY: ${SECRET_KEY}
-      FUELLHORN_SECRET: ${FUELLHORN_SECRET}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-fuellhorn}:${POSTGRES_PASSWORD:-fuellhorn}@db:5432/${POSTGRES_DB:-fuellhorn}
+      # Security (development defaults - change for real usage!)
+      SECRET_KEY: ${SECRET_KEY:-dev-secret-key-min-32-chars-long!!}
+      FUELLHORN_SECRET: ${FUELLHORN_SECRET:-dev-fuellhorn-secret-32-chars!!}
       # App Configuration
-      DEBUG: ${DEBUG:-false}
+      DEBUG: ${DEBUG:-true}
       HOST: 0.0.0.0
       PORT: 8080
+    volumes:
+      - ./app:/app/app:ro
     ports:
       - "${APP_PORT:-8080}:8080"
     networks:
@@ -59,8 +61,8 @@ services:
 
 volumes:
   postgres_data:
-    name: fuellhorn-postgres-data
+    name: fuellhorn-postgres-data-local
 
 networks:
   fuellhorn-network:
-    name: fuellhorn-network
+    name: fuellhorn-network-local
