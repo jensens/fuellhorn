@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "fuellhorn.fullname" . }}
+  labels:
+    {{- include "fuellhorn.labels" . | nindent 4 }}
+data:
+  DB_TYPE: {{ .Values.database.type | quote }}
+  {{- if eq .Values.database.type "postgresql" }}
+  DB_HOST: {{ .Values.database.external.host | quote }}
+  DB_PORT: {{ .Values.database.external.port | quote }}
+  DB_NAME: {{ .Values.database.external.database | quote }}
+  DB_USER: {{ .Values.database.external.username | quote }}
+  {{- end }}
