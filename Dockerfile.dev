@@ -1,0 +1,23 @@
+# Fuellhorn - Lebensmittelvorrats-Verwaltung
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
+# Development Dockerfile - builds from source
+
+FROM ghcr.io/astral-sh/uv:python3.14-trixie-slim
+
+WORKDIR /app
+
+# Copy dependency files first for better caching
+COPY pyproject.toml uv.lock ./
+
+# Install only dependencies (not the project itself)
+RUN uv sync --frozen --no-dev --no-install-project
+
+# Copy application code
+COPY app/ ./app/
+COPY alembic.ini ./
+COPY main.py ./
+
+EXPOSE 8080
+
+CMD ["uv", "run", "python", "main.py"]
