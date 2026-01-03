@@ -1,47 +1,22 @@
 # Fuellhorn - Lebensmittelvorrats-Verwaltung
 # SPDX-License-Identifier: AGPL-3.0-or-later
 #
-# Simple Dockerfile for MVP - no multi-stage build, no security hardening yet
-# Post-MVP improvements: Multi-stage build, non-root user, security hardening
+# Production Dockerfile - installs from PyPI
 
 FROM ghcr.io/astral-sh/uv:python3.14-trixie-slim
 
+# Version als Build-Argument (wird vom Release-Workflow gesetzt)
+ARG FUELLHORN_VERSION
+
 WORKDIR /app
 
-# Copy dependency files first for better caching
-COPY pyproject.toml uv.lock ./
+# Fuellhorn von PyPI installieren (inkl. Alembic-Migrations)
+RUN uv pip install --system fuellhorn==${FUELLHORN_VERSION}
 
-# Install dependencies (creates .venv) - no dev dependencies
-RUN uv sync --frozen --no-dev
-
-# Copy application code
-COPY app/ ./app/
-COPY main.py ./
-
-# Copy Alembic configuration and migrations
-COPY alembic.ini ./
-COPY alembic/ ./alembic/
-
-# Copy entrypoint script
-COPY docker-entrypoint.sh ./
-RUN chmod +x docker-entrypoint.sh
-
-# Create data directory for SQLite database (standalone mode)
-RUN mkdir -p /app/data
-
-# Environment variables (defaults for standalone SQLite mode)
-# Override via docker-compose.yml or -e flags for PostgreSQL
-ENV PYTHONUNBUFFERED=1
-ENV DB_TYPE=sqlite
-ENV DATABASE_URL=sqlite:///data/fuellhorn.db
-ENV UV_PROJECT_ENVIRONMENT=/app/.venv
-
-# Expose port (NiceGUI default)
 EXPOSE 8080
 
-# Health check using the /api/health endpoint
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8080/api/health')" || exit 1
 
-# Default entrypoint runs migrations then starts app
-ENTRYPOINT ["./docker-entrypoint.sh"]
+# Fuellhorn CLI führt Migrations aus und startet die App
+CMD ["fuellhorn"]
