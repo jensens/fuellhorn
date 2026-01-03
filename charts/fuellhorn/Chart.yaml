@@ -1,0 +1,16 @@
+apiVersion: v2
+name: fuellhorn
+description: Self-hosted food inventory management
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+keywords:
+  - inventory
+  - food
+  - self-hosted
+home: https://github.com/jensens/fuellhorn
+sources:
+  - https://github.com/jensens/fuellhorn
+maintainers:
+  - name: Jens W. Klein
+    email: jk@kleinundpartner.at

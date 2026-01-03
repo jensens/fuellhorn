@@ -1,0 +1,22 @@
+Fuellhorn wurde erfolgreich installiert!
+
+1. Zugriff auf die Anwendung:
+{{- if .Values.ingress.enabled }}
+  http{{ if $.Values.ingress.tls }}s{{ end }}://{{ (first .Values.ingress.hosts).host }}
+{{- else }}
+  kubectl port-forward svc/{{ include "fuellhorn.fullname" . }} 8080:{{ .Values.service.port }}
+  Dann öffne: http://localhost:8080
+{{- end }}
+
+2. Standard-Login:
+   Erstelle einen Admin-User über die CLI oder beim ersten Start.
+
+3. Datenbank:
+{{- if eq .Values.database.type "postgresql" }}
+   PostgreSQL (extern konfiguriert)
+{{- else }}
+   SQLite (persistiert in /app/data)
+{{- end }}
+
+4. Logs anzeigen:
+   kubectl logs -f deployment/{{ include "fuellhorn.fullname" . }}
