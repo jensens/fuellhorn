@@ -30,7 +30,8 @@ def main() -> None:
     run_migrations()
 
     # Serve static files (CSS, icons, etc.)
-    nicegui_app.add_static_files("/static", "app/static")
+    static_dir = Path(__file__).parent / "static"
+    nicegui_app.add_static_files("/static", str(static_dir))
 
     # Load Solarpunk theme CSS and JavaScript for each client connection
     @nicegui_app.on_connect
