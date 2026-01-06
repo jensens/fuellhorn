@@ -125,9 +125,15 @@ docker compose up -d
 
 ### Migrations-Fehler
 
-Die Alembic-Migrationen werden beim Start automatisch ausgeführt. Bei Fehlern:
+Die Alembic-Migrationen werden beim Container-Start automatisch ausgeführt.
+Bei Problemen die Container-Logs prüfen:
 
 ```bash
-# Manuell Migrationen ausführen
-docker exec fuellhorn-app uv run alembic upgrade head
+docker compose logs app
+```
+
+Falls eine manuelle Migration erforderlich ist:
+
+```bash
+docker exec fuellhorn-app python -c "from app.cli import run_migrations; run_migrations()"
 ```

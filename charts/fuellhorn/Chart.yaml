@@ -9,6 +9,7 @@ keywords:
   - food
   - self-hosted
 home: https://github.com/jensens/fuellhorn
+icon: https://raw.githubusercontent.com/jensens/fuellhorn/main/docs/images/icon.png
 sources:
   - https://github.com/jensens/fuellhorn
 maintainers:

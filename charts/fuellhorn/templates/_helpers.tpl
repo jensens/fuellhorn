@@ -51,17 +51,6 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/*
-Create the name of the service account to use
-*/}}
-{{- define "fuellhorn.serviceAccountName" -}}
-{{- if .Values.serviceAccount.create }}
-{{- default (include "fuellhorn.fullname" .) .Values.serviceAccount.name }}
-{{- else }}
-{{- default "default" .Values.serviceAccount.name }}
-{{- end }}
-{{- end }}
-
-{{/*
 Database URL for PostgreSQL
 */}}
 {{- define "fuellhorn.databaseUrl" -}}
