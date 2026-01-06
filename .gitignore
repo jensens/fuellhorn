@@ -43,7 +43,7 @@ data/*.db-journal
 .env.local
 
 # Alembic
-alembic/versions/*.pyc
+app/alembic/versions/*.pyc
 
 # NiceGUI
 .nicegui/
