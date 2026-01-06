@@ -33,7 +33,7 @@ spec:
             - name: DATABASE_URL
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "fuellhorn.fullname" . }}-db
+                  name: {{ .Values.database.external.existingSecret | default (printf "%s-db" (include "fuellhorn.fullname" .)) }}
                   key: url
             {{- end }}
             - name: SECRET_KEY
