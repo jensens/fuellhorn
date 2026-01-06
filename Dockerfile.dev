@@ -10,7 +10,8 @@ WORKDIR /app
 # Copy dependency files first for better caching
 COPY pyproject.toml uv.lock ./
 
-# Install only dependencies (not the project itself)
+# Install dependencies only, not the project itself
+# This allows volume mounting ./app for live code reloading
 RUN uv sync --frozen --no-dev --no-install-project
 
 # Copy application code
