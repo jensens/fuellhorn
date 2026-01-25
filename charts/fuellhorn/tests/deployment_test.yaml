@@ -1,0 +1,162 @@
+suite: deployment tests
+templates:
+  - templates/deployment.yaml
+tests:
+  - it: should create a Deployment resource
+    set:
+      secrets.secretKey: test-key
+      secrets.fuellhornSecret: test-secret
+      database.external.host: postgres.example.com
+      database.external.password: testpass
+    asserts:
+      - isKind:
+          of: Deployment
+      - equal:
+          path: spec.replicas
+          value: 1
+
+  - it: should use correct image
+    set:
+      secrets.secretKey: test-key
+      secrets.fuellhornSecret: test-secret
+      image.repository: ghcr.io/jensens/fuellhorn
+      image.tag: "1.0.0"
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: ghcr.io/jensens/fuellhorn:1.0.0
+
+  - it: should set DATABASE_URL env for PostgreSQL
+    set:
+      secrets.secretKey: test-key
+      secrets.fuellhornSecret: test-secret
+      database.type: postgresql
+      database.external.host: postgres.example.com
+      database.external.password: testpass
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DB_TYPE
+            value: "postgresql"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DATABASE_URL
+            valueFrom:
+              secretKeyRef:
+                name: RELEASE-NAME-fuellhorn-db
+                key: url
+
+  - it: should use existing DB secret when configured
+    set:
+      secrets.secretKey: test-key
+      secrets.fuellhornSecret: test-secret
+      database.type: postgresql
+      database.external.existingSecret: my-db-secret
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DATABASE_URL
+            valueFrom:
+              secretKeyRef:
+                name: my-db-secret
+                key: url
+
+  - it: should not set DATABASE_URL env for SQLite
+    set:
+      secrets.secretKey: test-key
+      secrets.fuellhornSecret: test-secret
+      database.type: sqlite
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DB_TYPE
+            value: "sqlite"
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DATABASE_URL
+
+  - it: should mount data volume for SQLite
+    set:
+      secrets.secretKey: test-key
+      secrets.fuellhornSecret: test-secret
+      database.type: sqlite
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].volumeMounts[0].name
+          value: data
+      - equal:
+          path: spec.template.spec.containers[0].volumeMounts[0].mountPath
+          value: /app/data
+      - equal:
+          path: spec.template.spec.volumes[0].name
+          value: data
+
+  - it: should not mount data volume for PostgreSQL
+    set:
+      secrets.secretKey: test-key
+      secrets.fuellhornSecret: test-secret
+      database.type: postgresql
+      database.external.host: postgres.example.com
+      database.external.password: testpass
+    asserts:
+      - isNull:
+          path: spec.template.spec.containers[0].volumeMounts
+      - isNull:
+          path: spec.template.spec.volumes
+
+  - it: should set resource limits and requests
+    set:
+      secrets.secretKey: test-key
+      secrets.fuellhornSecret: test-secret
+      resources.limits.cpu: 500m
+      resources.limits.memory: 512Mi
+      resources.requests.cpu: 100m
+      resources.requests.memory: 256Mi
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].resources.limits.cpu
+          value: 500m
+      - equal:
+          path: spec.template.spec.containers[0].resources.limits.memory
+          value: 512Mi
+
+  - it: should configure liveness and readiness probes
+    set:
+      secrets.secretKey: test-key
+      secrets.fuellhornSecret: test-secret
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].livenessProbe.httpGet.path
+          value: /api/health
+      - equal:
+          path: spec.template.spec.containers[0].readinessProbe.httpGet.path
+          value: /api/health
+
+  - it: should use existing secret for app secrets when configured
+    set:
+      secrets.existingSecret: my-app-secrets
+      database.type: sqlite
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: SECRET_KEY
+            valueFrom:
+              secretKeyRef:
+                name: my-app-secrets
+                key: secret-key
+
+  - it: should scale replicas when replicaCount is set
+    set:
+      secrets.secretKey: test-key
+      secrets.fuellhornSecret: test-secret
+      replicaCount: 3
+    asserts:
+      - equal:
+          path: spec.replicas
+          value: 3

@@ -18,3 +18,7 @@ jobs:
   tests:
     name: Tests
     uses: ./.github/workflows/tests.yaml
+
+  helm-tests:
+    name: Helm Tests
+    uses: ./.github/workflows/helm-tests.yaml
