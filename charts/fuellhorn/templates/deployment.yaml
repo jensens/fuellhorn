@@ -69,6 +69,16 @@ spec:
               {{- else }}
               value: {{ .Values.initContainers.adminUser.password | quote }}
               {{- end }}
+            - name: SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.existingSecret | default (printf "%s-secrets" (include "fuellhorn.fullname" .)) }}
+                  key: secret-key
+            - name: FUELLHORN_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.existingSecret | default (printf "%s-secrets" (include "fuellhorn.fullname" .)) }}
+                  key: fuellhorn-secret
           {{- if eq .Values.database.type "sqlite" }}
           volumeMounts:
             - name: data
