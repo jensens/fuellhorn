@@ -9,14 +9,15 @@ import sys
 def run_migrations() -> None:
     """Run alembic migrations from installed package."""
     from alembic import command
-    from alembic.config import Config
+    from alembic.config import Config as AlembicConfig
     import app.alembic
+    from app.config import Config
 
     alembic_dir = Path(app.alembic.__file__).parent
 
-    alembic_cfg = Config()
+    alembic_cfg = AlembicConfig()
     alembic_cfg.set_main_option("script_location", str(alembic_dir))
-    alembic_cfg.set_main_option("sqlalchemy.url", os.environ.get("DATABASE_URL", ""))
+    alembic_cfg.set_main_option("sqlalchemy.url", Config.get_database_url())
 
     command.upgrade(alembic_cfg, "head")
 
