@@ -10,18 +10,62 @@ Self-hosted food inventory management for Kubernetes.
 
 ## Installation
 
-### Quick Start (Testing)
+### From OCI Registry (Recommended)
+
+The chart is published to GitHub Container Registry:
 
 ```bash
-helm install fuellhorn ./charts/fuellhorn \
+# Install latest version
+helm install fuellhorn oci://ghcr.io/jensens/fuellhorn \
   --set secrets.secretKey="your-secret-key-min-32-chars-here" \
   --set secrets.fuellhornSecret="your-fuellhorn-secret-min-32-chars"
+
+# Install specific version
+helm install fuellhorn oci://ghcr.io/jensens/fuellhorn --version 0.2.0
+
+# With custom values file
+helm install fuellhorn oci://ghcr.io/jensens/fuellhorn -f my-values.yaml
+```
+
+### From Git (Development)
+
+```bash
+git clone https://github.com/jensens/fuellhorn.git
+helm install fuellhorn ./fuellhorn/charts/fuellhorn \
+  --set secrets.secretKey="your-secret-key-min-32-chars-here" \
+  --set secrets.fuellhornSecret="your-fuellhorn-secret-min-32-chars"
+```
+
+### GitOps with ArgoCD
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: fuellhorn
+spec:
+  source:
+    chart: fuellhorn
+    repoURL: ghcr.io/jensens
+    targetRevision: 0.2.0
+    helm:
+      values: |
+        secrets:
+          existingSecret: fuellhorn-secrets
+        database:
+          type: postgresql
+          external:
+            host: postgres.example.com
+            existingSecret: postgres-credentials
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: fuellhorn
 ```
 
 ### Production with PostgreSQL
 
 ```bash
-helm install fuellhorn ./charts/fuellhorn \
+helm install fuellhorn oci://ghcr.io/jensens/fuellhorn \
   --set database.type=postgresql \
   --set database.external.host=postgres.example.com \
   --set database.external.password=mypassword \
@@ -46,7 +90,7 @@ data:
 Then install:
 
 ```bash
-helm install fuellhorn ./charts/fuellhorn \
+helm install fuellhorn oci://ghcr.io/jensens/fuellhorn \
   --set secrets.existingSecret=my-fuellhorn-secrets
 ```
 
@@ -216,7 +260,11 @@ kubectl create secret generic fuellhorn-admin \
 ## Upgrading
 
 ```bash
-helm upgrade fuellhorn ./charts/fuellhorn --values my-values.yaml
+# From OCI registry
+helm upgrade fuellhorn oci://ghcr.io/jensens/fuellhorn -f my-values.yaml
+
+# From local checkout
+helm upgrade fuellhorn ./charts/fuellhorn -f my-values.yaml
 ```
 
 ## Uninstalling
@@ -254,5 +302,7 @@ helm get values fuellhorn
 ### Verify Templates
 
 ```bash
-helm template fuellhorn ./charts/fuellhorn --values my-values.yaml
+# Pull chart first for template verification
+helm pull oci://ghcr.io/jensens/fuellhorn --untar
+helm template fuellhorn ./fuellhorn -f my-values.yaml
 ```
