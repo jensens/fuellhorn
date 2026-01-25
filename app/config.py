@@ -48,11 +48,24 @@ class Config:
 
     @classmethod
     def get_database_url(cls) -> str:
-        """Gibt die Datenbank-URL zurück."""
+        """Gibt die Datenbank-URL zurück.
+
+        Für PostgreSQL wird automatisch der psycopg3 Dialekt verwendet.
+        URLs mit postgresql:// werden zu postgresql+psycopg:// konvertiert.
+        """
         if cls.DB_TYPE == "sqlite":
             # Stelle sicher, dass das data/ Verzeichnis existiert
             DATA_DIR.mkdir(exist_ok=True)
-        return cls.DATABASE_URL
+            return cls.DATABASE_URL
+
+        # PostgreSQL: Sicherstellen dass psycopg3 Dialekt verwendet wird
+        url = cls.DATABASE_URL
+        if url.startswith("postgresql://"):
+            url = url.replace("postgresql://", "postgresql+psycopg://", 1)
+        elif url.startswith("postgres://"):
+            # Heroku-style URLs
+            url = url.replace("postgres://", "postgresql+psycopg://", 1)
+        return url
 
 
 # Singleton-Instanz
