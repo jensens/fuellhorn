@@ -24,7 +24,7 @@ spec:
         - name: migrate
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          command: ["alembic", "upgrade", "head"]
+          command: ["fuellhorn", "migrate"]
           env:
             - name: DB_TYPE
               value: {{ .Values.database.type | quote }}
@@ -45,7 +45,7 @@ spec:
         - name: create-admin
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          command: ["python", "create_admin.py"]
+          command: ["fuellhorn", "create-admin"]
           env:
             - name: DB_TYPE
               value: {{ .Values.database.type | quote }}
