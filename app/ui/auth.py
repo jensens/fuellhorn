@@ -112,12 +112,11 @@ def show_login_page() -> None:
 
             # Formular
             with ui.column().classes("w-full gap-4"):
-                username_input = ui.input("Benutzername", placeholder="Username").classes("w-full").props("outlined")
+                username_input = ui.input("Benutzername").classes("w-full").props("outlined")
 
                 password_input = (
                     ui.input(
                         "Passwort",
-                        placeholder="Passwort",
                         password=True,
                         password_toggle_button=True,
                     )
