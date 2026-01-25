@@ -200,12 +200,18 @@ jobs:
 
       - name: Get version from tag
         id: version
-        run: echo "version=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
+        run: |
+          # Get Python version from tag (e.g., v1.0.0a5 -> 1.0.0a5)
+          pyversion="${GITHUB_REF_NAME#v}"
+          echo "pyversion=$pyversion" >> $GITHUB_OUTPUT
+          # Convert PEP 440 to SemVer for Helm (1.0.0a5 -> 1.0.0-alpha.5)
+          semver=$(echo "$pyversion" | sed -E 's/([0-9]+\.[0-9]+\.[0-9]+)a([0-9]+)/\1-alpha.\2/; s/([0-9]+\.[0-9]+\.[0-9]+)b([0-9]+)/\1-beta.\2/; s/([0-9]+\.[0-9]+\.[0-9]+)rc([0-9]+)/\1-rc.\2/')
+          echo "semver=$semver" >> $GITHUB_OUTPUT
 
       - name: Update Chart.yaml version
         run: |
-          sed -i "s/^version:.*/version: ${{ steps.version.outputs.version }}/" charts/fuellhorn/Chart.yaml
-          sed -i "s/^appVersion:.*/appVersion: \"${{ steps.version.outputs.version }}\"/" charts/fuellhorn/Chart.yaml
+          sed -i "s/^version:.*/version: ${{ steps.version.outputs.semver }}/" charts/fuellhorn/Chart.yaml
+          sed -i "s/^appVersion:.*/appVersion: \"${{ steps.version.outputs.pyversion }}\"/" charts/fuellhorn/Chart.yaml
 
       - name: Login to GHCR
         uses: docker/login-action@v3
@@ -217,4 +223,4 @@ jobs:
       - name: Package and push Helm chart
         run: |
           helm package charts/fuellhorn
-          helm push fuellhorn-${{ steps.version.outputs.version }}.tgz oci://ghcr.io/${{ github.repository_owner }}
+          helm push fuellhorn-${{ steps.version.outputs.semver }}.tgz oci://ghcr.io/${{ github.repository_owner }}
