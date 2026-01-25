@@ -80,8 +80,8 @@ class TestRunMigrations:
             assert call_args[0][1] == "head"
 
 
-class TestMain:
-    """Tests for main function."""
+class TestRunApp:
+    """Tests for run_app function."""
 
     def _create_mock_app(self) -> MagicMock:
         """Create a mock nicegui app."""
@@ -101,9 +101,9 @@ class TestMain:
             patch("nicegui.ui.run"),
             patch("app.config.get_storage_secret", return_value="test-secret"),
         ):
-            from app.cli import main
+            from app.cli import run_app
 
-            main()
+            run_app()
 
             mock_run_migrations.assert_called_once()
 
@@ -117,9 +117,9 @@ class TestMain:
             patch("nicegui.ui.run"),
             patch("app.config.get_storage_secret", return_value="test-secret"),
         ):
-            from app.cli import main
+            from app.cli import run_app
 
-            main()
+            run_app()
 
             mock_app.add_static_files.assert_called_once()
             call_args = mock_app.add_static_files.call_args
@@ -139,9 +139,9 @@ class TestMain:
             patch("app.config.get_storage_secret", return_value="test-secret"),
             patch.dict(os.environ, env, clear=True),
         ):
-            from app.cli import main
+            from app.cli import run_app
 
-            main()
+            run_app()
 
             call_kwargs = mock_run.call_args[1]
             assert call_kwargs["port"] == 8080
@@ -157,9 +157,9 @@ class TestMain:
             patch("app.config.get_storage_secret", return_value="test-secret"),
             patch.dict(os.environ, {"PORT": "9000"}),
         ):
-            from app.cli import main
+            from app.cli import run_app
 
-            main()
+            run_app()
 
             call_kwargs = mock_run.call_args[1]
             assert call_kwargs["port"] == 9000
@@ -174,9 +174,9 @@ class TestMain:
             patch("nicegui.ui.run") as mock_run,
             patch("app.config.get_storage_secret", return_value="my-secret"),
         ):
-            from app.cli import main
+            from app.cli import run_app
 
-            main()
+            run_app()
 
             mock_run.assert_called_once()
             call_kwargs = mock_run.call_args[1]
@@ -196,9 +196,9 @@ class TestMain:
             patch("nicegui.ui.run"),
             patch("app.config.get_storage_secret", return_value="test-secret"),
         ):
-            from app.cli import main
+            from app.cli import run_app
 
-            main()
+            run_app()
 
             mock_app.on_connect.assert_called_once()
 

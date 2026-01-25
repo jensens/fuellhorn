@@ -2,6 +2,8 @@
 
 import os
 from pathlib import Path
+from sqlmodel import Session
+import sys
 
 
 def run_migrations() -> None:
@@ -19,8 +21,89 @@ def run_migrations() -> None:
     command.upgrade(alembic_cfg, "head")
 
 
-def main() -> None:
-    """Main entry point."""
+def create_admin_user(session: Session) -> bool:
+    """Create initial admin user from environment variables.
+
+    Supports environment variables for Kubernetes init container usage:
+    - ADMIN_USERNAME: Admin username (default: "admin")
+    - ADMIN_EMAIL: Admin email (default: "admin@fuellhorn.local")
+    - ADMIN_PASSWORD: Admin password (required, no default for security)
+
+    Args:
+        session: Database session
+
+    Returns:
+        True if user was created, False if user already exists
+
+    Raises:
+        ValueError: If ADMIN_PASSWORD environment variable is not set
+    """
+    from app.models.user import Role
+    from app.services.auth_service import create_user
+    from app.services.auth_service import get_user_by_username
+
+    username = os.environ.get("ADMIN_USERNAME", "admin")
+    email = os.environ.get("ADMIN_EMAIL", "admin@fuellhorn.local")
+    password = os.environ.get("ADMIN_PASSWORD")
+
+    if not password:
+        raise ValueError("ADMIN_PASSWORD environment variable is required")
+
+    # Check if admin already exists
+    existing = get_user_by_username(session, username)
+    if existing:
+        print(f"Admin user already exists: {existing.username}")
+        return False
+
+    # Create admin user
+    admin = create_user(
+        session=session,
+        username=username,
+        email=email,
+        password=password,
+        role=Role.ADMIN,
+    )
+
+    print(f"Created admin user: {admin.username}")
+    print(f"Email: {admin.email}")
+    return True
+
+
+def cli_migrate() -> int:
+    """CLI command to run database migrations only.
+
+    Returns:
+        0 on success
+    """
+    print("Running database migrations...")
+    run_migrations()
+    print("Migrations completed successfully.")
+    return 0
+
+
+def cli_create_admin() -> int:
+    """CLI command to create admin user.
+
+    Returns:
+        0 on success, 1 on error
+    """
+    from app.database import get_session
+
+    with next(get_session()) as session:
+        try:
+            created = create_admin_user(session)
+            if created:
+                print("\nAdmin user created successfully.")
+            else:
+                print("\nNo changes made.")
+            return 0
+        except ValueError as e:
+            print(f"Error: {e}")
+            return 1
+
+
+def run_app() -> None:
+    """Run the fuellhorn application."""
     import app.api.health  # noqa: F401
     from app.config import get_storage_secret
     import app.ui.pages  # noqa: F401
@@ -47,6 +130,39 @@ def main() -> None:
         reload=False,
         show=False,
     )
+
+
+def dispatch_command(args: list[str]) -> int:
+    """Dispatch CLI command based on arguments.
+
+    Args:
+        args: Command line arguments (without program name)
+
+    Returns:
+        Exit code (0 for success)
+    """
+    if not args:
+        run_app()
+        return 0
+
+    command = args[0]
+
+    if command == "migrate":
+        return cli_migrate()
+    elif command == "create-admin":
+        return cli_create_admin()
+    else:
+        print(f"Unknown command: {command}")
+        print("Available commands: migrate, create-admin")
+        print("Run without arguments to start the application.")
+        return 1
+
+
+def main() -> None:
+    """Main entry point."""
+    exit_code = dispatch_command(sys.argv[1:])
+    if exit_code != 0:
+        sys.exit(exit_code)
 
 
 if __name__ == "__main__":
