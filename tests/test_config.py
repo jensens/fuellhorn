@@ -75,6 +75,78 @@ class TestConfigClass:
         assert isinstance(Config.REMEMBER_ME_MAX_AGE, int)
 
 
+class TestGetDatabaseUrl:
+    """Tests for get_database_url method."""
+
+    def test_sqlite_url_unchanged(self) -> None:
+        """SQLite URLs should remain unchanged."""
+        from app.config import Config
+
+        original_db_type = Config.DB_TYPE
+        original_url = Config.DATABASE_URL
+
+        try:
+            Config.DB_TYPE = "sqlite"
+            Config.DATABASE_URL = "sqlite:///test.db"
+
+            result = Config.get_database_url()
+            assert result == "sqlite:///test.db"
+        finally:
+            Config.DB_TYPE = original_db_type
+            Config.DATABASE_URL = original_url
+
+    def test_postgresql_url_gets_psycopg_dialect(self) -> None:
+        """PostgreSQL URLs should use psycopg3 dialect."""
+        from app.config import Config
+
+        original_db_type = Config.DB_TYPE
+        original_url = Config.DATABASE_URL
+
+        try:
+            Config.DB_TYPE = "postgresql"
+            Config.DATABASE_URL = "postgresql://user:pass@localhost/db"
+
+            result = Config.get_database_url()
+            assert result == "postgresql+psycopg://user:pass@localhost/db"
+        finally:
+            Config.DB_TYPE = original_db_type
+            Config.DATABASE_URL = original_url
+
+    def test_postgres_heroku_style_url_gets_psycopg_dialect(self) -> None:
+        """Heroku-style postgres:// URLs should use psycopg3 dialect."""
+        from app.config import Config
+
+        original_db_type = Config.DB_TYPE
+        original_url = Config.DATABASE_URL
+
+        try:
+            Config.DB_TYPE = "postgresql"
+            Config.DATABASE_URL = "postgres://user:pass@localhost/db"
+
+            result = Config.get_database_url()
+            assert result == "postgresql+psycopg://user:pass@localhost/db"
+        finally:
+            Config.DB_TYPE = original_db_type
+            Config.DATABASE_URL = original_url
+
+    def test_already_correct_dialect_unchanged(self) -> None:
+        """URLs with psycopg dialect should remain unchanged."""
+        from app.config import Config
+
+        original_db_type = Config.DB_TYPE
+        original_url = Config.DATABASE_URL
+
+        try:
+            Config.DB_TYPE = "postgresql"
+            Config.DATABASE_URL = "postgresql+psycopg://user:pass@localhost/db"
+
+            result = Config.get_database_url()
+            assert result == "postgresql+psycopg://user:pass@localhost/db"
+        finally:
+            Config.DB_TYPE = original_db_type
+            Config.DATABASE_URL = original_url
+
+
 class TestMaxFileSize:
     """Tests for MAX_FILE_SIZE constant."""
 
