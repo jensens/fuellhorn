@@ -79,16 +79,17 @@ uv run alembic upgrade head
 ### 6. Initialen Admin-Benutzer anlegen
 
 ```bash
-# Lokale Entwicklung
-uv run python create_admin.py
+# Lokale Entwicklung (interaktiv)
+ADMIN_PASSWORD=your-secure-password uv run python create_admin.py
 
 # Docker Compose
 docker compose exec app /app/.venv/bin/python create_admin.py
 ```
 
-Dies erstellt einen Admin-Benutzer mit:
-- **Username:** `admin`
-- **Passwort:** `admin`
+Der Admin-Benutzer kann über Environment-Variablen konfiguriert werden:
+- `ADMIN_USERNAME` - Benutzername (default: `admin`)
+- `ADMIN_EMAIL` - E-Mail-Adresse (default: `admin@fuellhorn.local`)
+- `ADMIN_PASSWORD` - Passwort (**erforderlich**, kein Default aus Sicherheitsgründen)
 
 **Wichtig:** Das Passwort nach dem ersten Login ändern!
 
@@ -287,6 +288,26 @@ docker run -d \
 
 **Hinweis:** SQLite ist nur für Einzelnutzer/Tests geeignet. Für Produktions-Deployments mit mehreren Nutzern wird PostgreSQL empfohlen.
 
+### Option 3: Kubernetes (Helm)
+
+Füllhorn bietet einen Helm Chart für Kubernetes-Deployments mit automatischer Migration und Admin-Erstellung.
+
+```bash
+helm install fuellhorn ./charts/fuellhorn \
+  --set secrets.secretKey="your-secret-key-min-32-chars-here" \
+  --set secrets.fuellhornSecret="your-fuellhorn-secret-min-32-chars" \
+  --set database.type=postgresql \
+  --set database.external.host=postgres.example.com \
+  --set database.external.existingSecret=postgres-credentials
+```
+
+Features:
+- **Automatische Migrationen** - Alembic läuft als Init-Container
+- **Optionale Admin-Erstellung** - GitOps-freundlich, keine manuellen Schritte
+- **Flexible Konfiguration** - SQLite oder PostgreSQL, Ingress, TLS
+
+Siehe [charts/fuellhorn/README.md](charts/fuellhorn/README.md) für vollständige Dokumentation.
+
 ---
 
 ## Umgebungsvariablen
@@ -357,7 +378,7 @@ Alle Aufgaben werden über **GitHub Issues** verwaltet:
 - ❌ OCR für MHD-Erkennung
 - ❌ PWA Features (Offline-Modus)
 - ❌ Statistiken & Analytics
-- ❌ Kubernetes Deployment (CDK8s)
+- ✅ Kubernetes Deployment (Helm Chart)
 
 Siehe [docs/requirements.md](docs/requirements.md) für vollständige Roadmap.
 
