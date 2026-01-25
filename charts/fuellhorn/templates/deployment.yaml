@@ -18,6 +18,64 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      {{- if or .Values.initContainers.migrations.enabled .Values.initContainers.adminUser.enabled }}
+      initContainers:
+        {{- if .Values.initContainers.migrations.enabled }}
+        - name: migrate
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["alembic", "upgrade", "head"]
+          env:
+            - name: DB_TYPE
+              value: {{ .Values.database.type | quote }}
+            {{- if eq .Values.database.type "postgresql" }}
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.database.external.existingSecret | default (printf "%s-db" (include "fuellhorn.fullname" .)) }}
+                  key: url
+            {{- end }}
+          {{- if eq .Values.database.type "sqlite" }}
+          volumeMounts:
+            - name: data
+              mountPath: /app/data
+          {{- end }}
+        {{- end }}
+        {{- if .Values.initContainers.adminUser.enabled }}
+        - name: create-admin
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["python", "create_admin.py"]
+          env:
+            - name: DB_TYPE
+              value: {{ .Values.database.type | quote }}
+            {{- if eq .Values.database.type "postgresql" }}
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.database.external.existingSecret | default (printf "%s-db" (include "fuellhorn.fullname" .)) }}
+                  key: url
+            {{- end }}
+            - name: ADMIN_USERNAME
+              value: {{ .Values.initContainers.adminUser.username | quote }}
+            - name: ADMIN_EMAIL
+              value: {{ .Values.initContainers.adminUser.email | quote }}
+            - name: ADMIN_PASSWORD
+              {{- if .Values.initContainers.adminUser.existingSecret }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.initContainers.adminUser.existingSecret }}
+                  key: admin-password
+              {{- else }}
+              value: {{ .Values.initContainers.adminUser.password | quote }}
+              {{- end }}
+          {{- if eq .Values.database.type "sqlite" }}
+          volumeMounts:
+            - name: data
+              mountPath: /app/data
+          {{- end }}
+        {{- end }}
+      {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"

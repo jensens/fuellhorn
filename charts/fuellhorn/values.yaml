@@ -50,6 +50,22 @@ secrets:
   secretKey: ""
   fuellhornSecret: ""
 
+# Init Containers
+initContainers:
+  # Database migrations (Alembic)
+  migrations:
+    enabled: true
+
+  # Create initial admin user
+  adminUser:
+    enabled: false  # Opt-in, disabled by default
+    username: admin
+    email: admin@fuellhorn.local
+    # Use existing secret with key "admin-password"
+    existingSecret: ""
+    # Or set password directly (not recommended for production)
+    password: ""
+
 # SQLite Persistence (nur wenn database.type: sqlite)
 persistence:
   enabled: true
