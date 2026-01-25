@@ -1,0 +1,75 @@
+suite: Ingress tests
+templates:
+  - templates/ingress.yaml
+tests:
+  - it: should not create Ingress by default
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should create Ingress when enabled
+    set:
+      ingress.enabled: true
+      ingress.hosts:
+        - host: fuellhorn.example.com
+          paths:
+            - path: /
+              pathType: Prefix
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: Ingress
+      - equal:
+          path: spec.rules[0].host
+          value: fuellhorn.example.com
+
+  - it: should set ingressClassName when specified
+    set:
+      ingress.enabled: true
+      ingress.className: nginx
+      ingress.hosts:
+        - host: fuellhorn.example.com
+          paths:
+            - path: /
+              pathType: Prefix
+    asserts:
+      - equal:
+          path: spec.ingressClassName
+          value: nginx
+
+  - it: should configure TLS when specified
+    set:
+      ingress.enabled: true
+      ingress.className: nginx
+      ingress.hosts:
+        - host: fuellhorn.example.com
+          paths:
+            - path: /
+              pathType: Prefix
+      ingress.tls:
+        - secretName: fuellhorn-tls
+          hosts:
+            - fuellhorn.example.com
+    asserts:
+      - equal:
+          path: spec.tls[0].secretName
+          value: fuellhorn-tls
+      - equal:
+          path: spec.tls[0].hosts[0]
+          value: fuellhorn.example.com
+
+  - it: should set annotations when specified
+    set:
+      ingress.enabled: true
+      ingress.annotations:
+        nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      ingress.hosts:
+        - host: fuellhorn.example.com
+          paths:
+            - path: /
+              pathType: Prefix
+    asserts:
+      - equal:
+          path: metadata.annotations["nginx.ingress.kubernetes.io/ssl-redirect"]
+          value: "true"

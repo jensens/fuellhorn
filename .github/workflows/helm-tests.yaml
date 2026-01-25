@@ -1,0 +1,98 @@
+name: Helm Tests
+
+on:
+  workflow_call:
+
+jobs:
+  lint:
+    name: Helm Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.14.0
+
+      - name: Run helm lint
+        run: helm lint charts/fuellhorn/
+
+  template-validation:
+    name: Template Validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.14.0
+
+      - name: Install kubeconform
+        run: |
+          curl -L https://github.com/yannh/kubeconform/releases/download/v0.6.4/kubeconform-linux-amd64.tar.gz | tar xz
+          sudo mv kubeconform /usr/local/bin/
+
+      - name: Validate default PostgreSQL configuration
+        run: |
+          helm template test charts/fuellhorn/ \
+            --set secrets.secretKey=test-secret-key \
+            --set secrets.fuellhornSecret=test-fuellhorn-secret \
+            --set database.external.host=postgres.example.com \
+            --set database.external.password=testpass \
+            | kubeconform -strict -kubernetes-version 1.29.0 -summary
+
+      - name: Validate SQLite configuration
+        run: |
+          helm template test charts/fuellhorn/ \
+            --set secrets.secretKey=test-secret-key \
+            --set secrets.fuellhornSecret=test-fuellhorn-secret \
+            --set database.type=sqlite \
+            | kubeconform -strict -kubernetes-version 1.29.0 -summary
+
+      - name: Validate HA configuration (replicaCount > 1)
+        run: |
+          helm template test charts/fuellhorn/ \
+            --set secrets.secretKey=test-secret-key \
+            --set secrets.fuellhornSecret=test-fuellhorn-secret \
+            --set database.external.host=postgres.example.com \
+            --set database.external.password=testpass \
+            --set replicaCount=3 \
+            | kubeconform -strict -kubernetes-version 1.29.0 -summary
+
+      - name: Validate with Ingress enabled
+        run: |
+          helm template test charts/fuellhorn/ \
+            --set secrets.secretKey=test-secret-key \
+            --set secrets.fuellhornSecret=test-fuellhorn-secret \
+            --set database.external.host=postgres.example.com \
+            --set database.external.password=testpass \
+            --set ingress.enabled=true \
+            --set ingress.className=nginx \
+            | kubeconform -strict -kubernetes-version 1.29.0 -summary
+
+      - name: Validate with existing secrets
+        run: |
+          helm template test charts/fuellhorn/ \
+            --set secrets.existingSecret=my-existing-secret \
+            --set database.external.host=postgres.example.com \
+            --set database.external.existingSecret=my-db-secret \
+            | kubeconform -strict -kubernetes-version 1.29.0 -summary
+
+  unit-tests:
+    name: Helm Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.14.0
+
+      - name: Install helm-unittest plugin
+        run: helm plugin install https://github.com/helm-unittest/helm-unittest.git
+
+      - name: Run unit tests
+        run: helm unittest charts/fuellhorn/
