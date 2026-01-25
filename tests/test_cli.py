@@ -13,7 +13,7 @@ class TestRunMigrations:
         """Should set script_location to alembic directory in package."""
         with (
             patch("alembic.command.upgrade") as mock_upgrade,
-            patch.dict(os.environ, {"DATABASE_URL": "sqlite:///test.db"}),
+            patch("app.config.Config.get_database_url", return_value="sqlite:///test.db"),
         ):
             import app.alembic
             from app.cli import run_migrations
@@ -31,12 +31,13 @@ class TestRunMigrations:
             assert config.get_main_option("script_location") == expected_path
 
     def test_sets_database_url_from_environment(self) -> None:
-        """Should set sqlalchemy.url from DATABASE_URL env var."""
-        test_db_url = "postgresql://user:pass@localhost/testdb"
+        """Should set sqlalchemy.url from DATABASE_URL env var with psycopg3 dialect."""
+        # Config.get_database_url() transforms postgresql:// to postgresql+psycopg://
+        expected_url = "postgresql+psycopg://user:pass@localhost/testdb"
 
         with (
             patch("alembic.command.upgrade") as mock_upgrade,
-            patch.dict(os.environ, {"DATABASE_URL": test_db_url}),
+            patch("app.config.Config.get_database_url", return_value=expected_url),
         ):
             from app.cli import run_migrations
 
@@ -46,16 +47,15 @@ class TestRunMigrations:
             call_args = mock_upgrade.call_args
             config = call_args[0][0]
 
-            assert config.get_main_option("sqlalchemy.url") == test_db_url
+            assert config.get_main_option("sqlalchemy.url") == expected_url
 
-    def test_uses_empty_string_when_database_url_not_set(self) -> None:
-        """Should use empty string when DATABASE_URL is not set."""
-        env = os.environ.copy()
-        env.pop("DATABASE_URL", None)
+    def test_sqlite_url_unchanged(self) -> None:
+        """SQLite URLs should remain unchanged."""
+        test_db_url = "sqlite:///test.db"
 
         with (
             patch("alembic.command.upgrade") as mock_upgrade,
-            patch.dict(os.environ, env, clear=True),
+            patch("app.config.Config.get_database_url", return_value=test_db_url),
         ):
             from app.cli import run_migrations
 
@@ -64,13 +64,33 @@ class TestRunMigrations:
             call_args = mock_upgrade.call_args
             config = call_args[0][0]
 
-            assert config.get_main_option("sqlalchemy.url") == ""
+            assert config.get_main_option("sqlalchemy.url") == test_db_url
+
+    def test_uses_config_get_database_url(self) -> None:
+        """Should use Config.get_database_url() for database URL."""
+        mock_url = "sqlite:///default.db"
+
+        with (
+            patch("alembic.command.upgrade") as mock_upgrade,
+            patch("app.config.Config.get_database_url", return_value=mock_url) as mock_get_url,
+        ):
+            from app.cli import run_migrations
+
+            run_migrations()
+
+            # Verify Config.get_database_url() was called
+            mock_get_url.assert_called_once()
+
+            call_args = mock_upgrade.call_args
+            config = call_args[0][0]
+
+            assert config.get_main_option("sqlalchemy.url") == mock_url
 
     def test_calls_upgrade_to_head(self) -> None:
         """Should call alembic upgrade to 'head'."""
         with (
             patch("alembic.command.upgrade") as mock_upgrade,
-            patch.dict(os.environ, {"DATABASE_URL": "sqlite:///test.db"}),
+            patch("app.config.Config.get_database_url", return_value="sqlite:///test.db"),
         ):
             from app.cli import run_migrations
 
