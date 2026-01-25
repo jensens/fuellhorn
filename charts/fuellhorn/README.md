@@ -101,6 +101,17 @@ helm install fuellhorn ./charts/fuellhorn \
 | `secrets.secretKey` | Flask secret key (required if no existingSecret) | `""` |
 | `secrets.fuellhornSecret` | Fuellhorn secret (required if no existingSecret) | `""` |
 
+### Init Containers
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `initContainers.migrations.enabled` | Run Alembic migrations on startup | `true` |
+| `initContainers.adminUser.enabled` | Create initial admin user | `false` |
+| `initContainers.adminUser.username` | Admin username | `admin` |
+| `initContainers.adminUser.email` | Admin email | `admin@fuellhorn.local` |
+| `initContainers.adminUser.password` | Admin password (not recommended for production) | `""` |
+| `initContainers.adminUser.existingSecret` | Secret name with key `admin-password` | `""` |
+
 ### Persistence (SQLite only)
 
 | Parameter | Description | Default |
@@ -169,6 +180,37 @@ database:
 
 secrets:
   existingSecret: fuellhorn-secrets
+```
+
+### GitOps-Friendly Deployment with Auto-Created Admin
+
+For fully automated deployments (e.g., with ArgoCD), you can enable automatic admin user creation:
+
+```yaml
+database:
+  type: postgresql
+  external:
+    host: postgres.database.svc.cluster.local
+    existingSecret: postgres-credentials
+
+secrets:
+  existingSecret: fuellhorn-secrets
+
+initContainers:
+  migrations:
+    enabled: true  # Runs Alembic migrations automatically
+  adminUser:
+    enabled: true
+    username: admin
+    email: admin@example.com
+    existingSecret: fuellhorn-admin  # Secret with key "admin-password"
+```
+
+Create the admin password secret:
+
+```bash
+kubectl create secret generic fuellhorn-admin \
+  --from-literal=admin-password='your-secure-password'
 ```
 
 ## Upgrading
