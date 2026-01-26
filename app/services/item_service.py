@@ -116,7 +116,7 @@ def get_consumed_items(session: Session) -> list[Item]:
             Withdrawal.item_id,
             func.max(Withdrawal.withdrawn_at).label("last_withdrawn"),
         )
-        .group_by(Withdrawal.item_id)  # type: ignore[arg-type]
+        .group_by(Withdrawal.item_id)
         .subquery()
     )
 
@@ -541,7 +541,7 @@ def get_item_count_by_location(session: Session) -> dict[int, int]:
     results = session.exec(
         select(Item.location_id, func.count())
         .where(Item.is_consumed.is_(False))  # type: ignore
-        .group_by(Item.location_id)  # type: ignore[arg-type]
+        .group_by(Item.location_id)
     ).all()
 
     return {location_id: count for location_id, count in results}
@@ -564,7 +564,7 @@ def get_item_count_by_category(session: Session) -> dict[int, int]:
             Item.is_consumed.is_(False),  # type: ignore
             Item.category_id.is_not(None),  # type: ignore
         )
-        .group_by(Item.category_id)  # type: ignore[arg-type]
+        .group_by(Item.category_id)
     ).all()
 
     # category_id is guaranteed non-None due to the WHERE clause
