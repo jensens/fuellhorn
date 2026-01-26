@@ -49,10 +49,10 @@ def dashboard() -> None:
                     create_item_card(
                         item,
                         session,
-                        on_consume=lambda i=item: handle_consume(i),  # type: ignore[misc]
-                        on_partial_consume=lambda i=item: handle_consume(i),  # type: ignore[misc]
-                        on_consume_all=lambda i=item: handle_consume_all(i),  # type: ignore[misc]
-                        on_edit=lambda i=item: ui.navigate.to(f"/items/{i.id}/edit"),  # type: ignore[misc]
+                        on_consume=lambda i=item: handle_consume(i),
+                        on_partial_consume=lambda i=item: handle_consume(i),
+                        on_consume_all=lambda i=item: handle_consume_all(i),
+                        on_edit=lambda i=item: ui.navigate.to(f"/items/{i.id}/edit"),
                     )
 
                 # "Alle anzeigen" link (Issue #244)

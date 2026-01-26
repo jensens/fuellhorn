@@ -316,7 +316,7 @@ def items_page(filter: str | None = None, location: int | None = None) -> None: 
                             on_consume=handle_consume,
                             on_partial_consume=handle_consume,  # Swipe "Teil" -> opens dialog
                             on_consume_all=handle_consume_all,  # Swipe "Alles" -> consume all
-                            on_edit=lambda i=item: ui.navigate.to(f"/items/{i.id}/edit"),  # type: ignore[misc]
+                            on_edit=lambda i=item: ui.navigate.to(f"/items/{i.id}/edit"),
                         )
                 else:
                     # Filters yielded no results

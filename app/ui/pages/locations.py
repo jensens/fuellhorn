@@ -123,6 +123,7 @@ def locations_page() -> None:
                                     create_icon("actions/edit", size="20px")
                                 # Delete button
                                 location_id = location.id
+                                assert location_id is not None  # Loaded from DB
                                 location_name = location.name
                                 with (
                                     ui.button(

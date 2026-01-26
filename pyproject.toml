@@ -29,14 +29,13 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-    "mypy>=1.18.2",
+    "ty>=0.0.1a14",
     "pyupgrade>=3.19.0",
     "pytest>=9.0.1",
     "pytest-asyncio>=1.3.0",
     "pytest-cov>=7.0.0",
     "ruff>=0.14.5",
     "selenium>=4.0.0",
-    "types-python-dateutil>=2.9.0.20251115",
     "pre-commit>=4.4.0",
     "pytest-xdist>=3.8.0",
     "pytest-playwright>=0.7.2",
@@ -54,30 +53,6 @@ markers = [
 filterwarnings = [
     "ignore:cannot collect test class 'User':pytest.PytestCollectionWarning",
 ]
-
-[tool.mypy]
-python_version = "3.14"
-warn_return_any = true
-warn_unused_ignores = true
-disallow_untyped_defs = true
-plugins = ["pydantic.mypy"]
-
-[[tool.mypy.overrides]]
-module = ["nicegui.*"]
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = "alembic.*"
-ignore_errors = true
-
-[[tool.mypy.overrides]]
-module = "main"
-disallow_untyped_defs = false
-
-[[tool.mypy.overrides]]
-module = "tests.*"
-disallow_untyped_defs = false
-disable_error_code = ["arg-type", "union-attr", "attr-defined"]
 
 [tool.coverage.run]
 parallel = true
@@ -111,6 +86,21 @@ force-sort-within-sections = true
 case-sensitive = false
 lines-after-imports = 2
 no-sections = true
+
+[tool.ty.src]
+include = ["app"]
+exclude = ["app/alembic/versions/*"]
+
+[tool.ty.rules]
+# Alembic auto-generates migrations with dynamic imports
+possibly-missing-attribute = "warn"
+
+[[tool.ty.overrides]]
+include = ["app/ui/test_pages/**"]
+
+[tool.ty.overrides.rules]
+# Test pages have less strict type requirements
+unused-ignore-comment = "ignore"
 
 [build-system]
 requires = ["hatchling", "hatch-vcs"]

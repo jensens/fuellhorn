@@ -93,7 +93,7 @@ PORT=8123 uv run python main.py
 uv run python main.py
 
 # Qualitätsprüfung (alles)
-uv run pytest && uv run mypy app/ && uv run ruff check app/
+uv run pytest && uv run ty check app/ && uv run ruff check app/
 
 # Migration erstellen
 uv run alembic revision --autogenerate -m "description"

@@ -89,6 +89,7 @@ def _render_users_list() -> None:
                         with ui.row().classes("sp-admin-actions items-center gap-1"):
                             # Edit button - capture user data for the closure
                             user_id = user.id
+                            assert user_id is not None  # Loaded from DB
                             username = user.username
                             email = user.email
                             role = user.role

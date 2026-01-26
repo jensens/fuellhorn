@@ -26,7 +26,7 @@ jobs:
         run: uv run ruff format --check app/
 
   typecheck:
-    name: Type Check (Mypy)
+    name: Type Check (ty)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -40,5 +40,5 @@ jobs:
       - name: Install dependencies
         run: uv sync --frozen --group dev
 
-      - name: Run Mypy
-        run: uv run mypy app/
+      - name: Run ty
+        run: uv run ty check app/
