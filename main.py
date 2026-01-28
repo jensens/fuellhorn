@@ -16,6 +16,19 @@ def _load_theme() -> None:
     ui.add_head_html('<link rel="stylesheet" href="/static/css/solarpunk-theme.css">')
     ui.add_head_html('<script src="/static/js/swipe-card.js"></script>')
 
+    # PWA Meta-Tags
+    ui.add_head_html('<link rel="manifest" href="/static/manifest.json">')
+    ui.add_head_html('<meta name="theme-color" content="#4A7C59">')
+    ui.add_head_html('<meta name="mobile-web-app-capable" content="yes">')
+
+    # Apple-spezifische PWA Meta-Tags
+    ui.add_head_html('<link rel="apple-touch-icon" href="/static/pwa/fuellhorn-icon-180.png">')
+    ui.add_head_html('<meta name="apple-mobile-web-app-capable" content="yes">')
+    ui.add_head_html(
+        '<meta name="apple-mobile-web-app-status-bar-style" content="default">'
+    )
+    ui.add_head_html('<meta name="apple-mobile-web-app-title" content="Fuellhorn">')
+
 
 # Import pages to register routes
 import app.ui.pages as _pages  # noqa: F401, E402
