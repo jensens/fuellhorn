@@ -5,8 +5,6 @@ These functions can be called via CLI:
     fuellhorn seed testdata
 """
 
-from typing import Any
-
 from app.models.category import Category
 from app.models.category_shelf_life import CategoryShelfLife
 from app.models.category_shelf_life import StorageType
@@ -22,6 +20,7 @@ from datetime import date
 from datetime import timedelta
 from sqlmodel import Session
 from sqlmodel import select
+from typing import Any
 
 
 # =============================================================================
