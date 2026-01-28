@@ -11,6 +11,7 @@ from app.ui.components.item_card import get_expiry_badge_class
 from app.ui.components.item_card import get_expiry_badge_text
 from datetime import date
 from datetime import timedelta
+from dateutil.relativedelta import relativedelta
 from nicegui.testing import User as TestUser
 
 
@@ -44,11 +45,7 @@ async def test_item_card_shows_date_badge_for_frozen(user: TestUser) -> None:
     # Test page creates item frozen 30 days ago with 6-12 month shelf life
     # So badge shows optimal date (freeze_date + 6 months)
     freeze_date = date.today() - timedelta(days=30)
-    optimal_date = date(
-        freeze_date.year + (freeze_date.month + 6 - 1) // 12,
-        (freeze_date.month + 6 - 1) % 12 + 1,
-        min(freeze_date.day, 28),  # Safe day for all months
-    )
+    optimal_date = freeze_date + relativedelta(months=6)
     await user.should_see(optimal_date.strftime("%d.%m.%y"))
 
 
