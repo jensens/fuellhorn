@@ -135,5 +135,39 @@ docker compose logs app
 Falls eine manuelle Migration erforderlich ist:
 
 ```bash
-docker exec fuellhorn-app python -c "from app.cli import run_migrations; run_migrations()"
+docker exec fuellhorn-app fuellhorn migrate
+```
+
+## CLI-Befehle
+
+Das `fuellhorn`-CLI bietet folgende Befehle:
+
+```bash
+# Anwendung starten (Standard)
+fuellhorn
+
+# Nur Datenbank-Migrationen ausführen
+fuellhorn migrate
+
+# Admin-Benutzer erstellen (benötigt ADMIN_PASSWORD Env-Variable)
+fuellhorn create-admin
+
+# Standard-Kategorien mit Haltbarkeiten importieren
+fuellhorn seed shelf-life-defaults
+
+# Testdaten importieren (Admin, Kategorien, Lagerorte, Beispiel-Items)
+fuellhorn seed testdata
+```
+
+### Im Container ausführen
+
+```bash
+# Standard-Kategorien importieren
+docker exec fuellhorn-app fuellhorn seed shelf-life-defaults
+
+# Testdaten importieren
+docker exec fuellhorn-app fuellhorn seed testdata
+
+# Admin erstellen
+docker exec -e ADMIN_PASSWORD=geheim fuellhorn-app fuellhorn create-admin
 ```
