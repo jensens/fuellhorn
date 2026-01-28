@@ -103,6 +103,58 @@ def cli_create_admin() -> int:
             return 1
 
 
+def cli_seed(subcommand: str | None) -> int:
+    """CLI command to seed database with default data.
+
+    Args:
+        subcommand: 'shelf-life-defaults' or 'testdata'
+
+    Returns:
+        0 on success, 1 on error
+    """
+    from app.database import create_db_and_tables
+    from app.database import get_engine
+    from app.seed import seed_shelf_life_defaults
+    from app.seed import seed_testdata
+
+    if not subcommand:
+        print("Usage: fuellhorn seed <subcommand>")
+        print("Available subcommands:")
+        print("  shelf-life-defaults  Seed categories with shelf life data")
+        print("  testdata             Seed test data (admin, categories, locations, items)")
+        return 1
+
+    # Ensure tables exist
+    create_db_and_tables()
+
+    with Session(get_engine()) as session:
+        if subcommand == "shelf-life-defaults":
+            print("Seeding shelf life defaults...")
+            categories, shelf_lives = seed_shelf_life_defaults(session)
+            print(f"  Categories: {categories}")
+            print(f"  Shelf lives: {shelf_lives}")
+            print("Done.")
+            return 0
+
+        elif subcommand == "testdata":
+            print("Seeding test data...")
+            result = seed_testdata(session)
+            if result["admin"]:
+                print("  Admin created (admin/admin)")
+            else:
+                print("  Admin already exists")
+            print(f"  Categories: {result['categories']}")
+            print(f"  Locations: {result['locations']}")
+            print(f"  Items: {result['items']}")
+            print("Done.")
+            return 0
+
+        else:
+            print(f"Unknown subcommand: {subcommand}")
+            print("Available: shelf-life-defaults, testdata")
+            return 1
+
+
 def run_app() -> None:
     """Run the fuellhorn application."""
     import app.api.health  # noqa: F401
@@ -152,9 +204,12 @@ def dispatch_command(args: list[str]) -> int:
         return cli_migrate()
     elif command == "create-admin":
         return cli_create_admin()
+    elif command == "seed":
+        subcommand = args[1] if len(args) > 1 else None
+        return cli_seed(subcommand)
     else:
         print(f"Unknown command: {command}")
-        print("Available commands: migrate, create-admin")
+        print("Available commands: migrate, create-admin, seed")
         print("Run without arguments to start the application.")
         return 1
 
