@@ -195,6 +195,7 @@ jobs:
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=raw,value=latest
+            type=raw,value=${{ steps.version.outputs.version }}
 
       - name: Create manifest list and push
         working-directory: /tmp/digests
