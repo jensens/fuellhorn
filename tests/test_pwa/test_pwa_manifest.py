@@ -3,9 +3,9 @@
 from nicegui.testing import User
 
 
-async def test_manifest_json_is_accessible(user: User) -> None:
-    """Manifest.json is accessible via static files."""
-    response = await user.http_client.get("/static/manifest.json")
+async def test_manifest_json_is_accessible_at_root(user: User) -> None:
+    """Manifest.json is accessible at root URL for browser compatibility."""
+    response = await user.http_client.get("/manifest.json")
 
     assert response.status_code == 200
     data = response.json()
@@ -15,8 +15,8 @@ async def test_manifest_json_is_accessible(user: User) -> None:
 
 
 async def test_manifest_contains_required_icons(user: User) -> None:
-    """Manifest.json contains required PWA icons."""
-    response = await user.http_client.get("/static/manifest.json")
+    """Manifest.json contains required PWA icons with root URLs."""
+    response = await user.http_client.get("/manifest.json")
 
     assert response.status_code == 200
     data = response.json()
@@ -24,11 +24,15 @@ async def test_manifest_contains_required_icons(user: User) -> None:
     sizes = [icon["sizes"] for icon in icons]
     assert "192x192" in sizes
     assert "512x512" in sizes
+    # Icons should use root URLs
+    sources = [icon["src"] for icon in icons]
+    assert "/icon-192.png" in sources
+    assert "/icon-512.png" in sources
 
 
 async def test_manifest_has_correct_theme_colors(user: User) -> None:
     """Manifest.json has correct Solarpunk theme colors."""
-    response = await user.http_client.get("/static/manifest.json")
+    response = await user.http_client.get("/manifest.json")
 
     assert response.status_code == 200
     data = response.json()
@@ -38,11 +42,11 @@ async def test_manifest_has_correct_theme_colors(user: User) -> None:
     assert data["background_color"] == "#FAF7F0"
 
 
-async def test_pwa_icons_are_accessible(user: User) -> None:
-    """PWA icons are accessible via static files."""
-    icon_192_response = await user.http_client.get("/static/pwa/fuellhorn-icon-192.png")
-    icon_512_response = await user.http_client.get("/static/pwa/fuellhorn-icon-512.png")
-    apple_icon_response = await user.http_client.get("/static/pwa/fuellhorn-icon-180.png")
+async def test_pwa_icons_are_accessible_at_root(user: User) -> None:
+    """PWA icons are accessible at root URLs for browser compatibility."""
+    icon_192_response = await user.http_client.get("/icon-192.png")
+    icon_512_response = await user.http_client.get("/icon-512.png")
+    apple_icon_response = await user.http_client.get("/apple-touch-icon.png")
 
     assert icon_192_response.status_code == 200
     assert icon_512_response.status_code == 200

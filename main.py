@@ -9,6 +9,14 @@ from nicegui import app, ui
 # Serve static files (CSS, icons, etc.)
 app.add_static_files("/static", "app/static")
 
+# PWA: Register manifest and icons at root URLs for browser compatibility
+app.add_static_file(url_path="/manifest.json", local_file="app/static/manifest.json")
+app.add_static_file(url_path="/icon-192.png", local_file="app/static/pwa/fuellhorn-icon-192.png")
+app.add_static_file(url_path="/icon-512.png", local_file="app/static/pwa/fuellhorn-icon-512.png")
+app.add_static_file(
+    url_path="/apple-touch-icon.png", local_file="app/static/pwa/fuellhorn-icon-180.png"
+)
+
 
 # Load Solarpunk theme CSS and JavaScript for each client connection
 @app.on_connect
@@ -17,12 +25,12 @@ def _load_theme() -> None:
     ui.add_head_html('<script src="/static/js/swipe-card.js"></script>')
 
     # PWA Meta-Tags
-    ui.add_head_html('<link rel="manifest" href="/static/manifest.json">')
+    ui.add_head_html('<link rel="manifest" href="/manifest.json">')
     ui.add_head_html('<meta name="theme-color" content="#4A7C59">')
     ui.add_head_html('<meta name="mobile-web-app-capable" content="yes">')
 
     # Apple-spezifische PWA Meta-Tags
-    ui.add_head_html('<link rel="apple-touch-icon" href="/static/pwa/fuellhorn-icon-180.png">')
+    ui.add_head_html('<link rel="apple-touch-icon" href="/apple-touch-icon.png">')
     ui.add_head_html('<meta name="apple-mobile-web-app-capable" content="yes">')
     ui.add_head_html(
         '<meta name="apple-mobile-web-app-status-bar-style" content="default">'
@@ -53,6 +61,7 @@ if __name__ in {"__main__", "__mp_main__"}:
     # NiceGUI starten
     ui.run(
         title="Füllhorn - Lebensmittelvorrats-Verwaltung",
+        favicon="app/static/pwa/fuellhorn-icon-192.png",
         storage_secret=get_storage_secret(),
         port=port,
         reload=True,  # Auto-Reload waehrend Entwicklung
