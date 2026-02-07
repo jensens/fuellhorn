@@ -56,3 +56,68 @@ async def test_edit_item_page_shows_404_for_nonexistent_item(logged_in_user: Use
     """Test that edit page shows error for non-existent item."""
     await logged_in_user.open("/items/99999/edit")
     await logged_in_user.should_see("nicht gefunden")
+
+
+async def test_edit_item_shows_category_optional_for_purchased_fresh(
+    logged_in_user: User, isolated_test_database
+) -> None:
+    """Kategorie-Feld wird als optional fuer PURCHASED_FRESH Items angezeigt."""
+    with Session(isolated_test_database) as session:
+        location = location_service.create_location(
+            session=session,
+            name="Kuehlschrank",
+            location_type=LocationType.CHILLED,
+            created_by=1,
+        )
+        category_service.create_category(
+            session=session,
+            name="Milchprodukte",
+            created_by=1,
+        )
+        item = item_service.create_item(
+            session=session,
+            product_name="Frischmilch",
+            best_before_date=date(2025, 12, 31),
+            quantity=1.0,
+            unit="L",
+            item_type=ItemType.PURCHASED_FRESH,
+            location_id=location.id,
+            created_by=1,
+        )
+        item_id = item.id
+
+    await logged_in_user.open(f"/items/{item_id}/edit")
+    await logged_in_user.should_see("Kategorie (optional)")
+
+
+async def test_edit_item_shows_category_required_for_homemade_frozen(
+    logged_in_user: User, isolated_test_database
+) -> None:
+    """Kategorie-Feld wird als Pflichtfeld fuer HOMEMADE_FROZEN Items angezeigt."""
+    with Session(isolated_test_database) as session:
+        location = location_service.create_location(
+            session=session,
+            name="Tiefkuehler",
+            location_type=LocationType.FROZEN,
+            created_by=1,
+        )
+        category_service.create_category(
+            session=session,
+            name="Gemuese",
+            created_by=1,
+        )
+        item = item_service.create_item(
+            session=session,
+            product_name="Erbsen",
+            best_before_date=date(2025, 6, 15),
+            quantity=500,
+            unit="g",
+            item_type=ItemType.HOMEMADE_FROZEN,
+            location_id=location.id,
+            created_by=1,
+            freeze_date=date(2025, 6, 15),
+        )
+        item_id = item.id
+
+    await logged_in_user.open(f"/items/{item_id}/edit")
+    await logged_in_user.should_see("Kategorie *")

@@ -151,8 +151,8 @@ def edit_item(item_id: int) -> None:
         def on_item_type_change(value: ItemType) -> None:
             form_data["item_type"] = value
             update_locations_for_item_type()
-            # Show/hide category based on item type
-            category_section.set_visibility(requires_category(value))
+            # Update category label based on item type
+            category_label.set_text("Kategorie *" if requires_category(value) else "Kategorie (optional)")
             # Show/hide freeze date based on item type
             freeze_date_section.set_visibility(
                 value
@@ -195,11 +195,12 @@ def edit_item(item_id: int) -> None:
             on_change=on_unit_change,
         )
 
-        # Category (conditional based on item type)
+        # Category (always visible, required/optional based on item type)
         needs_category = requires_category(form_data["item_type"])
-        with ui.element("div").classes("mt-4") as category_section:
-            category_section.set_visibility(needs_category)
-            ui.label("Kategorie *").classes("text-sm font-medium mb-2")
+        with ui.element("div").classes("mt-4"):
+            category_label = ui.label("Kategorie *" if needs_category else "Kategorie (optional)").classes(
+                "text-sm font-medium mb-2"
+            )
 
             def on_category_change(category_id: int) -> None:
                 form_data["category_id"] = category_id
