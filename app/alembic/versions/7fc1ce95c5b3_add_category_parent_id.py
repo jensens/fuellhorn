@@ -119,9 +119,10 @@ def _create_shelf_life(
 
 def upgrade() -> None:
     """Upgrade schema and migrate seed data."""
-    # Schema change
-    op.add_column("category", sa.Column("parent_id", sa.Integer(), nullable=True))
-    op.create_foreign_key("fk_category_parent", "category", "category", ["parent_id"], ["id"])
+    # Schema change (batch mode required for SQLite FK support)
+    with op.batch_alter_table("category") as batch_op:
+        batch_op.add_column(sa.Column("parent_id", sa.Integer(), nullable=True))
+        batch_op.create_foreign_key("fk_category_parent", "category", ["parent_id"], ["id"])
 
     # Data migration
     conn = _get_connection()
@@ -187,5 +188,6 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     """Downgrade schema."""
-    op.drop_constraint("fk_category_parent", "category", type_="foreignkey")
-    op.drop_column("category", "parent_id")
+    with op.batch_alter_table("category") as batch_op:
+        batch_op.drop_constraint("fk_category_parent", type_="foreignkey")
+        batch_op.drop_column("parent_id")
