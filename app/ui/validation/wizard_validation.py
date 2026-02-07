@@ -167,25 +167,17 @@ def validate_freeze_date(
 
 
 def _requires_category(item_type: Any) -> bool:
-    """Check if item type requires a category for shelf life calculation.
+    """Check if item type requires a category.
+
+    Category is always required for all item types to ensure consistent data.
 
     Args:
         item_type: Selected item type
 
     Returns:
-        True if category is required (for types that calculate shelf life from DB)
+        True (always required)
     """
-    # Import here to avoid circular dependency
-    from ...models.item import ItemType
-
-    # purchased_fresh/purchased_frozen use MHD from package - no category needed
-    # Other types need category for shelf life calculation
-    types_needing_category = {
-        ItemType.PURCHASED_THEN_FROZEN,
-        ItemType.HOMEMADE_FROZEN,
-        ItemType.HOMEMADE_PRESERVED,
-    }
-    return item_type in types_needing_category
+    return True
 
 
 def validate_step2(
@@ -213,9 +205,9 @@ def validate_step2(
     if error := validate_freeze_date(freeze_date, item_type, best_before):
         errors["freeze_date"] = error
 
-    # Category is required for types that calculate shelf life from DB
-    if _requires_category(item_type) and category_id is None:
-        errors["category"] = "Kategorie erforderlich für Haltbarkeitsberechnung"
+    # Category is always required
+    if category_id is None:
+        errors["category"] = "Kategorie ist erforderlich"
 
     return errors
 

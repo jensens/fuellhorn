@@ -257,6 +257,7 @@ def test_validate_step2_all_valid_non_frozen() -> None:
         item_type=ItemType.PURCHASED_FRESH,
         best_before=date.today(),
         freeze_date=None,
+        category_id=1,
     )
     assert errors == {}
 
@@ -270,6 +271,7 @@ def test_validate_step2_all_valid_frozen() -> None:
         item_type=ItemType.PURCHASED_FROZEN,
         best_before=date(2024, 1, 1),
         freeze_date=date(2024, 1, 15),
+        category_id=1,
     )
     assert errors == {}
 
@@ -311,6 +313,7 @@ def test_is_step2_valid_returns_true_when_valid() -> None:
             item_type=ItemType.PURCHASED_FRESH,
             best_before=date.today(),
             freeze_date=None,
+            category_id=1,
         )
         is True
     )
@@ -320,6 +323,7 @@ def test_is_step2_valid_returns_true_when_valid() -> None:
             item_type=ItemType.PURCHASED_FROZEN,
             best_before=date(2024, 1, 1),
             freeze_date=date(2024, 1, 15),
+            category_id=1,
         )
         is True
     )
@@ -342,59 +346,23 @@ def test_is_step2_valid_returns_false_when_invalid() -> None:
 # Step 2 Category Validation Tests (category moved from Step 3 to Step 2)
 
 
-def test_requires_category_for_frozen_types() -> None:
-    """Test that frozen types require a category."""
+def test_requires_category_always_true_for_all_item_types() -> None:
+    """Test that category is always required for all item types."""
     from app.ui.validation import requires_category
 
-    # Types that need category for shelf life calculation
+    assert requires_category(ItemType.PURCHASED_FRESH) is True
+    assert requires_category(ItemType.PURCHASED_FROZEN) is True
     assert requires_category(ItemType.PURCHASED_THEN_FROZEN) is True
     assert requires_category(ItemType.HOMEMADE_FROZEN) is True
     assert requires_category(ItemType.HOMEMADE_PRESERVED) is True
 
 
-def test_requires_category_not_for_mhd_types() -> None:
-    """Test that MHD types don't require a category."""
-    from app.ui.validation import requires_category
-
-    # Types that use MHD from package - no category needed
-    assert requires_category(ItemType.PURCHASED_FRESH) is False
-    assert requires_category(ItemType.PURCHASED_FROZEN) is False
-
-
-def test_is_step2_valid_with_category_for_frozen_types() -> None:
-    """Test Step 2 validation requires category for frozen types."""
+def test_is_step2_valid_requires_category_for_all_types() -> None:
+    """Test Step 2 validation requires category for all item types."""
     from app.ui.validation import is_step2_valid
     from datetime import date
 
-    # Frozen type without category - invalid
-    assert (
-        is_step2_valid(
-            item_type=ItemType.PURCHASED_THEN_FROZEN,
-            best_before=date.today(),
-            freeze_date=date.today(),
-            category_id=None,
-        )
-        is False
-    )
-
-    # Frozen type with category - valid
-    assert (
-        is_step2_valid(
-            item_type=ItemType.PURCHASED_THEN_FROZEN,
-            best_before=date.today(),
-            freeze_date=date.today(),
-            category_id=1,
-        )
-        is True
-    )
-
-
-def test_is_step2_valid_without_category_for_mhd_types() -> None:
-    """Test Step 2 validation doesn't require category for MHD types."""
-    from app.ui.validation import is_step2_valid
-    from datetime import date
-
-    # MHD type without category - still valid (uses best_before from package)
+    # Any type without category - invalid
     assert (
         is_step2_valid(
             item_type=ItemType.PURCHASED_FRESH,
@@ -402,7 +370,7 @@ def test_is_step2_valid_without_category_for_mhd_types() -> None:
             freeze_date=None,
             category_id=None,
         )
-        is True
+        is False
     )
 
     assert (
@@ -411,6 +379,27 @@ def test_is_step2_valid_without_category_for_mhd_types() -> None:
             best_before=date.today(),
             freeze_date=None,
             category_id=None,
+        )
+        is False
+    )
+
+    # Any type with category - valid
+    assert (
+        is_step2_valid(
+            item_type=ItemType.PURCHASED_FRESH,
+            best_before=date.today(),
+            freeze_date=None,
+            category_id=1,
+        )
+        is True
+    )
+
+    assert (
+        is_step2_valid(
+            item_type=ItemType.PURCHASED_THEN_FROZEN,
+            best_before=date.today(),
+            freeze_date=date.today(),
+            category_id=1,
         )
         is True
     )

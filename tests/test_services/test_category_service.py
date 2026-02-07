@@ -2,6 +2,9 @@
 
 from app.models import Category
 from app.models import User
+from app.models.category_shelf_life import CategoryShelfLife
+from app.models.category_shelf_life import StorageType
+from app.models.item import ItemType
 from app.services import category_service
 import pytest
 from sqlmodel import Session
@@ -169,3 +172,143 @@ def test_update_category_order_invalid_id(session: Session, test_admin: User) ->
 
     with pytest.raises(ValueError, match="Category with id 999 not found"):
         category_service.update_category_order(session, [999])
+
+
+# =============================================================================
+# Category Filtering and Grouping Tests (Issue #351)
+# =============================================================================
+
+
+def _create_category_with_shelf_life(
+    session: Session,
+    name: str,
+    admin_id: int,
+    storage_type: StorageType,
+    parent_id: int | None = None,
+) -> Category:
+    """Helper: create a category with shelf life entry."""
+    cat = Category(name=name, created_by=admin_id, parent_id=parent_id)
+    session.add(cat)
+    session.commit()
+    session.refresh(cat)
+    sl = CategoryShelfLife(
+        category_id=cat.id,  # type: ignore[arg-type]
+        storage_type=storage_type,
+        months_min=3,
+        months_max=6,
+    )
+    session.add(sl)
+    session.commit()
+    return cat
+
+
+def test_get_categories_for_frozen_returns_only_frozen(session: Session, test_admin: User) -> None:
+    """Test that HOMEMADE_FROZEN only returns categories with FROZEN shelf-life."""
+    admin_id = test_admin.id  # type: ignore[assignment]
+
+    # Create FROZEN and AMBIENT categories
+    _create_category_with_shelf_life(session, "Gemüse", admin_id, StorageType.FROZEN)
+    _create_category_with_shelf_life(session, "Fleisch", admin_id, StorageType.FROZEN)
+    _create_category_with_shelf_life(session, "Marmelade", admin_id, StorageType.AMBIENT)
+
+    result = category_service.get_categories_for_item_type(session, ItemType.HOMEMADE_FROZEN)
+
+    names = {c.name for c in result}
+    assert "Gemüse" in names
+    assert "Fleisch" in names
+    assert "Marmelade" not in names
+
+
+def test_get_categories_for_preserved_returns_only_ambient(session: Session, test_admin: User) -> None:
+    """Test that HOMEMADE_PRESERVED only returns categories with AMBIENT shelf-life."""
+    admin_id = test_admin.id  # type: ignore[assignment]
+
+    _create_category_with_shelf_life(session, "Gemüse", admin_id, StorageType.FROZEN)
+    _create_category_with_shelf_life(session, "Marmelade", admin_id, StorageType.AMBIENT)
+    _create_category_with_shelf_life(session, "Chutney", admin_id, StorageType.AMBIENT)
+
+    result = category_service.get_categories_for_item_type(session, ItemType.HOMEMADE_PRESERVED)
+
+    names = {c.name for c in result}
+    assert "Marmelade" in names
+    assert "Chutney" in names
+    assert "Gemüse" not in names
+
+
+def test_get_categories_for_fresh_returns_all(session: Session, test_admin: User) -> None:
+    """Test that PURCHASED_FRESH returns all leaf categories."""
+    admin_id = test_admin.id  # type: ignore[assignment]
+
+    _create_category_with_shelf_life(session, "Gemüse", admin_id, StorageType.FROZEN)
+    _create_category_with_shelf_life(session, "Marmelade", admin_id, StorageType.AMBIENT)
+    # Category without shelf-life (fresh-only)
+    fresh_cat = Category(name="Nudeln", created_by=admin_id)
+    session.add(fresh_cat)
+    session.commit()
+
+    result = category_service.get_categories_for_item_type(session, ItemType.PURCHASED_FRESH)
+
+    names = {c.name for c in result}
+    assert "Gemüse" in names
+    assert "Marmelade" in names
+    assert "Nudeln" in names
+
+
+def test_get_categories_for_purchased_frozen_returns_frozen(session: Session, test_admin: User) -> None:
+    """Test that PURCHASED_FROZEN filters to FROZEN categories."""
+    admin_id = test_admin.id  # type: ignore[assignment]
+
+    _create_category_with_shelf_life(session, "Gemüse", admin_id, StorageType.FROZEN)
+    _create_category_with_shelf_life(session, "Marmelade", admin_id, StorageType.AMBIENT)
+
+    result = category_service.get_categories_for_item_type(session, ItemType.PURCHASED_FROZEN)
+
+    names = {c.name for c in result}
+    assert "Gemüse" in names
+    assert "Marmelade" not in names
+
+
+def test_get_categories_excludes_parents(session: Session, test_admin: User) -> None:
+    """Test that parent categories with children are excluded from results."""
+    admin_id = test_admin.id  # type: ignore[assignment]
+
+    # Create parent + children
+    parent = _create_category_with_shelf_life(session, "Fleisch", admin_id, StorageType.FROZEN)
+    _create_category_with_shelf_life(session, "Rindfleisch", admin_id, StorageType.FROZEN, parent_id=parent.id)
+    _create_category_with_shelf_life(session, "Schwein", admin_id, StorageType.FROZEN, parent_id=parent.id)
+
+    result = category_service.get_categories_for_item_type(session, ItemType.HOMEMADE_FROZEN)
+
+    names = {c.name for c in result}
+    assert "Rindfleisch" in names
+    assert "Schwein" in names
+    assert "Fleisch" not in names  # Parent excluded
+
+
+def test_get_grouped_categories_returns_correct_groups(session: Session, test_admin: User) -> None:
+    """Test that grouped categories are correctly organized."""
+    admin_id = test_admin.id  # type: ignore[assignment]
+
+    # Create parent + children
+    parent = _create_category_with_shelf_life(session, "Fleisch", admin_id, StorageType.FROZEN)
+    _create_category_with_shelf_life(session, "Rind", admin_id, StorageType.FROZEN, parent_id=parent.id)
+    _create_category_with_shelf_life(session, "Schwein", admin_id, StorageType.FROZEN, parent_id=parent.id)
+    # Standalone category
+    _create_category_with_shelf_life(session, "Gemüse", admin_id, StorageType.FROZEN)
+
+    result = category_service.get_grouped_categories_for_item_type(session, ItemType.HOMEMADE_FROZEN)
+
+    # Should have 2 groups: "Fleisch" group and None (standalone)
+    assert len(result) == 2
+
+    # Find the Fleisch group
+    fleisch_group = next((g for g in result if g[0] == "Fleisch"), None)
+    assert fleisch_group is not None
+    assert len(fleisch_group[1]) == 2
+    assert {c.name for c in fleisch_group[1]} == {"Rind", "Schwein"}
+
+    # Find the standalone group
+    standalone_group = next((g for g in result if g[0] is None), None)
+    assert standalone_group is not None
+    assert len(standalone_group[1]) == 1
+    assert standalone_group[1][0].name == "Gemüse"
