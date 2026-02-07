@@ -7,7 +7,7 @@ from ...services import category_service
 from ...services import item_service
 from ...services import location_service
 from ..components import create_bottom_nav
-from ..components import create_category_chip_group
+from ..components import create_grouped_category_chip_group
 from ..components import create_item_type_chip_group
 from ..components import create_location_chip_group
 from ..components import create_mobile_page_container
@@ -21,7 +21,6 @@ from ..theme.icons import create_icon
 from ..validation import is_step1_valid
 from ..validation import is_step2_valid
 from ..validation import is_step3_valid
-from ..validation import requires_category
 from ..validation import validate_step1
 from ..validation import validate_step2
 from ..validation import validate_step3
@@ -196,7 +195,6 @@ def add_item() -> None:
 
         form_data["current_step"] = 2
         item_type = form_data["item_type"]
-        needs_category = requires_category(item_type)
 
         # Clear and rebuild UI for Step 2
         content_container.clear()
@@ -223,23 +221,21 @@ def add_item() -> None:
                     f"{form_data['product_name']} • {form_data['quantity']} {form_data['unit']} • {type_label}"
                 ).classes("sp-summary-content")
 
-            # Category Chips (only for types that need shelf life from DB)
-            if needs_category:
-                with next(get_session()) as session:
-                    categories = category_service.get_all_categories(session)
+            # Category Chips (always required, filtered by item type)
+            with next(get_session()) as session:
+                grouped_categories = category_service.get_grouped_categories_for_item_type(session, item_type)
 
-                ui.label("Kategorie *").classes("text-sm font-medium mb-2")
-                ui.label("Bestimmt die Haltbarkeit").classes("text-xs text-stone mb-2")
+            ui.label("Kategorie *").classes("text-sm font-medium mb-2")
 
-                def on_category_change(category_id: int) -> None:
-                    form_data["category_id"] = category_id
-                    update_step2_validation()
+            def on_category_change(category_id: int) -> None:
+                form_data["category_id"] = category_id
+                update_step2_validation()
 
-                create_category_chip_group(
-                    categories=categories,
-                    value=form_data.get("category_id"),
-                    on_change=on_category_change,
-                )
+            create_grouped_category_chip_group(
+                grouped_categories=grouped_categories,
+                value=form_data.get("category_id"),
+                on_change=on_category_change,
+            )
 
             # Date field - different label based on item type
             if item_type in {ItemType.PURCHASED_FRESH, ItemType.PURCHASED_FROZEN}:
