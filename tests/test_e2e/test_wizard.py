@@ -111,10 +111,10 @@ def test_wizard_purchased_fresh(page: Page, live_server: str) -> None:
     fill_step1(page, "Tomaten frisch", "Frisch eingekauft", "500", "g")
     click_next(page)
 
-    # Step 2: Haltbarkeit (keine Kategorie erforderlich!)
+    # Step 2: Haltbarkeit (Kategorie ist immer Pflicht)
     expect(page.get_by_text("Schritt 2 von 3")).to_be_visible(timeout=5000)
-    # Kategorie sollte NICHT angezeigt werden
-    expect(page.get_by_text("Kategorie *")).not_to_be_visible()
+    expect(page.get_by_text("Kategorie *")).to_be_visible()
+    select_category(page, "Gemüse")
     # MHD eingeben
     fill_date(page, "31.12.2025")
     click_next(page)
@@ -138,9 +138,10 @@ def test_wizard_purchased_frozen(page: Page, live_server: str) -> None:
     fill_step1(page, "Tiefkühlpizza", "TK-Ware gekauft", "1", "Stück")
     click_next(page)
 
-    # Step 2: Keine Kategorie erforderlich
+    # Step 2: Kategorie ist immer Pflicht (FROZEN-Kategorien)
     expect(page.get_by_text("Schritt 2 von 3")).to_be_visible(timeout=5000)
-    expect(page.get_by_text("Kategorie *")).not_to_be_visible()
+    expect(page.get_by_text("Kategorie *")).to_be_visible()
+    select_category(page, "Gemüse")
     fill_date(page, "30.06.2025")
     click_next(page)
 
@@ -164,7 +165,7 @@ def test_wizard_purchased_then_frozen(page: Page, live_server: str) -> None:
     # Step 2: Kategorie + Einfrierdatum erforderlich
     expect(page.get_by_text("Schritt 2 von 3")).to_be_visible(timeout=5000)
     expect(page.get_by_text("Kategorie *")).to_be_visible()
-    select_category(page, "Fleisch")
+    select_category(page, "Hackfleisch")
     # Einfrierdatum
     fill_date(page, "15.11.2025")
     click_next(page)
@@ -192,7 +193,7 @@ def test_wizard_homemade_frozen(page: Page, live_server: str) -> None:
     # Step 2: Kategorie + Produktionsdatum + Einfrierdatum
     expect(page.get_by_text("Schritt 2 von 3")).to_be_visible(timeout=5000)
     expect(page.get_by_text("Kategorie *")).to_be_visible()
-    select_category(page, "Fleisch")
+    select_category(page, "Hackfleisch")
 
     # Produktionsdatum (erstes Datum-Feld)
     date_inputs = page.locator('input[class*="q-field__native"]')
@@ -226,7 +227,7 @@ def test_wizard_homemade_preserved(page: Page, live_server: str) -> None:
     # Step 2: Kategorie + Produktionsdatum
     expect(page.get_by_text("Schritt 2 von 3")).to_be_visible(timeout=5000)
     expect(page.get_by_text("Kategorie *")).to_be_visible()
-    select_category(page, "Obst")
+    select_category(page, "Marmelade")
     fill_date(page, "15.06.2025")
     click_next(page)
 
@@ -269,7 +270,7 @@ def test_wizard_step1_validation_disables_next(page: Page, live_server: str) -> 
 
 
 def test_wizard_step2_validation_requires_category(page: Page, live_server: str) -> None:
-    """Test: Für HOMEMADE_PRESERVED muss Kategorie gewählt werden."""
+    """Test: Kategorie muss immer gewählt werden (hier HOMEMADE_PRESERVED)."""
     login(page, live_server)
     navigate_to_wizard(page, live_server)
 
@@ -282,8 +283,8 @@ def test_wizard_step2_validation_requires_category(page: Page, live_server: str)
     next_button = page.get_by_role("button", name="Weiter")
     expect(next_button).to_be_disabled()
 
-    # Kategorie wählen
-    select_category(page, "Gemüse")
+    # Kategorie wählen (AMBIENT-Kategorie)
+    select_category(page, "Marmelade")
 
     # Jetzt sollte Weiter enabled sein (Datum hat Default: heute)
     expect(next_button).to_be_enabled()
@@ -297,6 +298,7 @@ def test_wizard_step3_validation_requires_location(page: Page, live_server: str)
     # Schnell durch Steps 1-2
     fill_step1(page, "Testprodukt", "Frisch eingekauft", "100", "g")
     click_next(page)
+    select_category(page, "Gemüse")
     fill_date(page, "31.12.2025")
     click_next(page)
 
@@ -353,8 +355,9 @@ def test_wizard_back_button_roundtrip_preserves_summary(page: Page, live_server:
     fill_step1(page, product_name, "Frisch eingekauft", "750", "g")
     click_next(page)
 
-    # Step 2 - Datum setzen
+    # Step 2 - Kategorie und Datum setzen
     expect(page.get_by_text("Schritt 2 von 3")).to_be_visible(timeout=5000)
+    select_category(page, "Gemüse")
     fill_date(page, "31.12.2025")
 
     # Zurück zu Step 1
@@ -404,6 +407,7 @@ def test_wizard_saved_item_appears_in_list(page: Page, live_server: str) -> None
     unique_name = "Eindeutiger Testartikel"
     fill_step1(page, unique_name, "Frisch eingekauft", "100", "g")
     click_next(page)
+    select_category(page, "Gemüse")
     fill_date(page, "31.12.2025")
     click_next(page)
     select_location(page, "Kühlschrank")
@@ -428,6 +432,7 @@ def test_wizard_with_notes(page: Page, live_server: str) -> None:
     fill_step1(page, "Artikel mit Notiz", "Frisch eingekauft", "100", "g")
     page.get_by_placeholder("z.B. je 12 Stück, 300g pro Packung").first.fill("Testnotiz für E2E Test")
     click_next(page)
+    select_category(page, "Gemüse")
     fill_date(page, "31.12.2025")
     click_next(page)
     select_location(page, "Kühlschrank")
@@ -452,6 +457,7 @@ def test_wizard_save_and_next_preserves_defaults(page: Page, live_server: str) -
     # Erstes Item speichern mit "Speichern & Nächster"
     fill_step1(page, "Erstes Item", "Frisch eingekauft", "100", "kg")  # kg statt g!
     click_next(page)
+    select_category(page, "Gemüse")
     fill_date(page, "31.12.2025")
     click_next(page)
     select_location(page, "Kühlschrank")
@@ -475,6 +481,7 @@ def test_wizard_smart_defaults_item_type_within_window(page: Page, live_server: 
     # Erstes Item mit speziellem Typ speichern
     fill_step1(page, "TK-Test Item", "TK-Ware gekauft", "1", "Stück")
     click_next(page)
+    select_category(page, "Gemüse")
     fill_date(page, "31.12.2025")
     click_next(page)
     select_location(page, "Tiefkühler")
@@ -502,6 +509,7 @@ def test_wizard_frozen_types_show_only_freezer(page: Page, live_server: str) -> 
     # PURCHASED_FROZEN
     fill_step1(page, "Frozen Test", "TK-Ware gekauft", "100", "g")
     click_next(page)
+    select_category(page, "Gemüse")
     fill_date(page, "31.12.2025")
     click_next(page)
 
@@ -521,6 +529,7 @@ def test_wizard_fresh_types_show_chilled_and_ambient(page: Page, live_server: st
     # PURCHASED_FRESH
     fill_step1(page, "Fresh Test", "Frisch eingekauft", "100", "g")
     click_next(page)
+    select_category(page, "Gemüse")
     fill_date(page, "31.12.2025")
     click_next(page)
 
