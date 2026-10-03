@@ -18,6 +18,8 @@ from ..smart_defaults import get_default_item_type
 from ..smart_defaults import get_default_location
 from ..smart_defaults import get_default_unit
 from ..theme.icons import create_icon
+from ..utils.date_utils import format_german_date
+from ..utils.date_utils import parse_german_date
 from ..validation import is_step1_valid
 from ..validation import is_step2_valid
 from ..validation import is_step3_valid
@@ -263,7 +265,7 @@ def add_item() -> None:
             form_data[date_field] = date_value  # Ensure it's set
 
             with (
-                ui.input(value=date_value.strftime("%d.%m.%Y"))
+                ui.input(value=format_german_date(date_value))
                 .classes("w-full")
                 .props('outlined mask="##.##.####"')
                 .style("max-width: 500px")
@@ -274,15 +276,10 @@ def add_item() -> None:
                         create_icon("status/calendar", size="24px")
                         with ui.menu() as date_menu:
                             date_picker = ui.date().bind_value(date_input).props('locale="de" mask="DD.MM.YYYY"')
-
-                            def on_date_change(e: Any, field: str = date_field) -> None:
-                                date_menu.close()
-                                if e.value:
-                                    form_data[field] = e.value
-                                update_step2_validation()
-
-                            date_picker.on("update:model-value", on_date_change)
-            date_input.on("blur", update_step2_validation)
+                            date_picker.on_value_change(lambda _: date_menu.close())
+            # Typed or picked dates reach form_data only through this binding (Issue #362)
+            date_input.bind_value(form_data, date_field, forward=parse_german_date, backward=format_german_date)
+            date_input.on_value_change(lambda _: update_step2_validation())
 
             # Additional freeze date for homemade_frozen
             if item_type == ItemType.HOMEMADE_FROZEN:
