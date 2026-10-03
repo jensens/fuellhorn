@@ -7,7 +7,6 @@ from ..models.withdrawal import Withdrawal
 from . import expiry_calculator
 from . import shelf_life_service
 from datetime import date
-from datetime import timedelta
 from sqlalchemy import func
 from sqlmodel import Session
 from sqlmodel import select
@@ -314,31 +313,6 @@ def get_items_by_location(session: Session, location_id: int) -> list[Item]:
         List of items in the location
     """
     return list(session.exec(select(Item).where(Item.location_id == location_id)).all())
-
-
-def get_items_expiring_soon(session: Session, days: int = 7) -> list[Item]:
-    """Get items with best_before_date within X days.
-
-    Note: For items that use shelf life calculation (frozen/preserved),
-    this is a rough approximation. Use get_item_expiry_info() for accurate dates.
-
-    Args:
-        session: Database session
-        days: Number of days to look ahead (default 7)
-
-    Returns:
-        List of items with best_before_date coming up soon
-    """
-    cutoff_date = date.today() + timedelta(days=days)
-
-    return list(
-        session.exec(
-            select(Item).where(
-                Item.best_before_date <= cutoff_date,
-                Item.is_consumed.is_(False),  # type: ignore
-            )
-        ).all()
-    )
 
 
 def withdraw_partial(

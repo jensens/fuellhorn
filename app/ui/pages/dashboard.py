@@ -8,8 +8,10 @@ from ...auth import require_auth
 from ...database import get_session
 from ...models.item import Item
 from ...services import category_service
+from ...services import expiry_service
 from ...services import item_service
 from ...services import location_service
+from ...services.preferences_service import get_expiry_thresholds
 from ..components import create_bottom_nav
 from ..components import create_bottom_sheet
 from ..components import create_item_card
@@ -36,16 +38,19 @@ def dashboard() -> None:
     # Main content with bottom nav spacing
     with create_mobile_page_container():
         with next(get_session()) as session:
-            # Get items expiring in next 7 days
-            expiring_items = item_service.get_items_expiring_soon(session, days=7)
+            # Items with status warning/critical (Issue #363: status-based, not best_before_date)
+            expiring_items = expiry_service.get_items_expiring_soon(session)
             expiring_count = len(expiring_items)
+            _, warning_days = get_expiry_thresholds(session)
 
             # Expiring items section with count badge (Issue #244)
             ui.label(f"Bald ablaufend ({expiring_count})").classes("sp-page-title text-base mb-3")
 
             if expiring_items:
                 # Display expiring items using unified card component
-                for item in expiring_items[:5]:  # Show max 5 items
+                shown_items = expiring_items[:5]  # Show max 5 items
+                expiry_views = expiry_service.get_expiry_views(session, shown_items)
+                for item in shown_items:
                     create_item_card(
                         item,
                         session,
@@ -53,6 +58,7 @@ def dashboard() -> None:
                         on_partial_consume=lambda i=item: handle_consume(i),
                         on_consume_all=lambda i=item: handle_consume_all(i),
                         on_edit=lambda i=item: ui.navigate.to(f"/items/{i.id}/edit"),
+                        expiry_view=expiry_views.get(item.id),
                     )
 
                 # "Alle anzeigen" link (Issue #244)
@@ -64,7 +70,9 @@ def dashboard() -> None:
                 with ui.card().classes("sp-dashboard-card w-full p-6 text-center"):
                     ui.icon("eco").classes("text-4xl text-leaf mb-2")
                     ui.label("Alles frisch!").classes("text-lg text-charcoal font-medium")
-                    ui.label("Keine Artikel laufen in den nächsten 7 Tagen ab.").classes("text-sm text-stone")
+                    ui.label(f"Keine Artikel laufen in den nächsten {warning_days} Tagen ab.").classes(
+                        "text-sm text-stone"
+                    )
 
             # "Kürzlich hinzugefügt" section - recently added items (Issue #248)
             create_recently_added_section(session)

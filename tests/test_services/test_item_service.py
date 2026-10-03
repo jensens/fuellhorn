@@ -7,7 +7,6 @@ from app.services import category_service
 from app.services import item_service
 from app.services import location_service
 from datetime import date
-from datetime import timedelta
 import pytest
 from sqlmodel import Session
 
@@ -256,51 +255,8 @@ def test_get_items_by_location(session: Session, test_admin: User) -> None:
     assert items[0].product_name == "Eis"
 
 
-def test_get_items_expiring_soon(session: Session, test_admin: User) -> None:
-    """Test getting items expiring within X days."""
-    location = location_service.create_location(
-        session=session,
-        name="Kühlschrank",
-        location_type=LocationType.CHILLED,
-        created_by=test_admin.id,
-    )
-    category = category_service.create_category(
-        session=session,
-        name="Frische",
-        created_by=test_admin.id,
-    )
-
-    assert category.id is not None
-
-    # Item expiring in 5 days
-    item_service.create_item(
-        session=session,
-        product_name="Joghurt",
-        best_before_date=date.today() + timedelta(days=5),
-        quantity=1,
-        unit="Becher",
-        item_type=ItemType.PURCHASED_FRESH,
-        location_id=location.id,
-        created_by=test_admin.id,
-        category_id=category.id,
-    )
-    # Item expiring in 20 days
-    item_service.create_item(
-        session=session,
-        product_name="Käse",
-        best_before_date=date.today() + timedelta(days=20),
-        quantity=1,
-        unit="Packung",
-        item_type=ItemType.PURCHASED_FRESH,
-        location_id=location.id,
-        created_by=test_admin.id,
-        category_id=category.id,
-    )
-
-    items = item_service.get_items_expiring_soon(session, days=7)
-
-    assert len(items) == 1
-    assert items[0].product_name == "Joghurt"
+# get_items_expiring_soon lebt seit Issue #363 in expiry_service (statusbasiert),
+# siehe tests/test_services/test_expiry_service_db.py
 
 
 # =============================================================================
