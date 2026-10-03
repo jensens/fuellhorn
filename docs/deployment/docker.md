@@ -58,6 +58,7 @@ docker compose -f docker-compose.local.yml up --build
 | `POSTGRES_DB` | Datenbank-Name | Nein | `fuellhorn` |
 | `APP_PORT` | Externer Port | Nein | `8080` |
 | `DEBUG` | Debug-Modus | Nein | `false` |
+| `TRUSTED_PROXIES` | Kommagetrennte IPs von Reverse-Proxys, deren `X-Forwarded-For` für das Login-Rate-Limiting vertraut wird. Leer: direkte Client-IP zählt. | Nein | leer |
 
 ### Secrets generieren
 

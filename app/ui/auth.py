@@ -1,5 +1,6 @@
 """Authentication UI - Login/Logout."""
 
+from ..config import config
 from ..database import get_session
 from ..services import rate_limit_service
 from ..services.auth_service import AuthenticationError
@@ -8,35 +9,48 @@ from ..services.auth_service import generate_remember_token
 from ..services.auth_service import get_user
 from ..services.auth_service import revoke_remember_token
 from nicegui import app
+from nicegui import context
 from nicegui import ui
-from starlette.requests import Request
+
+
+UNKNOWN_CLIENT_IP = "unknown"
+
+
+def resolve_client_ip(peer_ip: str | None, forwarded_for: str | None, trusted_proxies: frozenset[str]) -> str:
+    """Bestimmt die Client-IP für das Rate-Limiting (reine Funktion, Issue #364).
+
+    X-Forwarded-For ist frei setzbar und zählt deshalb nur, wenn der direkte Peer
+    ein konfigurierter Proxy ist; dann gilt der erste Eintrag der Kette.
+
+    Args:
+        peer_ip: IP der direkten TCP-Gegenstelle (``request.client.host``).
+        forwarded_for: Wert des X-Forwarded-For-Headers oder None.
+        trusted_proxies: IPs vertrauenswürdiger Reverse-Proxys (``config.TRUSTED_PROXIES``).
+
+    Returns:
+        IP-Adresse als String, ``"unknown"`` wenn keine Peer-Information vorliegt.
+    """
+    if not peer_ip:
+        return UNKNOWN_CLIENT_IP
+    if forwarded_for and peer_ip in trusted_proxies:
+        first_hop = forwarded_for.split(",")[0].strip()
+        if first_hop:
+            return first_hop
+    return peer_ip
 
 
 def _get_client_ip() -> str:
-    """Ermittelt die Client-IP-Adresse aus dem Request.
+    """Ermittelt die Client-IP des aktuellen NiceGUI-Clients.
 
-    Berücksichtigt X-Forwarded-For Header für Reverse-Proxy-Setups.
-
-    Returns:
-        IP-Adresse als String (oder "test" im Test-Umfeld)
+    Nutzt den Request des Clients (``context.client.request``); ohne Client-Kontext
+    (sollte in UI-Handlern nicht vorkommen) wird ``"unknown"`` verwendet.
     """
     try:
-        request: Request = app.storage.request  # type: ignore[attr-defined]
-    except AttributeError:
-        # Im Test-Umfeld existiert app.storage.request nicht
-        return "test"
-
-    # X-Forwarded-For für Reverse-Proxy (erster Eintrag ist der echte Client)
-    forwarded_for = request.headers.get("x-forwarded-for")
-    if forwarded_for:
-        return forwarded_for.split(",")[0].strip()
-
-    # Fallback: Direkter Client
-    client = request.client
-    if client:
-        return client.host
-
-    return "unknown"
+        request = context.client.request
+    except RuntimeError:
+        return UNKNOWN_CLIENT_IP
+    peer_ip = request.client.host if request.client is not None else None
+    return resolve_client_ip(peer_ip, request.headers.get("x-forwarded-for"), config.TRUSTED_PROXIES)
 
 
 def show_login_page() -> None:
