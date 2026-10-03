@@ -108,3 +108,31 @@ async def test_wizard_persists_typed_freeze_date_for_homemade_frozen(
     with Session(isolated_test_database) as session:
         item = session.exec(select(Item)).one()
     assert (item.best_before_date, item.freeze_date) == (date(2026, 9, 1), date(2026, 9, 2))
+
+
+async def test_wizard_keeps_typed_date_after_back_and_next(logged_in_user: User) -> None:
+    """Zurück und Weiter behalten das getippte Datum (Issue #340)."""
+    await logged_in_user.open("/items/add")
+    await _fill_step1(logged_in_user, "Joghurt", "purchased_fresh", 4, "Stück")
+    await logged_in_user.should_see("Schritt 2 von 3")
+    _type_date(logged_in_user, "wizard-date-input", "15.01.2027")
+
+    logged_in_user.find(marker="wizard-back").click()
+    await logged_in_user.should_see("Schritt 1 von 3")
+    logged_in_user.find("Weiter").click()
+    await logged_in_user.should_see("Schritt 2 von 3")
+
+    date_input = logged_in_user.find(kind=ui.input, marker="wizard-date-input").elements.pop()
+    assert date_input.value == "15.01.2027"
+
+
+async def test_wizard_summary_shows_typed_date(logged_in_user: User, chilled_location: Location) -> None:
+    """Die Zusammenfassung in Schritt 3 zeigt das getippte Datum, nicht 'heute' (Issue #340)."""
+    await logged_in_user.open("/items/add")
+    await _fill_step1(logged_in_user, "Joghurt", "purchased_fresh", 4, "Stück")
+    await logged_in_user.should_see("Schritt 2 von 3")
+    _type_date(logged_in_user, "wizard-date-input", "15.01.2027")
+    logged_in_user.find("Weiter").click()
+
+    await logged_in_user.should_see("Schritt 3 von 3")
+    await logged_in_user.should_see("Datum: 15.01.2027")
