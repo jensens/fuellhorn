@@ -5,6 +5,7 @@ prüft das in der Datenbank gespeicherte Datum. Vor dem Fix erhielt jeder
 Artikel ``date.today()``, weil das Datumsfeld nie an ``form_data`` gebunden war.
 """
 
+from app.models import Category
 from app.models import Item
 from app.models import Location
 from app.models import LocationType
@@ -69,3 +70,41 @@ async def test_wizard_persists_typed_best_before_date(
     with Session(isolated_test_database) as session:
         item = session.exec(select(Item)).one()
     assert item.best_before_date == date(2027, 1, 15)
+
+
+@pytest.fixture(name="frozen_setup")
+def frozen_setup_fixture(isolated_test_database) -> tuple[Location, Category]:
+    """Tiefkühl-Lagerort und Kategorie (Pflicht für HOMEMADE_FROZEN)."""
+    with Session(isolated_test_database) as session:
+        location = Location(name="Tiefkühltruhe", location_type=LocationType.FROZEN, created_by=1)
+        category = Category(name="Suppen", created_by=1)
+        session.add(location)
+        session.add(category)
+        session.commit()
+        session.refresh(location)
+        session.refresh(category)
+        return location, category
+
+
+async def test_wizard_persists_typed_freeze_date_for_homemade_frozen(
+    logged_in_user: User, isolated_test_database, frozen_setup: tuple[Location, Category]
+) -> None:
+    """Bei HOMEMADE_FROZEN landen getipptes Produktions- und Einfrierdatum in der Datenbank."""
+    location, category = frozen_setup
+    await logged_in_user.open("/items/add")
+    await _fill_step1(logged_in_user, "Kürbissuppe", "homemade_frozen", 2, "l")
+
+    await logged_in_user.should_see("Schritt 2 von 3")
+    logged_in_user.find(marker=f"category-chip-{category.id}").click()
+    _type_date(logged_in_user, "wizard-date-input", "01.09.2026")
+    _type_date(logged_in_user, "wizard-freeze-date-input", "02.09.2026")
+    logged_in_user.find("Weiter").click()
+
+    await logged_in_user.should_see("Schritt 3 von 3")
+    logged_in_user.find(marker=f"location-chip-{location.id}").click()
+    logged_in_user.find(marker="wizard-save").click()
+    await logged_in_user.should_see("gespeichert")
+
+    with Session(isolated_test_database) as session:
+        item = session.exec(select(Item)).one()
+    assert (item.best_before_date, item.freeze_date) == (date(2026, 9, 1), date(2026, 9, 2))

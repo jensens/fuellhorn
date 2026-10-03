@@ -287,7 +287,7 @@ def add_item() -> None:
                 freeze_date_value = form_data.get("freeze_date") or date_type.today()
                 form_data["freeze_date"] = freeze_date_value
                 with (
-                    ui.input(value=freeze_date_value.strftime("%d.%m.%Y"))
+                    ui.input(value=format_german_date(freeze_date_value))
                     .classes("w-full")
                     .props('outlined mask="##.##.####"')
                     .style("max-width: 500px")
@@ -300,15 +300,11 @@ def add_item() -> None:
                                 freeze_date_picker = (
                                     ui.date().bind_value(freeze_date_input).props('locale="de" mask="DD.MM.YYYY"')
                                 )
-
-                                def on_freeze_date_change(e: Any) -> None:
-                                    freeze_date_menu.close()
-                                    if e.value:
-                                        form_data["freeze_date"] = e.value
-                                    update_step2_validation()
-
-                                freeze_date_picker.on("update:model-value", on_freeze_date_change)
-                freeze_date_input.on("blur", update_step2_validation)
+                                freeze_date_picker.on_value_change(lambda _: freeze_date_menu.close())
+                freeze_date_input.bind_value(
+                    form_data, "freeze_date", forward=parse_german_date, backward=format_german_date
+                )
+                freeze_date_input.on_value_change(lambda _: update_step2_validation())
 
             # Notes (optional)
             ui.label("Notizen (optional)").classes("text-sm font-medium mb-1 mt-4")
