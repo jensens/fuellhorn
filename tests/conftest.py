@@ -143,14 +143,23 @@ def cleanup_ui_packages():
     - Remove app.ui.* modules from sys.modules
     - Forces Python to re-import and re-register routes
 
-    Scope: function (cleanup after each test)
+    Scope: function (cleanup before and after each test)
     Autouse: True (applies to ALL tests)
+
+    The cleanup also runs BEFORE the test: test modules that import a page module
+    at collection time (e.g. ``from app.ui.pages.items import _sort_items``) would
+    otherwise leave that module in sys.modules, so the first ``user`` fixture of the
+    session re-runs main.py without re-executing the page and its route is missing
+    (404 on the real page). See Issue #392 for the broader test-infra cleanup.
     """
-    yield  # Run test first
+    _purge_ui_modules()
+    yield  # Run test
+    _purge_ui_modules()
 
-    # Cleanup after test
+
+def _purge_ui_modules() -> None:
+    """Remove app.ui.* and app.api.* from sys.modules so routes re-register on next import."""
     modules_to_remove = [key for key in sys.modules.keys() if key.startswith("app.ui") or key.startswith("app.api")]
-
     for module in modules_to_remove:
         del sys.modules[module]
 
