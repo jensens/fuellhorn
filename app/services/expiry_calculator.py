@@ -61,6 +61,7 @@ def get_expiry_status_minmax(
     best_before_date: date | None = None,
     critical_days: int = 3,
     warning_days: int = 7,
+    today: date | None = None,
 ) -> ExpiryStatus:
     """Get expiry status based on optimal and maximum dates.
 
@@ -78,11 +79,12 @@ def get_expiry_status_minmax(
         best_before_date: Best before date from package (MHD)
         critical_days: Days before expiry for critical status (default: 3)
         warning_days: Days before expiry for warning status (default: 7)
+        today: Reference day; defaults to the current date (injectable for tests)
 
     Returns:
         ExpiryStatus: "critical", "warning", or "ok"
     """
-    today = date.today()
+    today = today or date.today()
 
     # If best_before_date is provided, use it as the primary date
     # (for PURCHASED_FRESH, PURCHASED_FROZEN with MHD)
