@@ -17,34 +17,33 @@ Issues können auf andere warten. Format im Issue-Body:
 Blocked by #42
 ```
 
-Automatische Freischaltung via GitHub Action wenn Blocker geschlossen wird.
+Blockierte Issues tragen das Label `status/blocked`. Wenn der Blocker geschlossen ist, Label manuell entfernen und `status/agent-ready` setzen (keine Automatisierung vorhanden).
 
 ### Epics und Sub-Issues
 
 **Epics** (`type/epic` Label) werden **nicht direkt bearbeitet**. Stattdessen:
 - Sub-Issues haben `Part of #<epic>` im Body
-- Wenn alle Sub-Issues geschlossen → Epic wird automatisch geschlossen
+- Epic manuell schließen, wenn alle Sub-Issues geschlossen sind
 
-### MCP Server für Task-Management
+### Arbeiten mit der gh CLI
 
-Der MCP Server [Tributary](https://git.bluedynamics.eu/jensens/tributary) ermöglicht automatisierte Issue-Verwaltung:
+Alle GitHub-Operationen laufen über die `gh` CLI (authentifiziert via `gh auth login`).
 
-| Tool | Beschreibung |
-|------|-------------|
-| `list_ready_issues` | Agent-ready Issues (ohne Epics) |
-| `list_epics` | Epics mit Sub-Issue Fortschritt |
-| `get_issue_briefing` | Briefing mit Worktree-Anweisungen |
-| `assign_issue` | Issue übernehmen |
-| `complete_issue` | Nach PR-Merge aufräumen |
-| `get_workflow_guide` | Workflow-Erklärung für Agents |
-| `get_project_config` | Projekt-Konfiguration und Befehle |
+| Aufgabe | Befehl |
+|---------|--------|
+| Agent-ready Issues anzeigen | `gh issue list --label status/agent-ready` |
+| Issue lesen | `gh issue view <nr> --comments` |
+| Issue übernehmen | `gh issue edit <nr> --remove-label status/agent-ready --add-label status/in-progress` |
+| Issue anlegen | `gh issue create --title "fix: ..." --body-file body.md --label type/bug` |
+| Kommentar schreiben | `gh issue comment <nr> --body "..."` |
+| PR erstellen | `gh pr create --fill` (Body mit `closes #<nr>`) |
 
-**Konfiguration:** `.tributary.yaml` im Projekt-Root
+Interaktive Auswahl inkl. Briefing: `./scripts/select-next-task.sh`
 
 **Typischer Workflow:**
-1. `list_ready_issues` → Verfügbare Issues sehen
-2. `get_issue_briefing(issue_number)` → Setup-Anweisungen holen
-3. `assign_issue(issue_number)` → Issue übernehmen
+1. `gh issue list --label status/agent-ready` → Verfügbare Issues sehen
+2. `gh issue view <nr>` → Beschreibung und Akzeptanzkriterien lesen
+3. Label auf `status/in-progress` setzen, Worktree anlegen
 4. Implementieren (TDD!)
-5. PR erstellen mit `closes #<number>`
-6. `complete_issue(issue_number)` → Aufräumen
+5. PR erstellen mit `closes #<nr>`
+6. Nach Merge: Worktree entfernen, Label `status/in-progress` entfernen
