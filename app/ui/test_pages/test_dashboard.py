@@ -209,6 +209,7 @@ def page_dashboard_at_a_glance() -> None:
 def _render_at_a_glance_section() -> None:
     """Render 'Auf einen Blick' section for testing (Issue #245)."""
     from ...services import category_service
+    from ...services import expiry_service
     from ...services import item_service
     from ...services import location_service
 
@@ -216,7 +217,7 @@ def _render_at_a_glance_section() -> None:
         # Get counts
         all_items = item_service.get_all_items(session)
         active_items = [i for i in all_items if not i.is_consumed]
-        expiring_items = item_service.get_items_expiring_soon(session, days=7)
+        expiring_items = expiry_service.get_items_expiring_soon(session)
         locations = location_service.get_all_locations(session)
         categories = category_service.get_all_categories(session)
 
@@ -248,11 +249,11 @@ def _render_at_a_glance_section() -> None:
 
 def _render_dashboard_content() -> None:
     """Render dashboard content for testing (without auth)."""
-    from ...services import item_service
+    from ...services import expiry_service
 
     # Inline rendering of dashboard content (simplified for testing)
     with next(get_session()) as session:
-        expiring_items = item_service.get_items_expiring_soon(session, days=7)
+        expiring_items = expiry_service.get_items_expiring_soon(session)
         expiring_count = len(expiring_items)
 
         # Section title with count badge (Issue #244)
@@ -260,22 +261,9 @@ def _render_dashboard_content() -> None:
 
         if expiring_items:
             for item in expiring_items[:5]:
-                # Get proper expiry info
-                optimal_date, max_date, best_before_date = item_service.get_item_expiry_info(
-                    session,
-                    item.id,  # type: ignore[arg-type]
-                )
-
-                # Determine the effective expiry date for status calculation
-                if best_before_date is not None:
-                    # MHD items: use best_before_date
-                    effective_expiry = best_before_date
-                elif optimal_date is not None:
-                    # Shelf-life items: use optimal date for warning threshold
-                    effective_expiry = optimal_date
-                else:
-                    # Fallback
-                    effective_expiry = item.best_before_date
+                # Effective expiry date from the central service (Issue #363)
+                view = expiry_service.get_item_expiry_view(session, item)
+                effective_expiry = view.display_date or item.best_before_date
 
                 days_until_expiry = (effective_expiry - date.today()).days
 

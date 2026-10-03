@@ -12,8 +12,8 @@ from ...models.item import Item
 from ...models.location import Location
 from ...models.withdrawal import Withdrawal
 from ...services import auth_service
+from ...services import expiry_service
 from ...services import item_service
-from ...services.expiry_calculator import get_expiry_status
 from ..theme.icons import create_icon
 from datetime import date
 from nicegui import app
@@ -36,6 +36,8 @@ def get_expiry_badge_classes(status: str) -> str:
         return f"{base_classes} bg-red-100 text-red-800"
     elif status == "warning":
         return f"{base_classes} bg-yellow-100 text-yellow-800"
+    elif status == "unknown":
+        return f"{base_classes} bg-gray-100 text-gray-700"
     else:
         return f"{base_classes} bg-green-100 text-green-800"
 
@@ -127,17 +129,22 @@ def create_bottom_sheet(
                         ui.label("Lagerort").classes("sp-info-label")
                         ui.label(location.name).classes("sp-info-value")
 
-                # Expiry date with status badge (using best_before_date as fallback)
-                expiry_status = get_expiry_status(item.best_before_date)
+                # Expiry: status, display date and label come from the service (Issue #363)
+                with next(get_session()) as session:
+                    expiry_view = expiry_service.get_item_expiry_view(session, item)
                 with ui.row().classes("sp-info-row"):
                     create_icon("status/calendar", size="20px", classes="text-fern")
                     with ui.column().classes("gap-0"):
-                        ui.label("Haltbarkeit").classes("sp-info-label")
-                        with ui.row().classes("items-center gap-2"):
-                            ui.label(item.best_before_date.strftime("%d.%m.%Y")).classes("sp-info-value")
-                            ui.label(get_expiry_label(item.best_before_date)).classes(
-                                get_expiry_badge_classes(expiry_status)
-                            )
+                        if expiry_view.display_date is not None:
+                            ui.label(expiry_view.label).classes("sp-info-label")
+                            with ui.row().classes("items-center gap-2"):
+                                ui.label(expiry_view.display_date.strftime("%d.%m.%Y")).classes("sp-info-value")
+                                ui.label(get_expiry_label(expiry_view.display_date)).classes(
+                                    get_expiry_badge_classes(expiry_view.status)
+                                )
+                        else:
+                            ui.label("Haltbarkeit").classes("sp-info-label")
+                            ui.label(expiry_view.label).classes(get_expiry_badge_classes("unknown"))
 
                 # Notes (if present)
                 if item.notes:

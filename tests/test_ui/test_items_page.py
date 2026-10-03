@@ -201,6 +201,27 @@ class TestSortItems:
         result = _sort_items(items, "best_before_date", ascending=False)
         assert result[0].best_before_date == date(2025, 12, 31)
 
+    def test_sort_by_date_uses_display_dates_when_given(self) -> None:
+        """Mit display_dates sortiert 'Haltbarkeitsdatum' nach dem effektiven Datum (Issue #363).
+
+        Die eingefrorene Suppe hat ein frühes Produktionsdatum, aber ein spätes Idealdatum
+        und muss deshalb hinter dem Joghurt stehen.
+        """
+        soup = _create_test_item(1, "Suppe", item_type=ItemType.HOMEMADE_FROZEN, best_before_date=date(2025, 1, 1))
+        yoghurt = _create_test_item(2, "Joghurt", best_before_date=date(2025, 6, 15))
+        display_dates = {1: date(2025, 9, 1), 2: date(2025, 6, 15)}
+        result = _sort_items([soup, yoghurt], "best_before_date", ascending=True, display_dates=display_dates)
+        assert [i.product_name for i in result] == ["Joghurt", "Suppe"]
+
+    def test_sort_by_date_puts_items_without_display_date_last(self) -> None:
+        """Artikel ohne Haltbarkeitsdaten (unknown) stehen bei aufsteigender Sortierung am Ende."""
+        unknown = _create_test_item(1, "Reste", item_type=ItemType.HOMEMADE_FROZEN, best_before_date=date(2025, 1, 1))
+        yoghurt = _create_test_item(2, "Joghurt", best_before_date=date(2025, 6, 15))
+        result = _sort_items(
+            [unknown, yoghurt], "best_before_date", ascending=True, display_dates={1: None, 2: date(2025, 6, 15)}
+        )
+        assert [i.product_name for i in result] == ["Joghurt", "Reste"]
+
     def test_sort_by_product_name_ascending(self) -> None:
         """Should sort by product_name ascending (case-insensitive)."""
         items = [

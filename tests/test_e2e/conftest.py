@@ -28,6 +28,7 @@ import pytest
 import socket
 import subprocess
 import sys
+import tempfile
 import time
 
 
@@ -110,32 +111,41 @@ def _module_server():
         for k, v in os.environ.items()
         if not k.startswith("NICEGUI_") and k != "TESTING" and not k.startswith("PYTEST")
     }
+    # Kein SQL-Echo im E2E-Server: eine .env mit DEBUG=true (auch aus einem übergeordneten
+    # Verzeichnis, python-dotenv sucht aufwärts) würde sonst jede Query loggen.
+    clean_env["DEBUG"] = "false"
 
-    # Server als separaten Prozess starten mit sauberer Umgebung
+    # Serverausgabe in eine Logdatei statt in ungelesene Pipes: Läuft der 64-KB-Pipe-Puffer
+    # voll, blockiert der Serverprozess beim Schreiben, Seitenaufrufe laufen in Timeouts und
+    # alle folgenden Tests des Moduls scheitern am Reset-Endpoint (Issue #363, refs #391).
+    log_file = tempfile.NamedTemporaryFile(prefix="fuellhorn-e2e-", suffix=".log", delete=False)
     proc = subprocess.Popen(
         [sys.executable, str(server_script), str(port)],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        stdout=log_file,
+        stderr=subprocess.STDOUT,
         env=clean_env,
     )
 
+    def _stop_server() -> None:
+        proc.terminate()
+        try:
+            proc.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            proc.wait(timeout=5)
+        log_file.close()
+
     # Warten bis Server bereit ist
     if not _wait_for_server(url):
-        proc.terminate()
-        stdout, stderr = proc.communicate(timeout=5)
+        _stop_server()
         pytest.fail(
-            f"Server wurde nicht rechtzeitig gestartet auf {url}\nstdout: {stdout.decode()}\nstderr: {stderr.decode()}"
+            f"Server wurde nicht rechtzeitig gestartet auf {url}\nLog:\n{Path(log_file.name).read_text(errors='replace')}"
         )
 
     yield url
 
-    # Server beenden
-    proc.terminate()
-    try:
-        proc.wait(timeout=5)
-    except subprocess.TimeoutExpired:
-        proc.kill()
-        proc.wait(timeout=5)
+    _stop_server()
+    Path(log_file.name).unlink(missing_ok=True)
 
 
 def _reset_test_data(url: str) -> None:

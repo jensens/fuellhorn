@@ -242,31 +242,31 @@ async def test_item_card_progress_bar_low_level_color(
 # =============================================================================
 
 
-def test_get_expiry_badge_class_expired() -> None:
-    """Test badge class for expired items (days < 0)."""
-    assert get_expiry_badge_class(-1) == "expired"
-    assert get_expiry_badge_class(-5) == "expired"
-    assert get_expiry_badge_class(-100) == "expired"
+def test_get_expiry_badge_class_critical_past_date_is_expired() -> None:
+    """Kritisch und Datum überschritten → 'expired' (rot)."""
+    assert get_expiry_badge_class("critical", -1) == "expired"
 
 
-def test_get_expiry_badge_class_warning() -> None:
-    """Test badge class for warning items (days 0-1)."""
-    assert get_expiry_badge_class(0) == "warning"
-    assert get_expiry_badge_class(1) == "warning"
+def test_get_expiry_badge_class_critical_upcoming_is_warning() -> None:
+    """Kritisch, Datum heute oder in Kürze → 'warning' (orange)."""
+    assert get_expiry_badge_class("critical", 0) == "warning"
+    assert get_expiry_badge_class("critical", 2) == "warning"
 
 
-def test_get_expiry_badge_class_soon() -> None:
-    """Test badge class for soon items (days 2-7)."""
-    assert get_expiry_badge_class(2) == "soon"
-    assert get_expiry_badge_class(5) == "soon"
-    assert get_expiry_badge_class(7) == "soon"
+def test_get_expiry_badge_class_warning_is_soon() -> None:
+    """Status warning → 'soon' (gold), auch wenn das Idealdatum schon überschritten ist."""
+    assert get_expiry_badge_class("warning", 5) == "soon"
+    assert get_expiry_badge_class("warning", -10) == "soon"
 
 
 def test_get_expiry_badge_class_ok() -> None:
-    """Test badge class for ok items (days > 7)."""
-    assert get_expiry_badge_class(8) == "ok"
-    assert get_expiry_badge_class(30) == "ok"
-    assert get_expiry_badge_class(365) == "ok"
+    """Status ok → 'ok' (neutral)."""
+    assert get_expiry_badge_class("ok", 30) == "ok"
+
+
+def test_get_expiry_badge_class_unknown() -> None:
+    """Status unknown (keine Haltbarkeitsdaten) → 'unknown' (grau), unabhängig vom Datum."""
+    assert get_expiry_badge_class("unknown", None) == "unknown"
 
 
 def test_get_expiry_badge_text_frozen_shows_date() -> None:
