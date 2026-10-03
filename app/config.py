@@ -17,6 +17,16 @@ ROOT_DIR = Path(__file__).parent.parent
 DATA_DIR = ROOT_DIR / "data"
 
 
+def parse_trusted_proxies(value: str) -> frozenset[str]:
+    """Parst TRUSTED_PROXIES (kommagetrennte IPs) in eine Menge.
+
+    Nur wenn der direkte Peer eines Requests in dieser Menge ist, wird der
+    X-Forwarded-For-Header für die Client-IP (Login-Rate-Limiting) ausgewertet.
+    Leer bedeutet: keinem Proxy vertrauen, immer die Peer-IP verwenden.
+    """
+    return frozenset(part.strip() for part in value.split(",") if part.strip())
+
+
 class Config:
     """Haupt-Konfiguration für die Anwendung."""
 
@@ -41,6 +51,9 @@ class Config:
     DEBUG: bool = os.getenv("DEBUG", "false").lower() == "true"
     HOST: str = os.getenv("HOST", "0.0.0.0")
     PORT: int = int(os.getenv("PORT", "8080"))
+
+    # Reverse Proxy: IPs, deren X-Forwarded-For-Header vertraut wird (Issue #364)
+    TRUSTED_PROXIES: frozenset[str] = parse_trusted_proxies(os.getenv("TRUSTED_PROXIES", ""))
 
     # Session
     SESSION_MAX_AGE: int = int(os.getenv("SESSION_MAX_AGE", "86400"))  # 24 Stunden default

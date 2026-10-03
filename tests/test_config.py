@@ -74,6 +74,18 @@ class TestConfigClass:
 
         assert isinstance(Config.REMEMBER_ME_MAX_AGE, int)
 
+    def test_trusted_proxies_empty_by_default(self) -> None:
+        """Ohne TRUSTED_PROXIES wird keinem Proxy vertraut (Issue #364)."""
+        from app.config import parse_trusted_proxies
+
+        assert parse_trusted_proxies("") == frozenset()
+
+    def test_trusted_proxies_parses_comma_separated_list(self) -> None:
+        """Kommagetrennte Liste mit Leerzeichen wird zu einer Menge von IPs."""
+        from app.config import parse_trusted_proxies
+
+        assert parse_trusted_proxies(" 10.0.0.1, 10.0.0.2 ,, ") == frozenset({"10.0.0.1", "10.0.0.2"})
+
 
 class TestGetDatabaseUrl:
     """Tests for get_database_url method."""
