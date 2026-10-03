@@ -315,7 +315,12 @@ def add_item() -> None:
 
             # Navigation
             with ui.row().classes("w-full justify-between mt-6 gap-2"):
-                with ui.button(on_click=show_step1).props("flat color=gray-7 size=lg").style("min-height: 48px"):
+                with (
+                    ui.button(on_click=show_step1)
+                    .props("flat color=gray-7 size=lg")
+                    .style("min-height: 48px")
+                    .mark("wizard-back")
+                ):
                     with ui.row().classes("items-center gap-2"):
                         create_icon("actions/back", size="20px")
                         ui.label("Zurück")
@@ -427,7 +432,12 @@ def add_item() -> None:
 
             # Navigation
             with ui.row().classes("w-full justify-between mt-6 gap-2"):
-                with ui.button(on_click=show_step2).props("flat color=gray-7 size=lg").style("min-height: 48px"):
+                with (
+                    ui.button(on_click=show_step2)
+                    .props("flat color=gray-7 size=lg")
+                    .style("min-height: 48px")
+                    .mark("wizard-back")
+                ):
                     with ui.row().classes("items-center gap-2"):
                         create_icon("actions/back", size="20px")
                         ui.label("Zurück")
