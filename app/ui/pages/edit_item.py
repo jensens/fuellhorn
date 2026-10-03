@@ -13,6 +13,8 @@ from ..components import create_location_chip_group
 from ..components import create_mobile_page_container
 from ..components import create_unit_chip_group
 from ..theme.icons import create_icon
+from ..utils.date_utils import format_german_date
+from ..utils.date_utils import parse_german_date
 from ..validation import requires_category
 from datetime import date as date_type
 from nicegui import ui
@@ -225,7 +227,7 @@ def edit_item(item_id: int) -> None:
         form_data["best_before_date"] = date_value
 
         with (
-            ui.input(value=date_value.strftime("%d.%m.%Y"))
+            ui.input(value=format_german_date(date_value))
             .classes("w-full")
             .props('outlined mask="##.##.####"')
             .style("max-width: 500px")
@@ -236,14 +238,10 @@ def edit_item(item_id: int) -> None:
                     create_icon("status/calendar", size="24px")
                     with ui.menu() as date_menu:
                         date_picker = ui.date().bind_value(date_input).props('locale="de" mask="DD.MM.YYYY"')
-
-                        def on_date_change(e: Any) -> None:
-                            date_menu.close()
-                            if e.value:
-                                form_data["best_before_date"] = e.value
-                            update_validation()
-
-                        date_picker.on("update:model-value", on_date_change)
+                        date_picker.on_value_change(lambda _: date_menu.close())
+        # Typed or picked dates reach form_data only through this binding (Issue #362)
+        date_input.bind_value(form_data, "best_before_date", forward=parse_german_date, backward=format_german_date)
+        date_input.on_value_change(lambda _: update_validation())
 
         # Freeze Date (conditional)
         show_freeze_date = form_data["item_type"] in {
@@ -258,7 +256,7 @@ def edit_item(item_id: int) -> None:
                 form_data["freeze_date"] = freeze_date_value
 
             with (
-                ui.input(value=freeze_date_value.strftime("%d.%m.%Y") if freeze_date_value else "")
+                ui.input(value=format_german_date(form_data.get("freeze_date")))
                 .classes("w-full")
                 .props('outlined mask="##.##.####"')
                 .style("max-width: 500px")
@@ -271,14 +269,11 @@ def edit_item(item_id: int) -> None:
                             freeze_date_picker = (
                                 ui.date().bind_value(freeze_date_input).props('locale="de" mask="DD.MM.YYYY"')
                             )
-
-                            def on_freeze_date_change(e: Any) -> None:
-                                freeze_date_menu.close()
-                                if e.value:
-                                    form_data["freeze_date"] = e.value
-                                update_validation()
-
-                            freeze_date_picker.on("update:model-value", on_freeze_date_change)
+                            freeze_date_picker.on_value_change(lambda _: freeze_date_menu.close())
+            freeze_date_input.bind_value(
+                form_data, "freeze_date", forward=parse_german_date, backward=format_german_date
+            )
+            freeze_date_input.on_value_change(lambda _: update_validation())
 
         # Location
         ui.label("Lagerort *").classes("text-sm font-medium mb-1 mt-4")
