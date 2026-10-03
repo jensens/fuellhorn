@@ -14,13 +14,19 @@ Status, Anzeigedatum und Beschriftung ausschließlich von hier. Die Regeln:
 """
 
 from ..models.category_shelf_life import CategoryShelfLife
+from ..models.category_shelf_life import StorageType
 from ..models.item import Item
 from ..models.item import ItemType
+from . import item_service
+from . import shelf_life_service
 from .expiry_calculator import calculate_expiry_dates
 from .expiry_calculator import get_expiry_status_minmax
 from .expiry_calculator import get_storage_type_for_item_type
+from .preferences_service import get_expiry_thresholds
 from dataclasses import dataclass
 from datetime import date
+from sqlmodel import Session
+from sqlmodel import select
 from typing import Literal
 
 
@@ -93,3 +99,60 @@ def compute_expiry_view(
         optimal_date, max_date, None, critical_days=critical_days, warning_days=warning_days, today=today
     )
     return ExpiryView(status=status, display_date=optimal_date, label=LABEL_OPTIMAL)
+
+
+ShelfLifeIndex = dict[tuple[int, StorageType], CategoryShelfLife]
+
+
+def _load_shelf_life_index(session: Session) -> ShelfLifeIndex:
+    """Lädt alle Haltbarkeits-Konfigurationen mit einer Abfrage."""
+    rows = session.exec(select(CategoryShelfLife)).all()
+    return {(row.category_id, row.storage_type): row for row in rows}
+
+
+def _shelf_life_from_index(item: Item, index: ShelfLifeIndex) -> CategoryShelfLife | None:
+    storage_type = get_storage_type_for_item_type(item.item_type)
+    if storage_type is None or item.category_id is None:
+        return None
+    return index.get((item.category_id, storage_type))
+
+
+def get_item_expiry_view(session: Session, item: Item, today: date | None = None) -> ExpiryView:
+    """Haltbarkeitsstatus eines einzelnen Artikels (Haltbarkeit und Schwellen aus der DB)."""
+    shelf_life = None
+    storage_type = get_storage_type_for_item_type(item.item_type)
+    if storage_type is not None and item.category_id is not None:
+        shelf_life = shelf_life_service.get_shelf_life(session, item.category_id, storage_type)
+    return compute_expiry_view(item, shelf_life, get_expiry_thresholds(session), today)
+
+
+def get_expiry_views(session: Session, items: list[Item], today: date | None = None) -> dict[int, ExpiryView]:
+    """Haltbarkeitsstatus für viele Artikel; lädt Haltbarkeiten und Schwellen nur einmal.
+
+    Returns:
+        Mapping Artikel-ID → ExpiryView (Artikel ohne ID werden übersprungen).
+    """
+    thresholds = get_expiry_thresholds(session)
+    index = _load_shelf_life_index(session)
+    return {
+        item.id: compute_expiry_view(item, _shelf_life_from_index(item, index), thresholds, today)
+        for item in items
+        if item.id is not None
+    }
+
+
+def get_items_expiring_soon(session: Session, today: date | None = None) -> list[Item]:
+    """Aktive Artikel mit Status warning oder critical, nach Anzeigedatum sortiert.
+
+    Ersetzt den alten Datumsvergleich auf best_before_date, der für eingefrorene
+    und eingemachte Artikel das Produktionsdatum verglich. ``unknown`` zählt nicht.
+    """
+    items = item_service.get_active_items(session)
+    views = get_expiry_views(session, items, today)
+    expiring = [
+        (item, views[item.id])
+        for item in items
+        if item.id is not None and views[item.id].status in ("warning", "critical")
+    ]
+    expiring.sort(key=lambda pair: pair[1].display_date or date.max)
+    return [item for item, _ in expiring]
