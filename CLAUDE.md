@@ -40,17 +40,14 @@ Immer lesen und befolgen wenn Code hinzugefügt/geändert wird: [docs/agent/test
 
 Immer lesen und befolgen wenn Issues, Epics, ... bearbeitet werden: [docs/agent/aufgabenverwaltung.md](docs/agent/aufgabenverwaltung.md)
 
-### MCP Server (tributary)
+### GitHub-Operationen (gh CLI)
 
-Für alle GitHub-Operationen den `tributary` MCP-Server verwenden:
-- Issues lesen/erstellen/bearbeiten
-- PRs erstellen
-- Labels setzen
-- Kommentare schreiben
+Für alle GitHub-Operationen die `gh` CLI verwenden:
+- Issues lesen/erstellen/bearbeiten: `gh issue list|view|create|edit|comment`
+- PRs erstellen: `gh pr create`
+- Labels setzen: `gh issue edit <nr> --add-label ... --remove-label ...`
 
-Verfügbare Tools: `mcp__tributary_*`
-
-**Nicht** `gh` CLI direkt nutzen, sondern immer die MCP-Tools.
+Nächstes Issue auswählen und übernehmen: `./scripts/select-next-task.sh`
 
 
 ### Commit-Regeln

@@ -73,3 +73,6 @@ Thumbs.db
 
 # Agent Worktrees
 worktrees/
+
+# MCP-Konfiguration (enthielt frueher Secrets, nie committen)
+.mcp.json
