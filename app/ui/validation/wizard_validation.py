@@ -159,8 +159,9 @@ def validate_freeze_date(
     if item_type in frozen_types:
         if freeze_date is None:
             return "Einfrierdatum erforderlich für TK-Artikel"
-        # Freeze date should not be before best_before
-        if best_before and freeze_date < best_before:
+        # Only HOMEMADE_FROZEN collects a production date to compare against.
+        # For PURCHASED_THEN_FROZEN best_before is just the entry day (see #387).
+        if item_type == ItemType.HOMEMADE_FROZEN and best_before and freeze_date < best_before:
             return "Einfrierdatum kann nicht vor Produktionsdatum liegen"
 
     return None

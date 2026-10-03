@@ -18,6 +18,8 @@ from ..smart_defaults import get_default_item_type
 from ..smart_defaults import get_default_location
 from ..smart_defaults import get_default_unit
 from ..theme.icons import create_icon
+from ..utils.date_utils import format_german_date
+from ..utils.date_utils import parse_german_date
 from ..validation import is_step1_valid
 from ..validation import is_step2_valid
 from ..validation import is_step3_valid
@@ -263,25 +265,21 @@ def add_item() -> None:
             form_data[date_field] = date_value  # Ensure it's set
 
             with (
-                ui.input(value=date_value.strftime("%d.%m.%Y"))
+                ui.input(value=format_german_date(date_value))
                 .classes("w-full")
                 .props('outlined mask="##.##.####"')
-                .style("max-width: 500px") as date_input
+                .style("max-width: 500px")
+                .mark("wizard-date-input") as date_input
             ):
                 with date_input.add_slot("append"):
                     with ui.element("div").classes("cursor-pointer"):
                         create_icon("status/calendar", size="24px")
                         with ui.menu() as date_menu:
                             date_picker = ui.date().bind_value(date_input).props('locale="de" mask="DD.MM.YYYY"')
-
-                            def on_date_change(e: Any, field: str = date_field) -> None:
-                                date_menu.close()
-                                if e.value:
-                                    form_data[field] = e.value
-                                update_step2_validation()
-
-                            date_picker.on("update:model-value", on_date_change)
-            date_input.on("blur", update_step2_validation)
+                            date_picker.on_value_change(lambda _: date_menu.close())
+            # Typed or picked dates reach form_data only through this binding (Issue #362)
+            date_input.bind_value(form_data, date_field, forward=parse_german_date, backward=format_german_date)
+            date_input.on_value_change(lambda _: update_step2_validation())
 
             # Additional freeze date for homemade_frozen
             if item_type == ItemType.HOMEMADE_FROZEN:
@@ -289,10 +287,11 @@ def add_item() -> None:
                 freeze_date_value = form_data.get("freeze_date") or date_type.today()
                 form_data["freeze_date"] = freeze_date_value
                 with (
-                    ui.input(value=freeze_date_value.strftime("%d.%m.%Y"))
+                    ui.input(value=format_german_date(freeze_date_value))
                     .classes("w-full")
                     .props('outlined mask="##.##.####"')
-                    .style("max-width: 500px") as freeze_date_input
+                    .style("max-width: 500px")
+                    .mark("wizard-freeze-date-input") as freeze_date_input
                 ):
                     with freeze_date_input.add_slot("append"):
                         with ui.element("div").classes("cursor-pointer"):
@@ -301,15 +300,11 @@ def add_item() -> None:
                                 freeze_date_picker = (
                                     ui.date().bind_value(freeze_date_input).props('locale="de" mask="DD.MM.YYYY"')
                                 )
-
-                                def on_freeze_date_change(e: Any) -> None:
-                                    freeze_date_menu.close()
-                                    if e.value:
-                                        form_data["freeze_date"] = e.value
-                                    update_step2_validation()
-
-                                freeze_date_picker.on("update:model-value", on_freeze_date_change)
-                freeze_date_input.on("blur", update_step2_validation)
+                                freeze_date_picker.on_value_change(lambda _: freeze_date_menu.close())
+                freeze_date_input.bind_value(
+                    form_data, "freeze_date", forward=parse_german_date, backward=format_german_date
+                )
+                freeze_date_input.on_value_change(lambda _: update_step2_validation())
 
             # Notes (optional)
             ui.label("Notizen (optional)").classes("text-sm font-medium mb-1 mt-4")
@@ -320,7 +315,12 @@ def add_item() -> None:
 
             # Navigation
             with ui.row().classes("w-full justify-between mt-6 gap-2"):
-                with ui.button(on_click=show_step1).props("flat color=gray-7 size=lg").style("min-height: 48px"):
+                with (
+                    ui.button(on_click=show_step1)
+                    .props("flat color=gray-7 size=lg")
+                    .style("min-height: 48px")
+                    .mark("wizard-back")
+                ):
                     with ui.row().classes("items-center gap-2"):
                         create_icon("actions/back", size="20px")
                         ui.label("Zurück")
@@ -432,7 +432,12 @@ def add_item() -> None:
 
             # Navigation
             with ui.row().classes("w-full justify-between mt-6 gap-2"):
-                with ui.button(on_click=show_step2).props("flat color=gray-7 size=lg").style("min-height: 48px"):
+                with (
+                    ui.button(on_click=show_step2)
+                    .props("flat color=gray-7 size=lg")
+                    .style("min-height: 48px")
+                    .mark("wizard-back")
+                ):
                     with ui.row().classes("items-center gap-2"):
                         create_icon("actions/back", size="20px")
                         ui.label("Zurück")
@@ -441,7 +446,8 @@ def add_item() -> None:
                 with (
                     ui.button(on_click=save_item)
                     .props("color=primary size=lg disabled")
-                    .style("min-height: 48px") as step3_submit_button
+                    .style("min-height: 48px")
+                    .mark("wizard-save") as step3_submit_button
                 ):
                     with ui.row().classes("items-center gap-2"):
                         create_icon("actions/save", size="20px")
@@ -454,6 +460,7 @@ def add_item() -> None:
                     ui.button("Speichern & Nächster", icon="playlist_add", on_click=save_and_next)
                     .props("color=secondary size=lg disabled")
                     .style("min-height: 48px; width: 100%")
+                    .mark("wizard-save-next")
                 )
 
             # Initial validation

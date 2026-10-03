@@ -97,6 +97,7 @@ def create_category_chip_group(
                     )
                 )
                 .props("flat no-caps")
+                .mark(f"category-chip-{cat_id}")
             )
 
             chip_refs[cat_id] = chip

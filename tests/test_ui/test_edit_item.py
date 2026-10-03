@@ -7,7 +7,49 @@ from app.services import item_service
 from app.services import location_service
 from datetime import date
 from nicegui.testing import User
+import pytest
 from sqlmodel import Session
+
+
+@pytest.fixture(name="milk_item_id")
+def milk_item_id_fixture(isolated_test_database) -> int:
+    """Ein PURCHASED_FRESH-Artikel 'Testmilch' mit MHD 31.12.2025 in der Test-DB."""
+    with Session(isolated_test_database) as session:
+        location = location_service.create_location(
+            session=session, name="Kuehlschrank", location_type=LocationType.CHILLED, created_by=1
+        )
+        category = category_service.create_category(session=session, name="Milchprodukte", created_by=1)
+        item = item_service.create_item(
+            session=session,
+            product_name="Testmilch",
+            best_before_date=date(2025, 12, 31),
+            quantity=1.0,
+            unit="L",
+            item_type=ItemType.PURCHASED_FRESH,
+            location_id=location.id,
+            created_by=1,
+            category_id=category.id,
+        )
+        assert item.id is not None
+        return item.id
+
+
+async def test_edit_item_persists_typed_best_before_date(
+    logged_in_user: User, isolated_test_database, milk_item_id: int
+) -> None:
+    """Ein im Edit-View getipptes MHD wird gespeichert (Issue #362)."""
+    await logged_in_user.open(f"/items/{milk_item_id}/edit")
+    await logged_in_user.should_see("Artikel bearbeiten")
+
+    date_input = logged_in_user.find(marker="edit-date-input")
+    date_input.clear()
+    date_input.type("20.03.2027")
+    logged_in_user.find(marker="edit-save").click()
+    await logged_in_user.should_see("gespeichert")
+
+    with Session(isolated_test_database) as session:
+        item = item_service.get_item(session, milk_item_id)
+    assert item.best_before_date == date(2027, 3, 20)
 
 
 async def test_edit_item_route_requires_auth(user: User) -> None:
