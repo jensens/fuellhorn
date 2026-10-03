@@ -97,6 +97,7 @@ def create_location_chip_group(
                     )
                 )
                 .props("flat no-caps")
+                .mark(f"location-chip-{loc_id}")
             )
 
             chip_refs[loc_id] = chip

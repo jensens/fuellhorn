@@ -266,7 +266,8 @@ def add_item() -> None:
                 ui.input(value=date_value.strftime("%d.%m.%Y"))
                 .classes("w-full")
                 .props('outlined mask="##.##.####"')
-                .style("max-width: 500px") as date_input
+                .style("max-width: 500px")
+                .mark("wizard-date-input") as date_input
             ):
                 with date_input.add_slot("append"):
                     with ui.element("div").classes("cursor-pointer"):
@@ -292,7 +293,8 @@ def add_item() -> None:
                     ui.input(value=freeze_date_value.strftime("%d.%m.%Y"))
                     .classes("w-full")
                     .props('outlined mask="##.##.####"')
-                    .style("max-width: 500px") as freeze_date_input
+                    .style("max-width: 500px")
+                    .mark("wizard-freeze-date-input") as freeze_date_input
                 ):
                     with freeze_date_input.add_slot("append"):
                         with ui.element("div").classes("cursor-pointer"):
@@ -441,7 +443,8 @@ def add_item() -> None:
                 with (
                     ui.button(on_click=save_item)
                     .props("color=primary size=lg disabled")
-                    .style("min-height: 48px") as step3_submit_button
+                    .style("min-height: 48px")
+                    .mark("wizard-save") as step3_submit_button
                 ):
                     with ui.row().classes("items-center gap-2"):
                         create_icon("actions/save", size="20px")
@@ -454,6 +457,7 @@ def add_item() -> None:
                     ui.button("Speichern & Nächster", icon="playlist_add", on_click=save_and_next)
                     .props("color=secondary size=lg disabled")
                     .style("min-height: 48px; width: 100%")
+                    .mark("wizard-save-next")
                 )
 
             # Initial validation

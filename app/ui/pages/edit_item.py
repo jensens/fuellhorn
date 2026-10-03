@@ -228,7 +228,8 @@ def edit_item(item_id: int) -> None:
             ui.input(value=date_value.strftime("%d.%m.%Y"))
             .classes("w-full")
             .props('outlined mask="##.##.####"')
-            .style("max-width: 500px") as date_input
+            .style("max-width: 500px")
+            .mark("edit-date-input") as date_input
         ):
             with date_input.add_slot("append"):
                 with ui.element("div").classes("cursor-pointer"):
@@ -260,7 +261,8 @@ def edit_item(item_id: int) -> None:
                 ui.input(value=freeze_date_value.strftime("%d.%m.%Y") if freeze_date_value else "")
                 .classes("w-full")
                 .props('outlined mask="##.##.####"')
-                .style("max-width: 500px") as freeze_date_input
+                .style("max-width: 500px")
+                .mark("edit-freeze-date-input") as freeze_date_input
             ):
                 with freeze_date_input.add_slot("append"):
                     with ui.element("div").classes("cursor-pointer"):
@@ -299,7 +301,12 @@ def edit_item(item_id: int) -> None:
 
         # Save Button
         with ui.row().classes("w-full justify-end mt-6 gap-2"):
-            with ui.button(on_click=save_item).props("color=primary size=lg").style("min-height: 48px") as save_button:
+            with (
+                ui.button(on_click=save_item)
+                .props("color=primary size=lg")
+                .style("min-height: 48px")
+                .mark("edit-save") as save_button
+            ):
                 with ui.row().classes("items-center gap-2"):
                     create_icon("actions/save", size="20px")
                     ui.label("Speichern")

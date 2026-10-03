@@ -93,6 +93,7 @@ def create_item_type_chip_group(
                 .classes("sp-chip sp-chip-type" + (" active" if is_selected else ""))
                 .style("color: white !important;" if is_selected else f"color: {type_color} !important;")
                 .props(f'flat no-caps data-type="{data_type}"')
+                .mark(f"item-type-chip-{item_type.value}")
             )
 
             chip_refs[item_type] = chip
