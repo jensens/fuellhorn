@@ -224,16 +224,30 @@ def test_validate_freeze_date_not_required_for_fresh() -> None:
 
 
 def test_validate_freeze_date_cannot_be_before_best_before() -> None:
-    """Test freeze date validation against best_before."""
+    """HOMEMADE_FROZEN: Einfrierdatum darf nicht vor dem Produktionsdatum liegen."""
     from app.ui.validation import validate_freeze_date
     from datetime import date
 
     best_before = date(2024, 1, 1)
     freeze_date_val = date(2023, 12, 1)  # Before best_before
 
-    error = validate_freeze_date(freeze_date_val, ItemType.PURCHASED_THEN_FROZEN, best_before)
+    error = validate_freeze_date(freeze_date_val, ItemType.HOMEMADE_FROZEN, best_before)
     assert error is not None
     assert "vor Produktionsdatum" in error
+
+
+def test_validate_freeze_date_purchased_then_frozen_allows_past_freeze_date() -> None:
+    """PURCHASED_THEN_FROZEN erfasst kein Produktionsdatum; best_before ist nur der Erfassungstag.
+
+    Montag gekauft, Dienstag eingefroren, Mittwoch erfasst muss gültig sein (Issue #387, #362).
+    """
+    from app.ui.validation import validate_freeze_date
+    from datetime import date
+
+    entry_day = date(2026, 10, 3)
+    freeze_date_val = date(2025, 11, 15)  # Before the entry day
+
+    assert validate_freeze_date(freeze_date_val, ItemType.PURCHASED_THEN_FROZEN, entry_day) is None
 
 
 def test_validate_freeze_date_valid_after_best_before() -> None:
