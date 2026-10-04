@@ -31,7 +31,9 @@ class Item(SQLModel, table=True):
 
     id: int | None = Field(default=None, primary_key=True)
     product_name: str = Field(index=True)
-    best_before_date: date  # MHD for purchased items, production date for homemade
+    # MHD bei gekauften, Herstellungsdatum bei selbst gemachten Artikeln. Darf fehlen:
+    # die Schnellerfassung im Ortskontext kennt nur Name, Menge, Einheit und Typ (Issue #463)
+    best_before_date: date | None = Field(default=None)
     # Nur Monat erfasst? Gespeichert ist dann der 1.; die Deutung hängt am Artikel-Typ (Issue #347):
     # ein monatsgenaues MHD gilt bis Monatsende, eine monatsgenaue Rechenbasis bleibt beim 1.
     best_before_month_only: bool = Field(default=False)

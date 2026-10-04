@@ -209,7 +209,8 @@ def _sort_items(
     """
     if sort_field == "best_before_date":
         if display_dates is None:
-            return sorted(items, key=lambda x: x.best_before_date, reverse=not ascending)
+            # Artikel ohne Datum zuletzt (Schnellerfassung, Issue #463)
+            return sorted(items, key=lambda x: x.best_before_date or date.max, reverse=not ascending)
 
         def _effective_date(item: Item) -> date:
             if item.id is None:

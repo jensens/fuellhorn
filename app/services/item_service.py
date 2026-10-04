@@ -31,7 +31,9 @@ STORAGE_TYPE_LABELS = item_types.STORAGE_TYPE_LABELS
 FREEZE_DATE_REQUIRED_TYPES = item_types.FREEZE_DATE_TYPES
 
 
-def effective_best_before_date(item_type: ItemType, best_before_date: date, freeze_date: date | None) -> date:
+def effective_best_before_date(
+    item_type: ItemType, best_before_date: date | None, freeze_date: date | None
+) -> date | None:
     """Datums-Semantik (Issue #387): ``best_before_date`` ist je Typ MHD oder Herstellungsdatum.
 
     Für PURCHASED_THEN_FROZEN gibt es kein eigenes Datum: das Einfrierdatum ist das
@@ -70,6 +72,7 @@ def validate_item_data(
     category_id: int | None,
     best_before_date: date | None,
     freeze_date: date | None,
+    require_complete: bool = True,
 ) -> str:
     """Invarianten eines Artikels prüfen (Issue #385); liefert den getrimmten Produktnamen.
 
@@ -92,12 +95,17 @@ def validate_item_data(
     require_non_empty(unit, "Einheit")
     if quantity is None or not quantity > 0:
         raise ServiceValidationError("Menge muss größer als 0 sein.")
-    if best_before_date is None:
-        raise ServiceValidationError("Datum ist erforderlich.")
 
-    if item_type in FREEZE_DATE_REQUIRED_TYPES and freeze_date is None:
+    if require_complete and best_before_date is None:
+        raise ServiceValidationError("Datum ist erforderlich.")
+    if require_complete and item_type in FREEZE_DATE_REQUIRED_TYPES and freeze_date is None:
         raise ServiceValidationError(f"Einfrierdatum ist für '{ITEM_TYPE_LABELS[item_type]}' erforderlich.")
-    if item_type == ItemType.HOMEMADE_FROZEN and freeze_date is not None and freeze_date < best_before_date:
+    if (
+        item_type == ItemType.HOMEMADE_FROZEN
+        and freeze_date is not None
+        and best_before_date is not None
+        and freeze_date < best_before_date
+    ):
         raise ServiceValidationError("Einfrierdatum darf nicht vor dem Produktionsdatum liegen.")
 
     if location_id is None:
@@ -113,7 +121,7 @@ def validate_item_data(
 
     storage_type = expiry_calculator.get_storage_type_for_item_type(item_type)
     if category_id is None:
-        if storage_type is not None:
+        if storage_type is not None and require_complete:
             raise ServiceValidationError(
                 f"'{ITEM_TYPE_LABELS[item_type]}' braucht eine Kategorie mit Haltbarkeit für "
                 f"{STORAGE_TYPE_LABELS[storage_type]}."
@@ -134,7 +142,7 @@ def validate_item_data(
 def create_item(
     session: Session,
     product_name: str,
-    best_before_date: date,
+    best_before_date: date | None,
     quantity: float,
     unit: str,
     item_type: ItemType,
@@ -200,6 +208,51 @@ def create_item(
         created_by=created_by,
     )
 
+    session.add(item)
+    session.commit()
+    session.refresh(item)
+
+    return item
+
+
+def quick_create_item(
+    session: Session,
+    *,
+    product_name: str,
+    quantity: float,
+    unit: str,
+    item_type: ItemType,
+    location_id: int,
+    created_by: int,
+) -> Item:
+    """Schnellerfassung im Ortskontext: nur das Nötige erfassen (Issue #463).
+
+    Für die Erfassung vor Ort, wo es kalt ist: Name, Menge, Einheit, Typ und Ort. Datum,
+    Kategorie und Einfrierdatum bleiben leer und werden später nachgepflegt; bis dahin hat
+    der Artikel keinen Haltbarkeitsstatus. Zusammenhänge prüft der Service trotzdem, etwa
+    dass der Lagerort zum Typ passt.
+    """
+    cleaned_name = validate_item_data(
+        session,
+        product_name=product_name,
+        quantity=quantity,
+        unit=unit,
+        item_type=item_type,
+        location_id=location_id,
+        category_id=None,
+        best_before_date=None,
+        freeze_date=None,
+        require_complete=False,
+    )
+
+    item = Item(
+        product_name=cleaned_name,
+        quantity=quantity,
+        unit=unit,
+        item_type=item_type,
+        location_id=location_id,
+        created_by=created_by,
+    )
     session.add(item)
     session.commit()
     session.refresh(item)
@@ -304,6 +357,7 @@ def update_item(
     notes: str | None | Unset = UNSET,
     best_before_month_only: bool | None = None,
     freeze_date_month_only: bool | None = None,
+    require_complete: bool = True,
 ) -> Item:
     """Update item.
 
@@ -325,6 +379,8 @@ def update_item(
         notes: New notes
         best_before_month_only: Genauigkeit des MHD/Herstellungsdatums; ``None`` lässt sie unverändert
         freeze_date_month_only: Genauigkeit des Einfrierdatums; ``None`` lässt sie unverändert
+        require_complete: ``False`` lässt Datum, Einfrierdatum und Kategorie leer bleiben,
+            damit sich schnell erfasste Artikel auch nur teilweise ergänzen lassen (Issue #463)
 
     Returns:
         Updated item
@@ -351,6 +407,7 @@ def update_item(
         category_id=new_category_id,
         best_before_date=best_before_date if best_before_date is not None else item.best_before_date,
         freeze_date=new_freeze_date,
+        require_complete=require_complete,
     )
 
     if product_name is not None:
@@ -614,6 +671,9 @@ def get_item_expiry_info(
 
     # If storage_type is None, this item uses MHD directly; monatsgenau heißt Monatsende (#347)
     if storage_type is None:
+        if item.best_before_date is None:
+            # Schnellerfassung ohne Datum (Issue #463)
+            return (None, None, None)
         return (None, None, expiry_calculator.effective_deadline(item.best_before_date, item.best_before_month_only))
 
     # Get shelf life config for this category and storage type
@@ -633,6 +693,9 @@ def get_item_expiry_info(
         if item.freeze_date is None:
             return (None, None, None)
         base_date = item.freeze_date
+    elif item.best_before_date is None:
+        # Herstellungsdatum noch nicht nachgepflegt (Issue #463)
+        return (None, None, None)
     else:
         # Use best_before_date (production date) for preserved items
         base_date = item.best_before_date

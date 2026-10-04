@@ -7,6 +7,7 @@ from ...services import category_service
 from ...services import item_service
 from ...services import item_types
 from ...services import location_service
+from ..auth import safe_redirect_target
 from ..components import create_bottom_nav
 from ..components import create_date_field
 from ..components import create_grouped_category_chip_group
@@ -39,8 +40,15 @@ def _date_label(item_type: ItemType) -> str:
 
 @ui.page("/items/{item_id}/edit")
 @require_auth
-def edit_item(item_id: int) -> None:
-    """Edit-Seite fuer einen bestehenden Artikel."""
+def edit_item(item_id: int, back: str = "/items") -> None:
+    """Edit-Seite fuer einen bestehenden Artikel.
+
+    Args:
+        item_id: Artikel-ID.
+        back: Seite, zu der nach dem Speichern zurückgekehrt wird; nur relative Pfade (Issue #463).
+            Der Parameter heißt nicht ``next``, weil das die eingebaute Funktion verdecken würde.
+    """
+    return_to = safe_redirect_target(back)
     # Load item from database
     try:
         with next(get_session()) as session:
@@ -70,13 +78,13 @@ def edit_item(item_id: int) -> None:
         # Item not found
         with ui.row().classes("sp-page-header w-full items-center justify-between"):
             ui.label("Fehler").classes("sp-page-title")
-            with ui.button(on_click=lambda: ui.navigate.to("/items")).classes("sp-back-btn").props("flat round"):
+            with ui.button(on_click=lambda: ui.navigate.to(return_to)).classes("sp-back-btn").props("flat round"):
                 create_icon("actions/close", size="24px")
 
         container = create_mobile_page_container()
         with container:
             ui.label("Artikel nicht gefunden").classes("text-lg text-red-600 mb-4")
-            ui.button("Zurueck zur Uebersicht", on_click=lambda: ui.navigate.to("/items")).props("color=primary")
+            ui.button("Zurueck zur Uebersicht", on_click=lambda: ui.navigate.to(return_to)).props("color=primary")
 
         create_bottom_nav(current_page="items")
         return
@@ -85,6 +93,19 @@ def edit_item(item_id: int) -> None:
     save_button: ui.button | None = None
     # Felder sind vorbelegt; jeder Fehler ist Folge einer Änderung und wird sofort gezeigt (Issue #396)
     field_errors = FieldErrors(reveal_all=True)
+    # Schnell erfasste Artikel haben Lücken (Issue #463). Was beim Öffnen fehlte, obwohl der
+    # damalige Typ es verlangt hat, darf fehlen bleiben; so lässt sich auch nur die Menge
+    # richtigstellen. Ein Typwechsel, der ein Feld neu verlangt, fällt nicht darunter: dort
+    # war das Feld vorher gar nicht gefordert.
+    allowed_gaps = {
+        field
+        for field, value, demanded in (
+            ("best_before", form_data.get("best_before_date"), True),
+            ("freeze_date", form_data.get("freeze_date"), form_data["item_type"] in FREEZE_DATE_TYPES),
+            ("category", form_data.get("category_id"), True),
+        )
+        if demanded and value is None
+    }
 
     def validation_errors() -> dict[str, str]:
         """Dieselben Regeln wie im Wizard (Issue #386): Trim, 2 Zeichen, Menge > 0, Einfrierdatum, Lagerort."""
@@ -100,7 +121,7 @@ def edit_item(item_id: int) -> None:
             )
         )
         errors.update(validate_step3(form_data.get("location_id")))
-        return errors
+        return {field: message for field, message in errors.items() if field not in allowed_gaps}
 
     def update_validation() -> None:
         """Feldmeldungen und Speichern-Button nach dem Stand der Eingaben (Issue #396)."""
@@ -178,9 +199,10 @@ def edit_item(item_id: int) -> None:
                     notes=(form_data.get("notes") or "").strip() or None,
                     best_before_month_only=form_data["best_before_month_only"],
                     freeze_date_month_only=form_data["freeze_date_month_only"],
+                    require_complete=not allowed_gaps,
                 )
             ui.notify(f"{form_data['product_name']} gespeichert!", type="positive")
-            ui.navigate.to("/items")
+            ui.navigate.to(return_to)
         except Exception as e:
             show_service_error(e)
 
@@ -188,7 +210,7 @@ def edit_item(item_id: int) -> None:
     with ui.row().classes("sp-page-header w-full items-center justify-between"):
         ui.label("Artikel bearbeiten").classes("sp-page-title")
         with (
-            ui.button(on_click=lambda: ui.navigate.to("/items"))
+            ui.button(on_click=lambda: ui.navigate.to(return_to))
             .classes("sp-back-btn")
             .props("flat round")
             .mark("edit-close")
@@ -284,8 +306,8 @@ def edit_item(item_id: int) -> None:
         with ui.element("div").mark("edit-best-before-section") as best_before_section:
             best_before_section.set_visibility(form_data["item_type"] != ItemType.PURCHASED_THEN_FROZEN)
             # Best Before Date / Production Date (Label folgt dem Typ, siehe on_item_type_change)
-            date_value = form_data.get("best_before_date") or date_type.today()
-            form_data["best_before_date"] = date_value
+            # Ohne Datum bleibt das Feld leer; „heute“ einzusetzen würde Daten erfinden (Issue #463)
+            date_value = form_data.get("best_before_date")
 
             def on_best_before_change(value: date_type | None, month_only: bool) -> None:
                 form_data["best_before_date"] = value
