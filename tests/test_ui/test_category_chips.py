@@ -48,3 +48,24 @@ async def test_category_chips_shows_selection(user: User) -> None:
 
     # Initially no selection
     await user.should_see("Selected: None")
+
+
+async def test_category_chips_standalone_group_gets_heading_next_to_groups(user: User) -> None:
+    """Ungrouped categories get their own heading when real groups exist (#457)."""
+    await user.open("/test/category-chips-grouped")
+
+    await user.should_see("Fleisch")
+    await user.should_see("Sonstiges")
+    await user.should_see("Gemüse")
+
+
+async def test_category_chips_only_standalone_has_no_heading(user: User, isolated_test_database) -> None:
+    """Without any groups, ungrouped categories stay without heading (#457)."""
+    with Session(isolated_test_database) as session:
+        session.add(Category(name="Testkat Obst", color="#4A7C59", created_by=1))
+        session.commit()
+
+    await user.open("/test/category-chips")
+
+    await user.should_see("Testkat Obst")
+    await user.should_not_see("Sonstiges")
