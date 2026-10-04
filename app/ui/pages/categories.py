@@ -13,25 +13,102 @@ from ...auth.decorators import with_permission_check
 from ...auth.dependencies import get_current_user
 from ...database import get_session
 from ...models.category import Category
+from ...models.category_shelf_life import CategoryShelfLife
 from ...models.category_shelf_life import StorageType
 from ...services import category_service
+from ...services import item_types
 from ...services import shelf_life_service
 from ...services.sentinels import UNSET
 from ...services.sentinels import Unset
 from ..components import create_mobile_page_container
+from ..components.color_picker import create_color_picker
+from ..components.confirm_delete import open_confirm_delete_dialog
 from ..components.errors import show_service_error
 from ..theme.icons import create_icon
 from collections import defaultdict
 from nicegui import ui
 from sqlmodel import Session
+from typing import Any
 
 
-# Storage type labels for UI
-STORAGE_TYPE_LABELS = {
-    StorageType.FROZEN: "Gefroren",
-    StorageType.CHILLED: "Gekühlt",
-    StorageType.AMBIENT: "Raumtemperatur",
-}
+# Storage type labels for UI (eine Quelle: services/item_types, #398)
+STORAGE_TYPE_LABELS = item_types.STORAGE_CONDITION_LABELS
+STORAGE_TYPES_IN_ORDER = [StorageType.FROZEN, StorageType.CHILLED, StorageType.AMBIENT]
+
+ShelfLifeInputs = dict[StorageType, dict[str, Any]]
+
+
+def _render_shelf_life_inputs(
+    existing: dict[StorageType, CategoryShelfLife], *, marker_prefix: str = ""
+) -> ShelfLifeInputs:
+    """Min/Max/Quelle je Lagerart; Marker ``<prefix><lagerart>-min|max|source`` (#398: vorher doppelt)."""
+    ui.label("Haltbarkeit (Monate)").classes("text-subtitle1 font-medium mb-2")
+    inputs: ShelfLifeInputs = {}
+    for storage_type in STORAGE_TYPES_IN_ORDER:
+        current = existing.get(storage_type)
+        with ui.row().classes("w-full items-center gap-2 mb-2"):
+            ui.label(STORAGE_TYPE_LABELS[storage_type]).classes("w-28 text-sm")
+            ui.label("Min").classes("text-xs text-gray-500")
+            min_input = (
+                ui.number(value=current.months_min if current else None, min=1, max=36)
+                .classes("w-16")
+                .props("dense outlined")
+                .mark(f"{marker_prefix}{storage_type.value}-min")
+            )
+            ui.label("Max").classes("text-xs text-gray-500")
+            max_input = (
+                ui.number(value=current.months_max if current else None, min=1, max=36)
+                .classes("w-16")
+                .props("dense outlined")
+                .mark(f"{marker_prefix}{storage_type.value}-max")
+            )
+            ui.label("Quelle").classes("text-xs text-gray-500")
+            source_input = (
+                ui.input(value=(current.source_url or "") if current else "", placeholder="URL")
+                .classes("flex-1")
+                .props("dense outlined")
+                .mark(f"{marker_prefix}{storage_type.value}-source")
+            )
+            inputs[storage_type] = {"min": min_input, "max": max_input, "source": source_input}
+    return inputs
+
+
+def _shelf_life_input_error(inputs: ShelfLifeInputs) -> str | None:
+    """Min und Max gemeinsam gesetzt, Min <= Max; None wenn alles stimmt."""
+    for storage_type, fields in inputs.items():
+        min_val, max_val = fields["min"].value, fields["max"].value
+        if min_val is None and max_val is None:
+            continue
+        if (min_val is None) != (max_val is None):
+            return f"{STORAGE_TYPE_LABELS[storage_type]}: Min und Max müssen beide gesetzt sein"
+        if min_val > max_val:
+            return "Min muss <= Max sein"
+    return None
+
+
+def _save_shelf_lives(
+    session: Session,
+    category_id: int,
+    inputs: ShelfLifeInputs,
+    existing: dict[StorageType, CategoryShelfLife],
+) -> None:
+    """Gesetzte Paare anlegen/aktualisieren, geleerte bestehende Einträge löschen."""
+    for storage_type, fields in inputs.items():
+        min_val, max_val = fields["min"].value, fields["max"].value
+        source_val = fields["source"].value.strip() if fields["source"].value else None
+        if min_val is not None and max_val is not None:
+            shelf_life_service.create_or_update_shelf_life(
+                session=session,
+                category_id=category_id,
+                storage_type=storage_type,
+                months_min=int(min_val),
+                months_max=int(max_val),
+                source_url=source_val,
+            )
+            continue
+        current = existing.get(storage_type)
+        if current is not None and current.id is not None:
+            shelf_life_service.delete_shelf_life(session, current.id)
 
 
 @ui.page("/admin/categories")
@@ -297,20 +374,7 @@ def _open_create_dialog() -> None:
         # Name input (required)
         name_input = ui.input(label="Name", placeholder="z.B. Gemüse").classes("w-full mb-2").props("outlined")
 
-        # Color input with preview
-        with ui.row().classes("w-full items-center gap-2 mb-4"):
-            color_input = ui.color_input(label="Farbe").classes("flex-1").mark("color-input")
-            color_preview = (
-                ui.element("div")
-                .classes("w-10 h-10 rounded-lg border-2 border-gray-300")
-                .style("background-color: #E5E7EB")
-                .mark("color-preview")
-            )
-            color_input.on_value_change(
-                lambda e: color_preview.style(
-                    f"background-color: {e.value}" if e.value else "background-color: #E5E7EB"
-                )
-            )
+        color_input = create_color_picker()
 
         # Gruppe (Eltern-Kategorie, eine Ebene; #395)
         with next(get_session()) as session:
@@ -322,55 +386,7 @@ def _open_create_dialog() -> None:
             .mark("create-parent")
         )
 
-        # Shelf life section
-        ui.label("Haltbarkeit (Monate)").classes("text-subtitle1 font-medium mb-2")
-
-        # Store input references
-        shelf_life_inputs: dict[StorageType, dict] = {}
-
-        for storage_type in [StorageType.FROZEN, StorageType.CHILLED, StorageType.AMBIENT]:
-            label = STORAGE_TYPE_LABELS[storage_type]
-
-            with ui.row().classes("w-full items-center gap-2 mb-2"):
-                ui.label(label).classes("w-28 text-sm")
-                ui.label("Min").classes("text-xs text-gray-500")
-                min_input = (
-                    ui.number(
-                        value=None,
-                        min=1,
-                        max=36,
-                    )
-                    .classes("w-16")
-                    .props("dense outlined")
-                    .mark(f"create-{storage_type.value}-min")
-                )
-                ui.label("Max").classes("text-xs text-gray-500")
-                max_input = (
-                    ui.number(
-                        value=None,
-                        min=1,
-                        max=36,
-                    )
-                    .classes("w-16")
-                    .props("dense outlined")
-                    .mark(f"create-{storage_type.value}-max")
-                )
-                ui.label("Quelle").classes("text-xs text-gray-500")
-                source_input = (
-                    ui.input(
-                        value="",
-                        placeholder="URL",
-                    )
-                    .classes("flex-1")
-                    .props("dense outlined")
-                    .mark(f"create-{storage_type.value}-source")
-                )
-
-                shelf_life_inputs[storage_type] = {
-                    "min": min_input,
-                    "max": max_input,
-                    "source": source_input,
-                }
+        shelf_life_inputs = _render_shelf_life_inputs({}, marker_prefix="create-")
 
         # Error label (hidden by default)
         error_label = ui.label("").classes("text-red-600 text-sm mb-2")
@@ -392,27 +408,11 @@ def _open_create_dialog() -> None:
                     error_label.set_visibility(True)
                     return
 
-                # Validate shelf life min <= max
-                for storage_type, inputs in shelf_life_inputs.items():
-                    min_val = inputs["min"].value
-                    max_val = inputs["max"].value
-
-                    # Skip if both empty
-                    if min_val is None and max_val is None:
-                        continue
-
-                    # Both must be set if one is set
-                    if (min_val is None) != (max_val is None):
-                        label = STORAGE_TYPE_LABELS[storage_type]
-                        error_label.set_text(f"{label}: Min und Max müssen beide gesetzt sein")
-                        error_label.set_visibility(True)
-                        return
-
-                    # Min must be <= Max
-                    if min_val is not None and max_val is not None and min_val > max_val:
-                        error_label.set_text("Min muss <= Max sein")
-                        error_label.set_visibility(True)
-                        return
+                shelf_life_error = _shelf_life_input_error(shelf_life_inputs)
+                if shelf_life_error:
+                    error_label.set_text(shelf_life_error)
+                    error_label.set_visibility(True)
+                    return
 
                 # Get current user for created_by
                 current_user = get_current_user()
@@ -433,20 +433,7 @@ def _open_create_dialog() -> None:
 
                         # Save shelf lives if provided
                         if category.id is not None:
-                            for storage_type, inputs in shelf_life_inputs.items():
-                                min_val = inputs["min"].value
-                                max_val = inputs["max"].value
-                                source_val = inputs["source"].value.strip() if inputs["source"].value else None
-
-                                if min_val is not None and max_val is not None:
-                                    shelf_life_service.create_or_update_shelf_life(
-                                        session=session,
-                                        category_id=category.id,
-                                        storage_type=storage_type,
-                                        months_min=int(min_val),
-                                        months_max=int(max_val),
-                                        source_url=source_val,
-                                    )
+                            _save_shelf_lives(session, category.id, shelf_life_inputs, {})
 
                     ui.notify(f"Kategorie '{name}' erstellt", type="positive")
                     dialog.close()
@@ -482,21 +469,7 @@ def _open_edit_dialog(
             ui.input(label="Name", value=current_name).classes("w-full mb-2").props("outlined").mark("edit-name")
         )
 
-        # Color input with preview (pre-filled)
-        initial_color = current_color or ""
-        with ui.row().classes("w-full items-center gap-2 mb-4"):
-            color_input = ui.color_input(label="Farbe", value=initial_color).classes("flex-1").mark("color-input")
-            color_preview = (
-                ui.element("div")
-                .classes("w-10 h-10 rounded-lg border-2 border-gray-300")
-                .style(f"background-color: {initial_color}" if initial_color else "background-color: #E5E7EB")
-                .mark("color-preview")
-            )
-            color_input.on_value_change(
-                lambda e: color_preview.style(
-                    f"background-color: {e.value}" if e.value else "background-color: #E5E7EB"
-                )
-            )
+        color_input = create_color_picker(current_color)
 
         # Gruppe (Eltern-Kategorie, eine Ebene; #395). Eine Gruppe kann selbst kein Kind werden.
         parent_select: ui.select | None = None
@@ -512,56 +485,7 @@ def _open_edit_dialog(
                 .mark("edit-parent")
             )
 
-        # Shelf life section
-        ui.label("Haltbarkeit (Monate)").classes("text-subtitle1 font-medium mb-2")
-
-        # Store input references
-        shelf_life_inputs: dict[StorageType, dict] = {}
-
-        for storage_type in [StorageType.FROZEN, StorageType.CHILLED, StorageType.AMBIENT]:
-            label = STORAGE_TYPE_LABELS[storage_type]
-            existing = existing_shelf_lives.get(storage_type)
-
-            with ui.row().classes("w-full items-center gap-2 mb-2"):
-                ui.label(label).classes("w-28 text-sm")
-                ui.label("Min").classes("text-xs text-gray-500")
-                min_input = (
-                    ui.number(
-                        value=existing.months_min if existing else None,
-                        min=1,
-                        max=36,
-                    )
-                    .classes("w-16")
-                    .props("dense outlined")
-                    .mark(f"{storage_type.value}-min")
-                )
-                ui.label("Max").classes("text-xs text-gray-500")
-                max_input = (
-                    ui.number(
-                        value=existing.months_max if existing else None,
-                        min=1,
-                        max=36,
-                    )
-                    .classes("w-16")
-                    .props("dense outlined")
-                    .mark(f"{storage_type.value}-max")
-                )
-                ui.label("Quelle").classes("text-xs text-gray-500")
-                source_input = (
-                    ui.input(
-                        value=existing.source_url or "" if existing else "",
-                        placeholder="URL",
-                    )
-                    .classes("flex-1")
-                    .props("dense outlined")
-                    .mark(f"{storage_type.value}-source")
-                )
-
-                shelf_life_inputs[storage_type] = {
-                    "min": min_input,
-                    "max": max_input,
-                    "source": source_input,
-                }
+        shelf_life_inputs = _render_shelf_life_inputs(existing_shelf_lives)
 
         # Error label (hidden by default)
         error_label = ui.label("").classes("text-red-600 text-sm mb-2")
@@ -583,27 +507,11 @@ def _open_edit_dialog(
                     error_label.set_visibility(True)
                     return
 
-                # Validate shelf life min <= max
-                for storage_type, inputs in shelf_life_inputs.items():
-                    min_val = inputs["min"].value
-                    max_val = inputs["max"].value
-
-                    # Skip if both empty
-                    if min_val is None and max_val is None:
-                        continue
-
-                    # Both must be set if one is set
-                    if (min_val is None) != (max_val is None):
-                        label = STORAGE_TYPE_LABELS[storage_type]
-                        error_label.set_text(f"{label}: Min und Max müssen beide gesetzt sein")
-                        error_label.set_visibility(True)
-                        return
-
-                    # Min must be <= Max
-                    if min_val is not None and max_val is not None and min_val > max_val:
-                        error_label.set_text("Min muss <= Max sein")
-                        error_label.set_visibility(True)
-                        return
+                shelf_life_error = _shelf_life_input_error(shelf_life_inputs)
+                if shelf_life_error:
+                    error_label.set_text(shelf_life_error)
+                    error_label.set_visibility(True)
+                    return
 
                 new_parent_id: int | None | Unset = UNSET
                 if parent_select is not None:
@@ -621,26 +529,7 @@ def _open_edit_dialog(
                         )
 
                         # Update shelf lives
-                        for storage_type, inputs in shelf_life_inputs.items():
-                            min_val = inputs["min"].value
-                            max_val = inputs["max"].value
-                            source_val = inputs["source"].value.strip() if inputs["source"].value else None
-
-                            existing = existing_shelf_lives.get(storage_type)
-
-                            if min_val is not None and max_val is not None:
-                                # Create or update
-                                shelf_life_service.create_or_update_shelf_life(
-                                    session=session,
-                                    category_id=category_id,
-                                    storage_type=storage_type,
-                                    months_min=int(min_val),
-                                    months_max=int(max_val),
-                                    source_url=source_val,
-                                )
-                            elif existing and existing.id is not None:
-                                # Delete if existed but now cleared
-                                shelf_life_service.delete_shelf_life(session, existing.id)
+                        _save_shelf_lives(session, category_id, shelf_life_inputs, existing_shelf_lives)
 
                     ui.notify(f"Kategorie '{name}' aktualisiert", type="positive")
                     dialog.close()
@@ -656,35 +545,17 @@ def _open_edit_dialog(
 
 def _open_delete_dialog(category_id: int, category_name: str) -> None:
     """Open confirmation dialog to delete a category."""
-    with ui.dialog() as dialog, ui.card().classes("sp-dashboard-card w-full max-w-md"):
-        ui.label("Kategorie löschen").classes("text-h6 font-semibold mb-4 text-fern")
 
-        # Warning message
-        ui.label(f"Möchten Sie die Kategorie '{category_name}' wirklich löschen?").classes("mb-2")
-        ui.label("Diese Aktion kann nicht rückgängig gemacht werden.").classes("text-sm text-red-600 mb-4")
+    def delete() -> None:
+        with next(get_session()) as session:
+            # Der Service prüft Referenzen und löscht die Haltbarkeiten in derselben Transaktion (#379)
+            category_service.delete_category(session=session, id=category_id)
 
-        # Error label (hidden by default)
-        error_label = ui.label("").classes("text-red-600 text-sm mb-2")
-        error_label.set_visibility(False)
-
-        # Buttons (Solarpunk theme)
-        with ui.row().classes("w-full justify-end gap-2"):
-            ui.button("Abbrechen", on_click=dialog.close).classes("sp-btn-ghost").props("flat")
-
-            @with_permission_check(Permission.CONFIG_MANAGE)
-            def confirm_delete() -> None:
-                """Perform the deletion."""
-                try:
-                    with next(get_session()) as session:
-                        # Der Service prüft Referenzen und löscht die Haltbarkeiten
-                        # in derselben Transaktion (#379)
-                        category_service.delete_category(session=session, id=category_id)
-                    ui.notify("Kategorie gelöscht", type="positive")
-                    dialog.close()
-                    ui.navigate.to("/admin/categories")
-                except Exception as e:
-                    show_service_error(e, error_label)
-
-            ui.button("Löschen", on_click=confirm_delete).classes("sp-btn-danger")
-
-    dialog.open()
+    open_confirm_delete_dialog(
+        title="Kategorie löschen",
+        question=f"Möchten Sie die Kategorie '{category_name}' wirklich löschen?",
+        permission=Permission.CONFIG_MANAGE,
+        on_confirm=delete,
+        success_message="Kategorie gelöscht",
+        redirect="/admin/categories",
+    )

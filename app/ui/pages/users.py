@@ -14,6 +14,7 @@ from ...database import get_session
 from ...models.user import Role
 from ...services import auth_service
 from ..components import create_mobile_page_container
+from ..components.confirm_delete import open_confirm_delete_dialog
 from ..components.errors import show_service_error
 from ..theme.icons import create_icon
 from nicegui import ui
@@ -372,37 +373,20 @@ def _open_edit_dialog(
 
 def _open_delete_dialog(user_id: int, username: str) -> None:
     """Open confirmation dialog to delete a user."""
-    with ui.dialog() as dialog, ui.card().classes("sp-dashboard-card w-full max-w-md"):
-        ui.label("Benutzer löschen").classes("text-h6 font-semibold mb-4 text-fern")
 
-        # Warning message
-        ui.label(f"Möchten Sie den Benutzer '{username}' wirklich löschen?").classes("mb-2")
-        ui.label("Diese Aktion kann nicht rückgängig gemacht werden.").classes("text-sm text-red-600 mb-4")
+    def delete() -> None:
+        acting_user = get_current_user(require_auth=True)
+        with next(get_session()) as session:
+            # Fachliche Ablehnung (z.B. referenzierte Artikel) kommt typisiert aus dem Service (#379, #382)
+            auth_service.delete_user(
+                session=session, user_id=user_id, acting_user_id=acting_user.id if acting_user else None
+            )
 
-        # Error label (hidden by default)
-        error_label = ui.label("").classes("text-red-600 text-sm mb-2")
-        error_label.set_visibility(False)
-
-        # Buttons (Solarpunk theme)
-        with ui.row().classes("w-full justify-end gap-2"):
-            ui.button("Abbrechen", on_click=dialog.close).classes("sp-btn-ghost").props("flat")
-
-            @with_permission_check(Permission.USER_MANAGE)
-            def confirm_delete() -> None:
-                """Perform the deletion."""
-                acting_user = get_current_user(require_auth=True)
-                try:
-                    with next(get_session()) as session:
-                        auth_service.delete_user(
-                            session=session, user_id=user_id, acting_user_id=acting_user.id if acting_user else None
-                        )
-                    ui.notify("Benutzer gelöscht", type="positive")
-                    dialog.close()
-                    ui.navigate.to("/admin/users")
-                except Exception as e:
-                    # Fachliche Ablehnung (z.B. referenzierte Artikel) als Meldung, Unerwartetes ins Log (#379, #382)
-                    show_service_error(e, error_label)
-
-            ui.button("Löschen", on_click=confirm_delete).classes("sp-btn-danger")
-
-    dialog.open()
+    open_confirm_delete_dialog(
+        title="Benutzer löschen",
+        question=f"Möchten Sie den Benutzer '{username}' wirklich löschen?",
+        permission=Permission.USER_MANAGE,
+        on_confirm=delete,
+        success_message="Benutzer gelöscht",
+        redirect="/admin/users",
+    )

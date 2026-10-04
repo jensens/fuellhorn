@@ -107,6 +107,13 @@ LOCATION_TYPE_LABELS: dict[LocationType, str] = {
     LocationType.CHILLED: "Gekühlt",
     LocationType.AMBIENT: "Raumtemperatur",
 }
+# Admin-Dialoge beschriften die Lagerart wie den Lagerort-Typ ("Gefroren" …); Service-Meldungen
+# nutzen die Substantive unten ("Tiefkühlung" …)
+STORAGE_CONDITION_LABELS: dict[StorageType, str] = {
+    StorageType.FROZEN: "Gefroren",
+    StorageType.CHILLED: "Gekühlt",
+    StorageType.AMBIENT: "Raumtemperatur",
+}
 STORAGE_TYPE_LABELS: dict[StorageType, str] = {
     StorageType.FROZEN: "Tiefkühlung",
     StorageType.CHILLED: "Kühlung",
