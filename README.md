@@ -286,6 +286,8 @@ docker run -d \
   fuellhorn
 ```
 
+Die SQLite-Datei liegt unter `/app/data/fuellhorn.db` im Volume (`FUELLHORN_DATA_DIR`, im Image vorbelegt). Ohne das Volume gehen die Daten beim Neuerstellen des Containers verloren.
+
 **Hinweis:** SQLite ist nur für Einzelnutzer/Tests geeignet. Für Produktions-Deployments mit mehreren Nutzern wird PostgreSQL empfohlen.
 
 ### Option 3: Kubernetes (Helm)
