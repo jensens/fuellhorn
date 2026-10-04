@@ -5,6 +5,7 @@ Bietet Funktionen um den aktuellen User zu holen und Permissions zu pruefen.
 
 from ..database import get_session
 from ..models.user import User
+from ..services.auth_service import UserNotFoundError
 from ..services.auth_service import get_user
 from .permissions import Permission
 from .permissions import check_permission
@@ -82,7 +83,7 @@ def get_current_user(require_auth: bool = True, use_cache: bool = True) -> User 
             if not user.is_active:
                 raise AuthenticationError("Benutzer ist deaktiviert")
 
-            # Sitzung abgelaufen, Passwort geändert oder Konto gesperrt (Issue #384):
+            # Sitzung abgelaufen oder Passwort geändert (Issue #384):
             # abmelden, Grund für die Login-Seite vormerken
             problem = session_problem(app.storage.user, user)
             if problem is not None:
@@ -96,13 +97,15 @@ def get_current_user(require_auth: bool = True, use_cache: bool = True) -> User 
 
             return user
         except AuthenticationError:
-            # deaktiviert, Sitzung abgelaufen, Passwort geändert, gesperrt: Grund unverändert weitergeben
+            # deaktiviert, Sitzung abgelaufen, Passwort geändert: Grund unverändert weitergeben
             if require_auth:
                 raise
             return None
-        except Exception as e:
+        except UserNotFoundError as e:
+            # Konto gelöscht, Sitzung zeigt noch darauf. Andere Fehler (z.B. Datenbank nicht
+            # erreichbar) bleiben Fehler statt stiller Abmeldung (Issue #402)
             if require_auth:
-                raise AuthenticationError(f"Benutzer nicht gefunden: {e}") from e
+                raise AuthenticationError("Benutzer nicht gefunden") from e
             return None
 
 

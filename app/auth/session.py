@@ -95,8 +95,6 @@ def session_problem(
         return SESSION_EXPIRED_MESSAGE
     if version != user.session_version:
         return PASSWORD_CHANGED_MESSAGE
-    if user.locked_until is not None and user.locked_until > now:
-        return f"Konto ist gesperrt bis {user.locked_until.strftime('%H:%M Uhr')}."
     if not storage.get("remember_me", False):
         last_seen = datetime.fromisoformat(last_seen_raw)
         if (now - last_seen).total_seconds() >= max_age:

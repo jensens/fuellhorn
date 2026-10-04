@@ -51,8 +51,21 @@ def _get_client_ip() -> str:
     return resolve_client_ip(peer_ip, request.headers.get("x-forwarded-for"), config.TRUSTED_PROXIES)
 
 
-def show_login_page() -> None:
-    """Zeigt die Login-Seite mit mobile-first Design."""
+DEFAULT_AFTER_LOGIN = "/dashboard"
+
+
+def safe_redirect_target(target: str | None) -> str:
+    """Nur relative Pfade innerhalb der App; alles andere führt zum Dashboard (kein Open Redirect, #402)."""
+    if not target or not target.startswith("/") or target.startswith("//") or "://" in target or "\\" in target:
+        return DEFAULT_AFTER_LOGIN
+    if target == "/login" or target.startswith("/login?"):
+        return DEFAULT_AFTER_LOGIN
+    return target
+
+
+def show_login_page(next_url: str | None = None) -> None:
+    """Zeigt die Login-Seite mit mobile-first Design; nach dem Login geht es zu ``next_url``."""
+    redirect_target = safe_redirect_target(next_url)
 
     async def handle_login() -> None:
         """Login-Handler mit Remember-Me Support und Rate-Limiting."""
@@ -87,7 +100,7 @@ def show_login_page() -> None:
                 start_session(user, remember_me=bool(remember_me))
 
                 ui.notify(f"Willkommen {user.username}!", type="positive")
-                ui.navigate.to("/dashboard")
+                ui.navigate.to(redirect_target)
 
             except AuthenticationError as e:
                 # Fehlversuch aufzeichnen

@@ -64,7 +64,7 @@ Vorratsfilter steht ein Gruppen-Chip für alle Kinder (`category_service.expand_
 
 ### Zeitstempel
 
-Alle Zeitstempel sind naive lokale Zeit (`datetime.now()`): `created_at`, `last_login`, `locked_until`,
+Alle Zeitstempel sind naive lokale Zeit (`datetime.now()`): `created_at`, `last_login`,
 Smart-Default-Zeitfenster. Entscheidung (Issue #401): keine Migration auf timezone-aware Werte, weil eine
 Instanz genau einen Haushalt in einer Zeitzone bedient. Dafür muss der Prozess in der Zeitzone der Nutzer
 laufen (`TZ`, siehe docs/deployment/docker.md); Tests, die Zeit vergleichen, nutzen `freezegun` oder

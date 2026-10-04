@@ -22,7 +22,7 @@ RESET_AFTER_HOURS = 24  # Reset nach 24h ohne Fehlversuche
 def get_delay_seconds(fail_count: int) -> int:
     """Berechnet die Verzögerung basierend auf Fehlversuchen.
 
-    Verzögerung steigt exponentiell: 0s, 1s, 2s, 4s, 8s, 16s, 32s, 60s (max)
+    Die ersten zwei Versuche sind frei, danach exponentiell: 0s, 0s, 1s, 2s, 4s, 8s, 16s, 32s, 60s (max)
 
     Args:
         fail_count: Anzahl bisheriger Fehlversuche

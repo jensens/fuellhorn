@@ -47,9 +47,6 @@ class User(SQLModel, table=True):
     # Status
     is_active: bool = Field(default=True)
 
-    # Login-Sicherheit (locked_until für manuelles Admin-Lock)
-    locked_until: datetime | None = Field(default=None)
-
     # Steigt bei jeder Passwortänderung; Sitzungen mit alter Version werden
     # beim nächsten Request abgemeldet (Issue #384)
     session_version: int = Field(default=0)
