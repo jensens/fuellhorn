@@ -12,7 +12,6 @@ from ..services.validation import validate_email
 from ..services.validation import validate_password
 from ..services.validation import validate_username
 from datetime import datetime
-import secrets
 from sqlmodel import Session
 from sqlmodel import func
 from sqlmodel import select
@@ -125,22 +124,6 @@ def get_user_by_username(session: Session, username: str) -> User | None:
     return user
 
 
-def get_user_by_remember_token(session: Session, token: str) -> User | None:
-    """Ruft einen User nach Remember-Me Token ab.
-
-    Args:
-        session: Datenbank-Session
-        token: Remember-Me Token
-
-    Returns:
-        Der User oder None wenn nicht gefunden
-    """
-    statement = select(User).where(User.remember_token == token)
-    user = session.exec(statement).first()
-
-    return user
-
-
 def authenticate_user(session: Session, username: str, password: str) -> User:
     """Authentifiziert einen User mit Username und Passwort.
 
@@ -181,39 +164,6 @@ def authenticate_user(session: Session, username: str, password: str) -> User:
     session.refresh(user)
 
     return user
-
-
-def generate_remember_token(session: Session, user: User) -> str:
-    """Generiert einen Remember-Me Token für einen User.
-
-    Args:
-        session: Datenbank-Session
-        user: User für den der Token generiert wird
-
-    Returns:
-        Der generierte Token (kryptografisch sicher)
-    """
-    token = secrets.token_urlsafe(32)
-    user.remember_token = token
-
-    session.add(user)
-    session.commit()
-    session.refresh(user)
-
-    return token
-
-
-def revoke_remember_token(session: Session, user: User) -> None:
-    """Widerruft den Remember-Me Token eines Users.
-
-    Args:
-        session: Datenbank-Session
-        user: User dessen Token widerrufen wird
-    """
-    user.remember_token = None
-
-    session.add(user)
-    session.commit()
 
 
 SELF_CHANGE_MESSAGE = (

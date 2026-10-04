@@ -3,12 +3,15 @@
 These pages set up test data and allow testing the items page components.
 """
 
+from ...auth.session import start_session
+from ...database import get_engine
 from ...database import get_session
 from ...models.category import Category
 from ...models.item import Item
 from ...models.item import ItemType
 from ...models.location import Location
 from ...models.location import LocationType
+from ...services.auth_service import get_user_by_username
 from ..components import create_bottom_nav
 from ..components import create_item_card
 from datetime import date
@@ -130,10 +133,11 @@ def _create_test_item_with_type(
 
 
 def _set_test_session() -> None:
-    """Set test user session."""
-    app.storage.user["authenticated"] = True
-    app.storage.user["user_id"] = 1
-    app.storage.user["username"] = "admin"
+    """Admin-Sitzung wie nach echtem Login beginnen (Issue #384)."""
+    with Session(get_engine()) as session:
+        admin = get_user_by_username(session, "admin")
+        assert admin is not None, "Test-DB ohne admin"
+        start_session(admin, remember_me=False)
 
 
 def _set_item_category(session: Session, item_id: int, category_id: int) -> None:
