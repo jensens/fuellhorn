@@ -104,6 +104,9 @@ class Config:
     DEBUG: bool = _env_flag("DEBUG")
     HOST: str = os.getenv("HOST", "0.0.0.0")
     PORT: int = int(os.getenv("PORT", "8080"))
+    # Migrationen beim App-Start überspringen, wenn sie extern laufen
+    # (Helm: Init-Container oder Hook-Job statt in jedem Pod, Issue #377)
+    SKIP_MIGRATIONS: bool = _env_flag("FUELLHORN_SKIP_MIGRATIONS")
 
     # Reverse Proxy: IPs, deren X-Forwarded-For-Header vertraut wird (Issue #364)
     TRUSTED_PROXIES: frozenset[str] = parse_trusted_proxies(os.getenv("TRUSTED_PROXIES", ""))

@@ -59,6 +59,10 @@ Das Image (`Dockerfile`) wird in zwei Schritten gebaut:
 
 Der Release-Workflow prüft jedes gebaute Image, bevor Versions- und `latest`-Tag entstehen: installierte Versionen gegen `uv.lock`, `fuellhorn migrate && fuellhorn create-admin` mit SQLite und `/api/health` nach dem Start.
 
+Der Container läuft als Benutzer `fuellhorn` (uid/gid 1000), nicht als root. Bei Bind-Mounts
+für `/app/data` muss das Verzeichnis dieser uid gehören (`chown 1000:1000 ./data`); benannte
+Volumes übernehmen die Rechte automatisch. Der Healthcheck folgt der Variable `PORT`.
+
 Lokal bauen (ohne `--build-arg` wird die neueste PyPI-Version installiert):
 
 ```bash

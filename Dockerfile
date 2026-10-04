@@ -23,10 +23,18 @@ RUN uv sync --frozen --no-dev --no-install-project
 # 2. Die veröffentlichte Anwendung ohne erneute Dependency-Auflösung dazu
 RUN uv pip install --python /app/.venv/bin/python --no-deps "fuellhorn${FUELLHORN_VERSION:+==$FUELLHORN_VERSION}"
 
+# 3. Nicht als root laufen (#377): fester Benutzer 1000, Daten- und NiceGUI-Storage-Verzeichnis beschreibbar
+RUN groupadd --system --gid 1000 fuellhorn \
+    && useradd --system --uid 1000 --gid 1000 --home-dir /app --no-create-home --shell /usr/sbin/nologin fuellhorn \
+    && mkdir -p /app/data /app/.nicegui \
+    && chown -R fuellhorn:fuellhorn /app
+USER fuellhorn
+
 EXPOSE 8080
 
+# Healthcheck folgt PORT (Default 8080)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8080/api/health')" || exit 1
+    CMD python -c "import os, urllib.request; urllib.request.urlopen('http://localhost:' + os.environ.get('PORT', '8080') + '/api/health')" || exit 1
 
 # Fuellhorn CLI führt Migrations aus und startet die App
 CMD ["fuellhorn"]

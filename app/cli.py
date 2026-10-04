@@ -173,6 +173,7 @@ def cli_seed(subcommand: str | None, options: list[str] | None = None) -> int:
 def run_app() -> None:
     """Run the fuellhorn application."""
     import app.api.health  # noqa: F401
+    from app.config import config
     from app.config import get_storage_secret
     from app.startup import configure_app
     from app.startup import run_kwargs
@@ -180,7 +181,10 @@ def run_app() -> None:
     from nicegui import app as nicegui_app
     from nicegui import ui
 
-    run_migrations()
+    if config.SKIP_MIGRATIONS:
+        print("Migrationen übersprungen (FUELLHORN_SKIP_MIGRATIONS=true).")
+    else:
+        run_migrations()
 
     # Static-Dateien, PWA-Routen und Seitenkopf: dieselbe Funktion wie main.py (#375)
     configure_app(nicegui_app)

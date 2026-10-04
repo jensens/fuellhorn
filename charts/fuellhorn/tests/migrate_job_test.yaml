@@ -1,0 +1,65 @@
+suite: migration job tests (#377)
+templates:
+  - templates/migrate-job.yaml
+tests:
+  - it: should create a pre-install/pre-upgrade hook job for PostgreSQL
+    set:
+      secrets.fuellhornSecret: test-secret
+      database.type: postgresql
+      database.external.existingSecret: my-db-secret
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: Job
+      - equal:
+          path: metadata.annotations["helm.sh/hook"]
+          value: pre-install,pre-upgrade
+      - equal:
+          path: spec.template.spec.containers[0].command
+          value: ["fuellhorn", "migrate"]
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DATABASE_URL
+            valueFrom:
+              secretKeyRef:
+                name: my-db-secret
+                key: url
+      - equal:
+          path: spec.template.spec.securityContext.runAsNonRoot
+          value: true
+      - isNull:
+          path: spec.template.metadata.labels["app.kubernetes.io/name"]
+
+  - it: should pass the connection URL directly when the chart manages the DB secret
+    set:
+      secrets.fuellhornSecret: test-secret
+      database.type: postgresql
+      database.external.host: postgres.example.com
+      database.external.password: testpass
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DATABASE_URL
+            value: postgresql://fuellhorn:testpass@postgres.example.com:5432/fuellhorn
+
+  - it: should not create the job for SQLite (RWO volume, init container instead)
+    set:
+      secrets.fuellhornSecret: test-secret
+      database.type: sqlite
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should not create the job when disabled
+    set:
+      secrets.fuellhornSecret: test-secret
+      database.type: postgresql
+      database.external.host: postgres.example.com
+      database.external.password: testpass
+      migrations.job.enabled: false
+    asserts:
+      - hasDocuments:
+          count: 0

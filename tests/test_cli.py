@@ -126,6 +126,25 @@ class TestRunApp:
 
             mock_run_migrations.assert_called_once()
 
+    def test_skips_migrations_when_configured(self) -> None:
+        """FUELLHORN_SKIP_MIGRATIONS=true: Helm migriert per Job/Init-Container, nicht jeder Pod (Issue #377)."""
+        import app.config
+
+        mock_app = self._create_mock_app()
+
+        with (
+            patch("app.cli.run_migrations") as mock_run_migrations,
+            patch("nicegui.app", mock_app),
+            patch("nicegui.ui.run"),
+            patch("app.config.get_storage_secret", return_value="test-secret"),
+            patch.object(app.config.config, "SKIP_MIGRATIONS", True, create=True),
+        ):
+            from app.cli import run_app
+
+            run_app()
+
+            mock_run_migrations.assert_not_called()
+
     def test_configures_static_files(self) -> None:
         """Should configure static files directory."""
         mock_app = self._create_mock_app()

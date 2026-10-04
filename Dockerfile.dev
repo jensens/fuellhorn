@@ -19,6 +19,13 @@ COPY app/ ./app/
 COPY alembic.ini ./
 COPY main.py ./
 
+# Nicht als root laufen (#377); Daten- und NiceGUI-Storage-Verzeichnis beschreibbar
+RUN groupadd --system --gid 1000 fuellhorn \
+    && useradd --system --uid 1000 --gid 1000 --home-dir /app --no-create-home --shell /usr/sbin/nologin fuellhorn \
+    && mkdir -p /app/data /app/.nicegui \
+    && chown -R fuellhorn:fuellhorn /app
+USER fuellhorn
+
 EXPOSE 8080
 
 # --no-sync: Die Umgebung ist bereits vollständig. Ohne das Flag würde uv das Projekt
