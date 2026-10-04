@@ -24,36 +24,22 @@ Siehe [architektur_erklaert.md](architektur_erklaert.md) für das 3-Schichten-Mo
 
 ## Datenbank-Initialisierung
 
-**Wichtig:** Es gibt einen absichtlichen Unterschied zwischen Entwicklung und Produktion!
-
-### Development (`main.py`)
-
-```python
-create_db_and_tables()  # SQLModel erstellt Tabellen direkt
-```
-
-- Schneller Start ohne Migration
-- Tabellen werden aus SQLModel-Definitionen erstellt
-- Geeignet für lokale Entwicklung und schnelles Iterieren
-
-### Production (`app/cli.py`)
+Entwicklung (`main.py`), Produktion (`fuellhorn`-CLI) und die Seed-Befehle legen das
+Schema **einheitlich über Alembic** an:
 
 ```python
-run_migrations()  # Alembic führt Migrationen aus
+run_migrations()  # Alembic: alembic upgrade head
 ```
 
-- Verwendet Alembic-Migrationen für Schema-Änderungen
-- Versionierte, nachvollziehbare Datenbankänderungen
-- Notwendig für sichere Updates in Produktion
+- Eine leere Datenbank bekommt alle Tabellen **und** `alembic_version`
+- Spätere Schema-Änderungen laufen als Migration, Daten bleiben erhalten
+- Dieselbe Historie in Dev und Prod
 
-### Warum der Unterschied?
-
-| Aspekt | Development | Production |
-|--------|-------------|------------|
-| Geschwindigkeit | ✅ Sofortiger Start | ⏱️ Migrationen brauchen Zeit |
-| Sicherheit | ⚠️ Schema wird überschrieben | ✅ Kontrollierte Updates |
-| Datenerhalt | ❌ Bei Schemaänderung verloren | ✅ Daten bleiben erhalten |
-| Nachvollziehbarkeit | ❌ Keine Historie | ✅ Versioniert |
+`create_db_and_tables()` (SQLModel `create_all`) wird nur noch in Tests verwendet.
+Es ist additiv (überschreibt keine Daten), legt aber keine `alembic_version` an:
+Eine so erzeugte Datenbank lässt `alembic upgrade head` später mit
+"table already exists" scheitern. Eine alte Dev-Datenbank, die noch per
+`create_all` entstanden ist, einmalig mit `uv run alembic stamp head` markieren.
 
 ### Migrationen erstellen
 

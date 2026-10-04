@@ -103,29 +103,47 @@ def cli_create_admin() -> int:
             return 1
 
 
-def cli_seed(subcommand: str | None) -> int:
+TESTDATA_DEV_FLAG = "--i-know-this-is-dev"
+
+
+def cli_seed(subcommand: str | None, options: list[str] | None = None) -> int:
     """CLI command to seed database with default data.
 
     Args:
         subcommand: 'shelf-life-defaults' or 'testdata'
+        options: weitere Argumente, z.B. ``--i-know-this-is-dev``
 
     Returns:
         0 on success, 1 on error
     """
-    from app.database import create_db_and_tables
+    from app.config import config
     from app.database import get_engine
     from app.seed import seed_shelf_life_defaults
     from app.seed import seed_testdata
+
+    options = options or []
 
     if not subcommand:
         print("Usage: fuellhorn seed <subcommand>")
         print("Available subcommands:")
         print("  shelf-life-defaults  Seed categories with shelf life data")
-        print("  testdata             Seed test data (admin, categories, locations, items)")
+        print(f"  testdata             Seed test data (admin/admin, only with DEBUG=true or {TESTDATA_DEV_FLAG})")
         return 1
 
-    # Ensure tables exist
-    create_db_and_tables()
+    if subcommand not in {"shelf-life-defaults", "testdata"}:
+        print(f"Unknown subcommand: {subcommand}")
+        print("Available: shelf-life-defaults, testdata")
+        return 1
+
+    # Testdaten enthalten den Admin admin/admin: nie unbemerkt in Produktion (#376)
+    if subcommand == "testdata" and not (config.DEBUG or TESTDATA_DEV_FLAG in options):
+        print("Testdaten (Admin admin/admin) sind nur für die Entwicklung gedacht.")
+        print(f"Erlauben mit DEBUG=true oder: fuellhorn seed testdata {TESTDATA_DEV_FLAG}")
+        return 1
+
+    # Schema über Alembic anlegen/aktualisieren statt create_all: sonst fehlt
+    # alembic_version und ein späteres 'alembic upgrade head' scheitert (#376)
+    run_migrations()
 
     with Session(get_engine()) as session:
         if subcommand == "shelf-life-defaults":
@@ -149,10 +167,7 @@ def cli_seed(subcommand: str | None) -> int:
             print("Done.")
             return 0
 
-        else:
-            print(f"Unknown subcommand: {subcommand}")
-            print("Available: shelf-life-defaults, testdata")
-            return 1
+    return 1  # pragma: no cover - alle Subcommands sind oben behandelt
 
 
 def run_app() -> None:
@@ -198,7 +213,7 @@ def dispatch_command(args: list[str]) -> int:
         return cli_create_admin()
     elif command == "seed":
         subcommand = args[1] if len(args) > 1 else None
-        return cli_seed(subcommand)
+        return cli_seed(subcommand, args[2:])
     else:
         print(f"Unknown command: {command}")
         print("Available commands: migrate, create-admin, seed")

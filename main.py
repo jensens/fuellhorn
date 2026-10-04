@@ -4,7 +4,7 @@ Produktion startet über das ``fuellhorn``-CLI (``app/cli.py``). Beide nutzen
 dieselbe Startkonfiguration aus ``app/startup.py`` (Issue #375).
 """
 
-from app.database import create_db_and_tables
+from app.cli import run_migrations
 from app.startup import configure_app
 from app.startup import run_kwargs
 from nicegui import app
@@ -30,8 +30,9 @@ import app.api.health as _api_health  # noqa: F401, E402
 if __name__ in {"__main__", "__mp_main__"}:
     from app.config import get_storage_secret
 
-    # Datenbank initialisieren
-    create_db_and_tables()
+    # Schema per Alembic anlegen/aktualisieren (wie in Produktion). create_all legte
+    # Tabellen ohne alembic_version an, ein späteres 'alembic upgrade head' scheiterte (#376)
+    run_migrations()
 
     # NiceGUI starten (Titel, Favicon, HOST/PORT aus app.startup bzw. der Konfiguration)
     ui.run(
