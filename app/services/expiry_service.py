@@ -82,7 +82,7 @@ def get_entered_dates(item: Item) -> list[EnteredDate]:
     """
     spec = item_types.spec_for(item.item_type)
     entries: list[EnteredDate] = []
-    if spec.best_before_label is not None:
+    if spec.best_before_label is not None and item.best_before_date is not None:
         entries.append(EnteredDate(spec.best_before_label, item.best_before_date, item.best_before_month_only))
     if spec.uses_freeze_date and item.freeze_date is not None:
         entries.append(EnteredDate(LABEL_FROZEN, item.freeze_date, item.freeze_date_month_only))
@@ -112,6 +112,9 @@ def compute_expiry_view(
 
     storage_type = get_storage_type_for_item_type(item.item_type)
     if storage_type is None:
+        if item.best_before_date is None:
+            # Schnellerfassung ohne Datum: Status erst nach dem Nachpflegen (Issue #463)
+            return UNKNOWN_VIEW
         # Ein nur monatsgenaues MHD gilt bis Monatsende (Issue #347)
         deadline = effective_deadline(item.best_before_date, item.best_before_month_only)
         status = get_expiry_status_minmax(

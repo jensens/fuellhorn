@@ -284,8 +284,8 @@ def edit_item(item_id: int) -> None:
         with ui.element("div").mark("edit-best-before-section") as best_before_section:
             best_before_section.set_visibility(form_data["item_type"] != ItemType.PURCHASED_THEN_FROZEN)
             # Best Before Date / Production Date (Label folgt dem Typ, siehe on_item_type_change)
-            date_value = form_data.get("best_before_date") or date_type.today()
-            form_data["best_before_date"] = date_value
+            # Ohne Datum bleibt das Feld leer; „heute“ einzusetzen würde Daten erfinden (Issue #463)
+            date_value = form_data.get("best_before_date")
 
             def on_best_before_change(value: date_type | None, month_only: bool) -> None:
                 form_data["best_before_date"] = value
