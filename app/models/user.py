@@ -50,8 +50,9 @@ class User(SQLModel, table=True):
     # Login-Sicherheit (locked_until für manuelles Admin-Lock)
     locked_until: datetime | None = Field(default=None)
 
-    # Remember-Me Token (für "Angemeldet bleiben" Feature)
-    remember_token: str | None = Field(default=None)
+    # Steigt bei jeder Passwortänderung; Sitzungen mit alter Version werden
+    # beim nächsten Request abgemeldet (Issue #384)
+    session_version: int = Field(default=0)
 
     # User Preferences (JSON field for personal settings like smart defaults)
     # Structure: {
@@ -74,6 +75,7 @@ class User(SQLModel, table=True):
         """
         salt = bcrypt.gensalt()
         self.password_hash = bcrypt.hashpw(password.encode("utf-8"), salt).decode("utf-8")
+        self.session_version += 1
 
     def check_password(self, password: str) -> bool:
         """Prüft ob das Passwort korrekt ist.

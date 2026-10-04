@@ -8,6 +8,9 @@ from ..models.user import User
 from ..services.auth_service import get_user
 from .permissions import Permission
 from .permissions import get_permissions_for_user
+from .session import end_session
+from .session import session_problem
+from .session import touch_session
 from collections.abc import Callable
 from contextvars import ContextVar
 from fastapi import Depends
@@ -84,11 +87,24 @@ def get_current_user(require_auth: bool = True, use_cache: bool = True) -> User 
             if not user.is_active:
                 raise AuthenticationError("Benutzer ist deaktiviert")
 
+            # Sitzung abgelaufen, Passwort geändert oder Konto gesperrt (Issue #384):
+            # abmelden, Grund für die Login-Seite vormerken
+            problem = session_problem(app.storage.user, user)
+            if problem is not None:
+                end_session(reason=problem)
+                raise AuthenticationError(problem)
+            touch_session()
+
             # Store in cache
             if use_cache:
                 _current_user_cache.set(user)
 
             return user
+        except AuthenticationError:
+            # deaktiviert, Sitzung abgelaufen, Passwort geändert, gesperrt: Grund unverändert weitergeben
+            if require_auth:
+                raise
+            return None
         except Exception as e:
             if require_auth:
                 raise AuthenticationError(f"Benutzer nicht gefunden: {e}") from e

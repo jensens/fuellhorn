@@ -1,14 +1,12 @@
 """Authentication UI - Login/Logout."""
 
+from ..auth.session import end_session
+from ..auth.session import start_session
 from ..config import config
 from ..database import get_session
 from ..services import rate_limit_service
 from ..services.auth_service import AuthenticationError
 from ..services.auth_service import authenticate_user
-from ..services.auth_service import generate_remember_token
-from ..services.auth_service import get_user
-from ..services.auth_service import revoke_remember_token
-from nicegui import app
 from nicegui import context
 from nicegui import ui
 
@@ -84,17 +82,9 @@ def show_login_page() -> None:
                 # Login erfolgreich - Rate-Limit zurücksetzen
                 rate_limit_service.record_successful_login(session, client_ip)
 
-                # Session speichern (nur essenzielle Daten, Permissions werden bei Bedarf aus DB geholt)
-                app.storage.user["authenticated"] = True
-                app.storage.user["user_id"] = user.id
-                app.storage.user["username"] = user.username
-
-                # Remember-Me Token generieren wenn gewuenscht
-                if remember_me:
-                    token = generate_remember_token(session, user)
-                    app.storage.user["remember_token"] = token
-                    # Laengere Session-Lifetime fuer Remember-Me
-                    # (wird in config.py definiert: REMEMBER_ME_MAX_AGE = 30 Tage)
+                # Sitzung beginnen (Issue #384): nur essenzielle Daten, Permissions kommen
+                # bei Bedarf aus der DB; remember_me hebt die Inaktivitätsgrenze auf
+                start_session(user, remember_me=bool(remember_me))
 
                 ui.notify(f"Willkommen {user.username}!", type="positive")
                 ui.navigate.to("/dashboard")
@@ -111,6 +101,12 @@ def show_login_page() -> None:
                     )
                 else:
                     ui.notify(str(e), type="negative")
+
+    # Grund einer erzwungenen Abmeldung anzeigen (Sitzung abgelaufen, Passwort geändert; #384).
+    # Lokaler Import: app.ui.components importiert seinerseits logout() aus diesem Modul.
+    from .components.flash import show_flash
+
+    show_flash()
 
     # Mobile-First Layout: Full-screen auf Mobile, zentrierte Card auf Desktop (Solarpunk theme)
     with ui.column().classes("w-full min-h-screen items-center justify-center bg-cream p-4"):
@@ -151,27 +147,8 @@ def show_login_page() -> None:
 
 
 def logout() -> None:
-    """Logout und Session loeschen.
-
-    Fuehrt folgende Schritte aus:
-    1. Remember-Token in DB invalidieren (falls vorhanden)
-    2. app.storage.user leeren
-    3. Redirect zur Login-Seite
-    """
-    # Remember-Token in DB invalidieren wenn User eingeloggt ist
-    user_id = app.storage.user.get("user_id")
-    if user_id:
-        try:
-            with next(get_session()) as session:
-                user = get_user(session, user_id)
-                if user.remember_token:
-                    revoke_remember_token(session, user)
-        except Exception:
-            # Fehler beim Token-Revoke ignorieren - Session wird trotzdem geloescht
-            pass
-
-    # Session vollstaendig leeren
-    app.storage.user.clear()
+    """Logout: Sitzung leeren und zur Login-Seite."""
+    end_session()
 
     ui.notify("Erfolgreich abgemeldet", type="positive")
     ui.navigate.to("/login")

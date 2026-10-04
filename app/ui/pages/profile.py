@@ -8,6 +8,7 @@ Based on Issue #85: Profil-Seite für User (Passwort ändern, Smart Defaults)
 
 from ...auth import get_current_user
 from ...auth import require_auth
+from ...auth.session import refresh_session_version
 from ...database import get_engine
 from ...models.user import User
 from ...services import preferences_service
@@ -180,6 +181,8 @@ def _render_password_change_section(current_user: User) -> None:
                             new_password=new_pw,
                         )
                         if success:
+                            # andere Sitzungen sind jetzt abgemeldet, die eigene bleibt (#384)
+                            refresh_session_version(user)
                             ui.notify("Passwort erfolgreich geändert", type="positive")
                             # Clear fields
                             current_pw_input.value = ""

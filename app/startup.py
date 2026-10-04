@@ -72,6 +72,9 @@ def run_kwargs(**overrides: Any) -> dict[str, Any]:
         "host": config.HOST,
         "port": config.PORT,
         "show": False,
+        # Laufzeit des signierten Sitzungs-Cookies (gleitend); ohne Remember-Me
+        # endet die Sitzung früher über SESSION_MAX_AGE (app/auth/session.py, #384)
+        "session_middleware_kwargs": {"max_age": config.REMEMBER_ME_MAX_AGE},
     }
     kwargs.update(overrides)
     return kwargs

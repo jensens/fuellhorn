@@ -75,3 +75,12 @@ class TestRunKwargs:
         assert kwargs["port"] == 9123
         assert kwargs["reload"] is False
         assert kwargs["show"] is False
+
+    def test_session_cookie_lifetime_comes_from_config(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Issue #384: Cookie-Laufzeit = REMEMBER_ME_MAX_AGE statt Starlette-Default (14 Tage)."""
+        import app.config
+        from app.startup import run_kwargs
+
+        monkeypatch.setattr(app.config.config, "REMEMBER_ME_MAX_AGE", 1234)
+
+        assert run_kwargs()["session_middleware_kwargs"] == {"max_age": 1234}
