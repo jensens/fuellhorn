@@ -7,6 +7,7 @@ Based on UI_KONZEPT.md Section 7: Bottom Sheet
 - Mobile-optimized with 48px touch targets
 """
 
+from ...auth.dependencies import get_current_user_id
 from ...database import get_session
 from ...models.item import Item
 from ...models.location import Location
@@ -17,7 +18,6 @@ from ...services import item_service
 from ..theme.icons import create_icon
 from ..utils.quantity import format_quantity
 from datetime import date
-from nicegui import app
 from nicegui import ui
 from typing import Callable
 
@@ -262,8 +262,14 @@ def _handle_withdraw(
                     error_label.set_visibility(True)
                 return
 
+            user_id = get_current_user_id()
+            if user_id is None:
+                if error_label:
+                    error_label.set_text("Bitte neu anmelden")
+                    error_label.set_visibility(True)
+                return
+
             with next(get_session()) as session:
-                user_id = app.storage.user.get("user_id")
                 item_service.withdraw_partial(
                     session=session,
                     item_id=item.id,
@@ -353,9 +359,13 @@ def _handle_consume(
         ui.notify("Item-ID nicht gefunden", type="negative")
         return
 
+    user_id = get_current_user_id()
+    if user_id is None:
+        ui.notify("Bitte neu anmelden", type="negative")
+        return
+
     try:
         with next(get_session()) as session:
-            user_id = app.storage.user.get("user_id")
             item_service.mark_item_consumed(session, item.id, user_id)
 
         ui.notify(f"{item.product_name} vollständig entnommen", type="positive")

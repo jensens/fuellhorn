@@ -21,6 +21,7 @@ from ..components import create_bottom_nav
 from ..components import create_bottom_sheet
 from ..components import create_item_card
 from ..components import create_mobile_page_container
+from ..components.consume_all import confirm_consume_all
 from ..theme import get_contrast_text_color
 from ..theme.icons import create_icon
 from datetime import date
@@ -472,11 +473,8 @@ def items_page(filter: str | None = None, location: int | None = None) -> None: 
             sheet.open()
 
     def handle_consume_all(item: Item) -> None:
-        """Handle consuming all of an item via swipe action (Issue #226)."""
-        with next(get_session()) as session:
-            item_service.mark_item_consumed(session, item.id)  # type: ignore[arg-type]
-            ui.notify(f"{item.product_name} komplett entnommen", type="positive")
-        refresh_items()
+        """Handle consuming all of an item via swipe action (Issue #226, #367: with confirmation + user)."""
+        confirm_consume_all(item, refresh_items)
 
     # Header with toggle (Solarpunk theme)
     with ui.row().classes("sp-page-header w-full items-center justify-between"):
