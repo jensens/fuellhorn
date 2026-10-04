@@ -52,6 +52,23 @@ async def test_edit_item_persists_typed_best_before_date(
     assert item.best_before_date == date(2027, 3, 20)
 
 
+async def test_edit_item_can_change_category(logged_in_user: User, isolated_test_database, milk_item_id: int) -> None:
+    """Die Kategorie ist im Edit-View sichtbar und änderbar (Issue #349)."""
+    with Session(isolated_test_database) as session:
+        other = category_service.create_category(session=session, name="Getränke", created_by=1)
+        other_id = other.id
+
+    await logged_in_user.open(f"/items/{milk_item_id}/edit")
+    await logged_in_user.should_see("Kategorie *")
+    logged_in_user.find(marker=f"category-chip-{other_id}").click()
+    logged_in_user.find(marker="edit-save").click()
+    await logged_in_user.should_see("gespeichert")
+
+    with Session(isolated_test_database) as session:
+        item = item_service.get_item(session, milk_item_id)
+    assert item.category_id == other_id
+
+
 async def test_edit_item_route_requires_auth(user: User) -> None:
     """Test that /items/1/edit requires authentication."""
     await user.open("/items/1/edit")
