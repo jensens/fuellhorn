@@ -283,7 +283,7 @@ class TestEmailChange:
 
     def test_change_email_invalid_format(self, session: Session, test_user: User) -> None:
         """Test: Email change fails with invalid format."""
-        with pytest.raises(ValueError, match="ungültige E-Mail"):
+        with pytest.raises(ValueError, match="keine gültige E-Mail"):
             preferences_service.change_user_email(
                 session=session,
                 user=test_user,

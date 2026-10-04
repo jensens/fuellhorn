@@ -5,6 +5,8 @@ from ..models.item import ItemType
 from ..models.location import Location
 from ..models.location import LocationType
 from ..services.errors import DuplicateNameError
+from ..services.validation import require_non_empty
+from ..services.validation import validate_hex_color
 from sqlmodel import Session
 from sqlmodel import col
 from sqlmodel import func
@@ -84,8 +86,12 @@ def create_location(
         Created location
 
     Raises:
-        ValueError: If location with same name already exists
+        ServiceValidationError: leerer Name oder ungültige Farbe (Issue #383)
+        DuplicateNameError: If location with same name already exists
     """
+    name = require_non_empty(name, "Lagerortname")
+    color = validate_hex_color(color)
+
     # Check for duplicate name (case-insensitive)
     existing = session.exec(
         select(Location).where(Location.name.ilike(name))  # type: ignore
@@ -169,6 +175,11 @@ def update_location(
         ValueError: If location not found or duplicate name
     """
     location = get_location(session, id)
+
+    if name is not None:
+        name = require_non_empty(name, "Lagerortname")
+    if color is not None:
+        color = validate_hex_color(color)
 
     # Check for duplicate name if changing name
     if name and name.lower() != location.name.lower():

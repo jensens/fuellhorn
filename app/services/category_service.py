@@ -7,6 +7,8 @@ from ..models.item import Item
 from ..models.item import ItemType
 from ..services.errors import DuplicateNameError
 from ..services.expiry_calculator import get_storage_type_for_item_type
+from ..services.validation import require_non_empty
+from ..services.validation import validate_hex_color
 from collections import defaultdict
 from sqlmodel import Session
 from sqlmodel import col
@@ -32,8 +34,12 @@ def create_category(
         Created category
 
     Raises:
-        ValueError: If category with same name already exists
+        ServiceValidationError: leerer Name oder ungültige Farbe (Issue #383)
+        DuplicateNameError: If category with same name already exists
     """
+    name = require_non_empty(name, "Kategoriename")
+    color = validate_hex_color(color)
+
     # Check for duplicate name (case-insensitive)
     existing = session.exec(
         select(Category).where(Category.name.ilike(name))  # type: ignore
@@ -116,6 +122,11 @@ def update_category(
         ValueError: If category not found or duplicate name
     """
     category = get_category(session, id)
+
+    if name is not None:
+        name = require_non_empty(name, "Kategoriename")
+    if color is not None:
+        color = validate_hex_color(color)
 
     # Check for duplicate name if changing name
     if name and name.lower() != category.name.lower():
