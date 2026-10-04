@@ -124,11 +124,11 @@ def create_recently_added_section(
                     created_by=1,
                 )
 
-            # Default click handler: navigate to item detail
+            # Default click handler: open the edit page (there is no detail page, Issue #366)
             def handle_click(i: Item = item) -> None:
                 if on_item_click:
                     on_item_click(i)
                 else:
-                    ui.navigate.to(f"/items/{i.id}")
+                    ui.navigate.to(f"/items/{i.id}/edit")
 
             create_recently_added_row(item, location, on_click=handle_click)

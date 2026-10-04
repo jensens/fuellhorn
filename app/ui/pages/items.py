@@ -97,7 +97,7 @@ def _render_empty_state() -> None:
         ui.label("Erfasse deinen ersten Artikel!").classes("text-sm text-stone")
         ui.button(
             "Artikel erfassen",
-            on_click=lambda: ui.navigate.to("/add-item"),
+            on_click=lambda: ui.navigate.to("/items/add"),
         ).classes("mt-4 sp-btn-primary")
 
 
