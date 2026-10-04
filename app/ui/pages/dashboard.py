@@ -27,10 +27,7 @@ from nicegui import ui
 @require_auth
 def dashboard() -> None:
     """Dashboard mit Ablaufübersicht und Statistiken (Mobile-First)."""
-    # Load swipe card CSS and JS (required for item card swipe actions)
-    ui.add_head_html('<link rel="stylesheet" href="/static/css/solarpunk-theme.css">')
-    ui.add_head_html('<script src="/static/js/swipe-card.js"></script>')
-
+    # Theme-CSS und swipe-card.js kommen aus dem gemeinsamen Seitenkopf (app/startup.py, #375)
     # Header with user dropdown (Solarpunk theme)
     with ui.row().classes("sp-page-header w-full items-center justify-between"):
         ui.label("Füllhorn").classes("sp-page-title")

@@ -233,10 +233,7 @@ def items_page(filter: str | None = None, location: int | None = None) -> None: 
                 "expiring" = show only items expiring in 7 days (Issue #244)
         location: Optional location ID to pre-filter by (Issue #246)
     """
-    # Load swipe card CSS and JS (required for item card swipe actions)
-    ui.add_head_html('<link rel="stylesheet" href="/static/css/solarpunk-theme.css">')
-    ui.add_head_html('<script src="/static/js/swipe-card.js"></script>')
-
+    # Theme-CSS und swipe-card.js kommen aus dem gemeinsamen Seitenkopf (app/startup.py, #375)
     # Check for "expiring" filter from URL (Issue #244)
     show_expiring_only = filter == "expiring"
 
