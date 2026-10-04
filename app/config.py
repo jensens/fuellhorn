@@ -70,28 +70,38 @@ def parse_trusted_proxies(value: str) -> frozenset[str]:
     return frozenset(part.strip() for part in value.split(",") if part.strip())
 
 
+SUPPORTED_DB_TYPES = ("sqlite", "postgresql")
+
+
+def parse_db_type(value: str) -> Literal["sqlite", "postgresql"]:
+    """Prüft DB_TYPE und bricht mit klarer Meldung ab statt später an einer kryptischen Stelle."""
+    normalized = value.strip().lower()
+    if normalized == "sqlite":
+        return "sqlite"
+    if normalized == "postgresql":
+        return "postgresql"
+    raise RuntimeError(f"DB_TYPE muss 'sqlite' oder 'postgresql' sein, nicht {value!r}.")
+
+
+def _env_flag(name: str, default: str = "false") -> bool:
+    return os.getenv(name, default).strip().lower() == "true"
+
+
 class Config:
     """Haupt-Konfiguration für die Anwendung."""
 
     # Datenbank
-    DB_TYPE: Literal["sqlite", "postgresql"] = os.getenv("DB_TYPE", "sqlite")  # type: ignore
+    DB_TYPE: Literal["sqlite", "postgresql"] = parse_db_type(os.getenv("DB_TYPE", "sqlite"))
     DATABASE_URL: str = os.getenv(
         "DATABASE_URL",
         f"{SQLITE_FILE_PREFIX}{DATA_DIR / 'fuellhorn.db'}",
     )
-
-    # Sicherheit / Security
-    # SECRET_KEY: Main application secret for cryptographic operations
-    # Used for: Session signing, CSRF tokens, general app security
-    # Must be: Strong random string (min 32 chars), never committed to git
-    # Generate with: python -c "import secrets; print(secrets.token_urlsafe(32))"
-    _secret_key = os.getenv("SECRET_KEY")
-    if not _secret_key:
-        raise RuntimeError("SECRET_KEY environment variable must be set! Never use default secrets in production.")
-    SECRET_KEY: str = _secret_key
+    # SQL-Statements samt Parametern loggen: bewusst getrennt von DEBUG, weil das
+    # Passwort-Hashes, Tokens und IPs in die Logs schreibt (Issue #374)
+    SQL_ECHO: bool = _env_flag("SQL_ECHO")
 
     # App
-    DEBUG: bool = os.getenv("DEBUG", "false").lower() == "true"
+    DEBUG: bool = _env_flag("DEBUG")
     HOST: str = os.getenv("HOST", "0.0.0.0")
     PORT: int = int(os.getenv("PORT", "8080"))
 
@@ -132,17 +142,13 @@ MAX_FILE_SIZE: int = 10 * 1024 * 1024  # 10 MB in bytes
 
 
 def get_storage_secret() -> str:
-    """Gibt das Password Hashing Secret (Pepper) zurück.
+    """Gibt das NiceGUI Storage Secret zurück.
 
-    FUELLHORN_SECRET: Password hashing pepper (additional secret layer)
-    Used for: Adding a secret salt to bcrypt password hashes
-    Must be: Strong random string (min 32 chars), never committed to git
-    Generate with: python -c "import secrets; print(secrets.token_urlsafe(32))"
-
-    CRITICAL WARNING: NEVER change this value in production!
-    Changing this value will invalidate ALL existing user passwords,
-    making it impossible for users to log in. If you must rotate this secret,
-    you need a migration strategy to rehash all passwords.
+    FUELLHORN_SECRET signiert die Session-Cookies von ``app.storage.user``
+    (NiceGUI ``storage_secret``). Es ist kein bcrypt-Pepper: Passwort-Hashes
+    hängen nicht davon ab. Eine Rotation meldet lediglich alle Nutzer ab.
+    Muss ein starker Zufallswert sein (min. 32 Zeichen), nie ins Repository:
+    python -c "import secrets; print(secrets.token_urlsafe(32))"
 
     Raises:
         RuntimeError: Wenn FUELLHORN_SECRET nicht gesetzt ist.

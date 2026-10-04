@@ -3,6 +3,7 @@
 Stellt Funktionen für Datenbank-Verbindung und Session-Management bereit.
 """
 
+from .config import Config
 from .config import config
 
 # Alle Models werden hier importiert damit SQLModel sie kennt
@@ -25,6 +26,20 @@ from sqlmodel import create_engine
 _engine: Engine | None = None
 
 
+def create_app_engine(settings: Config | None = None) -> Engine:
+    """Erstellt die Engine aus der Konfiguration.
+
+    SQL-Echo hängt nur an SQL_ECHO, nicht an DEBUG: Es schreibt jedes Statement
+    samt Parametern (Passwort-Hashes, Tokens, IPs) ins Log (Issue #374).
+    """
+    settings = config if settings is None else settings
+    return create_engine(
+        settings.get_database_url(),
+        echo=settings.SQL_ECHO,
+        connect_args=({"check_same_thread": False} if settings.DB_TYPE == "sqlite" else {}),
+    )
+
+
 def get_engine() -> Engine:
     """Gibt die Datenbank-Engine zurück (lazy initialization).
 
@@ -33,11 +48,7 @@ def get_engine() -> Engine:
     """
     global _engine
     if _engine is None:
-        _engine = create_engine(
-            config.get_database_url(),
-            echo=config.DEBUG,  # SQL-Statements loggen in Debug-Modus
-            connect_args=({"check_same_thread": False} if config.DB_TYPE == "sqlite" else {}),
-        )
+        _engine = create_app_engine()
     return _engine
 
 
