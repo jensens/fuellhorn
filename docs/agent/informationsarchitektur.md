@@ -11,7 +11,7 @@ Füllhorn ist eine mobile-first Vorratsverwaltung mit vier Hauptbereichen:
 | Bereich | Route | Rolle | Beschreibung |
 |---------|-------|-------|--------------|
 | Übersicht | `/dashboard` | Alle | Dashboard mit ablaufenden Artikeln |
-| Erfassen | `/items/add` | Alle | Artikel schnell erfassen (Wizard) |
+| Erfassen | `/items/add` | Alle | Artikel vollständig erfassen (Wizard) |
 | Vorrat | `/items` | Alle | Vorratsliste durchsuchen |
 | Einstellungen | `/admin/*` | Admin | Kategorien, Lagerorte, Benutzer |
 
@@ -58,7 +58,9 @@ Sticky am unteren Bildschirmrand, immer sichtbar (`app/ui/components/bottom_nav.
 /dashboard          - Übersicht (nach Login)
 /items              - Vorratsliste (Filter: ?location=<id>, ?filter=expiring)
 /items/add          - Artikel erfassen (Wizard)
-/items/{id}/edit    - Artikel bearbeiten
+/items/quick        - Schnellerfassung: Ort einmal wählen, dann Name, Menge, Einheit, Typ
+/items/incomplete   - Nachpflegen: Artikel, denen Datum, Kategorie o.ä. fehlt
+/items/{id}/edit    - Artikel bearbeiten (?back=<Pfad> bestimmt den Rückweg)
 /profile            - Profil (Passwort, E-Mail, Smart-Default-Zeitfenster)
 /admin/settings     - Einstellungen: Einstieg zu Kategorien, Lagerorten, Benutzern; System-Defaults
 /admin/categories   - Kategorien verwalten
