@@ -529,7 +529,3 @@ Die Haltbarkeitsberechnung hängt vom Artikel-Typ ab:
 - Die Anwendung muss gut geplant werden
 - Barcode-Integration mit offener Produktdatenbank prüfen (Post-MVP)
 - OCR für MHD und Einkaufszettel evaluieren (Post-MVP)
-
-
-
-

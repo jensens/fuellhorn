@@ -91,7 +91,7 @@ async def test_search_input_is_debounced(logged_in_user: User) -> None:
     """Die Suche rendert nicht bei jedem Tastendruck: Quasar-Debounce 300 ms am Eingabefeld."""
     await logged_in_user.open("/items")
 
-    (search,) = [e for e in logged_in_user.find(kind=ui.input).elements if e._props.get("label") == "Suchen"]
+    (search,) = (e for e in logged_in_user.find(kind=ui.input).elements if e._props.get("label") == "Suchen")
 
     assert str(search._props.get("debounce")) == "300"
 

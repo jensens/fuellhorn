@@ -10,28 +10,28 @@
       <stop offset="100%" style="stop-color:#DAA520"/>
     </linearGradient>
   </defs>
-  
+
   <!-- Kreisbogen - der Kreislauf -->
-  <path d="M 50 8 A 42 42 0 1 1 8 50" 
-        fill="none" 
-        stroke="url(#circleGrad)" 
+  <path d="M 50 8 A 42 42 0 1 1 8 50"
+        fill="none"
+        stroke="url(#circleGrad)"
         stroke-width="7"
         stroke-linecap="round"/>
-  
+
   <!-- Füllhorn -->
-  <path d="M 50 8 
+  <path d="M 50 8
            C 58 18, 62 28, 58 42
            C 54 56, 46 68, 32 75
            L 28 72
            C 40 66, 48 56, 52 44
            C 56 32, 54 22, 48 12
-           Z" 
+           Z"
         fill="url(#hornGrad)"/>
-  
+
   <!-- Zwei Früchte -->
   <circle cx="24" cy="76" r="8" fill="#7CB342"/>
   <circle cx="40" cy="80" r="7" fill="#C17F59"/>
-  
+
   <!-- Blatt am Horn -->
   <path d="M 54 22 Q 65 18 70 28 Q 62 36 54 22" fill="#7CB342"/>
 </svg>

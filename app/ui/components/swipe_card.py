@@ -11,9 +11,9 @@ Features:
 - Touch + Mouse support
 """
 
+from collections.abc import Callable
 from nicegui import ui
 from typing import Any
-from typing import Callable
 import uuid
 
 
