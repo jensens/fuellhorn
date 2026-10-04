@@ -7,6 +7,7 @@ from ..models.item import ItemType
 from ..services.expiry_calculator import get_storage_type_for_item_type
 from collections import defaultdict
 from sqlmodel import Session
+from sqlmodel import col
 from sqlmodel import func
 from sqlmodel import select
 
@@ -207,7 +208,7 @@ def get_categories_for_item_type(session: Session, item_type: ItemType) -> list[
     # Filter by storage type via CategoryShelfLife join
     cats_with_shelf_life = session.exec(
         select(Category)
-        .join(CategoryShelfLife, Category.id == CategoryShelfLife.category_id)
+        .join(CategoryShelfLife, col(Category.id) == col(CategoryShelfLife.category_id))
         .where(CategoryShelfLife.storage_type == storage_type)
         .order_by(Category.sort_order)  # type: ignore[arg-type]
     ).all()
