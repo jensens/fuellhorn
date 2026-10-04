@@ -26,7 +26,7 @@ RUN uv pip install --python /app/.venv/bin/python --no-deps "fuellhorn${FUELLHOR
 # 3. Nicht als root laufen (#377): fester Benutzer 1000, Daten- und NiceGUI-Storage-Verzeichnis beschreibbar
 RUN groupadd --system --gid 1000 fuellhorn \
     && useradd --system --uid 1000 --gid 1000 --home-dir /app --no-create-home --shell /usr/sbin/nologin fuellhorn \
-    && mkdir -p /app/data /app/.nicegui \
+    && mkdir -p /app/data \
     && chown -R fuellhorn:fuellhorn /app
 USER fuellhorn
 

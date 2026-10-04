@@ -82,7 +82,8 @@ docker build --build-arg FUELLHORN_VERSION=1.0.0a9 -t fuellhorn .
 | `DEBUG` | Debug-Modus | Nein | `false` |
 | `SQL_ECHO` | Alle SQL-Statements samt Parametern loggen (nur zur Fehlersuche, enthält Hashes und Tokens) | Nein | `false` |
 | `TRUSTED_PROXIES` | Kommagetrennte IPs von Reverse-Proxys, deren `X-Forwarded-For` für das Login-Rate-Limiting vertraut wird. Leer: direkte Client-IP zählt. | Nein | leer |
-| `FUELLHORN_DATA_DIR` | Datenverzeichnis für die SQLite-Datei (nur ohne `DATABASE_URL` relevant). Muss im Container auf das gemountete Volume zeigen. | Nein | `/app/data` im Image, sonst `./data` |
+| `FUELLHORN_DATA_DIR` | Datenverzeichnis für SQLite-Datei und Login-Sitzungen. Muss im Container auf das gemountete Volume zeigen. | Nein | `/app/data` im Image, sonst `./data` |
+| `NICEGUI_STORAGE_PATH` | Verzeichnis der Login-Sitzungen (NiceGUI-Storage). Ohne Volume meldet jeder Neustart alle Benutzer ab. | Nein | `$FUELLHORN_DATA_DIR/.nicegui` |
 
 ### Secrets generieren
 

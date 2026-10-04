@@ -89,6 +89,9 @@ Datenbank-Umgebung für App- und Init-Container
 # SQLite-Datei explizit ins Volume, sonst landet sie im site-packages des Containers (#371)
 - name: FUELLHORN_DATA_DIR
   value: /app/data
+# Login-Sitzungen (NiceGUI-Storage) ebenfalls auf dem Volume, sonst meldet jeder Neustart alle ab (#429)
+- name: NICEGUI_STORAGE_PATH
+  value: /app/data/.nicegui
 {{- end }}
 {{- end }}
 
