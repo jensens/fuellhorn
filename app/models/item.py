@@ -32,7 +32,11 @@ class Item(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     product_name: str = Field(index=True)
     best_before_date: date  # MHD for purchased items, production date for homemade
+    # Nur Monat erfasst? Gespeichert ist dann der 1.; die Deutung hängt am Artikel-Typ (Issue #347):
+    # ein monatsgenaues MHD gilt bis Monatsende, eine monatsgenaue Rechenbasis bleibt beim 1.
+    best_before_month_only: bool = Field(default=False)
     freeze_date: date | None = Field(default=None)  # Date when item was frozen
+    freeze_date_month_only: bool = Field(default=False)
     quantity: float = Field(gt=0)
     unit: str  # e.g., "kg", "L", "pieces"
     item_type: ItemType

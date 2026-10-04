@@ -21,6 +21,7 @@ from . import item_service
 from . import item_types
 from . import shelf_life_service
 from .expiry_calculator import calculate_expiry_dates
+from .expiry_calculator import effective_deadline
 from .expiry_calculator import get_expiry_status_minmax
 from .expiry_calculator import get_storage_type_for_item_type
 from .preferences_service import get_expiry_thresholds
@@ -102,10 +103,12 @@ def compute_expiry_view(
 
     storage_type = get_storage_type_for_item_type(item.item_type)
     if storage_type is None:
+        # Ein nur monatsgenaues MHD gilt bis Monatsende (Issue #347)
+        deadline = effective_deadline(item.best_before_date, item.best_before_month_only)
         status = get_expiry_status_minmax(
-            None, None, item.best_before_date, critical_days=critical_days, warning_days=warning_days, today=today
+            None, None, deadline, critical_days=critical_days, warning_days=warning_days, today=today
         )
-        return ExpiryView(status=status, display_date=item.best_before_date, label=LABEL_MHD)
+        return ExpiryView(status=status, display_date=deadline, label=LABEL_MHD)
 
     if item.category_id is None or shelf_life is None:
         return UNKNOWN_VIEW
