@@ -160,3 +160,80 @@ tests:
       - equal:
           path: spec.replicas
           value: 3
+
+  # fuellhorn migrate importiert app.config, das ohne SECRET_KEY beim Import abbricht (#370)
+  - it: should pass app secrets to the migrate init container
+    set:
+      secrets.secretKey: test-key
+      secrets.fuellhornSecret: test-secret
+      database.type: sqlite
+    asserts:
+      - equal:
+          path: spec.template.spec.initContainers[0].name
+          value: migrate
+      - contains:
+          path: spec.template.spec.initContainers[0].env
+          content:
+            name: SECRET_KEY
+            valueFrom:
+              secretKeyRef:
+                name: RELEASE-NAME-fuellhorn-secrets
+                key: secret-key
+      - contains:
+          path: spec.template.spec.initContainers[0].env
+          content:
+            name: FUELLHORN_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: RELEASE-NAME-fuellhorn-secrets
+                key: fuellhorn-secret
+
+  - it: should pass app secrets to the create-admin init container
+    set:
+      secrets.secretKey: test-key
+      secrets.fuellhornSecret: test-secret
+      database.type: sqlite
+      initContainers.adminUser.enabled: true
+      initContainers.adminUser.password: test-admin
+    asserts:
+      - equal:
+          path: spec.template.spec.initContainers[1].name
+          value: create-admin
+      - contains:
+          path: spec.template.spec.initContainers[1].env
+          content:
+            name: SECRET_KEY
+            valueFrom:
+              secretKeyRef:
+                name: RELEASE-NAME-fuellhorn-secrets
+                key: secret-key
+      - contains:
+          path: spec.template.spec.initContainers[1].env
+          content:
+            name: FUELLHORN_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: RELEASE-NAME-fuellhorn-secrets
+                key: fuellhorn-secret
+
+  - it: should use existing secret for migrate init container app secrets when configured
+    set:
+      secrets.existingSecret: my-app-secrets
+      database.type: sqlite
+    asserts:
+      - contains:
+          path: spec.template.spec.initContainers[0].env
+          content:
+            name: SECRET_KEY
+            valueFrom:
+              secretKeyRef:
+                name: my-app-secrets
+                key: secret-key
+      - contains:
+          path: spec.template.spec.initContainers[0].env
+          content:
+            name: FUELLHORN_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: my-app-secrets
+                key: fuellhorn-secret
