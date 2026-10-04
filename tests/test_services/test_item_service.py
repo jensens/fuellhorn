@@ -2,10 +2,12 @@
 
 from app.models import ItemType
 from app.models import LocationType
+from app.models import StorageType
 from app.models import User
 from app.services import category_service
 from app.services import item_service
 from app.services import location_service
+from app.services import shelf_life_service
 from datetime import date
 import pytest
 from sqlmodel import Session
@@ -26,6 +28,7 @@ def test_get_all_items(session: Session, test_admin: User) -> None:
     )
 
     assert category.id is not None
+    shelf_life_service.create_shelf_life(session, category.id, StorageType.AMBIENT, months_min=6, months_max=12)
 
     item_service.create_item(
         session=session,
@@ -70,6 +73,7 @@ def test_get_item(session: Session, test_admin: User) -> None:
     )
 
     assert category.id is not None
+    shelf_life_service.create_shelf_life(session, category.id, StorageType.AMBIENT, months_min=6, months_max=12)
 
     created = item_service.create_item(
         session=session,
@@ -184,6 +188,7 @@ def test_delete_item(session: Session, test_admin: User) -> None:
     )
 
     assert category.id is not None
+    shelf_life_service.create_shelf_life(session, category.id, StorageType.AMBIENT, months_min=6, months_max=12)
 
     created = item_service.create_item(
         session=session,

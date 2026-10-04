@@ -20,11 +20,14 @@ from sqlmodel import Session
 
 
 def test_create_item_without_category_id_succeeds(session: Session, test_admin: User) -> None:
-    """Test that create_item works without category_id (optional since Issue #151)."""
+    """Test that create_item works without category_id (optional since Issue #151).
+
+    Nur für MHD-basierte Typen; der Lagerort muss zum Typ passen (Issue #385).
+    """
     location = location_service.create_location(
         session=session,
-        name="Gefrierschrank",
-        location_type=LocationType.FROZEN,
+        name="Kühlschrank",
+        location_type=LocationType.CHILLED,
         created_by=test_admin.id,
     )
 
@@ -351,8 +354,8 @@ def test_get_item_expiry_info_frozen_no_shelf_life_config(session: Session, test
     )
 
     assert category.id is not None
-
-    # No shelf life config for this category
+    # Anlegen braucht eine passende Haltbarkeit (Issue #385); danach wird sie entfernt
+    shelf_life = shelf_life_service.create_shelf_life(session, category.id, StorageType.FROZEN, 1, 2)
 
     item = item_service.create_item(
         session=session,
@@ -366,6 +369,9 @@ def test_get_item_expiry_info_frozen_no_shelf_life_config(session: Session, test
         created_by=test_admin.id,
         category_id=category.id,
     )
+
+    assert shelf_life.id is not None
+    shelf_life_service.delete_shelf_life(session, shelf_life.id)
 
     optimal, max_date, mhd = item_service.get_item_expiry_info(session, item.id)
 
