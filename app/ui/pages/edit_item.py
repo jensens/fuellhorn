@@ -59,7 +59,9 @@ def edit_item(item_id: int) -> None:
                 "quantity": item.quantity,
                 "unit": item.unit,
                 "best_before_date": item.best_before_date,
+                "best_before_month_only": item.best_before_month_only,
                 "freeze_date": item.freeze_date,
+                "freeze_date_month_only": item.freeze_date_month_only,
                 "notes": item.notes or "",
                 "location_id": item.location_id,
                 "category_id": item.category_id,
@@ -174,6 +176,8 @@ def edit_item(item_id: int) -> None:
                     category_id=form_data.get("category_id"),
                     item_type=form_data["item_type"],
                     notes=(form_data.get("notes") or "").strip() or None,
+                    best_before_month_only=form_data["best_before_month_only"],
+                    freeze_date_month_only=form_data["freeze_date_month_only"],
                 )
             ui.notify(f"{form_data['product_name']} gespeichert!", type="positive")
             ui.navigate.to("/items")
@@ -283,13 +287,15 @@ def edit_item(item_id: int) -> None:
             date_value = form_data.get("best_before_date") or date_type.today()
             form_data["best_before_date"] = date_value
 
-            def on_best_before_change(value: date_type | None) -> None:
+            def on_best_before_change(value: date_type | None, month_only: bool) -> None:
                 form_data["best_before_date"] = value
+                form_data["best_before_month_only"] = month_only
                 update_validation()
 
             best_before_field = create_date_field(
                 label=_date_label(form_data["item_type"]),
                 value=date_value,
+                month_only=form_data["best_before_month_only"],
                 marker="edit-date-input",
                 on_change=on_best_before_change,
             )
@@ -304,13 +310,15 @@ def edit_item(item_id: int) -> None:
             if show_freeze_date:
                 form_data["freeze_date"] = freeze_date_value
 
-            def on_freeze_date_change(value: date_type | None) -> None:
+            def on_freeze_date_change(value: date_type | None, month_only: bool) -> None:
                 form_data["freeze_date"] = value
+                form_data["freeze_date_month_only"] = month_only
                 update_validation()
 
             freeze_date_field = create_date_field(
                 label="Eingefroren am *",
                 value=form_data.get("freeze_date"),
+                month_only=form_data["freeze_date_month_only"],
                 marker="edit-freeze-date-input",
                 on_change=on_freeze_date_change,
             )

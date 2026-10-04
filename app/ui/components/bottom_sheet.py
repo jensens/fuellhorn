@@ -22,6 +22,7 @@ from ...services.errors import AlreadyConsumedError
 from ...services.errors import StaleStockError
 from ...services.expiry_service import ExpiryView
 from ..theme.icons import create_icon
+from ..utils.date_utils import format_date_value
 from ..utils.quantity import format_quantity
 from .errors import show_service_error
 from .item_card import get_expiry_badge_class
@@ -143,14 +144,16 @@ def create_bottom_sheet(
 
                 # Entered dates (production / freeze date), Issue #342. The MHD of purchased
                 # items is already the expiry row above and is not repeated.
-                for date_label, entered_date in expiry_service.get_entered_dates(item):
-                    if date_label == expiry_view.label:
+                for entry in expiry_service.get_entered_dates(item):
+                    if entry.label == expiry_view.label:
                         continue
                     with ui.row().classes("sp-info-row"):
                         create_icon("status/calendar", size="20px", classes="text-stone")
                         with ui.column().classes("gap-0"):
-                            ui.label(date_label).classes("sp-info-label")
-                            ui.label(entered_date.strftime("%d.%m.%Y")).classes("sp-info-value")
+                            ui.label(entry.label).classes("sp-info-label")
+                            ui.label(format_date_value(entry.value, month_only=entry.month_only)).classes(
+                                "sp-info-value"
+                            )
 
                 # Notes (if present)
                 if item.notes:

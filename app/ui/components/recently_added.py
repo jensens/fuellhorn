@@ -17,6 +17,7 @@ from ...services import item_service
 from ...services.expiry_service import get_entered_dates
 from ..theme import Colors
 from ..theme.icons import create_icon
+from ..utils.date_utils import format_date_value
 from ..utils.date_utils import format_relative_date
 from .item_card import get_location_icon_name
 from collections.abc import Callable
@@ -77,7 +78,10 @@ def create_recently_added_row(
         # Left: Product name (truncated) + entered dates (Issue #342)
         with ui.column().classes("gap-0 flex-1 mr-3").style("min-width: 0;"):
             ui.label(item.product_name).classes("text-sm text-charcoal font-medium truncate")
-            entered = " · ".join(f"{label} {value:%d.%m.%Y}" for label, value in get_entered_dates(item))
+            entered = " · ".join(
+                f"{entry.label} {format_date_value(entry.value, month_only=entry.month_only)}"
+                for entry in get_entered_dates(item)
+            )
             if entered:
                 ui.label(entered).classes("text-xs text-stone truncate")
 

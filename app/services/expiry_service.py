@@ -59,7 +59,16 @@ LABEL_PRODUCED = item_types.LABEL_PRODUCED
 LABEL_FROZEN = item_types.LABEL_FROZEN
 
 
-def get_entered_dates(item: Item) -> list[tuple[str, date]]:
+@dataclass(frozen=True)
+class EnteredDate:
+    """Ein vom Nutzer erfasstes Datum samt Beschriftung und Genauigkeit (Issues #342, #347)."""
+
+    label: str
+    value: date
+    month_only: bool
+
+
+def get_entered_dates(item: Item) -> list[EnteredDate]:
     """Die vom Nutzer erfassten Daten eines Artikels mit typabhängiger Beschriftung (Issue #342).
 
     - PURCHASED_FRESH / PURCHASED_FROZEN: das MHD der Packung
@@ -69,14 +78,14 @@ def get_entered_dates(item: Item) -> list[tuple[str, date]]:
       Erfassungstag (siehe #387) und wird nicht gezeigt
 
     Returns:
-        Liste von (Beschriftung, Datum), fehlende Einfrierdaten werden ausgelassen.
+        Die anzuzeigenden Daten; fehlende Einfrierdaten werden ausgelassen.
     """
     spec = item_types.spec_for(item.item_type)
-    entries: list[tuple[str, date]] = []
+    entries: list[EnteredDate] = []
     if spec.best_before_label is not None:
-        entries.append((spec.best_before_label, item.best_before_date))
+        entries.append(EnteredDate(spec.best_before_label, item.best_before_date, item.best_before_month_only))
     if spec.uses_freeze_date and item.freeze_date is not None:
-        entries.append((LABEL_FROZEN, item.freeze_date))
+        entries.append(EnteredDate(LABEL_FROZEN, item.freeze_date, item.freeze_date_month_only))
     return entries
 
 

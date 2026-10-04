@@ -7,8 +7,8 @@ denselben Weg (Issue #362).
 """
 
 from ...ui.theme.icons import create_icon
-from ..utils.date_utils import format_german_date
-from ..utils.date_utils import parse_german_date
+from ..utils.date_utils import format_date_value
+from ..utils.date_utils import parse_date_input
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import date
@@ -26,9 +26,9 @@ class DateField:
     label: ui.label
     input: ui.input
 
-    def set_value(self, value: date | None) -> None:
+    def set_value(self, value: date | None, *, month_only: bool = False) -> None:
         """Setzt das Feld auf ein Datum; ``None`` leert es. Löst ``on_change`` aus."""
-        self.input.value = format_german_date(value)
+        self.input.value = format_date_value(value, month_only=month_only)
 
 
 def create_date_field(
@@ -36,23 +36,26 @@ def create_date_field(
     label: str,
     value: date | None,
     marker: str,
-    on_change: Callable[[date | None], None],
+    on_change: Callable[[date | None, bool], None],
+    month_only: bool = False,
 ) -> DateField:
-    """Beschriftung, Textfeld und Kalender-Popup für ein Datum.
+    """Beschriftung, Textfeld und Kalender-Popup für ein Datum mit optionalem Tag.
 
     Args:
         label: Beschriftung über dem Feld, inklusive Pflichtfeld-Stern.
         value: vorbelegtes Datum oder ``None``.
         marker: Test-Marker des Eingabefeldes.
-        on_change: wird bei jeder Änderung mit dem geparsten Datum gerufen;
-            unvollständige oder unmögliche Eingaben ergeben ``None``.
+        on_change: wird bei jeder Änderung mit Datum und Monatsgenauigkeit gerufen;
+            unvollständige oder unmögliche Eingaben ergeben ``(None, False)``.
+        month_only: ob das vorbelegte Datum nur monatsgenau ist.
     """
     label_element = ui.label(label).classes("text-sm font-medium mb-1 mt-4")
 
     with (
-        ui.input(value=format_german_date(value))
+        ui.input(value=format_date_value(value, month_only=month_only))
         .classes("w-full")
-        .props('outlined mask="##.##.####"')
+        # Ohne Maske, weil „03/2026“ kürzer ist als „15.03.2026“ (Issue #347)
+        .props('outlined hint="TT.MM.JJJJ oder MM/JJJJ"')
         .style("max-width: 500px")
         .mark(marker) as date_input
     ):
@@ -63,6 +66,6 @@ def create_date_field(
                     date_picker = ui.date().bind_value(date_input).props('locale="de" mask="DD.MM.YYYY"')
                     date_picker.on_value_change(lambda _: date_menu.close())
 
-    date_input.on_value_change(lambda event: on_change(parse_german_date(event.value)))
+    date_input.on_value_change(lambda event: on_change(*parse_date_input(event.value)))
 
     return DateField(label=label_element, input=date_input)

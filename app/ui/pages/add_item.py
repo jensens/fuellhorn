@@ -30,6 +30,7 @@ from ..smart_defaults import get_default_item_type
 from ..smart_defaults import get_default_location
 from ..smart_defaults import get_default_unit
 from ..theme.icons import create_icon
+from ..utils.date_utils import format_date_value
 from ..utils.quantity import format_quantity
 from ..validation import validate_step1
 from ..validation import validate_step2
@@ -60,6 +61,10 @@ def _store_last_entry(smart_defaults: dict[str, Any]) -> None:
             preferences_service.save_last_item_entry(session, user, smart_defaults)
 
 
+# Kennzeichen-Schlüssel je Datumsfeld (Issue #347)
+MONTH_ONLY_KEYS = {"best_before_date": "best_before_month_only", "freeze_date": "freeze_date_month_only"}
+
+
 @ui.page("/items/add")
 @require_auth
 def add_item() -> None:
@@ -78,7 +83,9 @@ def add_item() -> None:
         "quantity": None,
         "unit": default_unit,
         "best_before_date": date_type.today(),
+        "best_before_month_only": False,
         "freeze_date": None,
+        "freeze_date_month_only": False,
         "notes": "",
         "location_id": default_location_id,
         "category_id": default_category_id,
@@ -296,13 +303,20 @@ def add_item() -> None:
             date_value = form_data.get(date_field) or date_type.today()
             form_data[date_field] = date_value  # Ensure it's set
 
-            def on_date_change(value: date_type | None, key: str = date_field, error: str = date_error_field) -> None:
+            def on_date_change(
+                value: date_type | None,
+                month_only: bool,
+                key: str = date_field,
+                error: str = date_error_field,
+            ) -> None:
                 form_data[key] = value
+                form_data[MONTH_ONLY_KEYS[key]] = month_only
                 touched(error, update_step2_validation)
 
             create_date_field(
                 label=f"{date_label} *",
                 value=date_value,
+                month_only=form_data[MONTH_ONLY_KEYS[date_field]],
                 marker="wizard-date-input",
                 on_change=on_date_change,
             )
@@ -313,13 +327,15 @@ def add_item() -> None:
                 freeze_date_value = form_data.get("freeze_date") or date_type.today()
                 form_data["freeze_date"] = freeze_date_value
 
-                def on_freeze_date_change(value: date_type | None) -> None:
+                def on_freeze_date_change(value: date_type | None, month_only: bool) -> None:
                     form_data["freeze_date"] = value
+                    form_data["freeze_date_month_only"] = month_only
                     touched("freeze_date", update_step2_validation)
 
                 create_date_field(
                     label="Eingefroren am *",
                     value=freeze_date_value,
+                    month_only=form_data["freeze_date_month_only"],
                     marker="wizard-freeze-date-input",
                     on_change=on_freeze_date_change,
                 )
@@ -407,9 +423,13 @@ def add_item() -> None:
                 best_before_label = item_types.get_best_before_label(item_type)
                 if best_before_label is not None:
                     short = "MHD" if best_before_label == item_types.LABEL_MHD else "Hergestellt"
-                    date_parts.append(f"{short}: {form_data['best_before_date'].strftime('%d.%m.%Y')}")
+                    shown = format_date_value(
+                        form_data["best_before_date"], month_only=form_data["best_before_month_only"]
+                    )
+                    date_parts.append(f"{short}: {shown}")
                 if form_data.get("freeze_date"):
-                    date_parts.append(f"Eingefroren: {form_data['freeze_date'].strftime('%d.%m.%Y')}")
+                    frozen = format_date_value(form_data["freeze_date"], month_only=form_data["freeze_date_month_only"])
+                    date_parts.append(f"Eingefroren: {frozen}")
                 ui.label(" • ".join(date_parts)).classes("sp-summary-content")
 
             # Fetch locations filtered by item type
@@ -550,6 +570,8 @@ def add_item() -> None:
                     category_id=form_data["category_id"],
                     freeze_date=form_data.get("freeze_date"),
                     notes=form_data.get("notes"),
+                    best_before_month_only=form_data["best_before_month_only"],
+                    freeze_date_month_only=form_data["freeze_date_month_only"],
                 )
             return True
         except Exception as e:

@@ -12,6 +12,7 @@ from datetime import datetime
 WEEKDAY_NAMES = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]
 
 GERMAN_DATE_FORMAT = "%d.%m.%Y"
+MONTH_FORMAT = "%m/%Y"
 
 
 def parse_german_date(value: str | date | None) -> date | None:
@@ -43,6 +44,44 @@ def format_german_date(value: date | None) -> str:
     if value is None:
         return ""
     return value.strftime(GERMAN_DATE_FORMAT)
+
+
+def parse_date_input(value: str | date | None) -> tuple[date | None, bool]:
+    """Liest ein Datum mit optionalem Tag (Issues #346, #347).
+
+    Angenommen werden Tag, Monat und Jahr („15.03.2026“, „15/03/2026“) sowie Monat und Jahr
+    („03/2026“, „03.2026“); Punkt und Schrägstrich sind gleichwertig, führende Nullen optional.
+    Das Jahr muss vierstellig sein, weil „15.03.26“ zweideutig wäre.
+
+    Returns:
+        Datum und ob nur der Monat erfasst wurde. Unvollständige oder unmögliche Eingaben
+        ergeben ``(None, False)``, damit die Validierung sie abweisen kann.
+    """
+    if value is None:
+        return (None, False)
+    if isinstance(value, date):
+        return (value, False)
+    parts = value.strip().replace("/", ".").split(".")
+    if len(parts) not in (2, 3) or not all(part.strip().isdigit() for part in parts):
+        return (None, False)
+    numbers = [int(part) for part in parts]
+    if len(str(numbers[-1])) != 4 or len(parts[-1].strip()) != 4:
+        return (None, False)
+    try:
+        if len(numbers) == 2:
+            month, year = numbers
+            return (date(year, month, 1), True)
+        day, month, year = numbers
+        return (date(year, month, day), False)
+    except ValueError:
+        return (None, False)
+
+
+def format_date_value(value: date | None, *, month_only: bool) -> str:
+    """Zeigt ein Datum an: „15.03.2026“ tagesgenau, „03/2026“ monatsgenau, leer ohne Datum."""
+    if value is None:
+        return ""
+    return value.strftime(MONTH_FORMAT if month_only else GERMAN_DATE_FORMAT)
 
 
 def format_relative_date(dt: datetime) -> str:
