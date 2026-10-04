@@ -5,6 +5,11 @@ metadata:
   name: {{ include "fuellhorn.fullname" . }}-data
   labels:
     {{- include "fuellhorn.labels" . | nindent 4 }}
+  {{- if .Values.persistence.keep }}
+  annotations:
+    # Helm lässt die PVC (und damit die SQLite-Datenbank) bei helm uninstall stehen (#372)
+    helm.sh/resource-policy: keep
+  {{- end }}
 spec:
   accessModes:
     - {{ .Values.persistence.accessMode }}

@@ -72,6 +72,9 @@ persistence:
   storageClass: ""
   size: 1Gi
   accessMode: ReadWriteOnce
+  # PVC bei "helm uninstall" behalten (helm.sh/resource-policy: keep).
+  # false: Helm löscht die PVC und damit die SQLite-Datenbank mit dem Release.
+  keep: true
 
 resources:
   limits:

@@ -59,3 +59,22 @@ tests:
     asserts:
       - isNull:
           path: spec.storageClassName
+
+  # helm uninstall löscht sonst die PVC mit der SQLite-Datenbank (#372)
+  - it: should keep the PVC on helm uninstall by default
+    set:
+      database.type: sqlite
+      persistence.enabled: true
+    asserts:
+      - equal:
+          path: metadata.annotations["helm.sh/resource-policy"]
+          value: keep
+
+  - it: should not keep the PVC when persistence.keep is disabled
+    set:
+      database.type: sqlite
+      persistence.enabled: true
+      persistence.keep: false
+    asserts:
+      - isNull:
+          path: metadata.annotations
