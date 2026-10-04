@@ -69,3 +69,13 @@ Smart-Default-Zeitfenster. Entscheidung (Issue #401): keine Migration auf timezo
 Instanz genau einen Haushalt in einer Zeitzone bedient. Dafür muss der Prozess in der Zeitzone der Nutzer
 laufen (`TZ`, siehe docs/deployment/docker.md); Tests, die Zeit vergleichen, nutzen `freezegun` oder
 injizieren `now`.
+
+### Datenbankzugriff
+
+Engine und Sessions sind synchron (`app/database.py`, SQLModel `create_engine`/`Session`); Seiten und
+Event-Handler rufen die Services mit `with next(get_session()) as session:` auf. NiceGUI führt diese
+Aufrufe im Event-Loop aus, jede Abfrage blockiert also kurz alle Clients. Entscheidung (Issue #195): kein
+Umbau auf `AsyncEngine`/`AsyncSession` – eine Instanz bedient einen Haushalt, SQLite liegt lokal, die
+Seiten laufen seit #393 mit konstant wenigen Abfragen; der Umbau würde alle Services, Seiten und Tests
+erfassen. Wird Latenz einmal messbar (PostgreSQL über das Netz, viele gleichzeitige Nutzer), ist der
+günstige Schritt `run.io_bound(...)` um die DB-Aufrufe der betroffenen Seite, nicht die Async-Engine.
