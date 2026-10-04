@@ -123,6 +123,18 @@ class TestCLICreateAdmin:
 
         assert mock_create.call_args.kwargs["reset_existing"] is True
 
+    def test_cli_create_admin_rejects_short_password(self, session: Session, monkeypatch) -> None:
+        """Kurzes ADMIN_PASSWORD → Exit 1 mit Meldung, kein Benutzer (Issue #383)."""
+        monkeypatch.setenv("ADMIN_PASSWORD", "1")
+
+        with patch("app.database.get_session") as mock_get_session:
+            mock_get_session.return_value = iter([session])
+            from app.cli import cli_create_admin
+
+            assert cli_create_admin() == 1
+
+        assert get_user_by_username(session, "admin") is None
+
     def test_create_admin_fails_without_password(self, session: Session, monkeypatch) -> None:
         """Create-admin raises error when ADMIN_PASSWORD not set."""
         monkeypatch.delenv("ADMIN_PASSWORD", raising=False)

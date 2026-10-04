@@ -58,7 +58,7 @@ def show_login_page() -> None:
 
     async def handle_login() -> None:
         """Login-Handler mit Remember-Me Support und Rate-Limiting."""
-        username_val = username_input.value
+        username_val = (username_input.value or "").strip()
         password_val = password_input.value
         remember_me = remember_checkbox.value
 

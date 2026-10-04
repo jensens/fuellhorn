@@ -2,6 +2,7 @@
 
 from ..models.category_shelf_life import CategoryShelfLife
 from ..models.category_shelf_life import StorageType
+from ..services.validation import validate_shelf_life_months
 from sqlmodel import Session
 from sqlmodel import select
 
@@ -28,11 +29,9 @@ def create_shelf_life(
         Created CategoryShelfLife
 
     Raises:
-        ValueError: If months_min > months_max or duplicate exists
+        ValueError: If months are out of range (1-36), min > max or duplicate exists
     """
-    # Validate min <= max
-    if months_min > months_max:
-        raise ValueError("months_min must be <= months_max")
+    months_min, months_max = validate_shelf_life_months(months_min, months_max)
 
     # Check for duplicate
     existing = session.exec(
@@ -138,9 +137,7 @@ def update_shelf_life(
     new_min = months_min if months_min is not None else shelf_life.months_min
     new_max = months_max if months_max is not None else shelf_life.months_max
 
-    # Validate min <= max
-    if new_min > new_max:
-        raise ValueError("months_min must be <= months_max")
+    validate_shelf_life_months(new_min, new_max)
 
     if months_min is not None:
         shelf_life.months_min = months_min
@@ -202,9 +199,7 @@ def create_or_update_shelf_life(
     Raises:
         ValueError: If validation fails
     """
-    # Validate min <= max
-    if months_min > months_max:
-        raise ValueError("months_min must be <= months_max")
+    months_min, months_max = validate_shelf_life_months(months_min, months_max)
 
     # Check for existing
     existing = get_shelf_life(session, category_id, storage_type)

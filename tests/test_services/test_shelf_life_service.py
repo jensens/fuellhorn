@@ -59,7 +59,7 @@ class TestCreateShelfLife:
         """Test that min must be <= max."""
         from app.services import shelf_life_service
 
-        with pytest.raises(ValueError, match="months_min must be <= months_max"):
+        with pytest.raises(ValueError, match="Mindest-Haltbarkeit darf nicht größer"):
             shelf_life_service.create_shelf_life(
                 session=session,
                 category_id=test_category.id,
@@ -229,7 +229,7 @@ class TestUpdateShelfLife:
             months_max=12,
         )
 
-        with pytest.raises(ValueError, match="months_min must be <= months_max"):
+        with pytest.raises(ValueError, match="Mindest-Haltbarkeit darf nicht größer"):
             shelf_life_service.update_shelf_life(
                 session=session,
                 id=created.id,
@@ -331,7 +331,7 @@ class TestCreateOrUpdateShelfLife:
         """Test validation on create_or_update."""
         from app.services import shelf_life_service
 
-        with pytest.raises(ValueError, match="months_min must be <= months_max"):
+        with pytest.raises(ValueError, match="Mindest-Haltbarkeit darf nicht größer"):
             shelf_life_service.create_or_update_shelf_life(
                 session=session,
                 category_id=test_category.id,

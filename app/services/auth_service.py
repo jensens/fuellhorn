@@ -8,6 +8,9 @@ from ..models.user import Role
 from ..models.user import User
 from ..models.withdrawal import Withdrawal
 from ..services.errors import DuplicateNameError
+from ..services.validation import validate_email
+from ..services.validation import validate_password
+from ..services.validation import validate_username
 from datetime import datetime
 import secrets
 from sqlmodel import Session
@@ -47,8 +50,12 @@ def create_user(
         Der erstellte User
 
     Raises:
+        ServiceValidationError: ungültiger Benutzername, ungültige E-Mail oder zu kurzes Passwort (Issue #383)
         DuplicateNameError: Benutzername oder E-Mail bereits vergeben (Issue #382)
     """
+    username = validate_username(username)
+    email = validate_email(email)
+    validate_password(password)
     _ensure_unique_username(session, username)
     _ensure_unique_email(session, email)
 
@@ -279,14 +286,17 @@ def update_user(
     if deactivates:
         _ensure_another_active_admin_remains(session, user, "deaktiviert")
 
-    # Nur übergebene Werte aktualisieren
+    # Nur übergebene Werte aktualisieren (Validierung zentral, Issue #383)
     if username is not None:
+        username = validate_username(username)
         _ensure_unique_username(session, username, exclude_user_id=user_id)
         user.username = username
     if email is not None:
+        email = validate_email(email)
         _ensure_unique_email(session, email, exclude_user_id=user_id)
         user.email = email
     if password is not None:
+        validate_password(password)
         user.set_password(password)
     if role is not None:
         user.role = role.value

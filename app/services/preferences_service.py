@@ -10,8 +10,10 @@ allowing proper separation when multiple users share a device.
 from ..models.system_settings import SystemSettings
 from ..models.user import User
 from ..services.errors import ServiceValidationError
+from ..services.validation import MIN_PASSWORD_LENGTH
+from ..services.validation import validate_email
+from ..services.validation import validate_password
 from datetime import datetime
-import re
 from sqlmodel import Session
 from sqlmodel import select
 from typing import Any
@@ -27,7 +29,7 @@ HARDCODED_DEFAULTS = {
 }
 
 # Minimum password length
-MIN_PASSWORD_LENGTH = 8
+__all__ = ["MIN_PASSWORD_LENGTH"]  # historischer Import-Pfad, Quelle ist validation.py (Issue #383)
 
 
 def get_preference(
@@ -234,11 +236,9 @@ def change_user_password(
         True if password was changed, False if current password was wrong.
 
     Raises:
-        ValueError: If new password is too short.
+        ServiceValidationError: If new password is too short (zentrale Regel, Issue #383).
     """
-    # Validate new password length
-    if len(new_password) < MIN_PASSWORD_LENGTH:
-        raise ValueError(f"Neues Passwort muss mindestens {MIN_PASSWORD_LENGTH} Zeichen haben")
+    validate_password(new_password)
 
     # Verify current password
     if not user.check_password(current_password):
@@ -268,12 +268,10 @@ def change_user_email(
         True if email was changed.
 
     Raises:
-        ValueError: If email format is invalid or email already exists.
+        ServiceValidationError: If email format is invalid (zentrale Regel, Issue #383).
+        ValueError: If email already exists.
     """
-    # Validate email format
-    email_pattern = r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$"
-    if not re.match(email_pattern, new_email):
-        raise ValueError("ungültige E-Mail-Adresse")
+    new_email = validate_email(new_email)
 
     # Check if email already exists (for another user)
     statement = select(User).where(User.email == new_email, User.id != user.id)
