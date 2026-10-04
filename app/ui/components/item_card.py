@@ -386,6 +386,7 @@ def create_item_card(
             on_partial=lambda: on_partial_consume(item) if on_partial_consume else None,
             on_consume_all=lambda: on_consume_all(item) if on_consume_all else None,
             on_edit=lambda: on_edit(item) if on_edit else None,
+            card_id=f"swipe-item-{item.id}",
         )
     else:
         _create_card_content()
