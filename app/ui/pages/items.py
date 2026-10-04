@@ -17,6 +17,7 @@ from ...services import category_service
 from ...services import expiry_service
 from ...services import item_service
 from ...services import location_service
+from ...services.item_rows import get_item_rows
 from ..components import create_bottom_nav
 from ..components import create_bottom_sheet
 from ..components import create_item_card
@@ -309,8 +310,10 @@ def items_page(filter: str | None = None, location: int | None = None) -> None: 
                 # Apply category filter
                 filtered_items = _filter_items_by_categories(filtered_items, selected_categories, item_category_map)
 
-                # Expiry status for all shown items in one go (Issue #363)
-                expiry_views = expiry_service.get_expiry_views(session, filtered_items)
+                # Alles für die Karten in konstant vielen Abfragen (Issue #363, #393)
+                rows_by_id = {
+                    row.item.id: row for row in get_item_rows(session, filtered_items) if row.item.id is not None
+                }
 
                 # Apply sorting (skip when showing consumed - already sorted by withdrawal date)
                 if not filter_state["show_consumed"]:
@@ -318,7 +321,7 @@ def items_page(filter: str | None = None, location: int | None = None) -> None: 
                         filtered_items,
                         filter_state["sort_field"],
                         filter_state["sort_ascending"],
-                        display_dates={item_id: view.display_date for item_id, view in expiry_views.items()},
+                        display_dates={item_id: row.expiry_view.display_date for item_id, row in rows_by_id.items()},
                     )
 
                 if not all_items:
@@ -331,13 +334,11 @@ def items_page(filter: str | None = None, location: int | None = None) -> None: 
                     # Display filtered items as cards with consume button and swipe actions
                     for item in filtered_items:
                         create_item_card(
-                            item,
-                            session,
+                            rows_by_id[item.id],
                             on_consume=handle_consume,
                             on_partial_consume=handle_consume,  # Swipe "Teil" -> opens dialog
                             on_consume_all=handle_consume_all,  # Swipe "Alles" -> consume all
                             on_edit=lambda i=item: ui.navigate.to(f"/items/{i.id}/edit"),
-                            expiry_view=expiry_views.get(item.id),  # type: ignore[arg-type]
                         )
                 else:
                     # Filters yielded no results
@@ -423,9 +424,7 @@ def items_page(filter: str | None = None, location: int | None = None) -> None: 
             update_chip_style(cat_id)
 
         update_reset_button_visibility()
-        refresh_items()
-
-        # Update URL to remove filter parameter (Issue #244)
+        # Die Navigation baut die Seite ohnehin neu auf; ein zusätzlicher Render wäre doppelt (#393)
         ui.navigate.to("/items")
 
     def update_chip_style(cat_id: int) -> None:
@@ -459,10 +458,11 @@ def items_page(filter: str | None = None, location: int | None = None) -> None: 
         """Handle consume button click - opens bottom sheet with item details."""
         with next(get_session()) as session:
             location = location_service.get_location(session, item.location_id)
+            # Nur nach einer Änderung neu rendern; on_close feuert zusätzlich zu on_withdraw/on_consume
+            # und löste vorher einen doppelten Render aus (#393)
             sheet = create_bottom_sheet(
                 item=item,
                 location=location,
-                on_close=refresh_items,
                 on_withdraw=lambda _: refresh_items(),
                 on_edit=lambda i: ui.navigate.to(f"/items/{i.id}/edit"),
                 on_consume=lambda _: refresh_items(),
@@ -489,7 +489,7 @@ def items_page(filter: str | None = None, location: int | None = None) -> None: 
                     placeholder="Produktname...",
                     on_change=on_search_change,
                 )
-                .props("clearable dense outlined")
+                .props("clearable dense outlined debounce=300")
                 .classes("w-full")
             )
 

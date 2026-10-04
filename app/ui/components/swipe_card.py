@@ -101,21 +101,8 @@ def create_swipe_card(
         with ui.element("div").classes("swipe-card-content"):
             content()
 
-    # Register callbacks in JavaScript
-    callback_js = f"""
-        window.swipeCardCallbacks = window.swipeCardCallbacks || {{}};
-        window.swipeCardCallbacks['{unique_id}'] = function(action) {{
-            if (action === 'teil') {{
-                emitEvent('{unique_id}', 'partial');
-            }} else if (action === 'alles') {{
-                emitEvent('{unique_id}', 'consume_all');
-            }} else if (action === 'edit') {{
-                emitEvent('{unique_id}', 'edit');
-            }}
-        }};
-    """
-
-    # Initialize swipe functionality after DOM is ready
+    # Initialize swipe functionality after DOM is ready. Ein einziger run_javascript pro Karte;
+    # Aktionen kommen als 'swipeaction'-Event am Container an (Issue #393)
     init_js = f"""
         setTimeout(function() {{
             if (window.SwipeCard) {{
@@ -124,47 +111,8 @@ def create_swipe_card(
         }}, 100);
     """
 
-    ui.run_javascript(callback_js)
     ui.run_javascript(init_js)
 
-    # Set up event handlers using NiceGUI's event system
-    def handle_swipe_event(e: Any) -> None:
-        """Handle swipe events from JavaScript."""
-        action = e.args.get("action") if hasattr(e, "args") else None
-        if action == "partial" and on_partial:
-            on_partial()
-        elif action == "consume_all" and on_consume_all:
-            on_consume_all()
-        elif action == "edit" and on_edit:
-            on_edit()
-
-    # Listen for custom events from JavaScript
-    # We use a hidden element to receive events
-    event_receiver = ui.element("div").style("display: none;")
-    event_receiver._props["id"] = f"{unique_id}-receiver"
-
-    # JavaScript function to emit events to NiceGUI
-    emit_js = f"""
-        function emitEvent(cardId, action) {{
-            const event = new CustomEvent('swipe-action-' + cardId, {{
-                detail: {{ action: action }},
-                bubbles: true
-            }});
-            document.dispatchEvent(event);
-        }}
-
-        document.addEventListener('swipe-action-{unique_id}', function(e) {{
-            const action = e.detail.action;
-            // Call NiceGUI callback via fetch
-            fetch('/_nicegui/api/swipe/' + encodeURIComponent('{unique_id}') + '/' + action, {{
-                method: 'POST'
-            }}).catch(function() {{}});
-        }});
-    """
-    ui.run_javascript(emit_js)
-
-    # Alternative: Use element's on() method for events
-    # This approach uses a more direct callback mechanism
     container.on(
         "swipeaction",
         lambda e: _dispatch_action(e, on_partial, on_consume_all, on_edit),

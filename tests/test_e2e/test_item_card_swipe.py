@@ -145,3 +145,16 @@ class TestItemCardSwipe:
         expect(button).to_be_visible()
         button.click()
         expect(page.get_by_text("quick_consume")).to_be_visible(timeout=2000)
+
+    def test_swipe_produces_no_failed_requests(self, page: Page, live_server: str) -> None:
+        """Issue #393: Der alte fetch() auf /_nicegui/api/swipe/... lieferte pro Swipe einen 404."""
+        failed: list[str] = []
+        page.on("response", lambda response: failed.append(response.url) if response.status >= 400 else None)
+        page.goto(f"{live_server}/test-item-card-swipe")
+        _wait_for_swipe_ready(page)
+
+        _swipe_through(page, ".swipe-card-content", "right")
+        expect(page.get_by_text("edit", exact=True)).to_be_visible(timeout=2000)
+
+        assert failed == []
+        assert page.evaluate("typeof window.swipeCardCallbacks") == "undefined"

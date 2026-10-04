@@ -19,10 +19,7 @@ Card Structure (3-zone layout):
 from ...models.item import Item
 from ...models.item import ItemType
 from ...models.location import LocationType
-from ...services import expiry_service
-from ...services import item_service
-from ...services import location_service
-from ...services.expiry_service import ExpiryView
+from ...services.item_rows import ItemRow
 from ..theme import ITEM_TYPE_COLORS
 from ..theme import get_contrast_text_color
 from ..theme.icons import create_icon
@@ -30,7 +27,6 @@ from ..utils.quantity import format_quantity
 from .swipe_card import create_swipe_card
 from datetime import date
 from nicegui import ui
-from sqlmodel import Session
 from typing import Callable
 
 
@@ -196,14 +192,12 @@ def get_expiry_badge_text(expiry_date: date, item_type: ItemType) -> str:
 
 
 def create_item_card(
-    item: Item,
-    session: Session,
+    row: ItemRow,
     on_click: Callable[[Item], None] | None = None,
     on_consume: Callable[[Item], None] | None = None,
     on_partial_consume: Callable[[Item], None] | None = None,
     on_consume_all: Callable[[Item], None] | None = None,
     on_edit: Callable[[Item], None] | None = None,
-    expiry_view: ExpiryView | None = None,
 ) -> None:
     """Create a unified, mobile-optimized item card component.
 
@@ -214,31 +208,31 @@ def create_item_card(
     - Swipe left: Teil (partial) + Alles (consume all)
     - Swipe right: Edit
 
+    Keine Datenbankzugriffe in der Komponente (Issue #393): Listen holen die Daten
+    aller Karten mit ``item_rows.get_item_rows`` in konstant vielen Abfragen.
+
     Args:
-        item: The item to display
-        session: Database session for fetching related data
+        row: Artikel samt Lagerort, Kategorie, Anfangsmenge und Haltbarkeitsstatus
         on_click: Optional callback when card is clicked
         on_consume: Optional callback for consume button (shows button if provided)
         on_partial_consume: Optional callback for swipe partial consume action
         on_consume_all: Optional callback for swipe consume all action
         on_edit: Optional callback for swipe edit action
-        expiry_view: Precomputed expiry status (lists compute it in bulk); fetched if None
     """
-    # Get related data
-    try:
-        location = location_service.get_location(session, item.location_id)
-        location_name = location.name
-        location_color = location.color
-        location_type = location.location_type
-    except ValueError:
+    item = row.item
+    if row.location is not None:
+        location_name = row.location.name
+        location_color = row.location.color
+        location_type = row.location.location_type
+    else:
         location_name = f"Lagerort {item.location_id}"
         location_color = None
         location_type = LocationType.AMBIENT  # Default fallback
 
-    category = item_service.get_item_category(session, item.id)  # type: ignore[arg-type]
+    category = row.category
 
     # Expiry status comes exclusively from the service (Issue #363)
-    view = expiry_view or expiry_service.get_item_expiry_view(session, item)
+    view = row.expiry_view
     status_css_class = get_status_css_class(view.status)
     if view.display_date is not None:
         days_until: int | None = (view.display_date - date.today()).days
@@ -248,8 +242,8 @@ def create_item_card(
         badge_text = view.label
     badge_class = get_expiry_badge_class(view.status, days_until)
 
-    # Get initial quantity and format display
-    initial_qty = item_service.get_item_initial_quantity(session, item.id)  # type: ignore[arg-type]
+    # Initial quantity (before withdrawals) comes with the row
+    initial_qty = row.initial_quantity
     qty_display, has_withdrawals = _format_quantity_display(item.quantity, initial_qty, item.unit)
 
     # Get item type badge info

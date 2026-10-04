@@ -15,6 +15,15 @@
   // Global state: track currently open card
   let currentlyOpenCard = null;
 
+  // Klick außerhalb schließt die offene Karte: ein Listener für alle Karten (Issue #393)
+  document.addEventListener('click', (e) => {
+    if (!currentlyOpenCard) return;
+    const openCard = document.getElementById(currentlyOpenCard);
+    if (openCard && !openCard.contains(e.target) && openCard._swipeCard) {
+      openCard._swipeCard.reset();
+    }
+  });
+
   // Default options
   const DEFAULT_OPTIONS = {
     leftAction1Threshold: 0.25, // Teil position (25%)
@@ -198,10 +207,6 @@
       });
       container.dispatchEvent(event);
 
-      // Also call global callback if defined
-      if (window.swipeCardCallbacks && window.swipeCardCallbacks[cardId]) {
-        window.swipeCardCallbacks[cardId](action);
-      }
     }
 
     // Determine which action zone the card is in
@@ -218,9 +223,11 @@
       return null;
     }
 
-    // Handle drag start
+    // Handle drag start: move/up-Listener nur für die Dauer der Geste (Issue #393); vorher
+    // blieben 5 document-Listener pro Karte für immer registriert (Leak nach jedem Re-Render)
     function onDragStart(e) {
       closeOtherCards();
+      bindGestureListeners();
       state.isDragging = true;
       state.startX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
       state.currentX = state.startX;
@@ -270,6 +277,7 @@
     function onDragEnd(e) {
       if (!state.isDragging) return;
       state.isDragging = false;
+      unbindGestureListeners();
       clearDwellTimer();
 
       const thresholds = getThresholds();
@@ -323,26 +331,27 @@
       }
     }
 
-    // Bind event listeners
+    function bindGestureListeners() {
+      document.addEventListener('mousemove', onDragMove);
+      document.addEventListener('touchmove', onDragMove, { passive: true });
+      document.addEventListener('mouseup', onDragEnd);
+      document.addEventListener('touchend', onDragEnd);
+    }
+
+    function unbindGestureListeners() {
+      document.removeEventListener('mousemove', onDragMove);
+      document.removeEventListener('touchmove', onDragMove);
+      document.removeEventListener('mouseup', onDragEnd);
+      document.removeEventListener('touchend', onDragEnd);
+    }
+
+    // Bind start listeners on the card itself; move/up follow in onDragStart
     content.addEventListener('mousedown', onDragStart);
     content.addEventListener('touchstart', onDragStart, { passive: true });
-
-    document.addEventListener('mousemove', onDragMove);
-    document.addEventListener('touchmove', onDragMove, { passive: true });
-
-    document.addEventListener('mouseup', onDragEnd);
-    document.addEventListener('touchend', onDragEnd);
 
     // Marker für Tests: die Geste wird erst nach dieser Initialisierung erkannt (init läuft per
     // setTimeout nach dem Rendern; E2E-Tests warten darauf statt auf eine feste Zeit, #392)
     container.dataset.swipeReady = '1';
-
-    // Click outside to close
-    document.addEventListener('click', (e) => {
-      if (!container.contains(e.target) && currentlyOpenCard === cardId) {
-        resetCard();
-      }
-    });
 
     // Action button clicks (for accessibility / non-swipe interaction)
     container.querySelectorAll('.swipe-action-btn').forEach(btn => {
@@ -395,7 +404,5 @@
     resetAll: resetAllSwipeCards,
   };
 
-  // Initialize callback storage
-  window.swipeCardCallbacks = window.swipeCardCallbacks || {};
 
 })();

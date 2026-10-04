@@ -15,6 +15,7 @@ from ..services.validation import validate_email
 from ..services.validation import validate_password
 from datetime import datetime
 from sqlmodel import Session
+from sqlmodel import col
 from sqlmodel import select
 from typing import Any
 
@@ -336,10 +337,12 @@ def get_expiry_thresholds(session: Session) -> tuple[int, int]:
     Returns:
         Tuple of (critical_days, warning_days).
     """
-    critical_setting = get_system_setting(session, "expiry_critical_days")
-    warning_setting = get_system_setting(session, "expiry_warning_days")
-
-    critical_days = int(critical_setting.value) if critical_setting else HARDCODED_DEFAULTS["expiry_critical_days"]
-    warning_days = int(warning_setting.value) if warning_setting else HARDCODED_DEFAULTS["expiry_warning_days"]
+    # Beide Schlüssel in einer Abfrage (Issue #393: Listen rufen das pro Render auf)
+    rows = session.exec(
+        select(SystemSettings).where(col(SystemSettings.key).in_(["expiry_critical_days", "expiry_warning_days"]))
+    ).all()
+    values = {row.key: row.value for row in rows}
+    critical_days = int(values.get("expiry_critical_days", HARDCODED_DEFAULTS["expiry_critical_days"]))
+    warning_days = int(values.get("expiry_warning_days", HARDCODED_DEFAULTS["expiry_warning_days"]))
 
     return (critical_days, warning_days)
