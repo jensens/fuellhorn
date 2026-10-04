@@ -30,13 +30,12 @@ Füllhorn ist eine mobile-first Vorratsverwaltung mit vier Hauptbereichen:
 
 ### Bottom Navigation (Mobile)
 
-Sticky am unteren Bildschirmrand, immer sichtbar:
+Sticky am unteren Bildschirmrand, immer sichtbar (`app/ui/components/bottom_nav.py`, drei Einträge):
 
 ```
 ┌─────────────────────────────────┐
-│ [🏠]    [➕]    [📦]    [⋯]     │
-│ Über-   Erfas-  Vorrat   Mehr   │
-│ sicht   sen                     │
+│   [🏠]       [➕]       [📦]    │
+│  Übersicht  Erfassen   Vorrat   │
 └─────────────────────────────────┘
 ```
 
@@ -45,21 +44,23 @@ Sticky am unteren Bildschirmrand, immer sichtbar:
 | 🏠 | Übersicht | `/dashboard` | Dashboard |
 | ➕ | Erfassen | `/items/add` | Wizard starten |
 | 📦 | Vorrat | `/items` | Vorratsliste |
-| ⋯ | Mehr | - | Menü öffnet sich |
 
-**"Mehr"-Menü:**
-- Einstellungen (Admin)
-- Profil / Passwort ändern
+**Benutzermenü** (oben rechts im Dashboard, `app/ui/components/user_dropdown.py`):
+- Profil (`/profile`: Passwort, E-Mail, Smart-Default-Zeitfenster)
+- Einstellungen (nur Admin, `/admin/settings`)
 - Abmelden
 
 ### Seitenstruktur
 
 ```
+/                   - Login bzw. Weiterleitung zum Dashboard
 /login              - Anmeldeseite
 /dashboard          - Übersicht (nach Login)
-/items              - Vorratsliste
+/items              - Vorratsliste (Filter: ?location=<id>, ?filter=expiring)
 /items/add          - Artikel erfassen (Wizard)
 /items/{id}/edit    - Artikel bearbeiten
+/profile            - Profil (Passwort, E-Mail, Smart-Default-Zeitfenster)
+/admin/settings     - Einstellungen: Einstieg zu Kategorien, Lagerorten, Benutzern; System-Defaults
 /admin/categories   - Kategorien verwalten
 /admin/locations    - Lagerorte verwalten
 /admin/users        - Benutzer verwalten
@@ -88,30 +89,35 @@ Login-Seite
 ### 3.2 Artikel erfassen (3-Schritt-Wizard)
 
 ```
-Schritt 1: Grunddaten
+Schritt 1: Basisinformationen
     │
     ├── Produktname *
-    ├── Artikel-Typ * (5 Optionen)
-    ├── Menge * + Einheit *
+    ├── Artikel-Typ * (5 Optionen, Chips)
+    ├── Menge * + Einheit * (Chips)
+    ├── Notizen (optional, in jedem Schritt editierbar)
     │
     └── [Weiter →]
 
-Schritt 2: Datum
+Schritt 2: Haltbarkeit
     │
-    ├── MHD / Produktionsdatum / Einfrierdatum
-    │   (abhängig vom Artikel-Typ)
+    ├── Kategorie * (Chips, nach Artikel-Typ gefiltert und nach Gruppen sortiert)
+    ├── Datum je Typ: MHD / Hergestellt am / Eingefroren am
+    │   ("Selbst eingefroren" erfasst Herstellungs- und Einfrierdatum, siehe architektur_erklaert.md)
     ├── Notizen (optional)
     │
     └── [← Zurück] [Weiter →]
 
-Schritt 3: Lagerort & Kategorien
+Schritt 3: Lagerort & Notizen
     │
-    ├── Lagerort *
-    ├── Kategorien (optional, Multi-Select)
+    ├── Lagerort * (Chips, nur zum Typ passende Lagerorte)
+    ├── Notizen (optional)
     │
     └── [← Zurück] [💾 Speichern]
                    [💾 Speichern & Nächster]
 ```
+
+Pflichtfelder zeigen ihre Meldung unter dem Feld, sobald es berührt wurde oder Weiter/Speichern
+trotz Fehlern geklickt wird; die Buttons bleiben zusätzlich deaktiviert (Issue #396).
 
 **Smart Defaults** (letzter Eintrag pro Nutzer in `user.preferences`; Zeitfenster aus Profil > System-Default >
 Hardcoded: Typ 30, Kategorie 30, Lagerort 60 Min; Issue #397):

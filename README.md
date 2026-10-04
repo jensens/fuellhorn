@@ -79,11 +79,11 @@ uv run alembic upgrade head
 ### 6. Initialen Admin-Benutzer anlegen
 
 ```bash
-# Lokale Entwicklung (interaktiv)
-ADMIN_PASSWORD=your-secure-password uv run python create_admin.py
+# Lokale Entwicklung
+ADMIN_PASSWORD=your-secure-password uv run fuellhorn create-admin
 
-# Docker Compose
-docker compose exec app /app/.venv/bin/python create_admin.py
+# Docker Compose (das Prod-Image enthält nur das installierte Paket und sein CLI)
+docker compose exec -e ADMIN_PASSWORD=your-secure-password app fuellhorn create-admin
 ```
 
 Der Admin-Benutzer kann über Environment-Variablen konfiguriert werden:
@@ -140,14 +140,14 @@ uv run pytest
 uv run pytest --cov=app --cov-report=html
 
 # Spezifische Tests
-uv run pytest tests/test_models.py -v
+uv run pytest tests/test_services -v
 ```
 
 ### Code Quality
 
 ```bash
 # Type Checking
-uv run mypy app/
+uv run ty check app/
 
 # Linting
 uv run ruff check app/
@@ -157,7 +157,7 @@ uv run ruff check --fix app/
 uv run ruff format app/
 
 # Alles zusammen
-uv run pytest && uv run mypy app/ && uv run ruff check app/
+uv run pytest && uv run ty check app/ && uv run ruff check app/
 ```
 
 ### Datenbank Migrations
@@ -185,14 +185,14 @@ fuellhorn/
 │   ├── auth/                # Authentication & Authorization
 │   ├── models/              # SQLModel Entitäten
 │   ├── services/            # Business Logic
-│   ├── static/              # Static Files (CSS)
+│   ├── alembic/             # Database Migrations (Alembic)
+│   ├── static/              # Static Files (CSS, JS)
 │   ├── ui/                  # NiceGUI UI
 │   │   ├── components/      # Wiederverwendbare Komponenten
 │   │   ├── pages/           # UI Pages
 │   │   ├── theme/           # Theme-System
 │   │   └── validation/      # Form-Validierung
 │   └── utils/               # Helper Functions
-├── alembic/                 # Database Migrations
 ├── docs/                    # Dokumentation
 │   └── agent/               # Agent-spezifische Docs
 ├── scripts/                 # Hilfs-Skripte (dev-server.sh)
@@ -261,8 +261,8 @@ docker compose down
 # Container stoppen und Daten löschen (ACHTUNG!)
 docker compose down -v
 
-# Container neu bauen (nach Code-Änderungen)
-docker compose build
+# Neues Image holen und Container neu starten (docker-compose.yml nutzt das veröffentlichte Image)
+docker compose pull
 docker compose up -d
 ```
 
@@ -271,8 +271,10 @@ docker compose up -d
 Für einfache Setups oder Tests kann Füllhorn auch standalone mit SQLite laufen.
 
 ```bash
-# Image bauen
+# Image bauen: installiert das veröffentlichte Paket von PyPI (neueste Version) …
 docker build -t fuellhorn .
+# … oder eine bestimmte Version
+docker build --build-arg FUELLHORN_VERSION=1.0.0a9 -t fuellhorn .
 
 # Container starten
 docker run -d \

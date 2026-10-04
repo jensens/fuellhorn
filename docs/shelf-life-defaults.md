@@ -153,14 +153,22 @@ Diese Werte sind für zukünftige Erweiterungen vorgesehen.
 
 ---
 
-## Verwendung im Seed-Script
+## Verwendung
 
-Die Daten in dieser Dokumentation werden durch das Seed-Script `scripts/seed_shelf_life_defaults.py` in die Datenbank eingepflegt. Das Script erstellt:
+Quelle der Daten ist `app/seed.py`. In Produktion werden sie über das CLI eingepflegt (idempotent,
+wendet vorher die Alembic-Migrationen an):
+
+```bash
+fuellhorn seed shelf-life-defaults
+```
+
+Für die lokale Entwicklung ohne installiertes Paket tut das Script `scripts/seed_shelf_life_defaults.py`
+dasselbe. Angelegt werden:
 
 1. **Kategorien** (falls nicht vorhanden)
 2. **Haltbarkeiten pro Kategorie und Lagertyp** mit Quellenangaben
 
-Ausführung:
+Ausführung lokal:
 ```bash
 uv run python scripts/seed_shelf_life_defaults.py
 ```

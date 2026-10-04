@@ -39,7 +39,7 @@ docker compose -f docker-compose.local.yml up
 Diese Variante:
 - Baut das Image aus dem lokalen Quellcode (Dockerfile.dev)
 - Mountet das `app/`-Verzeichnis für Code-Änderungen ohne Rebuild
-- Verwendet sichere Development-Defaults
+- Verwendet feste Development-Defaults (unsichere Dev-Secrets; nur lokal verwenden)
 
 Rebuild nach Dependency-Änderungen:
 ```bash
@@ -151,7 +151,9 @@ docker compose up -d
 
 ### Migrations-Fehler
 
-Die Alembic-Migrationen werden beim Container-Start automatisch ausgeführt.
+Die Alembic-Migrationen werden beim Container-Start automatisch ausgeführt (Prod-Image über das
+`fuellhorn`-CLI, Dev-Image über `main.py`). `FUELLHORN_SKIP_MIGRATIONS=true` schaltet das ab,
+z.B. wenn der Helm-Hook-Job migriert.
 Bei Problemen die Container-Logs prüfen:
 
 ```bash

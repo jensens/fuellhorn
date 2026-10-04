@@ -4,7 +4,7 @@ Self-hosted food inventory management for Kubernetes.
 
 ## Prerequisites
 
-- Kubernetes 1.19+
+- Kubernetes 1.21+ (PodDisruptionBudget `policy/v1`)
 - Helm 3.2+
 - PV provisioner support (for SQLite persistence)
 
@@ -19,8 +19,8 @@ The chart is published to GitHub Container Registry:
 helm install fuellhorn oci://ghcr.io/jensens/fuellhorn \
   --set secrets.fuellhornSecret="your-fuellhorn-secret-min-32-chars"
 
-# Install specific version
-helm install fuellhorn oci://ghcr.io/jensens/fuellhorn --version 0.2.0
+# Install specific version (chart versions follow the release tags: v1.0.0a9 -> 1.0.0-alpha.9)
+helm install fuellhorn oci://ghcr.io/jensens/fuellhorn --version 1.0.0-alpha.9
 
 # With custom values file
 helm install fuellhorn oci://ghcr.io/jensens/fuellhorn -f my-values.yaml
@@ -45,7 +45,7 @@ spec:
   source:
     chart: fuellhorn
     repoURL: ghcr.io/jensens
-    targetRevision: 0.2.0
+    targetRevision: 1.0.0-alpha.9
     helm:
       values: |
         secrets:
