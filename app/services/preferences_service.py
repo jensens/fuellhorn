@@ -9,6 +9,7 @@ allowing proper separation when multiple users share a device.
 
 from ..models.system_settings import SystemSettings
 from ..models.user import User
+from ..services.errors import ServiceValidationError
 from datetime import datetime
 import re
 from sqlmodel import Session
@@ -144,6 +145,57 @@ def set_system_setting(
     session.commit()
     session.refresh(new_setting)
     return new_setting
+
+
+INTEGER_SETTINGS = {
+    "item_type_time_window": "Artikel-Typ Zeitfenster",
+    "category_time_window": "Kategorie Zeitfenster",
+    "location_time_window": "Lagerort Zeitfenster",
+    "expiry_critical_days": "Kritisch-Schwelle",
+    "expiry_warning_days": "Warnung-Schwelle",
+}
+
+
+def set_system_settings(session: Session, values: dict[str, str], updated_by_id: int) -> None:
+    """Setzt mehrere System-Einstellungen validiert und in einer Transaktion (Issue #382).
+
+    Vorher committete die Einstellungsseite jeden Wert einzeln; ein Fehler nach dem
+    ersten Commit hinterließ einen halb gespeicherten Zustand ohne Rückmeldung.
+
+    Raises:
+        ServiceValidationError: nicht-numerischer Wert oder Kritisch-Schwelle >= Warnung-Schwelle
+    """
+    parsed: dict[str, int] = {}
+    for key, raw in values.items():
+        if key in INTEGER_SETTINGS:
+            try:
+                parsed[key] = int(raw)
+            except (TypeError, ValueError) as exc:
+                raise ServiceValidationError(f"{INTEGER_SETTINGS[key]} muss eine ganze Zahl sein.") from exc
+            if parsed[key] < 0:
+                raise ServiceValidationError(f"{INTEGER_SETTINGS[key]} darf nicht negativ sein.")
+
+    critical = parsed.get("expiry_critical_days")
+    warning = parsed.get("expiry_warning_days")
+    if critical is None and warning is not None and (stored := get_system_setting(session, "expiry_critical_days")):
+        critical = int(stored.value)
+    if warning is None and critical is not None and (stored := get_system_setting(session, "expiry_warning_days")):
+        warning = int(stored.value)
+    if critical is not None and warning is not None and critical >= warning:
+        raise ServiceValidationError(
+            f"Kritisch-Schwelle ({critical} Tage) muss kleiner als die Warnung-Schwelle ({warning} Tage) sein."
+        )
+
+    for key, value in values.items():
+        existing = get_system_setting(session, key)
+        if existing:
+            existing.value = value
+            existing.updated_at = datetime.now()
+            existing.updated_by = updated_by_id
+            session.add(existing)
+        else:
+            session.add(SystemSettings(key=key, value=value, updated_by=updated_by_id))
+    session.commit()
 
 
 def get_all_user_preferences(session: Session, user: User) -> dict[str, Any]:

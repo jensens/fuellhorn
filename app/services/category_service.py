@@ -5,6 +5,7 @@ from ..models.category_shelf_life import CategoryShelfLife
 from ..models.category_shelf_life import StorageType
 from ..models.item import Item
 from ..models.item import ItemType
+from ..services.errors import DuplicateNameError
 from ..services.expiry_calculator import get_storage_type_for_item_type
 from collections import defaultdict
 from sqlmodel import Session
@@ -39,7 +40,7 @@ def create_category(
     ).first()
 
     if existing:
-        raise ValueError(f"Category with name '{existing.name}' already exists")
+        raise DuplicateNameError("name", existing.name, "Kategorie")
 
     # Get next sort_order (max + 1)
     max_order = session.exec(select(func.max(Category.sort_order))).one()
@@ -123,7 +124,7 @@ def update_category(
         ).first()
 
         if existing:
-            raise ValueError(f"Category with name '{existing.name}' already exists")
+            raise DuplicateNameError("name", existing.name, "Kategorie")
 
         category.name = name
 

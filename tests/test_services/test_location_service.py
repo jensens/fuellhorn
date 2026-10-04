@@ -51,7 +51,7 @@ def test_create_location_duplicate_name_fails(session: Session, test_admin: User
         created_by=test_admin.id,
     )
 
-    with pytest.raises(ValueError, match="Location with name 'Vorratsraum' already exists"):
+    with pytest.raises(ValueError, match="Lagerort 'Vorratsraum' ist bereits vorhanden"):
         location_service.create_location(
             session=session,
             name="vorratsraum",  # Case-insensitive check
@@ -137,7 +137,7 @@ def test_update_location_duplicate_name_fails(session: Session, test_admin: User
         created_by=test_admin.id,
     )
 
-    with pytest.raises(ValueError, match="Location with name 'Gefrierschrank' already exists"):
+    with pytest.raises(ValueError, match="Lagerort 'Gefrierschrank' ist bereits vorhanden"):
         location_service.update_location(
             session=session,
             id=second.id,
