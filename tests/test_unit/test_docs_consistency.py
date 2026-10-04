@@ -6,11 +6,13 @@ import re
 
 
 REPO = Path(__file__).resolve().parents[2]
+RELEASE_DOC = REPO / "RELEASE.md"
 DOC_FILES = sorted(
-    [REPO / "README.md", REPO / "CLAUDE.md", REPO / "charts" / "fuellhorn" / "README.md"]
+    [REPO / "README.md", REPO / "CLAUDE.md", RELEASE_DOC, REPO / "charts" / "fuellhorn" / "README.md"]
     + list((REPO / "docs").rglob("*.md"))
 )
 NOTES = REPO / "charts" / "fuellhorn" / "templates" / "NOTES.txt"
+RELEASE_WORKFLOW = REPO / ".github" / "workflows" / "release.yaml"
 
 # Repo-relative Pfade mit Dateiendung; URLs und ../-Links sind durch das vorangehende Zeichen ausgeschlossen
 PATH_TOKEN = re.compile(
@@ -100,3 +102,55 @@ def test_chart_has_no_unreferenced_configmap() -> None:
     )
 
     assert referenced or not (templates / "configmap.yaml").exists()
+
+
+# --- Release-Dokumentation (Issue #454) -----------------------------------------------------
+
+# Das Bash-Muster, mit dem helm-publish unzulässige Tags abweist
+WORKFLOW_TAG_PATTERN = re.compile(r"=~\s*(\S+)\s*\]\]")
+# Tags, die RELEASE.md in Befehlen vorschlägt
+TAG_IN_COMMAND = re.compile(r"(?:gh release create|git tag(?:\s+-\S+)*)\s+v(\S+)")
+# Veröffentlichungsziel im Workflow -> Begriff, der in RELEASE.md stehen muss
+PUBLISH_TARGETS = {
+    "test.pypi.org": "test.pypi.org",
+    "pypa/gh-action-pypi-publish": "pypi",
+    "ghcr.io": "ghcr.io",
+    "helm push": "helm",
+}
+
+
+def _allowed_tag_pattern() -> re.Pattern[str]:
+    """Holt das Versions-Muster aus dem Release-Workflow, damit die Doku nicht davon abdriftet."""
+    match = WORKFLOW_TAG_PATTERN.search(RELEASE_WORKFLOW.read_text(encoding="utf-8"))
+    assert match is not None, "Versions-Prüfung in release.yaml nicht gefunden"
+    pattern = re.compile(match.group(1))
+    # Selbstprüfung: das extrahierte Muster trennt erlaubte von unzulässigen Versionen
+    assert pattern.fullmatch("1.0.0a9") and pattern.fullmatch("1.2.3")
+    assert not pattern.fullmatch("1.0.0.dev1") and not pattern.fullmatch("1.0")
+    return pattern
+
+
+def test_release_doc_exists() -> None:
+    assert RELEASE_DOC.is_file(), "RELEASE.md fehlt; der Release-Prozess steht sonst nur im Workflow"
+
+
+def test_release_doc_tag_examples_match_the_workflow_pattern() -> None:
+    """Ein Tag aus der Anleitung muss das Muster erfüllen, das release.yaml erzwingt."""
+    pattern = _allowed_tag_pattern()
+    tags = TAG_IN_COMMAND.findall(_code_segments(RELEASE_DOC.read_text(encoding="utf-8")))
+
+    assert tags, "RELEASE.md nennt keinen Tag in einem Befehl"
+    assert [tag for tag in tags if not pattern.fullmatch(tag)] == []
+
+
+def test_release_doc_names_every_publish_target() -> None:
+    """Kommt ein Ziel im Workflow vor, muss die Anleitung es nennen."""
+    workflow = RELEASE_WORKFLOW.read_text(encoding="utf-8")
+    doc = RELEASE_DOC.read_text(encoding="utf-8").lower()
+    missing = sorted(term for marker, term in PUBLISH_TARGETS.items() if marker in workflow and term not in doc)
+
+    assert missing == []
+
+
+def test_readme_points_to_the_release_doc() -> None:
+    assert "RELEASE.md" in (REPO / "README.md").read_text(encoding="utf-8")

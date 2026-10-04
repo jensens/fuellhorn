@@ -353,6 +353,15 @@ Daten-Volume, sonst meldet jeder Neustart alle Benutzer ab); im Browser liegt nu
 
 ---
 
+## Release
+
+Veröffentlicht wird über GitHub Actions: Ein veröffentlichtes GitHub-Release mit Tag `vX.Y.Z` (bzw.
+`vX.Y.ZaN` für Vorabversionen) baut das Paket, lädt es zu PyPI, baut die Container-Images für amd64 und
+arm64 mit Smoke-Test und schiebt das Helm-Chart nach ghcr.io. Ein Push auf `main` veröffentlicht nur auf
+Test-PyPI.
+
+Ablauf, Tag-Regeln und Nacharbeiten: [RELEASE.md](RELEASE.md)
+
 ## Development Guidelines
 
 Bitte lies vor der Entwicklung:
