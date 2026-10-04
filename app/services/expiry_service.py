@@ -206,6 +206,61 @@ def get_expiry_views(
     }
 
 
+MISSING_DATE = "Datum"
+MISSING_FREEZE_DATE = "Einfrierdatum"
+MISSING_CATEGORY = "Kategorie"
+MISSING_SHELF_LIFE = "Haltbarkeit für die Kategorie"
+
+
+@dataclass(frozen=True)
+class IncompleteItem:
+    """Ein Artikel, dem noch Angaben fehlen, samt Benennung der Lücken (Issue #463)."""
+
+    item: Item
+    missing: list[str]
+
+
+def _missing_data(item: Item, index: ShelfLifeIndex, parents: ParentIndex) -> list[str]:
+    """Was zum Nachpflegen fehlt; leer heißt vollständig (Issue #463).
+
+    Maßstab ist, was der Wizard verlangt hätte: das Datum des Typs, bei eingefrorenen
+    Typen das Einfrierdatum, eine Kategorie und für Typen mit Haltbarkeitsrechnung eine
+    Kategorie, die für diese Lagerart eine Haltbarkeit hat.
+    """
+    spec = item_types.spec_for(item.item_type)
+    missing: list[str] = []
+    if spec.best_before_label is not None and item.best_before_date is None:
+        missing.append(MISSING_DATE)
+    if spec.uses_freeze_date and item.freeze_date is None:
+        missing.append(MISSING_FREEZE_DATE)
+    if item.category_id is None:
+        missing.append(MISSING_CATEGORY)
+    elif spec.filter_storage_type is not None:
+        own = index.get((item.category_id, spec.filter_storage_type))
+        parent_id = parents.get(item.category_id)
+        inherited = index.get((parent_id, spec.filter_storage_type)) if parent_id is not None else None
+        if own is None and inherited is None:
+            missing.append(MISSING_SHELF_LIFE)
+    return missing
+
+
+def get_items_needing_completion(session: Session) -> list[IncompleteItem]:
+    """Aktive Artikel mit Lücken, zuletzt erfasste zuerst (Issue #463).
+
+    Lädt Haltbarkeiten und Eltern-Kategorien einmal; die Abfragezahl hängt nicht an der
+    Anzahl der Artikel (vgl. Issue #393).
+    """
+    index = _load_shelf_life_index(session)
+    parents = _load_parent_index(session)
+    entries = [
+        IncompleteItem(item=item, missing=missing)
+        for item in item_service.get_active_items(session)
+        if (missing := _missing_data(item, index, parents))
+    ]
+    entries.sort(key=lambda entry: entry.item.created_at, reverse=True)
+    return entries
+
+
 def get_items_expiring_soon(session: Session, today: date | None = None) -> list[Item]:
     """Aktive Artikel mit Status warning oder critical, nach Anzeigedatum sortiert.
 

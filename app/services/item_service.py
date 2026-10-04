@@ -215,6 +215,51 @@ def create_item(
     return item
 
 
+def quick_create_item(
+    session: Session,
+    *,
+    product_name: str,
+    quantity: float,
+    unit: str,
+    item_type: ItemType,
+    location_id: int,
+    created_by: int,
+) -> Item:
+    """Schnellerfassung im Ortskontext: nur das Nötige erfassen (Issue #463).
+
+    Für die Erfassung vor Ort, wo es kalt ist: Name, Menge, Einheit, Typ und Ort. Datum,
+    Kategorie und Einfrierdatum bleiben leer und werden später nachgepflegt; bis dahin hat
+    der Artikel keinen Haltbarkeitsstatus. Zusammenhänge prüft der Service trotzdem, etwa
+    dass der Lagerort zum Typ passt.
+    """
+    cleaned_name = validate_item_data(
+        session,
+        product_name=product_name,
+        quantity=quantity,
+        unit=unit,
+        item_type=item_type,
+        location_id=location_id,
+        category_id=None,
+        best_before_date=None,
+        freeze_date=None,
+        require_complete=False,
+    )
+
+    item = Item(
+        product_name=cleaned_name,
+        quantity=quantity,
+        unit=unit,
+        item_type=item_type,
+        location_id=location_id,
+        created_by=created_by,
+    )
+    session.add(item)
+    session.commit()
+    session.refresh(item)
+
+    return item
+
+
 def get_all_items(session: Session) -> list[Item]:
     """Get all items.
 
