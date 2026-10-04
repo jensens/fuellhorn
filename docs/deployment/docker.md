@@ -196,9 +196,9 @@ ADMIN_PASSWORD=neues-passwort fuellhorn create-admin --reset-password
 
 # Standard-Kategorien mit Haltbarkeiten importieren (idempotent, legt nur
 # Fehlendes an und überschreibt keine angepassten Werte).
-# Nach dem Update auf die Kategorie-Hierarchie einmal ausführen: Die Migration
-# ordnet nur bestehende Kategorien zu, neue Gruppen (z.B. Gekochtes,
-# Fruchtaufstriche) und Kategorien legt erst dieser Seed an.
+# Nach Updates, die Standard-Kategorien ändern, einmal ausführen: Migrationen
+# benennen nur um und ordnen bestehende Kategorien zu, neue Gruppen und
+# Kategorien (z.B. Obst & Gemüse, Vorrat, Milch, Sahne) legt erst dieser Seed an.
 fuellhorn seed shelf-life-defaults
 ```
 

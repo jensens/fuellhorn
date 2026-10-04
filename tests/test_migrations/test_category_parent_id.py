@@ -155,10 +155,10 @@ def _insert_legacy_data(engine: sa.Engine, *, with_marmelade: bool = True) -> No
         )
 
 
-def _upgrade_with_legacy_data(cfg: AlembicConfig, engine: sa.Engine, **kwargs: bool) -> None:
+def _upgrade_with_legacy_data(cfg: AlembicConfig, engine: sa.Engine, target: str = "head", **kwargs: bool) -> None:
     command.upgrade(cfg, INITIAL_REVISION)
     _insert_legacy_data(engine, **kwargs)
-    command.upgrade(cfg, "head")
+    command.upgrade(cfg, target)
 
 
 def test_upgrade_keeps_shelf_lives_readable_by_orm(migration_db: tuple[AlembicConfig, sa.Engine]) -> None:
@@ -178,7 +178,8 @@ def test_upgrade_assigns_existing_children_to_existing_parents(
 ) -> None:
     """Hackfleisch hängt nach der Migration unter Fleisch, Gemüse bleibt eigenständig."""
     cfg, engine = migration_db
-    _upgrade_with_legacy_data(cfg, engine)
+    # nur bis zu dieser Revision: #456 benennt Fleisch später um
+    _upgrade_with_legacy_data(cfg, engine, PARENT_ID_REVISION)
 
     with Session(engine) as session:
         by_name = {c.name: c for c in session.exec(select(Category)).all()}

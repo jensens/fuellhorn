@@ -203,6 +203,22 @@ Gruppe im selben Lauf neu anlegt (Datenbanken aus der Zeit vor der Kategorie-Hie
 Korrekturen an bestehenden Standardwerten laufen über Alembic-Migrationen, die nur Werte im
 unveränderten Originalzustand anfassen.
 
+### Neugruppierung bestehender Datenbanken (#456)
+
+Die Migration `e5f1a9c3d2b8` überführt bestehende Datenbanken in die neue Gruppierung und
+verändert dabei keine Nutzerdaten:
+
+- Geändert wird nur, was noch exakt dem früheren Standard entspricht (Name, Gruppe, Farbe,
+  Haltbarkeit). Vom Nutzer Verändertes bleibt.
+- Kein Artikel wechselt die Kategorie. Ersetzte Kategorien (Obstmus, Aufschnitt,
+  Milchprodukte (frisch)) werden nur gelöscht, wenn sie leer sind; belegte bleiben stehen
+  und werden von Hand aufgeräumt.
+- Kein Ablaufdatum ändert sich: Würde eine belegte Kategorie nach dem Umhängen eine andere
+  Haltbarkeit von ihrer Gruppe erben, bleibt sie, wo sie ist.
+
+Danach einmal `fuellhorn seed shelf-life-defaults` ausführen: legt die neuen Gruppen und
+Kategorien an.
+
 Ausführung lokal:
 ```bash
 uv run python scripts/seed_shelf_life_defaults.py
