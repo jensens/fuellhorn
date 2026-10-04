@@ -2,6 +2,7 @@
 
 from app.models import LoginAttempt
 from datetime import datetime
+from datetime import timedelta
 from nicegui.testing import User as TestUser
 from sqlmodel import Session
 from sqlmodel import select
@@ -98,3 +99,46 @@ async def test_login_trims_surrounding_whitespace_in_username(user: TestUser) ->
     """Issue #383: ' admin ' (z.B. Autovervollständigung am Handy) meldet admin trotzdem an."""
     await _submit_login(user, "  admin  ", "password123")
     await user.should_see("Willkommen admin")
+
+
+# =============================================================================
+# Issue #388: Fehl-Login zählt, erfolgreicher Login setzt den Zähler zurück
+# =============================================================================
+
+
+async def test_wrong_password_shows_message_and_counts_one_failure(user: TestUser, isolated_test_database) -> None:
+    await _submit_login(user, "admin", "falsches-passwort")
+    await user.should_see("Username oder Passwort falsch")
+
+    with Session(isolated_test_database) as session:
+        (attempt,) = session.exec(select(LoginAttempt)).all()
+    assert (attempt.ip_address, attempt.fail_count) == ("127.0.0.1", 1)
+
+
+async def test_successful_login_resets_failure_counter(user: TestUser, isolated_test_database) -> None:
+    """Zwei Fehlversuche (Wartezeit 1 s, abgelaufen) → erfolgreicher Login setzt fail_count auf 0."""
+    with Session(isolated_test_database) as session:
+        session.add(
+            LoginAttempt(ip_address="127.0.0.1", fail_count=2, last_attempt=datetime.now() - timedelta(seconds=5))
+        )
+        session.commit()
+
+    await _submit_login(user, "admin", "password123")
+    await user.should_see("Willkommen admin")
+
+    with Session(isolated_test_database) as session:
+        (attempt,) = session.exec(select(LoginAttempt)).all()
+    assert attempt.fail_count == 0
+
+
+async def test_blocked_login_names_remaining_wait_time(user: TestUser, isolated_test_database) -> None:
+    """Drei Fehlversuche vor 1 Sekunde → noch 1 Sekunde Wartezeit, der Login wird gar nicht versucht."""
+    with Session(isolated_test_database) as session:
+        session.add(
+            LoginAttempt(ip_address="127.0.0.1", fail_count=3, last_attempt=datetime.now() - timedelta(seconds=1))
+        )
+        session.commit()
+
+    await _submit_login(user, "admin", "password123")
+    await user.should_see("Zu viele Fehlversuche. Bitte 1 Sekunden warten.")
+    await user.should_not_see("Willkommen admin")
