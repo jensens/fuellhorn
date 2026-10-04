@@ -164,6 +164,7 @@ helm install fuellhorn oci://ghcr.io/jensens/fuellhorn \
 | `persistence.storageClass` | Storage class | `""` |
 | `persistence.size` | PVC size | `1Gi` |
 | `persistence.accessMode` | PVC access mode | `ReadWriteOnce` |
+| `persistence.keep` | Keep the PVC on `helm uninstall` (`helm.sh/resource-policy: keep`) | `true` |
 
 ### Resources
 
@@ -273,11 +274,15 @@ helm upgrade fuellhorn ./charts/fuellhorn -f my-values.yaml
 helm uninstall fuellhorn
 ```
 
-**Note:** PVCs are not automatically deleted. To remove data:
+With the default `persistence.keep: true` the SQLite PVC carries `helm.sh/resource-policy: keep`, so `helm uninstall` leaves it (and your data) in place. A later `helm install` with the same release name picks the PVC up again.
+
+To remove the data deliberately after uninstalling:
 
 ```bash
-kubectl delete pvc fuellhorn-data
+kubectl delete pvc fuellhorn-fuellhorn-data
 ```
+
+(The PVC is named `<release>-fuellhorn-data`.) With `persistence.keep: false` Helm deletes the PVC together with the release, which destroys the SQLite database.
 
 ## Troubleshooting
 
