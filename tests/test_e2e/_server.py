@@ -47,13 +47,14 @@ def main() -> None:
     from app.database import get_session
 
     # WICHTIG: Alle Models importieren damit create_db_and_tables() alle Tabellen erstellt
-    from app.models import Category
+    from app.models import Category  # noqa: F401 - needed for table creation
     from app.models import Item  # noqa: F401 - needed for table creation
     from app.models import Location
     from app.models import LoginAttempt  # noqa: F401 - needed for table creation
     from app.models import User
     from app.models import Withdrawal  # noqa: F401 - needed for table creation
     from app.models.location import LocationType
+    from app.seed import seed_shelf_life_defaults
     import app.ui.pages as _pages  # noqa: F401
     import app.ui.test_pages as _test_pages  # noqa: F401  # Test pages für E2E tests
     from nicegui import app
@@ -83,13 +84,10 @@ def main() -> None:
         session.commit()
         session.refresh(admin)
 
-        # Kategorien für Wizard-Tests erstellen
-        categories = [
-            Category(name="Gemüse", color="#4CAF50", created_by=admin.id),
-            Category(name="Obst", color="#FF9800", created_by=admin.id),
-            Category(name="Fleisch", color="#F44336", created_by=admin.id),
-        ]
-        session.add_all(categories)
+        # Kategorien samt Haltbarkeiten und Hierarchie aus dem echten Seed (app/seed.py):
+        # Der Wizard filtert Kategorien nach Lagerart, deshalb reichen flache Kategorien
+        # ohne CategoryShelfLife nicht (Gemüse, Hackfleisch, Marmelade werden geklickt).
+        seed_shelf_life_defaults(session)
 
         # Lagerorte für Wizard-Tests erstellen (alle LocationTypes abdecken)
         locations = [
