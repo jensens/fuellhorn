@@ -14,6 +14,7 @@ from app.models.location import Location
 from app.models.location import LocationType
 from app.models.user import Role
 from app.models.user import User
+from app.services import item_service
 from app.services.auth_service import create_user
 from app.services.auth_service import get_user_by_username
 from datetime import date
@@ -135,15 +136,18 @@ CATEGORIES: list[tuple[str, str | None, str | None, list[tuple[StorageType, int,
 # Nur für die Entwicklung; Doku und Skripte nennen genau diesen Wert (#468).
 TESTDATA_ADMIN_PASSWORD = "admin123"
 
-TEST_CATEGORIES = [
-    ("Gemüse", "#4CAF50", 12),
-    ("Obst", "#FF9800", 12),
-    ("Fleisch", "#F44336", 6),
-    ("Fisch", "#2196F3", 3),
-    ("Milchprodukte", "#9C27B0", 3),
-    ("Fertiggerichte", "#795548", 6),
-    ("Backwaren", "#FFEB3B", 3),
-    ("Suppen & Eintöpfe", "#FF5722", 4),
+# (Name, Farbe, Haltbarkeiten als (Lagerart, Monate von, Monate bis)). Die Beispielartikel
+# entstehen über den Dienst und brauchen bei berechneter Haltbarkeit eine passende
+# Kategorie (#385); ohne sie zeigten sie "Keine Haltbarkeitsdaten" (#468).
+TEST_CATEGORIES: list[tuple[str, str, tuple[tuple[StorageType, int, int], ...]]] = [
+    ("Gemüse", "#4CAF50", ((StorageType.FROZEN, 8, 12),)),
+    ("Obst", "#FF9800", ((StorageType.FROZEN, 8, 12), (StorageType.AMBIENT, 12, 24))),
+    ("Fleisch", "#F44336", ((StorageType.FROZEN, 3, 6),)),
+    ("Fisch", "#2196F3", ((StorageType.FROZEN, 2, 3),)),
+    ("Milchprodukte", "#9C27B0", ((StorageType.FROZEN, 2, 3),)),
+    ("Fertiggerichte", "#795548", ((StorageType.FROZEN, 3, 6),)),
+    ("Backwaren", "#FFEB3B", ((StorageType.FROZEN, 1, 3),)),
+    ("Suppen & Eintöpfe", "#FF5722", ((StorageType.FROZEN, 3, 4),)),
 ]
 
 TEST_LOCATIONS = [
@@ -335,22 +339,31 @@ def seed_testdata(session: Session) -> dict[str, int]:
 
     # Categories
     category_ids: dict[str, int] = {}
-    for name, color, freeze_months in TEST_CATEGORIES:
+    for name, color, shelf_lives in TEST_CATEGORIES:
         existing = session.exec(select(Category).where(Category.name == name)).first()
         if existing:
             category_ids[name] = existing.id  # type: ignore[assignment]
-            continue
+        else:
+            cat = Category(
+                name=name,
+                color=color,
+                created_by=admin_id,
+            )
+            session.add(cat)
+            session.flush()
+            category_ids[name] = cat.id  # type: ignore[assignment]
+            result["categories"] += 1
 
-        cat = Category(
-            name=name,
-            color=color,
-            freeze_time_months=freeze_months,
-            created_by=admin_id,
-        )
-        session.add(cat)
-        session.flush()
-        category_ids[name] = cat.id  # type: ignore[assignment]
-        result["categories"] += 1
+        # Nur fehlende Haltbarkeiten ergänzen; angepasste bleiben (#460)
+        for storage_type, months_min, months_max in shelf_lives:
+            create_shelf_life_if_missing(
+                session,
+                category_id=category_ids[name],
+                storage_type=storage_type,
+                months_min=months_min,
+                months_max=months_max,
+                source_url="",
+            )
 
     session.commit()
 
@@ -390,7 +403,6 @@ def seed_testdata(session: Session) -> dict[str, int]:
             "location": "Kühlschrank",
             "category": "Milchprodukte",
             "best_before": today + timedelta(days=2),
-            "expiry": today + timedelta(days=2),
         },
         {
             "product_name": "Joghurt",
@@ -400,7 +412,6 @@ def seed_testdata(session: Session) -> dict[str, int]:
             "location": "Kühlschrank",
             "category": "Milchprodukte",
             "best_before": today + timedelta(days=1),
-            "expiry": today + timedelta(days=1),
         },
         {
             "product_name": "Hackfleisch (TK)",
@@ -411,7 +422,6 @@ def seed_testdata(session: Session) -> dict[str, int]:
             "category": "Fleisch",
             "best_before": today - timedelta(days=30),
             "freeze_date": today - timedelta(days=30),
-            "expiry": today + timedelta(days=5),
         },
         {
             "product_name": "Erbsen (TK)",
@@ -421,7 +431,6 @@ def seed_testdata(session: Session) -> dict[str, int]:
             "location": "Gefrierfach",
             "category": "Gemüse",
             "best_before": today + timedelta(days=180),
-            "expiry": today + timedelta(days=180),
         },
         {
             "product_name": "Tomatensuppe",
@@ -432,7 +441,6 @@ def seed_testdata(session: Session) -> dict[str, int]:
             "category": "Suppen & Eintöpfe",
             "best_before": today - timedelta(days=14),
             "freeze_date": today - timedelta(days=14),
-            "expiry": today + timedelta(days=100),
         },
         {
             "product_name": "Apfelmus",
@@ -442,7 +450,6 @@ def seed_testdata(session: Session) -> dict[str, int]:
             "location": "Keller",
             "category": "Obst",
             "best_before": today - timedelta(days=60),
-            "expiry": today + timedelta(days=300),
         },
         {
             "product_name": "Lachs",
@@ -452,7 +459,6 @@ def seed_testdata(session: Session) -> dict[str, int]:
             "location": "Gefriertruhe",
             "category": "Fisch",
             "best_before": today + timedelta(days=60),
-            "expiry": today + timedelta(days=60),
         },
         {
             "product_name": "Brot",
@@ -463,7 +469,6 @@ def seed_testdata(session: Session) -> dict[str, int]:
             "category": "Backwaren",
             "best_before": today - timedelta(days=3),
             "freeze_date": today - timedelta(days=3),
-            "expiry": today + timedelta(days=87),
         },
     ]
 
@@ -472,21 +477,19 @@ def seed_testdata(session: Session) -> dict[str, int]:
         if existing:
             continue
 
-        location_name = str(item_data["location"])
-        category_name = str(item_data.get("category", ""))
-        item = Item(
+        # Über den Dienst, damit die Beispiele dieselben Regeln erfüllen wie erfasste Artikel (#468)
+        item_service.create_item(
+            session,
             product_name=str(item_data["product_name"]),
-            item_type=item_data["item_type"],
-            quantity=int(item_data["quantity"]),
-            unit=str(item_data["unit"]),
-            location_id=location_ids[location_name],
-            category_id=category_ids.get(category_name),
             best_before_date=item_data["best_before"],
-            freeze_date=item_data.get("freeze_date"),
-            expiry_date=item_data["expiry"],
+            quantity=item_data["quantity"],
+            unit=str(item_data["unit"]),
+            item_type=item_data["item_type"],
+            location_id=location_ids[str(item_data["location"])],
             created_by=admin_id,
+            category_id=category_ids[str(item_data["category"])],
+            freeze_date=item_data.get("freeze_date"),
         )
-        session.add(item)
         result["items"] += 1
 
     session.commit()
