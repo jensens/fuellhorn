@@ -201,7 +201,7 @@ def test_wizard_homemade_frozen(page: Page, live_server: str) -> None:
     date_inputs.first.blur()
 
     # Einfrierdatum (zweites Datum-Feld)
-    expect(page.get_by_text("Einfrierdatum *")).to_be_visible()
+    expect(page.get_by_text("Eingefroren am *")).to_be_visible()
     date_inputs.nth(1).fill("02.11.2025")
     date_inputs.nth(1).blur()
 
