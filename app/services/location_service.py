@@ -4,6 +4,7 @@ from ..models.item import Item
 from ..models.item import ItemType
 from ..models.location import Location
 from ..models.location import LocationType
+from ..services.errors import DuplicateNameError
 from sqlmodel import Session
 from sqlmodel import col
 from sqlmodel import func
@@ -91,7 +92,7 @@ def create_location(
     ).first()
 
     if existing:
-        raise ValueError(f"Location with name '{existing.name}' already exists")
+        raise DuplicateNameError("name", existing.name, "Lagerort")
 
     location = Location(
         name=name,
@@ -176,7 +177,7 @@ def update_location(
         ).first()
 
         if existing:
-            raise ValueError(f"Location with name '{existing.name}' already exists")
+            raise DuplicateNameError("name", existing.name, "Lagerort")
 
         location.name = name
 

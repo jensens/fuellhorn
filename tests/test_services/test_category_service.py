@@ -34,7 +34,7 @@ def test_create_category_duplicate_name_fails(session: Session, test_admin: User
         created_by=test_admin.id,
     )
 
-    with pytest.raises(ValueError, match="Category with name 'Fleisch' already exists"):
+    with pytest.raises(ValueError, match="Kategorie 'Fleisch' ist bereits vorhanden"):
         category_service.create_category(
             session=session,
             name="fleisch",  # Case-insensitive check
@@ -92,7 +92,7 @@ def test_update_category_duplicate_name_fails(session: Session, test_admin: User
     category_service.create_category(session, "Milch", test_admin.id)
     category2 = category_service.create_category(session, "Käse", test_admin.id)
 
-    with pytest.raises(ValueError, match="Category with name 'Milch' already exists"):
+    with pytest.raises(ValueError, match="Kategorie 'Milch' ist bereits vorhanden"):
         category_service.update_category(session, category2.id, name="milch")
 
 

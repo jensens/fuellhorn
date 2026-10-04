@@ -20,6 +20,7 @@ from ...services import expiry_service
 from ...services import item_service
 from ..theme.icons import create_icon
 from ..utils.quantity import format_quantity
+from .errors import show_service_error
 from datetime import date
 from nicegui import ui
 from typing import Callable
@@ -304,10 +305,8 @@ def _handle_withdraw(
             if on_close:
                 on_close()
 
-        except ValueError as e:
-            if error_label:
-                error_label.set_text(str(e))
-                error_label.set_visibility(True)
+        except Exception as e:
+            show_service_error(e, error_label)
 
     def cancel_withdrawal() -> None:
         """Cancel the withdrawal dialog."""
@@ -401,8 +400,8 @@ def _handle_consume(
         if on_close:
             on_close()
 
-    except ValueError as e:
-        ui.notify(str(e), type="negative")
+    except Exception as e:
+        show_service_error(e)
 
 
 def _get_withdrawal_history_with_users(item_id: int) -> list[tuple[Withdrawal, str]]:

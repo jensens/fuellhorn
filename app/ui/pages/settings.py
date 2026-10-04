@@ -13,6 +13,7 @@ from ...database import get_engine
 from ...services import preferences_service
 from ..components import create_bottom_nav
 from ..components import create_mobile_page_container
+from ..components.errors import show_service_error
 from ..theme.icons import create_icon
 from nicegui import ui
 from sqlmodel import Session
@@ -154,16 +155,21 @@ def _render_system_defaults_section() -> None:
             category_val = int(category_input.value) if category_input.value else DEFAULT_CATEGORY_TIME_WINDOW
             location_val = int(location_input.value) if location_input.value else DEFAULT_LOCATION_TIME_WINDOW
 
-            with Session(get_engine()) as session:
-                preferences_service.set_system_setting(
-                    session, "item_type_time_window", str(item_type_val), acting_user.id
-                )
-                preferences_service.set_system_setting(
-                    session, "category_time_window", str(category_val), acting_user.id
-                )
-                preferences_service.set_system_setting(
-                    session, "location_time_window", str(location_val), acting_user.id
-                )
+            try:
+                with Session(get_engine()) as session:
+                    # Ein Commit für alle Werte, Validierung im Service (#382)
+                    preferences_service.set_system_settings(
+                        session,
+                        {
+                            "item_type_time_window": str(item_type_val),
+                            "category_time_window": str(category_val),
+                            "location_time_window": str(location_val),
+                        },
+                        acting_user.id,
+                    )
+            except Exception as e:
+                show_service_error(e)
+                return
 
             ui.notify("System-Standardwerte gespeichert", type="positive")
 
@@ -183,20 +189,28 @@ def _render_system_defaults_section() -> None:
         ).classes("text-caption text-stone mb-4")
 
         # Critical days threshold
-        critical_days_input = ui.number(
-            label="Kritisch (Tage vor Ablauf)",
-            value=defaults["expiry_critical_days"],
-            min=0,
-            max=30,
-        ).classes("w-full mb-2")
+        critical_days_input = (
+            ui.number(
+                label="Kritisch (Tage vor Ablauf)",
+                value=defaults["expiry_critical_days"],
+                min=0,
+                max=30,
+            )
+            .classes("w-full mb-2")
+            .mark("expiry-critical-days")
+        )
 
         # Warning days threshold
-        warning_days_input = ui.number(
-            label="Warnung (Tage vor Ablauf)",
-            value=defaults["expiry_warning_days"],
-            min=0,
-            max=90,
-        ).classes("w-full mb-4")
+        warning_days_input = (
+            ui.number(
+                label="Warnung (Tage vor Ablauf)",
+                value=defaults["expiry_warning_days"],
+                min=0,
+                max=90,
+            )
+            .classes("w-full mb-4")
+            .mark("expiry-warning-days")
+        )
 
         # Save button for expiry thresholds
         @with_permission_check(Permission.CONFIG_MANAGE)
@@ -209,22 +223,21 @@ def _render_system_defaults_section() -> None:
             critical_val = int(critical_days_input.value) if critical_days_input.value else DEFAULT_EXPIRY_CRITICAL_DAYS
             warning_val = int(warning_days_input.value) if warning_days_input.value else DEFAULT_EXPIRY_WARNING_DAYS
 
-            # Validate that critical < warning (typical case)
-            if critical_val >= warning_val:
-                ui.notify(
-                    "Hinweis: Kritisch-Schwelle ist größer/gleich Warnung-Schwelle",
-                    type="warning",
-                )
-
-            with Session(get_engine()) as session:
-                preferences_service.set_system_setting(
-                    session, "expiry_critical_days", str(critical_val), acting_user.id
-                )
-                preferences_service.set_system_setting(session, "expiry_warning_days", str(warning_val), acting_user.id)
+            try:
+                with Session(get_engine()) as session:
+                    # Der Service verweigert Kritisch >= Warnung und schreibt beide Werte in einem Commit (#382)
+                    preferences_service.set_system_settings(
+                        session,
+                        {"expiry_critical_days": str(critical_val), "expiry_warning_days": str(warning_val)},
+                        acting_user.id,
+                    )
+            except Exception as e:
+                show_service_error(e)
+                return
 
             ui.notify("Ablauf-Schwellwerte gespeichert", type="positive")
 
-        with ui.button(on_click=save_expiry_thresholds).classes("sp-btn-primary"):
+        with ui.button(on_click=save_expiry_thresholds).classes("sp-btn-primary").mark("save-expiry-thresholds"):
             with ui.row().classes("items-center gap-2"):
                 create_icon("actions/save", size="20px")
                 ui.label("Speichern")

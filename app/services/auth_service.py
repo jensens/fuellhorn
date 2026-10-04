@@ -7,6 +7,7 @@ from ..models.system_settings import SystemSettings
 from ..models.user import Role
 from ..models.user import User
 from ..models.withdrawal import Withdrawal
+from ..services.errors import DuplicateNameError
 from datetime import datetime
 import secrets
 from sqlmodel import Session
@@ -46,8 +47,11 @@ def create_user(
         Der erstellte User
 
     Raises:
-        ValueError: Bei ungültigen Eingabedaten
+        DuplicateNameError: Benutzername oder E-Mail bereits vergeben (Issue #382)
     """
+    _ensure_unique_username(session, username)
+    _ensure_unique_email(session, email)
+
     user = User(
         username=username,
         email=email,
@@ -60,6 +64,21 @@ def create_user(
     session.refresh(user)
 
     return user
+
+
+def _ensure_unique_username(session: Session, username: str, exclude_user_id: int | None = None) -> None:
+    """Eindeutigkeit VOR dem Insert prüfen: liefert eine deutsche Meldung statt eines dialektabhängigen IntegrityErrors."""
+    statement = select(User).where(func.lower(User.username) == username.lower())
+    existing = session.exec(statement).first()
+    if existing is not None and existing.id != exclude_user_id:
+        raise DuplicateNameError("username", username, "Benutzername")
+
+
+def _ensure_unique_email(session: Session, email: str, exclude_user_id: int | None = None) -> None:
+    statement = select(User).where(func.lower(User.email) == email.lower())
+    existing = session.exec(statement).first()
+    if existing is not None and existing.id != exclude_user_id:
+        raise DuplicateNameError("email", email, "E-Mail-Adresse")
 
 
 def get_user(session: Session, user_id: int) -> User:
@@ -262,8 +281,10 @@ def update_user(
 
     # Nur übergebene Werte aktualisieren
     if username is not None:
+        _ensure_unique_username(session, username, exclude_user_id=user_id)
         user.username = username
     if email is not None:
+        _ensure_unique_email(session, email, exclude_user_id=user_id)
         user.email = email
     if password is not None:
         user.set_password(password)

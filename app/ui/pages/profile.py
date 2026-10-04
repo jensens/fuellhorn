@@ -13,6 +13,7 @@ from ...models.user import User
 from ...services import preferences_service
 from ..components import create_bottom_nav
 from ..components import create_mobile_page_container
+from ..components.errors import show_service_error
 from ..theme.icons import create_icon
 from nicegui import ui
 from sqlmodel import Session
@@ -102,8 +103,8 @@ def _render_account_info_section(current_user: User) -> None:
                             new_email=new_email,
                         )
                         ui.notify("E-Mail-Adresse geändert", type="positive")
-            except ValueError as e:
-                ui.notify(str(e), type="negative")
+            except Exception as e:
+                show_service_error(e)
 
         with ui.button(on_click=save_email).classes("sp-btn-primary"):
             with ui.row().classes("items-center gap-2"):
@@ -186,8 +187,8 @@ def _render_password_change_section(current_user: User) -> None:
                             confirm_pw_input.value = ""
                         else:
                             ui.notify("Aktuelles Passwort ist falsch", type="negative")
-            except ValueError as e:
-                ui.notify(str(e), type="negative")
+            except Exception as e:
+                show_service_error(e)
 
         ui.button("Passwort ändern", icon="lock", on_click=change_password).classes("sp-btn-primary")
 

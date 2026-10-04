@@ -14,12 +14,9 @@ from ...database import get_session
 from ...models.user import Role
 from ...services import auth_service
 from ..components import create_mobile_page_container
+from ..components.errors import show_service_error
 from ..theme.icons import create_icon
-import logging
 from nicegui import ui
-
-
-logger = logging.getLogger(__name__)
 
 
 @ui.page("/admin/users")
@@ -233,18 +230,8 @@ def _open_create_dialog() -> None:
                     dialog.close()
                     ui.navigate.to("/admin/users")
                 except Exception as e:
-                    # Handle duplicate username/email error
-                    error_msg = str(e)
-                    if "UNIQUE constraint" in error_msg:
-                        if "username" in error_msg.lower():
-                            error_label.set_text(f"Benutzername '{username}' bereits vorhanden")
-                        elif "email" in error_msg.lower():
-                            error_label.set_text(f"E-Mail '{email}' bereits vorhanden")
-                        else:
-                            error_label.set_text("Benutzer bereits vorhanden")
-                    else:
-                        error_label.set_text(error_msg)
-                    error_label.set_visibility(True)
+                    # Duplikate meldet der Service typisiert (DuplicateNameError), alles andere generisch (#382)
+                    show_service_error(e, error_label)
 
             ui.button("Speichern", on_click=save_user).classes("sp-btn-primary")
 
@@ -375,18 +362,8 @@ def _open_edit_dialog(
                     dialog.close()
                     ui.navigate.to("/admin/users")
                 except Exception as e:
-                    # Handle duplicate username/email error
-                    error_msg = str(e)
-                    if "UNIQUE constraint" in error_msg:
-                        if "username" in error_msg.lower():
-                            error_label.set_text(f"Benutzername '{username}' bereits vorhanden")
-                        elif "email" in error_msg.lower():
-                            error_label.set_text(f"E-Mail '{email}' bereits vorhanden")
-                        else:
-                            error_label.set_text("Benutzer bereits vorhanden")
-                    else:
-                        error_label.set_text(error_msg)
-                    error_label.set_visibility(True)
+                    # Duplikate meldet der Service typisiert (DuplicateNameError), alles andere generisch (#382)
+                    show_service_error(e, error_label)
 
             ui.button("Speichern", on_click=save_changes).classes("sp-btn-primary")
 
@@ -422,14 +399,9 @@ def _open_delete_dialog(user_id: int, username: str) -> None:
                     ui.notify("Benutzer gelöscht", type="positive")
                     dialog.close()
                     ui.navigate.to("/admin/users")
-                except ValueError as e:
-                    # Fachliche Ablehnung aus dem Service (z.B. referenzierte Artikel), #379
-                    error_label.set_text(str(e))
-                    error_label.set_visibility(True)
-                except Exception:
-                    logger.exception("Benutzer %s konnte nicht gelöscht werden", user_id)
-                    error_label.set_text("Löschen fehlgeschlagen. Details stehen im Server-Log.")
-                    error_label.set_visibility(True)
+                except Exception as e:
+                    # Fachliche Ablehnung (z.B. referenzierte Artikel) als Meldung, Unerwartetes ins Log (#379, #382)
+                    show_service_error(e, error_label)
 
             ui.button("Löschen", on_click=confirm_delete).classes("sp-btn-danger")
 
