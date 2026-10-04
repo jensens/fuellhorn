@@ -15,6 +15,7 @@ from ...services import auth_service
 from ...services import expiry_service
 from ...services import item_service
 from ..theme.icons import create_icon
+from ..utils.quantity import format_quantity
 from datetime import date
 from nicegui import app
 from nicegui import ui
@@ -120,7 +121,7 @@ def create_bottom_sheet(
                     create_icon("misc/scale", size="20px", classes="text-fern")
                     with ui.column().classes("gap-0"):
                         ui.label("Menge").classes("sp-info-label")
-                        ui.label(f"{item.quantity} {item.unit}").classes("sp-info-value")
+                        ui.label(format_quantity(item.quantity, item.unit)).classes("sp-info-value")
 
                 # Location
                 with ui.row().classes("sp-info-row"):
@@ -246,10 +247,10 @@ def _handle_withdraw(
                 error_label.set_visibility(True)
             return
 
-        # Validation: not more than available
-        if withdraw_qty > item.quantity:
+        # Validation: not more than available (at quantity resolution, Issue #365)
+        if item_service.normalize_quantity(withdraw_qty - item.quantity) > 0:
             if error_label:
-                error_label.set_text(f"Nicht mehr als {int(item.quantity)} verfügbar")
+                error_label.set_text(f"Nicht mehr als {format_quantity(item.quantity, item.unit)} verfügbar")
                 error_label.set_visibility(True)
             return
 
@@ -271,7 +272,7 @@ def _handle_withdraw(
                 )
 
             # Show success notification
-            ui.notify(f"{int(withdraw_qty)} {item.unit} entnommen", type="positive")
+            ui.notify(f"{format_quantity(withdraw_qty, item.unit)} entnommen", type="positive")
 
             # Close both dialogs
             withdraw_dialog.close()
@@ -298,19 +299,20 @@ def _handle_withdraw(
             ui.label("Menge entnehmen").classes("text-lg font-semibold mb-2")
 
             # Available quantity info
-            ui.label(f"Verfügbar: {int(item.quantity)} {item.unit}").classes("text-sm text-gray-600 mb-4")
+            ui.label(f"Verfügbar: {format_quantity(item.quantity, item.unit)}").classes("text-sm text-gray-600 mb-4")
 
-            # Quantity input
+            # Quantity input: decimals allowed down to the quantity resolution (Issue #365).
+            # NiceGUI clamps to ``min`` on blur, so a minimum of 1 silently turned 0.5 into 1.
             quantity_input = (
                 ui.number(
                     label="Entnahmemenge",
-                    min=1,
+                    min=10**-item_service.QUANTITY_DECIMALS,
                     max=item.quantity,
-                    step=1,
+                    precision=item_service.QUANTITY_DECIMALS,
                     value=item.quantity,
                 )
                 .classes("w-full mb-2")
-                .props("outlined")
+                .props("outlined step=any")
             )
 
             # Error message (hidden by default)
