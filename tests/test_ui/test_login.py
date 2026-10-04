@@ -92,3 +92,9 @@ async def test_root_redirects_to_dashboard_when_authenticated(logged_in_user: Te
     # Should redirect to dashboard
     await logged_in_user.should_see("Bald ablaufend")
     await logged_in_user.should_see("Auf einen Blick")  # Issue #245
+
+
+async def test_login_trims_surrounding_whitespace_in_username(user: TestUser) -> None:
+    """Issue #383: ' admin ' (z.B. Autovervollständigung am Handy) meldet admin trotzdem an."""
+    await _submit_login(user, "  admin  ", "password123")
+    await user.should_see("Willkommen admin")
