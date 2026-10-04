@@ -17,6 +17,7 @@ from ..components import create_location_chip_group
 from ..components import create_mobile_page_container
 from ..components import create_unit_chip_group
 from ..components.errors import show_service_error
+from ..components.field_errors import FieldErrors
 from ..smart_defaults import create_smart_defaults_dict
 from ..smart_defaults import get_default_category
 from ..smart_defaults import get_default_item_type
@@ -25,12 +26,11 @@ from ..smart_defaults import get_default_unit
 from ..theme.icons import create_icon
 from ..utils.date_utils import format_german_date
 from ..utils.date_utils import parse_german_date
-from ..validation import is_step1_valid
-from ..validation import is_step2_valid
-from ..validation import is_step3_valid
+from ..utils.quantity import format_quantity
 from ..validation import validate_step1
 from ..validation import validate_step2
 from ..validation import validate_step3
+from collections.abc import Callable
 from datetime import date as date_type
 from nicegui import app
 from nicegui import ui
@@ -74,38 +74,49 @@ def add_item() -> None:
     step3_submit_button: Any = None
     step3_save_next_button: Any = None
 
+    # Eine Fehlerzeile pro Feld; jeder Schritt-Aufbau erzeugt seine eigene Instanz (Issue #396)
+    field_errors = FieldErrors()
+
+    def touched(field: str, update: Callable[[], None]) -> None:
+        """Feld wurde geändert: Meldung freigeben und Validierung aktualisieren."""
+        field_errors.touch(field)
+        update()
+
     def update_validation() -> None:
-        """Update next button state based on validation."""
-        is_valid = is_step1_valid(
+        """Feldmeldungen und Weiter-Button nach dem Stand der Eingaben (Issue #396)."""
+        errors = validate_step1(
             product_name=form_data["product_name"],
             item_type=form_data["item_type"],
             quantity=form_data["quantity"],
             unit=form_data["unit"],
         )
-        if is_valid:
+        field_errors.show(errors)
+        if not errors:
             next_button.props(remove="disabled")
         else:
             next_button.props(add="disabled")
 
     def update_step2_validation() -> None:
-        """Update Step 2 next button state based on validation."""
-        is_valid = is_step2_valid(
+        """Feldmeldungen und Weiter-Button für Schritt 2."""
+        errors = validate_step2(
             item_type=form_data["item_type"],
             best_before=form_data["best_before_date"],
             freeze_date=form_data.get("freeze_date"),
             category_id=form_data.get("category_id"),
         )
-        if is_valid:
+        field_errors.show(errors)
+        if not errors:
             step2_next_button.props(remove="disabled")
         else:
             step2_next_button.props(add="disabled")
 
     def update_step3_validation() -> None:
-        """Update Step 3 submit buttons state based on validation."""
-        is_valid = is_step3_valid(
+        """Feldmeldungen und Speichern-Buttons für Schritt 3."""
+        errors = validate_step3(
             location_id=form_data.get("location_id"),
         )
-        if is_valid:
+        field_errors.show(errors)
+        if not errors:
             step3_submit_button.props(remove="disabled")
             step3_save_next_button.props(remove="disabled")
         else:
@@ -114,7 +125,8 @@ def add_item() -> None:
 
     def show_step1() -> None:
         """Navigate back to Step 1 (preserves form data)."""
-        nonlocal next_button
+        nonlocal next_button, field_errors
+        field_errors = FieldErrors()
         form_data["current_step"] = 1
         # Clear and rebuild UI for Step 1 (like show_step2 and show_step3)
         content_container.clear()
@@ -133,19 +145,22 @@ def add_item() -> None:
                 .props("outlined autofocus")
             )
             product_name_input.bind_value(form_data, "product_name")
-            product_name_input.on("blur", update_validation)
+            # Bei jeder Eingabe statt erst beim Verlassen des Feldes (Issue #396)
+            product_name_input.on_value_change(lambda _: touched("product_name", update_validation))
+            field_errors.slot("product_name")
 
             # Item Type
             ui.label("Artikel-Typ *").classes("text-sm font-medium mb-2 mt-4")
 
             def on_item_type_change(value: ItemType) -> None:
                 form_data["item_type"] = value
-                update_validation()
+                touched("item_type", update_validation)
 
             create_item_type_chip_group(
                 value=form_data["item_type"],
                 on_change=on_item_type_change,
             )
+            field_errors.slot("item_type")
 
             # Quantity
             ui.label("Menge *").classes("text-sm font-medium mb-1 mt-4")
@@ -160,19 +175,21 @@ def add_item() -> None:
                 .props("outlined clearable")
             )
             quantity_input.bind_value(form_data, "quantity")
-            quantity_input.on("blur", update_validation)
+            quantity_input.on_value_change(lambda _: touched("quantity", update_validation))
+            field_errors.slot("quantity")
 
             # Unit
             ui.label("Einheit *").classes("text-sm font-medium mb-1 mt-4")
 
             def on_unit_change(value: str) -> None:
                 form_data["unit"] = value
-                update_validation()
+                touched("unit", update_validation)
 
             create_unit_chip_group(
                 value=form_data["unit"],
                 on_change=on_unit_change,
             )
+            field_errors.slot("unit")
 
             # Notes (optional)
             ui.label("Notizen (optional)").classes("text-sm font-medium mb-1 mt-4")
@@ -187,6 +204,7 @@ def add_item() -> None:
                     ui.button("Weiter", icon="arrow_forward", on_click=show_step2)
                     .props("color=primary size=lg disabled")
                     .style("min-height: 48px")
+                    .mark("wizard-next")
                 )
 
             # Initial validation to set button state
@@ -194,12 +212,17 @@ def add_item() -> None:
 
     def show_step2() -> None:
         """Navigate to Step 2."""
-        if not is_step1_valid(
+        nonlocal field_errors
+        errors = validate_step1(
             form_data["product_name"], form_data["item_type"], form_data["quantity"], form_data["unit"]
-        ):
-            ui.notify("Bitte alle Pflichtfelder ausfüllen", type="warning")
+        )
+        if errors:
+            # Der Klick kann den Server vor dem deaktivierten Button erreichen: alle Meldungen zeigen (#396)
+            field_errors.show(errors, force=True)
+            ui.notify(next(iter(errors.values())), type="warning")
             return
 
+        field_errors = FieldErrors()
         form_data["current_step"] = 2
         item_type = form_data["item_type"]
 
@@ -224,9 +247,8 @@ def add_item() -> None:
 
             with ui.element("div").classes("sp-summary-box w-full mb-4"):
                 ui.label("Zusammenfassung:").classes("sp-summary-title")
-                ui.label(
-                    f"{form_data['product_name']} • {form_data['quantity']} {form_data['unit']} • {type_label}"
-                ).classes("sp-summary-content")
+                quantity_text = format_quantity(form_data["quantity"], form_data["unit"])
+                ui.label(f"{form_data['product_name']} • {quantity_text} • {type_label}").classes("sp-summary-content")
 
             # Category Chips (always required, filtered by item type)
             with next(get_session()) as session:
@@ -240,13 +262,14 @@ def add_item() -> None:
 
             def on_category_change(category_id: int) -> None:
                 form_data["category_id"] = category_id
-                update_step2_validation()
+                touched("category", update_step2_validation)
 
             create_grouped_category_chip_group(
                 grouped_categories=grouped_categories,
                 value=form_data.get("category_id"),
                 on_change=on_category_change,
             )
+            field_errors.slot("category")
 
             # Date field - different label based on item type (Beschriftung wie Bottom-Sheet/Edit, #387)
             if item_type in {ItemType.PURCHASED_FRESH, ItemType.PURCHASED_FROZEN}:
@@ -265,6 +288,7 @@ def add_item() -> None:
                 date_label = "Hergestellt am"
                 date_field = "best_before_date"
 
+            date_error_field = "freeze_date" if date_field == "freeze_date" else "best_before"
             ui.label(f"{date_label} *").classes("text-sm font-medium mb-1 mt-4")
             date_value = form_data.get(date_field) or date_type.today()
             form_data[date_field] = date_value  # Ensure it's set
@@ -284,7 +308,8 @@ def add_item() -> None:
                             date_picker.on_value_change(lambda _: date_menu.close())
             # Typed or picked dates reach form_data only through this binding (Issue #362)
             date_input.bind_value(form_data, date_field, forward=parse_german_date, backward=format_german_date)
-            date_input.on_value_change(lambda _: update_step2_validation())
+            date_input.on_value_change(lambda _: touched(date_error_field, update_step2_validation))
+            field_errors.slot(date_error_field)
 
             # Additional freeze date for homemade_frozen
             if item_type == ItemType.HOMEMADE_FROZEN:
@@ -309,7 +334,8 @@ def add_item() -> None:
                 freeze_date_input.bind_value(
                     form_data, "freeze_date", forward=parse_german_date, backward=format_german_date
                 )
-                freeze_date_input.on_value_change(lambda _: update_step2_validation())
+                freeze_date_input.on_value_change(lambda _: touched("freeze_date", update_step2_validation))
+                field_errors.slot("freeze_date")
 
             # Notes (optional)
             ui.label("Notizen (optional)").classes("text-sm font-medium mb-1 mt-4")
@@ -335,21 +361,26 @@ def add_item() -> None:
                     ui.button("Weiter", icon="arrow_forward", on_click=lambda: show_step3())
                     .props("color=primary size=lg disabled")
                     .style("min-height: 48px")
+                    .mark("wizard-next")
                 )
                 # Initial validation
                 update_step2_validation()
 
     def show_step3() -> None:
         """Navigate to Step 3."""
-        if not is_step2_valid(
+        nonlocal field_errors
+        errors = validate_step2(
             form_data["item_type"],
             form_data["best_before_date"],
             form_data.get("freeze_date"),
             form_data.get("category_id"),
-        ):
-            ui.notify("Bitte alle Pflichtfelder ausfüllen", type="warning")
+        )
+        if errors:
+            field_errors.show(errors, force=True)
+            ui.notify(next(iter(errors.values())), type="warning")
             return
 
+        field_errors = FieldErrors()
         form_data["current_step"] = 3
         item_type = form_data["item_type"]
 
@@ -384,7 +415,7 @@ def add_item() -> None:
                 ui.label("Zusammenfassung:").classes("sp-summary-title")
                 summary_parts = [
                     form_data["product_name"],
-                    f"{form_data['quantity']} {form_data['unit']}",
+                    format_quantity(form_data["quantity"], form_data["unit"]),
                     type_label,
                 ]
                 if category_name:
@@ -426,13 +457,14 @@ def add_item() -> None:
 
             def on_location_change(location_id: int) -> None:
                 form_data["location_id"] = location_id
-                update_step3_validation()
+                touched("location", update_step3_validation)
 
             create_location_chip_group(
                 locations=locations,
                 value=form_data.get("location_id"),
                 on_change=on_location_change,
             )
+            field_errors.slot("location")
 
             # Notes (optional)
             ui.label("Notizen (optional)").classes("text-sm font-medium mb-1 mt-4")
@@ -504,7 +536,8 @@ def add_item() -> None:
         )
 
         if errors:
-            ui.notify("Bitte alle Pflichtfelder ausfüllen", type="warning")
+            field_errors.show(errors, force=True)
+            ui.notify(next(iter(errors.values())), type="warning")
             return False
 
         # Nutzer frisch aus der DB und Berechtigung zur Laufzeit prüfen (#381)
@@ -584,78 +617,10 @@ def add_item() -> None:
         ):
             create_icon("actions/close", size="24px")
 
-    # Main content container (max-width handled by create_mobile_page_container)
+    # Main content container (max-width handled by create_mobile_page_container);
+    # Schritt 1 wird genau wie beim Zurück-Navigieren aufgebaut (eine Quelle, Issue #396)
     content_container = create_mobile_page_container()
-    with content_container:
-        # Progress Indicator (Solarpunk theme)
-        ui.label("Schritt 1 von 3").classes("text-sm text-stone mb-4")
-
-        # Step 1: Basic Information
-        ui.label("Basisinformationen").classes("sp-page-title text-base mb-3")
-
-        # Product Name
-        ui.label("Produktname *").classes("text-sm font-medium mb-1")
-        product_name_input = (
-            ui.input(placeholder="z.B. Tomaten aus Garten").classes("w-full").props("outlined autofocus")
-        )
-        product_name_input.bind_value(form_data, "product_name")
-        product_name_input.on("blur", update_validation)
-
-        # Item Type
-        ui.label("Artikel-Typ *").classes("text-sm font-medium mb-2 mt-4")
-
-        def on_item_type_change(value: ItemType) -> None:
-            form_data["item_type"] = value
-            update_validation()
-
-        create_item_type_chip_group(
-            value=form_data["item_type"],
-            on_change=on_item_type_change,
-        )
-
-        # Quantity
-        ui.label("Menge *").classes("text-sm font-medium mb-1 mt-4")
-        quantity_input = (
-            ui.number(
-                placeholder="z.B. 500",
-                min=0,
-                step=1,
-            )
-            .classes("w-full")
-            .props("outlined clearable")
-        )
-        quantity_input.bind_value(form_data, "quantity")
-        quantity_input.on("blur", update_validation)
-
-        # Unit
-        ui.label("Einheit *").classes("text-sm font-medium mb-1 mt-4")
-
-        def on_unit_change(value: str) -> None:
-            form_data["unit"] = value
-            update_validation()
-
-        create_unit_chip_group(
-            value=form_data["unit"],
-            on_change=on_unit_change,
-        )
-
-        # Notes (optional)
-        ui.label("Notizen (optional)").classes("text-sm font-medium mb-1 mt-4")
-        notes_input = (
-            ui.textarea(placeholder="z.B. je 12 Stück, 300g pro Packung").classes("w-full").props("outlined rows=2")
-        )
-        notes_input.bind_value(form_data, "notes")
-
-        # Navigation
-        with ui.row().classes("w-full justify-end mt-6 gap-2"):
-            next_button = (
-                ui.button("Weiter", icon="arrow_forward", on_click=show_step2)
-                .props("color=primary size=lg disabled")
-                .style("min-height: 48px")
-            )
-
-        # Initial validation to set button state based on smart defaults
-        update_validation()
+    show_step1()
 
     # Bottom Navigation
     create_bottom_nav(current_page="add")

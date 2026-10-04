@@ -120,5 +120,5 @@ async def test_stale_category_default_is_dropped_after_type_change(logged_in_use
 
     await logged_in_user.should_not_see(marker=f"category-chip-{world['frozen_cat']}")
     logged_in_user.find("Weiter").click()
-    await logged_in_user.should_see("Bitte alle Pflichtfelder ausfüllen")
+    await logged_in_user.should_see("Kategorie ist erforderlich")
     await logged_in_user.should_see("Schritt 2 von 3")

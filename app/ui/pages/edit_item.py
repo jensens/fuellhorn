@@ -13,6 +13,7 @@ from ..components import create_location_chip_group
 from ..components import create_mobile_page_container
 from ..components import create_unit_chip_group
 from ..components.errors import show_service_error
+from ..components.field_errors import FieldErrors
 from ..theme.icons import create_icon
 from ..utils.date_utils import format_german_date
 from ..utils.date_utils import parse_german_date
@@ -81,6 +82,8 @@ def edit_item(item_id: int) -> None:
 
     # References for validation
     save_button: ui.button | None = None
+    # Felder sind vorbelegt; jeder Fehler ist Folge einer Änderung und wird sofort gezeigt (Issue #396)
+    field_errors = FieldErrors(reveal_all=True)
 
     def validation_errors() -> dict[str, str]:
         """Dieselben Regeln wie im Wizard (Issue #386): Trim, 2 Zeichen, Menge > 0, Einfrierdatum, Lagerort."""
@@ -99,9 +102,11 @@ def edit_item(item_id: int) -> None:
         return errors
 
     def update_validation() -> None:
-        """Update save button state based on validation."""
+        """Feldmeldungen und Speichern-Button nach dem Stand der Eingaben (Issue #396)."""
+        errors = validation_errors()
+        field_errors.show(errors)
         if save_button is not None:
-            save_button.set_enabled(not validation_errors())
+            save_button.set_enabled(not errors)
 
     def update_locations_for_item_type() -> None:
         """Update available locations when item type changes."""
@@ -199,6 +204,7 @@ def edit_item(item_id: int) -> None:
         )
         product_name_input.bind_value(form_data, "product_name")
         product_name_input.on_value_change(lambda _: update_validation())
+        field_errors.slot("product_name")
 
         # Item Type
         ui.label("Artikel-Typ *").classes("text-sm font-medium mb-2 mt-4")
@@ -223,6 +229,7 @@ def edit_item(item_id: int) -> None:
             value=form_data["item_type"],
             on_change=on_item_type_change,
         )
+        field_errors.slot("item_type")
 
         # Quantity
         ui.label("Menge *").classes("text-sm font-medium mb-1 mt-4")
@@ -238,6 +245,7 @@ def edit_item(item_id: int) -> None:
         )
         quantity_input.bind_value(form_data, "quantity")
         quantity_input.on_value_change(lambda _: update_validation())
+        field_errors.slot("quantity")
 
         # Unit
         ui.label("Einheit *").classes("text-sm font-medium mb-1 mt-4")
@@ -250,6 +258,7 @@ def edit_item(item_id: int) -> None:
             value=form_data["unit"],
             on_change=on_unit_change,
         )
+        field_errors.slot("unit")
 
         # Category (always required, filtered by item type)
         ui.label("Kategorie *").classes("text-sm font-medium mb-2 mt-4")
@@ -265,6 +274,7 @@ def edit_item(item_id: int) -> None:
                 value=form_data.get("category_id"),
                 on_change=on_category_change,
             )
+        field_errors.slot("category")  # außerhalb des Containers, der beim Typwechsel neu gebaut wird
 
         # best_before_date: MHD bzw. Herstellungsdatum; für PURCHASED_THEN_FROZEN ausgeblendet,
         # weil der Service dort das Einfrierdatum spiegelt (Issue #387)
@@ -291,6 +301,7 @@ def edit_item(item_id: int) -> None:
             # Typed or picked dates reach form_data only through this binding (Issue #362)
             date_input.bind_value(form_data, "best_before_date", forward=parse_german_date, backward=format_german_date)
             date_input.on_value_change(lambda _: update_validation())
+            field_errors.slot("best_before")
 
         # Freeze Date (conditional)
         show_freeze_date = form_data["item_type"] in FREEZE_DATE_TYPES
@@ -320,6 +331,7 @@ def edit_item(item_id: int) -> None:
                 form_data, "freeze_date", forward=parse_german_date, backward=format_german_date
             )
             freeze_date_input.on_value_change(lambda _: update_validation())
+            field_errors.slot("freeze_date")
 
         # Location
         ui.label("Lagerort *").classes("text-sm font-medium mb-1 mt-4")
@@ -330,6 +342,7 @@ def edit_item(item_id: int) -> None:
                 value=form_data.get("location_id"),
                 on_change=on_location_change,
             )
+        field_errors.slot("location")
 
         # Notes (optional)
         ui.label("Notizen (optional)").classes("text-sm font-medium mb-1 mt-4")
