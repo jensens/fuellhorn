@@ -14,6 +14,20 @@ class ServiceValidationError(ServiceError):
     """Ungültige Eingabe (Format, Bereich, Kombination)."""
 
 
+class StaleStockError(ServiceError):
+    """Der Bestand hat sich seit dem Lesen geändert (zwei Nutzer, ein Artikel; Issue #394)."""
+
+    def __init__(self, message: str = "Bestand hat sich geändert, bitte neu laden.") -> None:
+        super().__init__(message)
+
+
+class AlreadyConsumedError(ServiceError):
+    """Der Artikel ist bereits vollständig entnommen (Issue #394)."""
+
+    def __init__(self, product_name: str) -> None:
+        super().__init__(f"'{product_name}' ist bereits vollständig entnommen.")
+
+
 class DuplicateNameError(ServiceError):
     """Ein eindeutiges Feld (Name, Benutzername, E-Mail) ist bereits vergeben."""
 

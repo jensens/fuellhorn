@@ -156,10 +156,12 @@ def handle_consume(item: Item) -> None:
 
     with next(get_session()) as session:
         location = location_service.get_location(session, item.location_id)
-        # Nur nach einer Änderung neu laden (on_close feuerte zusätzlich, #393)
+        # Buchungen rufen nur ihren Callback; on_close lädt nach Schließen ohne Buchung bzw. nach
+        # veraltetem Bestand neu (#393, #394)
         sheet = create_bottom_sheet(
             item=item,
             location=location,
+            on_close=refresh_dashboard,
             on_withdraw=lambda _: refresh_dashboard(),
             on_edit=lambda i: ui.navigate.to(f"/items/{i.id}/edit"),
             on_consume=lambda _: refresh_dashboard(),
