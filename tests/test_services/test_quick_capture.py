@@ -14,6 +14,7 @@ from app.models import StorageType
 from app.models import User
 from app.services import expiry_service
 from app.services import item_service
+from app.services import item_types
 from app.services.errors import ServiceValidationError
 from datetime import date
 import pytest
@@ -175,3 +176,27 @@ class TestItemsNeedingCompletion:
         names = [entry.item.product_name for entry in expiry_service.get_items_needing_completion(session)]
 
         assert names == ["danach", "zuerst"]
+
+
+def test_item_types_for_a_frozen_location() -> None:
+    """Im Keller zählt Tempo: Die Truhe zeigt nur Typen, die dort hineinpassen (Issue #463)."""
+    assert item_types.get_item_types_for_location(LocationType.FROZEN) == [
+        ItemType.PURCHASED_FROZEN,
+        ItemType.PURCHASED_THEN_FROZEN,
+        ItemType.HOMEMADE_FROZEN,
+    ]
+
+
+def test_item_types_for_unfrozen_locations() -> None:
+    """Regal und Kühlschrank zeigen die ungefrorenen Typen, in Enum-Reihenfolge."""
+    for location_type in (LocationType.AMBIENT, LocationType.CHILLED):
+        assert item_types.get_item_types_for_location(location_type) == [
+            ItemType.PURCHASED_FRESH,
+            ItemType.HOMEMADE_PRESERVED,
+        ]
+
+
+def test_every_location_type_offers_at_least_one_item_type() -> None:
+    """Kein Lagerort darf ohne wählbaren Typ bleiben, sonst steht die Schnellerfassung still."""
+    for location_type in LocationType:
+        assert item_types.get_item_types_for_location(location_type)

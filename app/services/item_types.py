@@ -146,6 +146,16 @@ def get_valid_location_types(item_type: ItemType) -> list[LocationType]:
     return list(ITEM_TYPE_SPECS[item_type].location_types)
 
 
+def get_item_types_for_location(location_type: LocationType) -> list[ItemType]:
+    """Typen, die in diesen Lagerort passen; Umkehrung von :func:`get_valid_location_types`.
+
+    Die Schnellerfassung im Keller kennt den Lagerort schon und zeigt nur noch die Typen,
+    die dort überhaupt stehen können (Issue #463). Reihenfolge wie im Enum, damit die Chips
+    an derselben Stelle bleiben.
+    """
+    return [item_type for item_type, spec in ITEM_TYPE_SPECS.items() if location_type in spec.location_types]
+
+
 def uses_freeze_date(item_type: ItemType) -> bool:
     """Einfrierdatum ist Pflicht und Basis der Haltbarkeit."""
     return ITEM_TYPE_SPECS[item_type].uses_freeze_date
