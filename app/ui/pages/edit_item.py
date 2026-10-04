@@ -30,7 +30,10 @@ def edit_item(item_id: int) -> None:
             item = item_service.get_item(session, item_id)
             # Load related data
             grouped_categories = category_service.get_grouped_categories_for_item_type(session, item.item_type)
-            locations = location_service.get_locations_for_item_type(session, item.item_type)
+            # Der aktuelle Lagerort bleibt wählbar, auch wenn er inzwischen deaktiviert ist (#379)
+            locations = location_service.get_locations_for_item_type(
+                session, item.item_type, include_location_id=item.location_id
+            )
 
             # Store item data for form
             form_data: dict[str, Any] = {
@@ -83,7 +86,9 @@ def edit_item(item_id: int) -> None:
         """Update available locations when item type changes."""
         nonlocal locations
         with next(get_session()) as session:
-            locations = location_service.get_locations_for_item_type(session, form_data["item_type"])
+            locations = location_service.get_locations_for_item_type(
+                session, form_data["item_type"], include_location_id=item.location_id
+            )
         # Rebuild location chips
         location_container.clear()
         with location_container:

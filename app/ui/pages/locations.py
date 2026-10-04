@@ -12,11 +12,14 @@ from ...auth.dependencies import get_current_user
 from ...database import get_session
 from ...models.location import Location
 from ...models.location import LocationType
-from ...services import item_service
 from ...services import location_service
 from ..components import create_mobile_page_container
 from ..theme.icons import create_icon
+import logging
 from nicegui import ui
+
+
+logger = logging.getLogger(__name__)
 
 
 def _get_location_type_label(location_type: LocationType) -> str:
@@ -402,22 +405,17 @@ def _open_delete_dialog(location_id: int, location_name: str) -> None:
                 """Perform the deletion."""
                 try:
                     with next(get_session()) as session:
-                        # Check if location is in use
-                        items = item_service.get_items_by_location(session, location_id)
-                        if items:
-                            error_label.set_text(
-                                f"Lagerort ist in Verwendung ({len(items)} Artikel). Bitte zuerst alle Artikel entfernen."
-                            )
-                            error_label.set_visibility(True)
-                            return
-
-                        # Delete location
+                        # Referenz-Prüfung liegt im Service (#379)
                         location_service.delete_location(session=session, id=location_id)
                     ui.notify("Lagerort gelöscht", type="positive")
                     dialog.close()
                     ui.navigate.to("/admin/locations")
-                except Exception as e:
+                except ValueError as e:
                     error_label.set_text(str(e))
+                    error_label.set_visibility(True)
+                except Exception:
+                    logger.exception("Lagerort %s konnte nicht gelöscht werden", location_id)
+                    error_label.set_text("Löschen fehlgeschlagen. Details stehen im Server-Log.")
                     error_label.set_visibility(True)
 
             ui.button("Löschen", on_click=confirm_delete).classes("sp-btn-danger")

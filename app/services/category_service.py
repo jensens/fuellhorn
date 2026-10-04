@@ -3,6 +3,7 @@
 from ..models.category import Category
 from ..models.category_shelf_life import CategoryShelfLife
 from ..models.category_shelf_life import StorageType
+from ..models.item import Item
 from ..models.item import ItemType
 from ..services.expiry_calculator import get_storage_type_for_item_type
 from collections import defaultdict
@@ -137,17 +138,36 @@ def update_category(
 
 
 def delete_category(session: Session, id: int) -> None:
-    """Delete category.
+    """Löscht eine Kategorie samt ihrer Haltbarkeiten in einer Transaktion.
 
-    Args:
-        session: Database session
-        id: Category ID
+    Verweigert das Löschen, solange Artikel (auch entnommene) oder
+    Unterkategorien die Kategorie referenzieren; vorher endete das in
+    PostgreSQL in einem rohen IntegrityError nach Teillöschung (Issue #379).
 
     Raises:
-        ValueError: If category not found
+        ValueError: Kategorie nicht gefunden oder noch referenziert.
     """
     category = get_category(session, id)
 
+    item_count = session.exec(select(func.count()).select_from(Item).where(Item.category_id == id)).one()
+    if item_count:
+        raise ValueError(
+            f"Kategorie '{category.name}' kann nicht gelöscht werden: {item_count} Artikel verwenden sie "
+            "(auch entnommene). Bitte diese Artikel zuerst einer anderen Kategorie zuordnen."
+        )
+
+    child_count = session.exec(select(func.count()).select_from(Category).where(Category.parent_id == id)).one()
+    if child_count:
+        raise ValueError(
+            f"Kategorie '{category.name}' kann nicht gelöscht werden: {child_count} Unterkategorie(n) hängen daran. "
+            "Bitte diese zuerst löschen oder umhängen."
+        )
+
+    for shelf_life in session.exec(select(CategoryShelfLife).where(CategoryShelfLife.category_id == id)).all():
+        session.delete(shelf_life)
+    # Ohne Relationship kennt SQLAlchemy die Löschreihenfolge nicht: erst Haltbarkeiten
+    # schreiben, dann die Kategorie, alles in derselben Transaktion
+    session.flush()
     session.delete(category)
     session.commit()
 

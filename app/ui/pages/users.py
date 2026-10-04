@@ -14,7 +14,11 @@ from ...models.user import Role
 from ...services import auth_service
 from ..components import create_mobile_page_container
 from ..theme.icons import create_icon
+import logging
 from nicegui import ui
+
+
+logger = logging.getLogger(__name__)
 
 
 @ui.page("/admin/users")
@@ -397,8 +401,13 @@ def _open_delete_dialog(user_id: int, username: str) -> None:
                     ui.notify("Benutzer gelöscht", type="positive")
                     dialog.close()
                     ui.navigate.to("/admin/users")
-                except Exception as e:
+                except ValueError as e:
+                    # Fachliche Ablehnung aus dem Service (z.B. referenzierte Artikel), #379
                     error_label.set_text(str(e))
+                    error_label.set_visibility(True)
+                except Exception:
+                    logger.exception("Benutzer %s konnte nicht gelöscht werden", user_id)
+                    error_label.set_text("Löschen fehlgeschlagen. Details stehen im Server-Log.")
                     error_label.set_visibility(True)
 
             ui.button("Löschen", on_click=confirm_delete).classes("sp-btn-danger")
