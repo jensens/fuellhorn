@@ -10,6 +10,9 @@ ARG FUELLHORN_VERSION
 
 WORKDIR /app
 
+# SQLite-Datei und Daten liegen im Volume unter /app/data, nicht im Paket (#371)
+ENV FUELLHORN_DATA_DIR=/app/data
+
 # Fuellhorn von PyPI installieren (inkl. Alembic-Migrations)
 RUN uv pip install --system fuellhorn==${FUELLHORN_VERSION}
 
