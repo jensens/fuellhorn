@@ -56,8 +56,24 @@ def ensure_sqlite_directory(url: str) -> None:
         )
 
 
-# Datenverzeichnis (SQLite-Datei, später evtl. Uploads)
+# Datenverzeichnis (SQLite-Datei, NiceGUI-Storage, später evtl. Uploads)
 DATA_DIR = resolve_data_dir()
+
+
+def resolve_storage_path(env: Mapping[str, str] | None = None, data_dir: Path | None = None) -> Path:
+    """Verzeichnis für den NiceGUI-Storage (Login-Sitzungen): ``NICEGUI_STORAGE_PATH`` oder ``<DATA_DIR>/.nicegui``.
+
+    NiceGUI schreibt die Sitzungsdateien standardmäßig nach ``./.nicegui`` im Arbeitsverzeichnis.
+    Im Container liegt das nicht auf dem Volume, jeder Neustart meldete alle Benutzer ab (Issue #429).
+    """
+    environment = os.environ if env is None else env
+    configured = environment.get("NICEGUI_STORAGE_PATH", "").strip()
+    if configured:
+        return Path(configured).expanduser().resolve()
+    return (DATA_DIR if data_dir is None else data_dir) / ".nicegui"
+
+
+STORAGE_PATH = resolve_storage_path()
 
 
 def parse_trusted_proxies(value: str) -> frozenset[str]:
@@ -96,6 +112,8 @@ class Config:
         "DATABASE_URL",
         f"{SQLITE_FILE_PREFIX}{DATA_DIR / 'fuellhorn.db'}",
     )
+    # NiceGUI-Storage (Sitzungen) im Datenverzeichnis, siehe resolve_storage_path (Issue #429)
+    STORAGE_PATH: Path = STORAGE_PATH
     # SQL-Statements samt Parametern loggen: bewusst getrennt von DEBUG, weil das
     # Passwort-Hashes, Tokens und IPs in die Logs schreibt (Issue #374)
     SQL_ECHO: bool = _env_flag("SQL_ECHO")

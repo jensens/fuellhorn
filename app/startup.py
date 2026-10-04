@@ -9,6 +9,7 @@ from . import config as app_config
 from nicegui import ui
 from nicegui.app import App
 from nicegui.client import Client
+from nicegui.storage import Storage
 from pathlib import Path
 from typing import Any
 
@@ -47,11 +48,16 @@ HEAD_HTML = "\n".join(
 
 
 def configure_app(app: App) -> None:
-    """Registriert Static-Dateien, PWA-Routen und den gemeinsamen Seitenkopf.
+    """Registriert Static-Dateien, PWA-Routen, Storage-Pfad und den gemeinsamen Seitenkopf.
 
     Idempotent bezüglich des Seitenkopfs: NiceGUI hält ``shared_head_html`` als
     Klassenattribut, Tests laden ``main.py`` mehrfach im selben Prozess.
     """
+    # Sitzungsdateien ins Datenverzeichnis (Volume) statt ins Arbeitsverzeichnis (Issue #429).
+    # NiceGUI liest den Pfad als Klassenattribut beim Anlegen jedes Benutzer-Storages.
+    storage_path = app_config.config.STORAGE_PATH
+    storage_path.mkdir(parents=True, exist_ok=True)
+    Storage.path = storage_path
     app.add_static_files("/static", str(STATIC_DIR))
     for url_path, local_file in PWA_FILES.items():
         app.add_static_file(url_path=url_path, local_file=str(local_file))
