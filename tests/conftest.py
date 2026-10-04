@@ -1,20 +1,34 @@
 """Pytest configuration and fixtures for Fuellhorn tests."""
 
-from app.database import create_sqlite_test_engine
-from app.models import User
-from app.models.category import Category
-from app.models.location import Location
-from app.models.location import LocationType
-from collections.abc import Generator
+import atexit
 import os
-import pytest
-from sqlmodel import Session
-from sqlmodel import SQLModel
-import sys
+from pathlib import Path
+import shutil
+import tempfile
 
 
 # Set TESTING environment variable so main.py imports test pages
 os.environ["TESTING"] = "true"
+
+# NiceGUI-Storage pro Testprozess (Issue #391): Mit -n auto teilten sich alle xdist-Worker
+# dasselbe Verzeichnis, und app.storage.clear() eines Workers löschte die Dateien der anderen
+# (FileNotFoundError im Teardown). app.config liest NICEGUI_STORAGE_PATH beim Import, deshalb
+# muss die Variable vor dem ersten app-Import stehen. Jeder xdist-Worker ist ein eigener Prozess.
+_STORAGE_DIR = Path(tempfile.gettempdir()) / "fuellhorn-pytest-storage" / str(os.getpid())
+os.environ["NICEGUI_STORAGE_PATH"] = str(_STORAGE_DIR)
+atexit.register(shutil.rmtree, _STORAGE_DIR, True)
+
+from app.database import create_sqlite_test_engine  # noqa: E402
+from app.models import User  # noqa: E402
+from app.models.category import Category  # noqa: E402
+from app.models.location import Location  # noqa: E402
+from app.models.location import LocationType  # noqa: E402
+from collections.abc import Generator  # noqa: E402
+import pytest  # noqa: E402
+from sqlmodel import Session  # noqa: E402
+from sqlmodel import SQLModel  # noqa: E402
+import sys  # noqa: E402
+
 
 # NiceGUI-Testplugin (user/screen-Fixtures, ini-Option main_file) einmal zentral laden.
 # In Unter-conftests ist pytest_plugins deprecated und die Option fehlte bei Teil-Läufen (#374).
