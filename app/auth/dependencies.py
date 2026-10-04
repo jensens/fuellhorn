@@ -11,13 +11,8 @@ from .permissions import check_permission
 from .session import end_session
 from .session import session_problem
 from .session import touch_session
-from collections.abc import Callable
 from contextvars import ContextVar
-from fastapi import Depends
-from fastapi import HTTPException
-from fastapi import Request
 from nicegui import app
-from typing import Any
 
 
 # Request-scoped cache fuer current_user
@@ -140,70 +135,3 @@ def require_permission(permission: Permission, user: User | None = None) -> User
         raise AuthorizationError(f"Fehlende Permission: {permission.value}")
 
     return user
-
-
-# FastAPI Dependencies fuer API Routes
-
-
-async def get_current_user_from_request(request: Request) -> User:
-    """FastAPI dependency um current user aus request zu holen.
-
-    Usage in API routes:
-        @app.get("/api/protected")
-        async def protected_endpoint(
-            current_user: User = Depends(get_current_user_from_request)
-        ):
-            # current_user ist garantiert authentifiziert
-            ...
-
-    Args:
-        request: FastAPI Request object.
-
-    Returns:
-        Authenticated User object.
-
-    Raises:
-        HTTPException: 401 wenn nicht authentifiziert.
-    """
-    # Get session cookie
-    session_id = request.cookies.get("nicegui-storage-session")
-    if not session_id:
-        raise HTTPException(status_code=401, detail="Nicht authentifiziert")
-
-    # Try to get user from session
-    try:
-        user = get_current_user(require_auth=True)
-        # user is guaranteed to be not None here because require_auth=True
-        assert user is not None
-        return user
-    except AuthenticationError as e:
-        raise HTTPException(status_code=401, detail=str(e)) from e
-
-
-def require_api_permission(permission: Permission) -> Callable[[User], Any]:
-    """FastAPI dependency factory fuer Permission-Checking.
-
-    Usage:
-        @app.get("/api/items")
-        async def get_items(
-            user: User = Depends(require_api_permission(Permission.ITEMS_READ))
-        ):
-            # user ist garantiert authentifiziert UND hat ITEMS_READ
-            ...
-
-    Args:
-        permission: Die required Permission.
-
-    Returns:
-        FastAPI dependency function.
-    """
-
-    async def permission_checker(
-        user: User = Depends(get_current_user_from_request),
-    ) -> User:
-        """Check permission for API endpoint."""
-        if not check_permission(user, permission):
-            raise HTTPException(status_code=403, detail=f"Fehlende Permission: {permission.value}")
-        return user
-
-    return permission_checker

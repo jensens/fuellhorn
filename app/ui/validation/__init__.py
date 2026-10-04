@@ -3,9 +3,7 @@
 from .wizard_validation import is_step1_valid
 from .wizard_validation import is_step2_valid
 from .wizard_validation import is_step3_valid
-from .wizard_validation import requires_category
 from .wizard_validation import validate_best_before_date
-from .wizard_validation import validate_category
 from .wizard_validation import validate_freeze_date
 from .wizard_validation import validate_item_type
 from .wizard_validation import validate_location
@@ -21,9 +19,7 @@ __all__ = [
     "is_step1_valid",
     "is_step2_valid",
     "is_step3_valid",
-    "requires_category",
     "validate_best_before_date",
-    "validate_category",
     "validate_freeze_date",
     "validate_item_type",
     "validate_location",

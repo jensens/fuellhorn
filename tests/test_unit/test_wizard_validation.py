@@ -360,17 +360,6 @@ def test_is_step2_valid_returns_false_when_invalid() -> None:
 # Step 2 Category Validation Tests (category moved from Step 3 to Step 2)
 
 
-def test_requires_category_always_true_for_all_item_types() -> None:
-    """Test that category is always required for all item types."""
-    from app.ui.validation import requires_category
-
-    assert requires_category(ItemType.PURCHASED_FRESH) is True
-    assert requires_category(ItemType.PURCHASED_FROZEN) is True
-    assert requires_category(ItemType.PURCHASED_THEN_FROZEN) is True
-    assert requires_category(ItemType.HOMEMADE_FROZEN) is True
-    assert requires_category(ItemType.HOMEMADE_PRESERVED) is True
-
-
 def test_is_step2_valid_requires_category_for_all_types() -> None:
     """Test Step 2 validation requires category for all item types."""
     from app.ui.validation import is_step2_valid
@@ -435,15 +424,6 @@ def test_validate_location_none() -> None:
     from app.ui.validation import validate_location
 
     assert validate_location(None) == "Bitte Lagerort auswählen"
-
-
-def test_validate_category_required() -> None:
-    """Test category is now required."""
-    from app.ui.validation import validate_category
-
-    assert validate_category(None) == "Kategorie ist erforderlich"
-    assert validate_category(1) is None
-    assert validate_category(42) is None
 
 
 def test_validate_step3_all_valid() -> None:

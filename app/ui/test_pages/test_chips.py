@@ -8,7 +8,7 @@ from ...database import get_session
 from ...services import category_service
 from ...services import item_service
 from ...services import location_service
-from ..components import create_category_chip_group
+from ..components import create_grouped_category_chip_group
 from ..components import create_location_chip_group
 from ..components.location_overview import create_location_overview_chips
 from nicegui import ui
@@ -96,8 +96,8 @@ def test_category_chips_page() -> None:
 
     with ui.column().classes("p-4"):
         ui.label("Category Chips Test").classes("text-h6")
-        create_category_chip_group(
-            categories=categories,
+        create_grouped_category_chip_group(
+            grouped_categories=[(None, categories)],
             on_change=on_change,
         )
         # Display current selection for test verification
@@ -122,8 +122,8 @@ def test_category_chips_preselected_page() -> None:
 
     with ui.column().classes("p-4"):
         ui.label("Category Chips Test (Preselected)").classes("text-h6")
-        create_category_chip_group(
-            categories=categories,
+        create_grouped_category_chip_group(
+            grouped_categories=[(None, categories)],
             value=preselected_id,
             on_change=on_change,
         )
