@@ -2,6 +2,10 @@
 
 replicaCount: 1
 
+# Zeitzone des Containers (z.B. "Europe/Vienna"). Die App speichert naive lokale Zeitstempel;
+# leer = UTC des Images (#401).
+timezone: ""
+
 image:
   repository: ghcr.io/jensens/fuellhorn
   # Leer = appVersion des Charts (immer die zum Chart passende, unveränderliche Version).

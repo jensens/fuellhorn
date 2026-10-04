@@ -98,6 +98,7 @@ helm install fuellhorn oci://ghcr.io/jensens/fuellhorn \
 | Parameter | Description | Default |
 |-----------|-------------|---------|
 | `replicaCount` | Number of replicas (must be `1` with SQLite) | `1` |
+| `timezone` | Container time zone, e.g. `Europe/Vienna`; the app stores naive local timestamps, empty means UTC | `""` |
 | `image.repository` | Image repository | `ghcr.io/jensens/fuellhorn` |
 | `image.tag` | Image tag; empty uses the chart's `appVersion` (immutable, matches the chart). `latest` points to the newest stable release only | `""` |
 | `image.pullPolicy` | Image pull policy | `IfNotPresent` |

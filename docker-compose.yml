@@ -51,6 +51,8 @@ services:
       DEBUG: ${DEBUG:-false}
       HOST: 0.0.0.0
       PORT: 8080
+      # Zeitstempel sind naive lokale Zeit; ohne TZ rechnet der Container in UTC (#401)
+      TZ: ${TZ:-Europe/Vienna}
       # Reverse-Proxy-IPs, deren X-Forwarded-For fuer das Login-Rate-Limiting vertraut wird
       TRUSTED_PROXIES: ${TRUSTED_PROXIES:-}
     ports:

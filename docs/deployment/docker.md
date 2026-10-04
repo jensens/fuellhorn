@@ -166,6 +166,13 @@ Falls eine manuelle Migration erforderlich ist:
 docker exec fuellhorn-app fuellhorn migrate
 ```
 
+## Zeitzone
+
+Die App speichert Zeitstempel (`created_at`, `last_login`, Login-Sperre „bis HH:MM“) als naive lokale Zeit
+(`datetime.now()`), nicht timezone-aware (Entscheidung in Issue #401: eine einzelne Haushalts-Instanz, keine
+Zeitzonen-Mischung). Der Container muss deshalb in der Zeitzone der Nutzer laufen: `TZ=Europe/Vienna` in
+`docker-compose.yml` (Default) bzw. `timezone: Europe/Vienna` im Helm-Chart. Ohne `TZ` gilt UTC.
+
 ## CLI-Befehle
 
 Das `fuellhorn`-CLI bietet folgende Befehle:

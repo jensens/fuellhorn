@@ -105,7 +105,7 @@ def get_expiry_status_minmax(
         return "ok"
 
     # Normal case: both optimal and max dates provided
-    # (mypy now knows both are not None due to the check above)
+    # (der Type-Checker weiß durch die Prüfung oben, dass beide nicht None sind)
     days_until_optimal = (optimal_date - today).days
     days_until_max = (max_date - today).days
 

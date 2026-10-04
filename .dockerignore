@@ -7,7 +7,6 @@ __pycache__
 *.py[cod]
 *$py.class
 *.so
-.Python
 .venv
 venv/
 ENV/
@@ -31,7 +30,6 @@ tests/
 !README.md
 .pre-commit-config.yaml
 .ruff_cache
-.mypy_cache
 
 # IDE
 .vscode/
@@ -43,18 +41,13 @@ tests/
 data/
 *.db
 
-# Documentation and project files
-requirements.md
-data-model.md
-tech-stack.md
-fuellhorn-projekt-zusammenfassung.md
-UI_KONZEPT.md
-TESTING.md
-artwork/
+# Dokumentation, Design-Quellen und Deployment-Artefakte (nicht Teil des Images)
+docs/
+ci-guidelines/
+charts/
 
 # Scripts
 scripts/
-create_admin.py
 
 # Claude
 .claude/
@@ -64,4 +57,4 @@ CLAUDE.md
 .github/
 
 # Worktrees
-worktrees/
+.worktrees/

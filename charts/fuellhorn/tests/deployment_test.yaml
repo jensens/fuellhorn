@@ -280,3 +280,26 @@ tests:
           content:
             name: NICEGUI_STORAGE_PATH
             value: /app/data/.nicegui
+
+  - it: should pass the configured timezone as TZ
+    set:
+      secrets.fuellhornSecret: test-secret
+      database.type: sqlite
+      timezone: Europe/Vienna
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: TZ
+            value: Europe/Vienna
+
+  - it: should not set TZ without a timezone
+    set:
+      secrets.fuellhornSecret: test-secret
+      database.type: sqlite
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: TZ
+          any: true
