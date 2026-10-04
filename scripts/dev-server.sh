@@ -35,7 +35,7 @@ fi
 # Server starten
 echo ""
 echo "🚀 Server starten auf http://localhost:$PORT"
-echo "   Login: admin / admin"
+echo "   Login: admin / admin123"
 echo ""
 echo "   Strg+C zum Beenden"
 echo ""

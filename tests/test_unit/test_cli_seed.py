@@ -2,7 +2,7 @@
 
 - ``seed`` legte Tabellen per ``create_all`` an; auf einer frischen Datenbank fehlte
   danach ``alembic_version`` und ``alembic upgrade head`` scheiterte.
-- ``seed testdata`` legt ``admin/admin`` an und darf in Produktion nicht ohne
+- ``seed testdata`` legt ``admin/admin123`` an und darf in Produktion nicht ohne
   ausdrückliche Bestätigung laufen.
 """
 

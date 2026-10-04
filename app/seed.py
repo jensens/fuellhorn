@@ -131,6 +131,10 @@ CATEGORIES: list[tuple[str, str | None, str | None, list[tuple[StorageType, int,
 # Testdata
 # =============================================================================
 
+# Passwort des Testdaten-Admins: erfüllt die Passwortregel (mindestens 8 Zeichen, #383).
+# Nur für die Entwicklung; Doku und Skripte nennen genau diesen Wert (#468).
+TESTDATA_ADMIN_PASSWORD = "admin123"
+
 TEST_CATEGORIES = [
     ("Gemüse", "#4CAF50", 12),
     ("Obst", "#FF9800", 12),
@@ -304,7 +308,7 @@ def seed_testdata(session: Session) -> dict[str, int]:
     """Seed test data for development.
 
     Creates:
-    - Admin user (admin/admin)
+    - Admin user ``admin`` mit ``TESTDATA_ADMIN_PASSWORD``
     - Test categories
     - Test locations
     - Sample items
@@ -321,7 +325,7 @@ def seed_testdata(session: Session) -> dict[str, int]:
             session=session,
             username="admin",
             email="admin@fuellhorn.local",
-            password="admin",
+            password=TESTDATA_ADMIN_PASSWORD,
             role=Role.ADMIN,
         )
         result["admin"] = 1

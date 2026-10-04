@@ -72,7 +72,7 @@ Im main oder im worktree:
 ```
 
 - **Port**: 8000 + Issue-Nummer (z.B. Issue 123 → Port 8123)
-- **Testdaten**: Admin (admin/admin), Kategorien, Lagerorte, Beispiel-Items
+- **Testdaten**: Admin (admin/admin123), Kategorien, Lagerorte, Beispiel-Items
 - Jeder Worktree hat eigene SQLite-DB
 
 ```bash

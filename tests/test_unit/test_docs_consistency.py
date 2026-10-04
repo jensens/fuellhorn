@@ -154,3 +154,38 @@ def test_release_doc_names_every_publish_target() -> None:
 
 def test_readme_points_to_the_release_doc() -> None:
     assert "RELEASE.md" in (REPO / "README.md").read_text(encoding="utf-8")
+
+
+# Testdaten-Login (Issue #468): `admin/<passwort>` außerhalb von Pfaden wie `/admin/settings`
+TESTDATA_LOGIN = re.compile(r"(?<![/\w])admin\s*/\s*(\w+)\b")
+TESTDATA_LOGIN_DOCS = [
+    REPO / "README.md",
+    REPO / "CLAUDE.md",
+    REPO / "docs" / "deployment" / "docker.md",
+    REPO / "scripts" / "dev-server.sh",
+    REPO / "scripts" / "seed_testdata.py",
+]
+
+
+@pytest.mark.parametrize("doc", TESTDATA_LOGIN_DOCS, ids=lambda p: str(p.relative_to(REPO)))
+def test_documented_testdata_login_matches_the_seed(doc: Path) -> None:
+    """Wer der Doku folgt, kann sich mit den Testdaten anmelden: genannt ist genau das Seed-Passwort."""
+    from app.seed import TESTDATA_ADMIN_PASSWORD
+
+    assert set(TESTDATA_LOGIN.findall(doc.read_text(encoding="utf-8"))) == {TESTDATA_ADMIN_PASSWORD}
+
+
+def test_no_stale_admin_admin_login_left() -> None:
+    """admin/admin erfüllt die Passwortregel nicht mehr (#383) und darf nirgends mehr versprochen werden."""
+    sources = DOC_FILES + sorted((REPO / "app").rglob("*.py")) + sorted((REPO / "scripts").glob("*"))
+    stale = [
+        str(path.relative_to(REPO))
+        for path in sources
+        if path.is_file() and "admin" in TESTDATA_LOGIN.findall(path.read_text(encoding="utf-8"))
+    ]
+    assert stale == []
+
+
+def test_testdata_login_pattern_ignores_routes() -> None:
+    """Hilfsmuster: Pfade wie /admin/settings zählen nicht als Zugangsdaten."""
+    assert TESTDATA_LOGIN.findall("Login: admin / geheim123, siehe /admin/settings") == ["geheim123"]
