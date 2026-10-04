@@ -4,6 +4,7 @@ Tests the preference hierarchy:
 1. User-Einstellung > 2. System-Default > 3. Hardcoded Default
 """
 
+from app.database import create_sqlite_test_engine
 from app.models.system_settings import SystemSettings
 from app.models.user import Role
 from app.models.user import User
@@ -11,20 +12,14 @@ from app.services import preferences_service
 from collections.abc import Generator
 from datetime import datetime
 import pytest
-from sqlalchemy.pool import StaticPool
 from sqlmodel import Session
 from sqlmodel import SQLModel
-from sqlmodel import create_engine
 
 
 @pytest.fixture(name="session")
 def session_fixture() -> Generator[Session, None, None]:
     """Create In-Memory SQLite session for tests."""
-    engine = create_engine(
-        "sqlite://",
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-    )
+    engine = create_sqlite_test_engine()
     SQLModel.metadata.create_all(engine)
     with Session(engine) as session:
         yield session

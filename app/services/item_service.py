@@ -272,8 +272,9 @@ def delete_item(session: Session, id: int) -> None:
     """
     item = get_item(session, id)
 
-    # Delete associated withdrawal entries first
-    # (SQLite doesn't enforce CASCADE by default)
+    # Entnahmen explizit löschen. Seit #378 greift ON DELETE CASCADE auch in SQLite
+    # (PRAGMA foreign_keys=ON); der explizite Schritt bleibt als klare Absicht
+    # und unabhängig vom Dialekt bestehen.
     withdrawals = session.exec(select(Withdrawal).where(Withdrawal.item_id == id)).all()
     for withdrawal in withdrawals:
         session.delete(withdrawal)

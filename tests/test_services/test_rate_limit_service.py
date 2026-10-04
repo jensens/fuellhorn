@@ -1,5 +1,6 @@
 """Tests für Rate Limit Service - Progressive Verzögerung."""
 
+from app.database import create_sqlite_test_engine
 from app.models.login_attempt import LoginAttempt
 from app.services import rate_limit_service
 from collections.abc import Generator
@@ -7,20 +8,14 @@ from datetime import datetime
 from datetime import timedelta
 from freezegun import freeze_time
 import pytest
-from sqlalchemy.pool import StaticPool
 from sqlmodel import Session
 from sqlmodel import SQLModel
-from sqlmodel import create_engine
 
 
 @pytest.fixture(name="session")
 def session_fixture() -> Generator[Session, None, None]:
     """Create In-Memory SQLite session for tests."""
-    engine = create_engine(
-        "sqlite://",
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-    )
+    engine = create_sqlite_test_engine()
     SQLModel.metadata.create_all(engine)
     with Session(engine) as session:
         yield session

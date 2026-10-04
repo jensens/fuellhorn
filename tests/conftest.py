@@ -1,5 +1,6 @@
 """Pytest configuration and fixtures for Fuellhorn tests."""
 
+from app.database import create_sqlite_test_engine
 from app.models import User
 from app.models.category import Category
 from app.models.location import Location
@@ -7,10 +8,8 @@ from app.models.location import LocationType
 from collections.abc import Generator
 import os
 import pytest
-from sqlalchemy.pool import StaticPool
 from sqlmodel import Session
 from sqlmodel import SQLModel
-from sqlmodel import create_engine
 import sys
 
 
@@ -25,11 +24,7 @@ pytest_plugins = ["nicegui.testing.plugin"]
 @pytest.fixture(name="session")
 def session_fixture() -> Generator[Session, None, None]:
     """Create In-Memory SQLite session for tests."""
-    engine = create_engine(
-        "sqlite://",
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-    )
+    engine = create_sqlite_test_engine()
     SQLModel.metadata.create_all(engine)
     with Session(engine) as session:
         yield session
@@ -53,11 +48,7 @@ def _module_engine():
     The isolated_test_database fixture handles per-test cleanup via rollback.
     """
     # Create in-memory test engine with StaticPool
-    engine = create_engine(
-        "sqlite://",
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-    )
+    engine = create_sqlite_test_engine()
 
     # Create all tables once
     SQLModel.metadata.create_all(engine)
