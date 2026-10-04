@@ -266,35 +266,29 @@ class TestSortItems:
 class TestConstants:
     """Tests for module constants."""
 
-    def test_sort_options_has_required_fields(self) -> None:
-        """SORT_OPTIONS should have all required sort fields."""
-        assert "best_before_date" in SORT_OPTIONS
-        assert "product_name" in SORT_OPTIONS
-        assert "created_at" in SORT_OPTIONS
+    def test_sort_options_are_the_three_sortable_fields(self) -> None:
+        """Sortierbar sind genau Ablaufdatum, Produktname und Erfassungsdatum (vorher nur `in`-Checks)."""
+        assert SORT_OPTIONS == {
+            "best_before_date": "Haltbarkeitsdatum",
+            "product_name": "Produktname",
+            "created_at": "Erfassungsdatum",
+        }
 
-    def test_item_type_labels_has_all_types(self) -> None:
-        """ITEM_TYPE_LABELS should have label for all item types."""
-        # Should have empty string for "all types"
-        assert "" in ITEM_TYPE_LABELS
-        # Should have all item type values
-        for item_type in ItemType:
-            assert item_type.value in ITEM_TYPE_LABELS
+    def test_item_type_filter_offers_all_types_plus_all(self) -> None:
+        """Der Typ-Filter bietet "" (alle) und jeden ItemType-Wert, nichts darüber hinaus."""
+        assert set(ITEM_TYPE_LABELS) == {""} | {item_type.value for item_type in ItemType}
+        assert ITEM_TYPE_LABELS[""] == "Alle Typen"
 
-    def test_default_filter_state_has_required_keys(self) -> None:
-        """DEFAULT_FILTER_STATE should have all required filter keys."""
-        assert "search_term" in DEFAULT_FILTER_STATE
-        assert "location_id" in DEFAULT_FILTER_STATE
-        assert "item_type" in DEFAULT_FILTER_STATE
-        assert "sort_field" in DEFAULT_FILTER_STATE
-        assert "sort_ascending" in DEFAULT_FILTER_STATE
-
-    def test_default_filter_state_values(self) -> None:
-        """DEFAULT_FILTER_STATE should have correct default values."""
-        assert DEFAULT_FILTER_STATE["search_term"] == ""
-        assert DEFAULT_FILTER_STATE["location_id"] == 0
-        assert DEFAULT_FILTER_STATE["item_type"] == ""
-        assert DEFAULT_FILTER_STATE["sort_field"] == "best_before_date"
-        assert DEFAULT_FILTER_STATE["sort_ascending"] is True
+    def test_default_filter_state_is_the_neutral_filter(self) -> None:
+        """Der Standardzustand filtert nichts und sortiert aufsteigend nach Ablaufdatum."""
+        assert DEFAULT_FILTER_STATE == {
+            "search_term": "",
+            "location_id": 0,
+            "item_type": "",
+            "sort_field": "best_before_date",
+            "sort_ascending": True,
+        }
+        assert not has_active_filters(dict(DEFAULT_FILTER_STATE), set())
 
 
 class TestHasActiveFilters:

@@ -9,6 +9,7 @@ from app.services import item_service
 from app.services import location_service
 from app.services import shelf_life_service
 from datetime import date
+from freezegun import freeze_time
 import pytest
 from sqlmodel import Session
 
@@ -961,8 +962,6 @@ def test_get_consumed_items_returns_only_items_with_withdrawals(session: Session
 
 def test_get_consumed_items_sorted_by_last_withdrawal_descending(session: Session, test_admin: User) -> None:
     """Test: get_consumed_items returns items sorted by last withdrawal date (newest first)."""
-    from time import sleep
-
     location = location_service.create_location(
         session=session,
         name="Gefrierschrank",
@@ -991,15 +990,14 @@ def test_get_consumed_items_sorted_by_last_withdrawal_descending(session: Sessio
         category_id=category.id,
         freeze_date=date(2024, 6, 1),
     )
-    item_service.withdraw_partial(
-        session=session,
-        item_id=item1.id,
-        withdraw_quantity=100,
-        user_id=test_admin.id,
-    )
-
-    # Small delay to ensure different timestamps
-    sleep(0.01)
+    # Feste Zeitpunkte statt sleep(0.01) (Issue #392): Erbsen zuerst, Karotten eine Stunde später
+    with freeze_time("2026-01-01 10:00:00"):
+        item_service.withdraw_partial(
+            session=session,
+            item_id=item1.id,
+            withdraw_quantity=100,
+            user_id=test_admin.id,
+        )
 
     # Second item - withdrawn second (should appear first in results)
     item2 = item_service.create_item(
@@ -1014,12 +1012,13 @@ def test_get_consumed_items_sorted_by_last_withdrawal_descending(session: Sessio
         category_id=category.id,
         freeze_date=date(2024, 6, 1),
     )
-    item_service.withdraw_partial(
-        session=session,
-        item_id=item2.id,
-        withdraw_quantity=50,
-        user_id=test_admin.id,
-    )
+    with freeze_time("2026-01-01 11:00:00"):
+        item_service.withdraw_partial(
+            session=session,
+            item_id=item2.id,
+            withdraw_quantity=50,
+            user_id=test_admin.id,
+        )
 
     consumed_items = item_service.get_consumed_items(session)
 
@@ -1156,8 +1155,6 @@ def test_get_initial_quantity_correct_after_mark_consumed(session: Session, test
 
 def test_get_recently_added_items_returns_newest_first(session: Session, test_admin: User) -> None:
     """Test: get_recently_added_items returns items sorted by created_at descending."""
-    from time import sleep
-
     location = location_service.create_location(
         session=session,
         name="Kühlschrank",
@@ -1172,46 +1169,45 @@ def test_get_recently_added_items_returns_newest_first(session: Session, test_ad
 
     assert category.id is not None
 
-    # Create items with slight delay to ensure different timestamps
-    item1 = item_service.create_item(
-        session=session,
-        product_name="Erstes Item",
-        best_before_date=date(2025, 6, 1),
-        quantity=1,
-        unit="Stück",
-        item_type=ItemType.PURCHASED_FRESH,
-        location_id=location.id,
-        created_by=test_admin.id,
-        category_id=category.id,
-    )
+    # Feste Erfassungszeitpunkte statt sleep(0.01) (Issue #392)
+    with freeze_time("2026-01-01 10:00:00"):
+        item1 = item_service.create_item(
+            session=session,
+            product_name="Erstes Item",
+            best_before_date=date(2025, 6, 1),
+            quantity=1,
+            unit="Stück",
+            item_type=ItemType.PURCHASED_FRESH,
+            location_id=location.id,
+            created_by=test_admin.id,
+            category_id=category.id,
+        )
 
-    sleep(0.01)
+    with freeze_time("2026-01-01 11:00:00"):
+        item2 = item_service.create_item(
+            session=session,
+            product_name="Zweites Item",
+            best_before_date=date(2025, 6, 1),
+            quantity=1,
+            unit="Stück",
+            item_type=ItemType.PURCHASED_FRESH,
+            location_id=location.id,
+            created_by=test_admin.id,
+            category_id=category.id,
+        )
 
-    item2 = item_service.create_item(
-        session=session,
-        product_name="Zweites Item",
-        best_before_date=date(2025, 6, 1),
-        quantity=1,
-        unit="Stück",
-        item_type=ItemType.PURCHASED_FRESH,
-        location_id=location.id,
-        created_by=test_admin.id,
-        category_id=category.id,
-    )
-
-    sleep(0.01)
-
-    item3 = item_service.create_item(
-        session=session,
-        product_name="Drittes Item",
-        best_before_date=date(2025, 6, 1),
-        quantity=1,
-        unit="Stück",
-        item_type=ItemType.PURCHASED_FRESH,
-        location_id=location.id,
-        created_by=test_admin.id,
-        category_id=category.id,
-    )
+    with freeze_time("2026-01-01 12:00:00"):
+        item3 = item_service.create_item(
+            session=session,
+            product_name="Drittes Item",
+            best_before_date=date(2025, 6, 1),
+            quantity=1,
+            unit="Stück",
+            item_type=ItemType.PURCHASED_FRESH,
+            location_id=location.id,
+            created_by=test_admin.id,
+            category_id=category.id,
+        )
 
     items = item_service.get_recently_added_items(session, limit=5)
 

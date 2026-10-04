@@ -11,7 +11,7 @@ from app.ui.components.item_card import get_expiry_badge_class
 from app.ui.components.item_card import get_expiry_badge_text
 from datetime import date
 from datetime import timedelta
-from dateutil.relativedelta import relativedelta
+from freezegun import freeze_time
 from nicegui.testing import User as TestUser
 
 
@@ -39,14 +39,14 @@ async def test_item_card_shows_location(user: TestUser) -> None:
 
 
 async def test_item_card_shows_date_badge_for_frozen(user: TestUser) -> None:
-    """Test that frozen item card displays date format in expiry badge."""
-    await user.open("/test-item-card")
-    # Frozen items show date format (DD.MM.YY) in badge
-    # Test page creates item frozen 30 days ago with 6-12 month shelf life
-    # So badge shows optimal date (freeze_date + 6 months)
-    freeze_date = date.today() - timedelta(days=30)
-    optimal_date = freeze_date + relativedelta(months=6)
-    await user.should_see(optimal_date.strftime("%d.%m.%y"))
+    """Frozen item card shows the optimal date (freeze date + 6 months) in the badge.
+
+    Feste Zeit statt date.today() (Issue #392): eingefroren vor 30 Tagen = 04.09.2026,
+    Idealdatum bei 6 Monaten = 04.03.2027.
+    """
+    with freeze_time("2026-10-04 12:00:00"):
+        await user.open("/test-item-card")
+        await user.should_see("04.03.27")
 
 
 async def test_item_card_shows_item_type_badge(user: TestUser) -> None:
@@ -101,12 +101,10 @@ async def test_item_card_fresh_shows_product_name(user: TestUser) -> None:
 
 
 async def test_item_card_fresh_shows_date_badge_when_far(user: TestUser) -> None:
-    """Test that fresh item shows date format in badge when > 7 days."""
-    await user.open("/test-item-card-mhd")
-    # Fresh items > 7 days show date format (DD.MM.YY) in badge
-    # Test page creates item with mhd_days_from_now=10
-    expiry_date = date.today() + timedelta(days=10)
-    await user.should_see(expiry_date.strftime("%d.%m.%y"))
+    """Fresh item with MHD in 10 days shows the date in the badge (feste Zeit, Issue #392)."""
+    with freeze_time("2026-10-04 12:00:00"):
+        await user.open("/test-item-card-mhd")
+        await user.should_see("14.10.26")
 
 
 async def test_item_card_fresh_shows_quantity_and_unit(user: TestUser) -> None:

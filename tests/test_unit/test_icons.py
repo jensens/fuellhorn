@@ -90,10 +90,12 @@ class TestIconExists:
 class TestListIcons:
     """Tests for list_icons function."""
 
-    def test_list_all_icons(self) -> None:
-        """List all icons returns 67 icons."""
+    def test_list_all_icons_matches_registry(self) -> None:
+        """list_icons() liefert jedes Icon der Registry genau einmal (vorher: magische 67)."""
         all_icons = list_icons()
-        assert len(all_icons) == 67
+        expected = [f"{category}/{name}" for category, names in ICON_CATEGORIES.items() for name in names]
+        assert sorted(all_icons) == sorted(expected)
+        assert len(set(all_icons)) == len(all_icons)
 
     def test_list_icons_by_category(self) -> None:
         """List icons filtered by category."""

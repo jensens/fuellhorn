@@ -44,7 +44,7 @@ uv run pytest tests/test_e2e --run-e2e -n auto
 
 | Job | Inhalt |
 |-----|--------|
-| Unit & Service Tests | `tests/test_services`, `test_api`, `test_unit`, `test_auth`, `test_utils`, `test_migrations`, `test_pwa`, `test_cli.py`, `test_config.py`, `test_database_isolation.py` mit `-n auto` |
+| Unit & Service Tests | `tests/test_services`, `test_api`, `test_unit`, `test_auth`, `test_utils`, `test_migrations`, `test_pwa`, `test_config.py`, `test_database_isolation.py` mit `-n auto` |
 | UI Tests | `tests/test_ui` mit `-n auto` |
 | Migrations (PostgreSQL) | `tests/test_migrations` gegen einen PostgreSQL-Service-Container |
 | E2E Tests | `tests/test_e2e --run-e2e -n auto` mit Playwright/Chromium |

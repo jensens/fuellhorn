@@ -44,11 +44,15 @@ class TestItemTypeLabels:
         for item_type in ItemType:
             assert item_type in ITEM_TYPE_LABELS
 
-    def test_labels_are_german(self) -> None:
-        """Labels should be in German."""
-        for label in ITEM_TYPE_LABELS.values():
-            assert isinstance(label, str)
-            assert len(label) > 0
+    def test_labels_are_the_german_ui_wording(self) -> None:
+        """Die Beschriftungen sind die deutschen UI-Texte (vorher nur isinstance(str))."""
+        assert ITEM_TYPE_LABELS == {
+            ItemType.PURCHASED_FRESH: "Frisch eingekauft",
+            ItemType.PURCHASED_FROZEN: "TK-Ware gekauft",
+            ItemType.PURCHASED_THEN_FROZEN: "Frisch gekauft → eingefroren",
+            ItemType.HOMEMADE_FROZEN: "Selbst eingefroren",
+            ItemType.HOMEMADE_PRESERVED: "Selbst eingemacht",
+        }
 
 
 class TestItemTypeDataTypes:

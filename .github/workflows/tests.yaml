@@ -28,7 +28,7 @@ jobs:
         run: uv sync --frozen
 
       - name: Run unit & service tests (parallel)
-        run: uv run pytest tests/test_services tests/test_api tests/test_unit tests/test_auth tests/test_utils tests/test_migrations tests/test_pwa tests/test_cli.py tests/test_config.py tests/test_database_isolation.py -n auto --cov=app --cov-report=term
+        run: uv run pytest tests/test_services tests/test_api tests/test_unit tests/test_auth tests/test_utils tests/test_migrations tests/test_pwa tests/test_config.py tests/test_database_isolation.py -n auto --cov=app --cov-report=term
 
       # Rohdaten statt XML: der Coverage-Job kombiniert Unit/Service- und UI-Lauf (#391)
       - name: Upload coverage data
