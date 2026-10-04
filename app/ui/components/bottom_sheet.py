@@ -18,6 +18,8 @@ from ...models.withdrawal import Withdrawal
 from ...services import auth_service
 from ...services import expiry_service
 from ...services import item_service
+from ...services.errors import AlreadyConsumedError
+from ...services.errors import StaleStockError
 from ..theme.icons import create_icon
 from ..utils.quantity import format_quantity
 from .errors import show_service_error
@@ -87,7 +89,8 @@ def create_bottom_sheet(
     Args:
         item: The item to display details for
         location: The location where the item is stored
-        on_close: Optional callback when sheet is closed
+        on_close: Optional callback when the sheet is closed without a booking (also after a
+            stale-stock error, so the caller reloads); actions call only their own callback
         on_withdraw: Optional callback when withdraw button is clicked
         on_edit: Optional callback when edit button is clicked
         on_consume: Optional callback when consume button is clicked
@@ -285,26 +288,32 @@ def _handle_withdraw(
                 return
 
             with next(get_session()) as session:
+                # expected_quantity = Bestand zur Render-Zeit: hat ihn jemand geändert, lehnt der
+                # Service ab statt still eine Entnahme zu verlieren (Issue #394)
                 item_service.withdraw_partial(
                     session=session,
                     item_id=item.id,
                     withdraw_quantity=withdraw_qty,
                     user_id=user_id,
+                    expected_quantity=item.quantity,
                 )
 
             # Show success notification
             ui.notify(f"{format_quantity(withdraw_qty, item.unit)} entnommen", type="positive")
 
-            # Close both dialogs
+            # Close both dialogs; nur der Aktions-Callback feuert (on_close ist fürs Schließen ohne Aktion)
             withdraw_dialog.close()
             dialog.close()
-
-            # Call callbacks
             if on_withdraw:
                 on_withdraw(item)
+
+        except StaleStockError as e:
+            # Bestand veraltet: Meldung zeigen, Sheet schließen, Liste neu laden
+            ui.notify(str(e), type="warning")
+            withdraw_dialog.close()
+            dialog.close()
             if on_close:
                 on_close()
-
         except Exception as e:
             show_service_error(e, error_label)
 
@@ -390,16 +399,20 @@ def _handle_consume(
 
     try:
         with next(get_session()) as session:
-            item_service.mark_item_consumed(session, item.id, user_id)
+            item_service.mark_item_consumed(session, item.id, user_id, expected_quantity=item.quantity)
 
         ui.notify(f"{item.product_name} vollständig entnommen", type="positive")
 
         dialog.close()
         if on_consume:
             on_consume(item)
+
+    except (StaleStockError, AlreadyConsumedError) as e:
+        # Jemand war schneller: Meldung zeigen, Sheet schließen, Liste neu laden (Issue #394)
+        ui.notify(str(e), type="warning")
+        dialog.close()
         if on_close:
             on_close()
-
     except Exception as e:
         show_service_error(e)
 

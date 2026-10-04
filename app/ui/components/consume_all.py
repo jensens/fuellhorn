@@ -10,6 +10,7 @@ from ...auth.dependencies import get_current_user
 from ...database import get_session
 from ...models.item import Item
 from ...services import item_service
+from ...services.errors import ServiceError
 from ..utils.quantity import format_quantity
 from nicegui import ui
 from typing import Callable
@@ -53,7 +54,12 @@ def _consume(dialog: ui.dialog, item: Item, on_done: Callable[[], None]) -> None
 
     try:
         with next(get_session()) as session:
-            item_service.mark_item_consumed(session, item.id, user.id)
+            item_service.mark_item_consumed(session, item.id, user.id, expected_quantity=item.quantity)
+    except ServiceError as e:
+        # bereits entnommen oder Bestand inzwischen geändert (Issue #394)
+        ui.notify(str(e), type="warning")
+        on_done()
+        return
     except ValueError:
         ui.notify(f"{item.product_name} ist nicht mehr vorhanden", type="negative")
         on_done()
