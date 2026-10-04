@@ -16,12 +16,9 @@ from ...models.category_shelf_life import StorageType
 from ...services import category_service
 from ...services import shelf_life_service
 from ..components import create_mobile_page_container
+from ..components.errors import show_service_error
 from ..theme.icons import create_icon
-import logging
 from nicegui import ui
-
-
-logger = logging.getLogger(__name__)
 
 
 # Storage type labels for UI
@@ -381,14 +378,9 @@ def _open_create_dialog() -> None:
                     ui.notify(f"Kategorie '{name}' erstellt", type="positive")
                     dialog.close()
                     ui.navigate.to("/admin/categories")
-                except ValueError as e:
-                    # Handle duplicate name error
-                    error_msg = str(e)
-                    if "already exists" in error_msg:
-                        error_label.set_text(f"Kategorie '{name}' bereits vorhanden")
-                    else:
-                        error_label.set_text(error_msg)
-                    error_label.set_visibility(True)
+                except Exception as e:
+                    # Duplikate meldet der Service typisiert, Unerwartetes landet im Log (#382)
+                    show_service_error(e, error_label)
 
             ui.button("Speichern", on_click=save_category).classes("sp-btn-primary")
 
@@ -558,14 +550,9 @@ def _open_edit_dialog(
                     ui.notify(f"Kategorie '{name}' aktualisiert", type="positive")
                     dialog.close()
                     ui.navigate.to("/admin/categories")
-                except ValueError as e:
-                    # Handle duplicate name error
-                    error_msg = str(e)
-                    if "already exists" in error_msg:
-                        error_label.set_text(f"Kategorie '{name}' bereits vorhanden")
-                    else:
-                        error_label.set_text(error_msg)
-                    error_label.set_visibility(True)
+                except Exception as e:
+                    # Duplikate meldet der Service typisiert, Unerwartetes landet im Log (#382)
+                    show_service_error(e, error_label)
 
             ui.button("Speichern", on_click=save_changes).classes("sp-btn-primary")
 
@@ -600,13 +587,8 @@ def _open_delete_dialog(category_id: int, category_name: str) -> None:
                     ui.notify("Kategorie gelöscht", type="positive")
                     dialog.close()
                     ui.navigate.to("/admin/categories")
-                except ValueError as e:
-                    error_label.set_text(str(e))
-                    error_label.set_visibility(True)
-                except Exception:
-                    logger.exception("Kategorie %s konnte nicht gelöscht werden", category_id)
-                    error_label.set_text("Löschen fehlgeschlagen. Details stehen im Server-Log.")
-                    error_label.set_visibility(True)
+                except Exception as e:
+                    show_service_error(e, error_label)
 
             ui.button("Löschen", on_click=confirm_delete).classes("sp-btn-danger")
 

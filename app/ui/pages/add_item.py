@@ -16,6 +16,7 @@ from ..components import create_item_type_chip_group
 from ..components import create_location_chip_group
 from ..components import create_mobile_page_container
 from ..components import create_unit_chip_group
+from ..components.errors import show_service_error
 from ..smart_defaults import create_smart_defaults_dict
 from ..smart_defaults import get_default_category
 from ..smart_defaults import get_default_item_type
@@ -529,7 +530,7 @@ def add_item() -> None:
                 )
             return True
         except Exception as e:
-            ui.notify(f"Fehler beim Speichern: {str(e)}", type="negative")
+            show_service_error(e)
             return False
 
     def save_item() -> None:

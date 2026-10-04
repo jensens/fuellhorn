@@ -12,6 +12,7 @@ from ..components import create_item_type_chip_group
 from ..components import create_location_chip_group
 from ..components import create_mobile_page_container
 from ..components import create_unit_chip_group
+from ..components.errors import show_service_error
 from ..theme.icons import create_icon
 from ..utils.date_utils import format_german_date
 from ..utils.date_utils import parse_german_date
@@ -138,7 +139,7 @@ def edit_item(item_id: int) -> None:
             ui.notify(f"{form_data['product_name']} gespeichert!", type="positive")
             ui.navigate.to("/items")
         except Exception as e:
-            ui.notify(f"Fehler beim Speichern: {str(e)}", type="negative")
+            show_service_error(e)
 
     # Header with title and close button (Solarpunk theme)
     with ui.row().classes("sp-page-header w-full items-center justify-between"):
