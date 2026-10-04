@@ -1,7 +1,7 @@
 """best_before_date_optional
 
 Revision ID: e8d5a1c90b24
-Revises: c3a81f5b2e47
+Revises: e5f1a9c3d2b8
 Create Date: 2026-10-04 20:00:00.000000
 
 Issue #463: Die Schnellerfassung im Keller kennt nur Ort, Name, Menge, Einheit und Typ.
@@ -19,7 +19,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision: str = "e8d5a1c90b24"
-down_revision: str | Sequence[str] | None = "c3a81f5b2e47"
+down_revision: str | Sequence[str] | None = "e5f1a9c3d2b8"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
