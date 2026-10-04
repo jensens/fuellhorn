@@ -3,6 +3,9 @@ name: Tests
 on:
   workflow_call:
 
+env:
+  FUELLHORN_SECRET: test-fuellhorn-secret-for-ci-only
+
 jobs:
   test-fast:
     name: Unit & Service Tests
@@ -25,15 +28,15 @@ jobs:
         run: uv sync --frozen
 
       - name: Run unit & service tests (parallel)
-        run: uv run pytest tests/test_services tests/test_api tests/test_unit tests/test_auth tests/test_utils tests/test_migrations tests/test_cli.py tests/test_config.py tests/test_database_isolation.py -n auto --cov=app --cov-report=xml
-        env:
-          FUELLHORN_SECRET: test-fuellhorn-secret-for-ci-only
+        run: uv run pytest tests/test_services tests/test_api tests/test_unit tests/test_auth tests/test_utils tests/test_migrations tests/test_pwa tests/test_cli.py tests/test_config.py tests/test_database_isolation.py -n auto --cov=app --cov-report=term
 
-      - name: Upload coverage artifact
+      # Rohdaten statt XML: der Coverage-Job kombiniert Unit/Service- und UI-Lauf (#391)
+      - name: Upload coverage data
         uses: actions/upload-artifact@v4
         with:
           name: coverage-fast
-          path: coverage.xml
+          path: .coverage
+          include-hidden-files: true
           retention-days: 7
 
   test-ui:
@@ -56,16 +59,16 @@ jobs:
       - name: Install dependencies
         run: uv sync --frozen
 
-      - name: Run UI tests
-        run: uv run pytest tests/test_ui --cov=app --cov-report=xml --cov-report=term
-        env:
-          FUELLHORN_SECRET: test-fuellhorn-secret-for-ci-only
+      # -n auto: jeder Worker hat seinen eigenen NiceGUI-Storage (tests/conftest.py, #391)
+      - name: Run UI tests (parallel)
+        run: uv run pytest tests/test_ui -n auto --cov=app --cov-report=term
 
-      - name: Upload coverage artifact
+      - name: Upload coverage data
         uses: actions/upload-artifact@v4
         with:
           name: coverage-ui
-          path: coverage.xml
+          path: .coverage
+          include-hidden-files: true
           retention-days: 7
 
   test-migrations-postgres:
@@ -108,5 +111,84 @@ jobs:
       - name: Run migration tests against PostgreSQL
         run: uv run pytest tests/test_migrations -p no:cacheprovider
         env:
-          FUELLHORN_SECRET: test-fuellhorn-secret-for-ci-only
           MIGRATION_TEST_DATABASE_URL: postgresql://fuellhorn:fuellhorn@localhost:5432/fuellhorn_migrations
+
+  test-e2e:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: "pyproject.toml"
+
+      - name: Install Python 3.14
+        run: uv python install 3.14
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Install Playwright browser
+        run: uv run playwright install --with-deps chromium
+
+      # Echter Server pro Worker (tests/test_e2e/_server.py), Playwright im Browser; auf 4 Worker gedeckelt (#391)
+      - name: Run E2E tests
+        run: uv run pytest tests/test_e2e --run-e2e -n auto -p no:cacheprovider
+
+  coverage:
+    name: Coverage
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [test-fast, test-ui]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: "pyproject.toml"
+
+      - name: Install Python 3.14
+        run: uv python install 3.14
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Download coverage data
+        uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-*
+          path: coverage-data
+
+      # relative_files=true in pyproject: die Pfade beider Läufe passen zusammen
+      - name: Combine coverage data
+        run: |
+          mv coverage-data/coverage-fast/.coverage .coverage.fast
+          mv coverage-data/coverage-ui/.coverage .coverage.ui
+          uv run coverage combine .coverage.fast .coverage.ui
+
+      # Stand bei Einführung: 89 %. Schwelle schrittweise anheben: 85 → 90 (Issue #205)
+      - name: Report coverage (fail under 85 %)
+        run: |
+          uv run coverage report --fail-under=85 --show-missing
+          echo "## Coverage (Unit/Service + UI)" >> "$GITHUB_STEP_SUMMARY"
+          uv run coverage report --format=markdown >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Export combined XML
+        if: always()
+        run: uv run coverage xml -o coverage.xml
+
+      - name: Upload combined coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-combined
+          path: coverage.xml
+          retention-days: 7
