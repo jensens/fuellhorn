@@ -11,7 +11,6 @@ Extended in Issue #17 to allow showing consumed items via toggle.
 
 from ...auth import require_auth
 from ...database import get_session
-from ...models.category import Category
 from ...models.item import Item
 from ...models.item import ItemType
 from ...services import category_service
@@ -22,13 +21,12 @@ from ...services import location_service
 from ...services.item_rows import get_item_rows
 from ..components import create_bottom_nav
 from ..components import create_bottom_sheet
+from ..components import create_category_filter
 from ..components import create_item_card
 from ..components import create_mobile_page_container
+from ..components.category_filter import CategoryFilter
 from ..components.consume_all import confirm_consume_all
-from ..theme import Colors
-from ..theme import get_contrast_text_color
 from ..theme.icons import create_icon
-from collections import defaultdict
 from datetime import date
 from nicegui import app
 from nicegui import ui
@@ -256,8 +254,7 @@ def items_page(filter: str | None = None, location: int | None = None) -> None: 
         "expiring_only": show_expiring_only,  # Filter for expiring items (Issue #244)
     }
     selected_categories: set[int] = set()
-    chip_elements: dict[int, ui.button] = {}
-    category_colors: dict[int, str] = {}  # Store category colors for styling
+    category_filter: CategoryFilter | None = None
     sort_direction_btn: ui.button | None = None
     sort_row: ui.row | None = None  # Reference for hiding when consumed toggle is on
     reset_btn: ui.button | None = None  # Reference for reset button visibility
@@ -398,7 +395,7 @@ def items_page(filter: str | None = None, location: int | None = None) -> None: 
 
     def reset_filters() -> None:
         """Reset all filters to default values."""
-        nonlocal sort_direction_btn, search_input, location_select, item_type_select, sort_select
+        nonlocal sort_direction_btn, search_input, location_select, item_type_select, sort_select, category_filter
 
         # Reset filter state
         filter_state["search_term"] = DEFAULT_FILTER_STATE["search_term"]
@@ -420,40 +417,19 @@ def items_page(filter: str | None = None, location: int | None = None) -> None: 
         if sort_direction_btn:
             sort_direction_btn.props("icon=arrow_upward")
 
-        # Reset category selection and chip styles
+        # Reset category selection
         selected_categories.clear()
-        for cat_id in chip_elements:
-            update_chip_style(cat_id)
+        if category_filter:
+            category_filter.clear()
 
         update_reset_button_visibility()
         # Die Navigation baut die Seite ohnehin neu auf; ein zusätzlicher Render wäre doppelt (#393)
         ui.navigate.to("/items")
 
-    def update_chip_style(cat_id: int) -> None:
-        """Update chip appearance based on selection state and category color."""
-        chip = chip_elements.get(cat_id)
-        color = category_colors.get(cat_id, Colors.DEFAULT_GRAY)  # Default gray if no color
-        text_color = get_contrast_text_color(color)
-        if chip:
-            if cat_id in selected_categories:
-                # Selected: Full background in category color, contrast text
-                chip.style(
-                    f"background-color: {color} !important; border: 2px solid {color}; color: {text_color} !important;"
-                )
-            else:
-                # Not selected: Gray background, colored border
-                chip.style(
-                    f"background-color: {Colors.NEUTRAL_LIGHT} !important; border: 2px solid {color}; "
-                    f"color: {Colors.NEUTRAL_TEXT} !important;"
-                )
-
-    def toggle_category(cat_id: int) -> None:
-        """Toggle category selection."""
-        if cat_id in selected_categories:
-            selected_categories.remove(cat_id)
-        else:
-            selected_categories.add(cat_id)
-        update_chip_style(cat_id)
+    def on_categories_change(selected: set[int]) -> None:
+        """Kategorie-Auswahl aus dem Filter-Panel übernehmen (#471)."""
+        selected_categories.clear()
+        selected_categories.update(selected)
         update_reset_button_visibility()
         refresh_items()
 
@@ -549,50 +525,13 @@ def items_page(filter: str | None = None, location: int | None = None) -> None: 
                 .mark("sort-direction")
             )
 
-        # Category filter chips (load categories once)
+        # Kategorie-Filter: eine Zeile, Auswahl im Panel von unten (#471)
         with next(get_session()) as session:
             all_categories = category_service.get_all_categories(session)
 
         if all_categories:
-            children_by_parent: dict[int, list[Category]] = defaultdict(list)
-            for cat in all_categories:
-                if cat.parent_id is not None:
-                    children_by_parent[cat.parent_id].append(cat)
-
-            def render_chip(cat: Category, *, is_group: bool = False) -> None:
-                if cat.id is None:
-                    return
-                color = cat.color or Colors.DEFAULT_GRAY  # Default gray
-                category_colors[cat.id] = color
-                chip = (
-                    ui.button(
-                        f"● {cat.name}",
-                        on_click=lambda _, cid=cat.id: toggle_category(cid),
-                    )
-                    .classes("rounded-full px-4 min-h-[44px] text-sm" + (" font-semibold" if is_group else ""))
-                    .props("flat no-caps")
-                    .mark(f"filter-category-{cat.id}")
-                )
-                # Apply initial unselected style with category color (!important to override defaults)
-                chip.style(
-                    f"background-color: {Colors.NEUTRAL_LIGHT} !important; border: 2px solid {color}; "
-                    f"color: {Colors.NEUTRAL_TEXT} !important;"
-                )
-                chip_elements[cat.id] = chip
-
-            # Gruppiert wie im Wizard: Eltern-Chip gefolgt von seinen Kindern, danach eigenständige (#395)
             with ui.column().classes("w-full gap-2 mb-4"):
-                for parent in all_categories:
-                    if parent.id in children_by_parent:
-                        with ui.row().classes("w-full gap-2 flex-wrap items-center"):
-                            render_chip(parent, is_group=True)
-                            for child in children_by_parent[parent.id]:
-                                render_chip(child)
-                standalone = [c for c in all_categories if c.parent_id is None and c.id not in children_by_parent]
-                if standalone:
-                    with ui.row().classes("w-full gap-2 flex-wrap"):
-                        for cat in standalone:
-                            render_chip(cat)
+                category_filter = create_category_filter(all_categories, on_categories_change)
 
         # Reset filters button (only visible when filters are active)
         reset_btn = (
