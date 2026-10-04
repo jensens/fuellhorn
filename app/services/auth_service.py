@@ -1,10 +1,16 @@
 """Auth Service - Business Logic für Authentication und User-Verwaltung."""
 
+from ..models.category import Category
+from ..models.item import Item
+from ..models.location import Location
+from ..models.system_settings import SystemSettings
 from ..models.user import Role
 from ..models.user import User
+from ..models.withdrawal import Withdrawal
 from datetime import datetime
 import secrets
 from sqlmodel import Session
+from sqlmodel import func
 from sqlmodel import select
 
 
@@ -233,8 +239,24 @@ def update_user(
     return user
 
 
+def count_user_references(session: Session, user_id: int) -> dict[str, int]:
+    """Zählt Datensätze, die auf den Benutzer verweisen (nur Einträge > 0)."""
+    references = {
+        "Artikel": select(func.count()).select_from(Item).where(Item.created_by == user_id),
+        "Entnahmen": select(func.count()).select_from(Withdrawal).where(Withdrawal.withdrawn_by == user_id),
+        "Kategorien": select(func.count()).select_from(Category).where(Category.created_by == user_id),
+        "Lagerorte": select(func.count()).select_from(Location).where(Location.created_by == user_id),
+        "Einstellungen": select(func.count()).select_from(SystemSettings).where(SystemSettings.updated_by == user_id),
+    }
+    return {label: count for label, statement in references.items() if (count := session.exec(statement).one())}
+
+
 def delete_user(session: Session, user_id: int) -> None:
-    """Löscht einen User.
+    """Löscht einen User ohne Referenzen.
+
+    Benutzer, die Artikel, Entnahmen, Kategorien, Lagerorte oder Einstellungen
+    angelegt haben, lassen sich nicht löschen (Fremdschlüssel, Nachvollziehbarkeit);
+    der Weg ist das Deaktivieren (Issue #379).
 
     Args:
         session: Datenbank-Session
@@ -242,8 +264,17 @@ def delete_user(session: Session, user_id: int) -> None:
 
     Raises:
         UserNotFoundError: Wenn der User nicht existiert
+        ValueError: Wenn noch Datensätze auf den User verweisen
     """
     user = get_user(session, user_id)
+
+    references = count_user_references(session, user_id)
+    if references:
+        details = ", ".join(f"{count} {label}" for label, count in references.items())
+        raise ValueError(
+            f"Benutzer '{user.username}' kann nicht gelöscht werden: {details} verweisen auf ihn. "
+            "Benutzer stattdessen deaktivieren."
+        )
 
     session.delete(user)
     session.commit()

@@ -1,9 +1,13 @@
 """Location service - Business logic for location management."""
 
+from ..models.item import Item
 from ..models.item import ItemType
 from ..models.location import Location
 from ..models.location import LocationType
 from sqlmodel import Session
+from sqlmodel import col
+from sqlmodel import func
+from sqlmodel import or_
 from sqlmodel import select
 
 
@@ -29,20 +33,30 @@ def get_valid_location_types(item_type: ItemType) -> list[LocationType]:
         return [LocationType.FROZEN, LocationType.CHILLED, LocationType.AMBIENT]
 
 
-def get_locations_for_item_type(session: Session, item_type: ItemType) -> list[Location]:
-    """Get locations filtered by valid types for the given item type.
+def get_locations_for_item_type(
+    session: Session, item_type: ItemType, *, include_location_id: int | None = None
+) -> list[Location]:
+    """Get active locations filtered by valid types for the given item type.
+
+    Deaktivierte Lagerorte werden ausgeblendet (Issue #379). ``include_location_id``
+    hält den aktuellen Lagerort eines bestehenden Artikels wählbar, auch wenn er
+    inzwischen deaktiviert wurde (Edit-View).
 
     Args:
         session: Database session
         item_type: The type of item to filter locations for
+        include_location_id: Lagerort, der unabhängig von is_active enthalten sein soll
 
     Returns:
         List of locations that are valid for this item type
     """
     valid_types = get_valid_location_types(item_type)
+    active_or_current = col(Location.is_active) == True  # noqa: E712 - SQL-Ausdruck, kein Python-Vergleich
+    if include_location_id is not None:
+        active_or_current = or_(active_or_current, col(Location.id) == include_location_id)
     return list(
         session.exec(
-            select(Location).where(Location.location_type.in_(valid_types))  # type: ignore
+            select(Location).where(col(Location.location_type).in_(valid_types)).where(active_or_current)
         ).all()
     )
 
@@ -186,16 +200,22 @@ def update_location(
 
 
 def delete_location(session: Session, id: int) -> None:
-    """Delete location.
+    """Löscht einen Lagerort, der von keinem Artikel referenziert wird.
 
-    Args:
-        session: Database session
-        id: Location ID
+    Entnommene Artikel zählen mit, weil sie den Lagerort weiterhin referenzieren;
+    der dokumentierte Weg für belegte Lagerorte ist das Deaktivieren (Issue #379).
 
     Raises:
-        ValueError: If location not found
+        ValueError: Lagerort nicht gefunden oder noch in Verwendung.
     """
     location = get_location(session, id)
+
+    item_count = session.exec(select(func.count()).select_from(Item).where(Item.location_id == id)).one()
+    if item_count:
+        raise ValueError(
+            f"Lagerort '{location.name}' ist in Verwendung ({item_count} Artikel, inklusive entnommener). "
+            "Lagerort stattdessen deaktivieren."
+        )
 
     session.delete(location)
     session.commit()
