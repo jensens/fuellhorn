@@ -20,33 +20,20 @@ from ...services import expiry_service
 from ...services import item_service
 from ...services.errors import AlreadyConsumedError
 from ...services.errors import StaleStockError
+from ...services.expiry_service import ExpiryView
 from ..theme.icons import create_icon
 from ..utils.quantity import format_quantity
 from .errors import show_service_error
+from .item_card import get_expiry_badge_class
 from datetime import date
 from nicegui import ui
 from typing import Callable
 
 
-def get_expiry_badge_classes(status: str) -> str:
-    """Get CSS classes for expiry badge based on status.
-
-    Args:
-        status: One of "critical", "warning", or "ok"
-
-    Returns:
-        CSS class string for the badge
-    """
-    base_classes = "px-2 py-1 rounded-full text-xs font-semibold"
-
-    if status == "critical":
-        return f"{base_classes} bg-red-100 text-red-800"
-    elif status == "warning":
-        return f"{base_classes} bg-yellow-100 text-yellow-800"
-    elif status == "unknown":
-        return f"{base_classes} bg-gray-100 text-gray-700"
-    else:
-        return f"{base_classes} bg-green-100 text-green-800"
+def _badge_classes(expiry_view: ExpiryView) -> str:
+    """Dieselben Badge-Varianten wie die Artikel-Karte (eine Warnfarbe, Issue #399)."""
+    days_until = (expiry_view.display_date - date.today()).days if expiry_view.display_date else None
+    return f"expiry-badge {get_expiry_badge_class(expiry_view.status, days_until)}"
 
 
 def get_expiry_label(expiry_date: date) -> str:
@@ -99,7 +86,7 @@ def create_bottom_sheet(
         The dialog element that can be opened with .open()
     """
     # Create dialog with bottom sheet styling (max-width for larger screens)
-    dialog = ui.dialog().props("position=bottom").classes("bottom-sheet-dialog")
+    dialog = ui.dialog().props("position=bottom")
     dialog.style("width: 100%; max-width: 800px;")
 
     with dialog:
@@ -148,11 +135,11 @@ def create_bottom_sheet(
                             with ui.row().classes("items-center gap-2"):
                                 ui.label(expiry_view.display_date.strftime("%d.%m.%Y")).classes("sp-info-value")
                                 ui.label(get_expiry_label(expiry_view.display_date)).classes(
-                                    get_expiry_badge_classes(expiry_view.status)
+                                    _badge_classes(expiry_view)
                                 )
                         else:
                             ui.label("Haltbarkeit").classes("sp-info-label")
-                            ui.label(expiry_view.label).classes(get_expiry_badge_classes("unknown"))
+                            ui.label(expiry_view.label).classes(_badge_classes(expiry_view))
 
                 # Entered dates (production / freeze date), Issue #342. The MHD of purchased
                 # items is already the expiry row above and is not repeated.

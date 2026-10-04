@@ -13,9 +13,7 @@ from .dependencies import AuthenticationError
 from .dependencies import AuthorizationError
 from .dependencies import clear_current_user_cache
 from .dependencies import get_current_user
-from .dependencies import get_current_user_from_request
 from .dependencies import get_current_user_id
-from .dependencies import require_api_permission
 from .dependencies import require_permission
 from .permissions import Permission
 from .permissions import check_permission
@@ -33,8 +31,6 @@ __all__ = [
     "require_permission",
     "clear_current_user_cache",
     # FastAPI
-    "get_current_user_from_request",
-    "require_api_permission",
     # Decorators
     "require_auth",
     "require_permissions",

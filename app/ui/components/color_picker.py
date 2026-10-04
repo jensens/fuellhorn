@@ -3,10 +3,11 @@
 Vorher viermal gleich ausgeschrieben; Marker ``color-input`` und ``color-preview`` bleiben.
 """
 
+from ..theme import Colors
 from nicegui import ui
 
 
-NEUTRAL_PREVIEW = "#E5E7EB"
+NEUTRAL_PREVIEW = Colors.NEUTRAL_LIGHT
 
 
 def create_color_picker(value: str | None = None) -> ui.color_input:

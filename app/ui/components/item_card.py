@@ -22,6 +22,7 @@ from ...models.location import LocationType
 from ...services import item_types
 from ...services.item_rows import ItemRow
 from ..theme import ITEM_TYPE_COLORS
+from ..theme import Colors
 from ..theme import get_contrast_text_color
 from ..theme.icons import create_icon
 from ..utils.quantity import format_quantity
@@ -120,15 +121,6 @@ def get_status_css_class(status: str) -> str:
     elif status == "warning":
         return "status-warning"
     return ""
-
-
-def get_status_text_class(status: str) -> str:
-    """Get CSS text color class for status."""
-    if status == "critical":
-        return "sp-expiry-critical"
-    elif status == "warning":
-        return "sp-expiry-warning"
-    return "sp-expiry-ok"
 
 
 def get_expiry_badge_class(status: str, days_until: int | None) -> str:
@@ -243,7 +235,7 @@ def create_item_card(
 
     # Get item type badge info
     type_label = ITEM_TYPE_SHORT_LABELS.get(item.item_type, str(item.item_type.value))
-    type_color = ITEM_TYPE_COLORS.get(item.item_type, "#6B7280")
+    type_color = ITEM_TYPE_COLORS.get(item.item_type, Colors.DEFAULT_GRAY)
 
     # Create card with status border using Solarpunk theme classes
     card_classes = f"sp-item-card w-full {status_css_class}"
@@ -328,7 +320,7 @@ def create_item_card(
 
                         # Category badge (if exists)
                         if category:
-                            cat_color = category.color or "#6B7280"
+                            cat_color = category.color or Colors.DEFAULT_GRAY
                             cat_text_color = get_contrast_text_color(cat_color)
                             ui.label(category.name).classes("text-xs px-2 py-0.5 rounded").style(
                                 f"background-color: {cat_color}; color: {cat_text_color}; font-weight: 500;"
@@ -356,17 +348,12 @@ def create_item_card(
                     .classes("card-footer")
                     .style("grid-column: 1; display: flex; align-items: center; gap: 6px;")
                 ):
-                    location_text_color = location_color or "var(--stone, #A39E93)"
+                    location_text_color = location_color or "var(--sp-stone)"
                     # Temperature icon based on location type
                     icon_name = get_location_icon_name(location_type)
                     create_icon(icon_name, size="16px").style(f"color: {location_text_color};")
                     # Location name text
                     ui.label(location_name).style(f"font-size: 0.8rem; color: {location_text_color};")
-
-            # Click handler for entire card (if provided)
-            if on_click:
-                # Make card clickable
-                ui.card().on("click", lambda: on_click(item))
 
     # Render with or without swipe wrapper
     if has_swipe:

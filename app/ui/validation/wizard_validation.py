@@ -162,20 +162,6 @@ def validate_freeze_date(
     return None
 
 
-def _requires_category(item_type: Any) -> bool:
-    """Check if item type requires a category.
-
-    Category is always required for all item types to ensure consistent data.
-
-    Args:
-        item_type: Selected item type
-
-    Returns:
-        True (always required)
-    """
-    return True
-
-
 def validate_step2(
     item_type: Any,
     best_before: date | None,
@@ -228,18 +214,6 @@ def is_step2_valid(
     return len(validate_step2(item_type, best_before, freeze_date, category_id)) == 0
 
 
-def requires_category(item_type: Any) -> bool:
-    """Public helper to check if item type requires category selection.
-
-    Args:
-        item_type: Selected item type
-
-    Returns:
-        True if category is required
-    """
-    return _requires_category(item_type)
-
-
 # Step 3 Validation Functions
 
 
@@ -254,20 +228,6 @@ def validate_location(location_id: int | None) -> str | None:
     """
     if location_id is None:
         return "Bitte Lagerort auswählen"
-    return None
-
-
-def validate_category(category_id: int | None) -> str | None:
-    """Validate category selection.
-
-    Args:
-        category_id: Selected category ID
-
-    Returns:
-        Error message if invalid, None if valid
-    """
-    if category_id is None:
-        return "Kategorie ist erforderlich"
     return None
 
 

@@ -140,17 +140,3 @@ def _dispatch_action(
         on_consume_all()
     elif action == "edit" and on_edit:
         on_edit()
-
-
-def reset_swipe_card(card_id: str) -> None:
-    """Reset a swipe card to its initial position.
-
-    Args:
-        card_id: The ID of the card to reset
-    """
-    ui.run_javascript(f"window.SwipeCard && window.SwipeCard.reset('{card_id}');")
-
-
-def reset_all_swipe_cards() -> None:
-    """Reset all swipe cards to their initial positions."""
-    ui.run_javascript("window.SwipeCard && window.SwipeCard.resetAll();")
