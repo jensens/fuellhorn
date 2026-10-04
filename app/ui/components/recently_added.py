@@ -64,7 +64,12 @@ def create_recently_added_row(
         "flex items-center justify-between py-2 px-3 cursor-pointer hover:bg-gray-50 rounded-lg transition-colors"
     )
 
-    with ui.element("div").classes(row_classes).on("click", lambda: on_click(item) if on_click else None):
+    with (
+        ui.element("div")
+        .classes(row_classes)
+        .mark(f"recent-item-{item.id}")
+        .on("click", lambda: on_click(item) if on_click else None)
+    ):
         # Left: Product name (truncated)
         ui.label(item.product_name).classes("text-sm text-charcoal font-medium truncate flex-1 mr-3").style(
             "min-width: 0;"
@@ -119,11 +124,11 @@ def create_recently_added_section(
                     created_by=1,
                 )
 
-            # Default click handler: navigate to item detail
+            # Default click handler: open the edit page (there is no detail page, Issue #366)
             def handle_click(i: Item = item) -> None:
                 if on_item_click:
                     on_item_click(i)
                 else:
-                    ui.navigate.to(f"/items/{i.id}")
+                    ui.navigate.to(f"/items/{i.id}/edit")
 
             create_recently_added_row(item, location, on_click=handle_click)
