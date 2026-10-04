@@ -64,7 +64,12 @@ def create_recently_added_row(
         "flex items-center justify-between py-2 px-3 cursor-pointer hover:bg-gray-50 rounded-lg transition-colors"
     )
 
-    with ui.element("div").classes(row_classes).on("click", lambda: on_click(item) if on_click else None):
+    with (
+        ui.element("div")
+        .classes(row_classes)
+        .mark(f"recent-item-{item.id}")
+        .on("click", lambda: on_click(item) if on_click else None)
+    ):
         # Left: Product name (truncated)
         ui.label(item.product_name).classes("text-sm text-charcoal font-medium truncate flex-1 mr-3").style(
             "min-width: 0;"
