@@ -209,7 +209,7 @@ def get_expiry_views(
 MISSING_DATE = "Datum"
 MISSING_FREEZE_DATE = "Einfrierdatum"
 MISSING_CATEGORY = "Kategorie"
-MISSING_SHELF_LIFE = "Haltbarkeit für die Kategorie"
+MISSING_SHELF_LIFE = "passende Kategorie"
 
 
 @dataclass(frozen=True)
@@ -225,7 +225,8 @@ def _missing_data(item: Item, index: ShelfLifeIndex, parents: ParentIndex) -> li
 
     Maßstab ist, was der Wizard verlangt hätte: das Datum des Typs, bei eingefrorenen
     Typen das Einfrierdatum, eine Kategorie und für Typen mit Haltbarkeitsrechnung eine
-    Kategorie, die für diese Lagerart eine Haltbarkeit hat.
+    Kategorie, die für diese Lagerart eine Haltbarkeit hat - dieselbe Regel wie im Dienst
+    (Issue #385). Bei MHD-Typen ist das MHD die Frist, dort zählt keine Haltbarkeit.
     """
     spec = item_types.spec_for(item.item_type)
     missing: list[str] = []
@@ -235,10 +236,10 @@ def _missing_data(item: Item, index: ShelfLifeIndex, parents: ParentIndex) -> li
         missing.append(MISSING_FREEZE_DATE)
     if item.category_id is None:
         missing.append(MISSING_CATEGORY)
-    elif spec.filter_storage_type is not None:
-        own = index.get((item.category_id, spec.filter_storage_type))
+    elif spec.expiry_storage_type is not None:
+        own = index.get((item.category_id, spec.expiry_storage_type))
         parent_id = parents.get(item.category_id)
-        inherited = index.get((parent_id, spec.filter_storage_type)) if parent_id is not None else None
+        inherited = index.get((parent_id, spec.expiry_storage_type)) if parent_id is not None else None
         if own is None and inherited is None:
             missing.append(MISSING_SHELF_LIFE)
     return missing

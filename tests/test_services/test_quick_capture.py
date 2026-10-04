@@ -2,11 +2,13 @@
 
 Unten im Keller zählt nur Ort, Name, Menge, Einheit und Typ. Unvollständig ist ein Artikel,
 solange etwas fehlt, das der Wizard verlangt hätte: Datum, Kategorie, Einfrierdatum beim
-eingefrorenen Typ oder eine Haltbarkeit für die Kategorie in der passenden Lagerart.
+eingefrorenen Typ und - wo die Haltbarkeit berechnet wird - eine Kategorie mit Haltbarkeit
+für diese Lagerart (dieselbe Regel wie im Dienst, Issue #385).
 """
 
 from app.models import Category
 from app.models import CategoryShelfLife
+from app.models import Item
 from app.models import ItemType
 from app.models import Location
 from app.models import LocationType
@@ -129,23 +131,48 @@ class TestItemsNeedingCompletion:
 
         assert entry.missing == ["Datum", "Einfrierdatum", "Kategorie"]
 
-    def test_category_without_shelf_life_counts_as_missing(self, session: Session, world: dict[str, int]) -> None:
-        """Eine Kategorie ohne Haltbarkeit für die Lagerart hilft nicht weiter (Issue #385)."""
+    def test_category_without_shelf_life_counts_where_expiry_is_computed(
+        self, session: Session, world: dict[str, int]
+    ) -> None:
+        """Selbst Eingefrorenes braucht eine Kategorie mit Haltbarkeit, sonst kein Ablaufdatum.
+
+        Der Dienst lässt so einen Artikel nicht entstehen (Issue #385); er bleibt übrig, wenn
+        die Haltbarkeit später an der Kategorie fehlt. Daher direkt in die Datenbank.
+        """
+        session.add(
+            Item(
+                product_name="Gulasch",
+                best_before_date=date(2026, 3, 1),
+                freeze_date=date(2026, 3, 2),
+                quantity=1,
+                unit="Stück",
+                item_type=ItemType.HOMEMADE_FROZEN,
+                location_id=world["freezer"],
+                created_by=world["admin"],
+                category_id=world["bare_cat"],
+            )
+        )
+        session.commit()
+
+        (entry,) = expiry_service.get_items_needing_completion(session)
+
+        assert entry.missing == ["passende Kategorie"]
+
+    def test_mhd_types_need_no_shelf_life(self, session: Session, world: dict[str, int]) -> None:
+        """Bei TK-Ware mit MHD ist das MHD die Frist; die Kategorie braucht keine Haltbarkeit."""
         item_service.create_item(
             session,
-            product_name="Fertiggericht",
-            best_before_date=date(2026, 3, 1),
+            product_name="Lachs",
+            best_before_date=date(2026, 12, 3),
             quantity=1,
-            unit="Stück",
+            unit="Packung",
             item_type=ItemType.PURCHASED_FROZEN,
             location_id=world["freezer"],
             created_by=world["admin"],
             category_id=world["bare_cat"],
         )
 
-        (entry,) = expiry_service.get_items_needing_completion(session)
-
-        assert entry.missing == ["Haltbarkeit für die Kategorie"]
+        assert expiry_service.get_items_needing_completion(session) == []
 
     def test_complete_items_are_not_listed(self, session: Session, world: dict[str, int]) -> None:
         item_service.create_item(
