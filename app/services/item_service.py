@@ -677,6 +677,11 @@ def get_recently_added_items(session: Session, limit: int = 5) -> list[Item]:
     )
 
 
+def count_active_items(session: Session) -> int:
+    """Anzahl aktiver (nicht verbrauchter) Artikel, ohne sie zu laden (Issue #393)."""
+    return session.exec(select(func.count()).select_from(Item).where(Item.is_consumed == False)).one()  # noqa: E712
+
+
 def get_item_count_by_location(session: Session) -> dict[int, int]:
     """Get count of active items per location.
 
