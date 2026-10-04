@@ -4,12 +4,16 @@ from ...auth import Permission
 from ...auth import require_auth
 from ...auth.dependencies import AuthenticationError
 from ...auth.dependencies import AuthorizationError
+from ...auth.dependencies import get_current_user
+from ...auth.dependencies import get_current_user_id
 from ...auth.dependencies import require_permission
 from ...database import get_session
 from ...models.item import ItemType
+from ...models.user import User
 from ...services import category_service
 from ...services import item_service
 from ...services import location_service
+from ...services import preferences_service
 from ..components import create_bottom_nav
 from ..components import create_grouped_category_chip_group
 from ..components import create_item_type_chip_group
@@ -32,27 +36,40 @@ from ..validation import validate_step2
 from ..validation import validate_step3
 from collections.abc import Callable
 from datetime import date as date_type
-from nicegui import app
 from nicegui import ui
 from typing import Any
 
 
-# Browser storage key for smart defaults
-SMART_DEFAULTS_KEY = "last_item_entry"
+def _load_smart_default_inputs() -> tuple[dict[str, Any], dict[str, Any] | None]:
+    """Zeitfenster (Profil > System > Default) und letzter Eintrag des Nutzers aus der DB (Issue #397).
+
+    Ohne Request-Cache: nach „Speichern & Nächster“ müssen die frisch gespeicherten Defaults sichtbar sein.
+    """
+    current_user = get_current_user(require_auth=True, use_cache=False)
+    assert current_user is not None
+    with next(get_session()) as session:
+        windows = preferences_service.get_all_user_preferences(session, current_user)
+        return windows, preferences_service.get_last_item_entry(session, current_user)
+
+
+def _store_last_entry(smart_defaults: dict[str, Any]) -> None:
+    """Letzten Eintrag pro Nutzer in der DB ablegen, nicht im Browser-Storage (Issue #397)."""
+    with next(get_session()) as session:
+        user = session.get(User, get_current_user_id())
+        if user is not None:
+            preferences_service.save_last_item_entry(session, user, smart_defaults)
 
 
 @ui.page("/items/add")
 @require_auth
 def add_item() -> None:
     """3-Schritt-Wizard für schnelle Artikel-Erfassung."""
-    # Load smart defaults from user storage
-    last_entry = app.storage.user.get(SMART_DEFAULTS_KEY)
+    windows, last_entry = _load_smart_default_inputs()
 
-    # Apply smart defaults with time windows
-    default_item_type = get_default_item_type(last_entry, window_minutes=30)
+    default_item_type = get_default_item_type(last_entry, window_minutes=int(windows["item_type_time_window"]))
     default_unit = get_default_unit(last_entry)
-    default_location_id = get_default_location(last_entry, window_minutes=60)
-    default_category_id = get_default_category(last_entry, window_minutes=30)
+    default_location_id = get_default_location(last_entry, window_minutes=int(windows["location_time_window"]))
+    default_category_id = get_default_category(last_entry, window_minutes=int(windows["category_time_window"]))
 
     # Form state with smart defaults applied
     form_data: dict[str, Any] = {
@@ -65,7 +82,6 @@ def add_item() -> None:
         "notes": "",
         "location_id": default_location_id,
         "category_id": default_category_id,
-        "current_step": 1,
     }
 
     # Button references (will be assigned when created)
@@ -127,7 +143,6 @@ def add_item() -> None:
         """Navigate back to Step 1 (preserves form data)."""
         nonlocal next_button, field_errors
         field_errors = FieldErrors()
-        form_data["current_step"] = 1
         # Clear and rebuild UI for Step 1 (like show_step2 and show_step3)
         content_container.clear()
         with content_container:
@@ -223,7 +238,6 @@ def add_item() -> None:
             return
 
         field_errors = FieldErrors()
-        form_data["current_step"] = 2
         item_type = form_data["item_type"]
 
         # Clear and rebuild UI for Step 2
@@ -381,7 +395,6 @@ def add_item() -> None:
             return
 
         field_errors = FieldErrors()
-        form_data["current_step"] = 3
         item_type = form_data["item_type"]
 
         # Clear and rebuild UI for Step 3
@@ -589,16 +602,13 @@ def add_item() -> None:
         if not save_item_to_db():
             return
 
-        # Store smart defaults in browser storage
-        best_before_str = form_data["best_before_date"].strftime("%d.%m.%Y")
         smart_defaults = create_smart_defaults_dict(
             item_type=form_data["item_type"],
             unit=form_data["unit"],
             location_id=form_data["location_id"],
             category_id=form_data.get("category_id"),
-            best_before_date_str=best_before_str,
         )
-        app.storage.user[SMART_DEFAULTS_KEY] = smart_defaults
+        _store_last_entry(smart_defaults)
 
         # Show success notification
         ui.notify(f"✅ {product_name} gespeichert!", type="positive")

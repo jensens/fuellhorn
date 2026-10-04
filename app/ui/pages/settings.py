@@ -19,14 +19,8 @@ from nicegui import ui
 from sqlmodel import Session
 
 
-# Default time windows in minutes (hardcoded fallback)
-DEFAULT_ITEM_TYPE_TIME_WINDOW = 30
-DEFAULT_CATEGORY_TIME_WINDOW = 30
-DEFAULT_LOCATION_TIME_WINDOW = 60
-
-# Default expiry thresholds in days (hardcoded fallback)
-DEFAULT_EXPIRY_CRITICAL_DAYS = 3
-DEFAULT_EXPIRY_WARNING_DAYS = 7
+# Eine Quelle für Fallback-Werte: preferences_service.HARDCODED_DEFAULTS (Issue #397)
+DEFAULTS = preferences_service.HARDCODED_DEFAULTS
 
 
 @ui.page("/admin/settings")
@@ -80,27 +74,9 @@ def _render_admin_navigation() -> None:
 
 
 def _get_system_defaults() -> dict:
-    """Get system defaults from database."""
+    """System-Defaults aus der DB; Fallback sind die Hardcoded-Defaults des Services (#397)."""
     with Session(get_engine()) as session:
-        item_type_setting = preferences_service.get_system_setting(session, "item_type_time_window")
-        category_setting = preferences_service.get_system_setting(session, "category_time_window")
-        location_setting = preferences_service.get_system_setting(session, "location_time_window")
-        expiry_critical_setting = preferences_service.get_system_setting(session, "expiry_critical_days")
-        expiry_warning_setting = preferences_service.get_system_setting(session, "expiry_warning_days")
-
-        return {
-            "item_type_time_window": int(item_type_setting.value)
-            if item_type_setting
-            else DEFAULT_ITEM_TYPE_TIME_WINDOW,
-            "category_time_window": int(category_setting.value) if category_setting else DEFAULT_CATEGORY_TIME_WINDOW,
-            "location_time_window": int(location_setting.value) if location_setting else DEFAULT_LOCATION_TIME_WINDOW,
-            "expiry_critical_days": int(expiry_critical_setting.value)
-            if expiry_critical_setting
-            else DEFAULT_EXPIRY_CRITICAL_DAYS,
-            "expiry_warning_days": int(expiry_warning_setting.value)
-            if expiry_warning_setting
-            else DEFAULT_EXPIRY_WARNING_DAYS,
-        }
+        return preferences_service.get_system_defaults(session)
 
 
 def _render_system_defaults_section() -> None:
@@ -151,9 +127,9 @@ def _render_system_defaults_section() -> None:
                 ui.notify("Nicht authentifiziert", type="negative")
                 return
 
-            item_type_val = int(item_type_input.value) if item_type_input.value else DEFAULT_ITEM_TYPE_TIME_WINDOW
-            category_val = int(category_input.value) if category_input.value else DEFAULT_CATEGORY_TIME_WINDOW
-            location_val = int(location_input.value) if location_input.value else DEFAULT_LOCATION_TIME_WINDOW
+            item_type_val = int(item_type_input.value) if item_type_input.value else DEFAULTS["item_type_time_window"]
+            category_val = int(category_input.value) if category_input.value else DEFAULTS["category_time_window"]
+            location_val = int(location_input.value) if location_input.value else DEFAULTS["location_time_window"]
 
             try:
                 with Session(get_engine()) as session:
@@ -220,8 +196,10 @@ def _render_system_defaults_section() -> None:
                 ui.notify("Nicht authentifiziert", type="negative")
                 return
 
-            critical_val = int(critical_days_input.value) if critical_days_input.value else DEFAULT_EXPIRY_CRITICAL_DAYS
-            warning_val = int(warning_days_input.value) if warning_days_input.value else DEFAULT_EXPIRY_WARNING_DAYS
+            critical_val = (
+                int(critical_days_input.value) if critical_days_input.value else DEFAULTS["expiry_critical_days"]
+            )
+            warning_val = int(warning_days_input.value) if warning_days_input.value else DEFAULTS["expiry_warning_days"]
 
             try:
                 with Session(get_engine()) as session:

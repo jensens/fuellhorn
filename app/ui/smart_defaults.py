@@ -5,15 +5,13 @@ for the bulk capture workflow. When a user saves an item and
 clicks "Speichern & Nächster", the relevant form values are
 stored and used to pre-fill the next item entry.
 
-Time Windows (from UI_KONZEPT.md):
-- Item type: 30 minutes
-- Categories: 30 minutes
-- Location: 60 minutes (Issue #385; vorher ohne Zeitfenster)
-- Unit: Always (no time window)
+Der letzte Eintrag liegt pro Nutzer in ``user.preferences`` (``preferences_service``),
+nicht im Browser-Storage; die Zeitfenster kommen aus den Preferences
+(Profil > System-Default > ``HARDCODED_DEFAULTS``: Typ 30, Kategorie 30, Lagerort 60 Minuten;
+Einheit ohne Zeitfenster) – Issue #397.
 """
 
 from ..models.item import ItemType
-from datetime import date as date_type
 from datetime import datetime
 from typing import Any
 
@@ -23,19 +21,16 @@ def create_smart_defaults_dict(
     unit: str,
     location_id: int,
     category_id: int | None,
-    best_before_date_str: str,
 ) -> dict[str, Any]:
-    """Create a dictionary with smart defaults to store in browser storage.
+    """Create the last-entry dictionary stored via ``preferences_service.save_last_item_entry``.
+
+    Enthält nur, was der Wizard beim nächsten Aufruf liest (Issue #397).
 
     Args:
         item_type: The item type enum value.
         unit: The unit string (g, kg, ml, etc.).
         location_id: The location ID.
         category_id: Category ID (optional).
-        best_before_date_str: Best before date as string (DD.MM.YYYY format).
-
-    Returns:
-        Dictionary suitable for storing in app.storage.user.
     """
     return {
         "timestamp": datetime.now().isoformat(),
@@ -43,7 +38,6 @@ def create_smart_defaults_dict(
         "unit": unit,
         "location_id": location_id,
         "category_id": category_id,
-        "best_before_date": best_before_date_str,
     }
 
 
@@ -161,37 +155,3 @@ def get_default_category(
         return None
 
     return last_entry.get("category_id")
-
-
-def get_reset_form_data(
-    default_item_type: ItemType | None,
-    default_unit: str,
-    default_location_id: int | None,
-    default_category_id: int | None,
-) -> dict[str, Any]:
-    """Get reset form data with smart defaults applied.
-
-    This creates a fresh form data dictionary for the wizard,
-    applying any smart defaults that should be pre-filled.
-
-    Args:
-        default_item_type: Default item type (or None).
-        default_unit: Default unit string.
-        default_location_id: Default location ID (or None).
-        default_category_id: Default category ID (or None).
-
-    Returns:
-        Dictionary with form data for the wizard.
-    """
-    return {
-        "product_name": "",
-        "item_type": default_item_type,
-        "quantity": None,
-        "unit": default_unit,
-        "best_before_date": date_type.today(),
-        "freeze_date": None,
-        "notes": "",
-        "location_id": default_location_id,
-        "category_id": default_category_id,
-        "current_step": 1,
-    }
