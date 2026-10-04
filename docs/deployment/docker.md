@@ -163,19 +163,20 @@ fuellhorn create-admin
 # ordnet nur bestehende Kategorien zu, neue Gruppen (z.B. Gekochtes,
 # Fruchtaufstriche) und Kategorien legt erst dieser Seed an.
 fuellhorn seed shelf-life-defaults
-
-# Testdaten importieren (Admin, Kategorien, Lagerorte, Beispiel-Items)
-fuellhorn seed testdata
 ```
+
+`fuellhorn seed testdata` (Admin `admin/admin`, Beispieldaten) ist nur für die lokale
+Entwicklung gedacht und läuft nur mit `DEBUG=true` oder dem ausdrücklichen Flag
+`--i-know-this-is-dev`. In Produktion nicht verwenden.
+
+Alle Seed-Befehle wenden vorher die Alembic-Migrationen an; eine leere Datenbank
+wird dabei korrekt mit `alembic_version` angelegt.
 
 ### Im Container ausführen
 
 ```bash
 # Standard-Kategorien importieren
 docker exec fuellhorn-app fuellhorn seed shelf-life-defaults
-
-# Testdaten importieren
-docker exec fuellhorn-app fuellhorn seed testdata
 
 # Admin erstellen
 docker exec -e ADMIN_PASSWORD=geheim fuellhorn-app fuellhorn create-admin
