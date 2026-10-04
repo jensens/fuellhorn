@@ -42,7 +42,12 @@ pytest_plugins = ["nicegui.testing.plugin"]
 
 @pytest.fixture(name="session")
 def session_fixture() -> Generator[Session, None, None]:
-    """Create In-Memory SQLite session for tests."""
+    """Leere In-Memory-Datenbank pro Test für Service- und Unit-Tests.
+
+    Bewusst eine eigene Engine neben ``isolated_test_database``: Service-Tests legen ihre
+    Benutzer (auch 'admin') selbst an und brauchen eine leere Datenbank, UI-Tests einen
+    vorhandenen Admin in einer modulweiten Engine (Issue #392).
+    """
     engine = create_sqlite_test_engine()
     SQLModel.metadata.create_all(engine)
     with Session(engine) as session:
@@ -64,7 +69,7 @@ def _module_engine():
     - Table creation per test (create_all)
     - bcrypt password hashing per test (~100ms)
 
-    The isolated_test_database fixture handles per-test cleanup via rollback.
+    The isolated_test_database fixture deletes all rows except the admin after each test.
     """
     # Create in-memory test engine with StaticPool
     engine = create_sqlite_test_engine()
@@ -92,20 +97,20 @@ def _module_engine():
 
 @pytest.fixture(scope="function", autouse=True)
 def isolated_test_database(_module_engine, monkeypatch):
-    """Isolated database state for every test using transaction rollback.
+    """Isolated database state for every test: module engine, DELETE after each test.
 
     This fixture ensures that:
-    1. Each test gets a clean database state
-    2. Production database is NEVER touched
-    3. Test admin user is always available
-    4. Tests run much faster via rollback instead of recreate
+    1. Each test starts with only the admin user in the database
+    2. The configured database (DATABASE_URL) is never touched: app.database.get_engine()
+       is patched to the in-memory engine
+    3. The admin user is always available for UI tests
 
-    How it works:
-    - Uses module-scoped engine (tables + admin already created)
-    - Patches app.database.get_engine() before test runs
-    - After test: Deletes all data except admin user (rollback pattern)
+    How it works (no transaction rollback: the app commits in its own sessions):
+    - Uses the module-scoped engine (tables + admin already created)
+    - Patches app.database.get_engine() before the test runs
+    - After the test: DELETE on every table except the admin row, in FK order
 
-    This approach is ~5x faster than creating tables per test because:
+    This is ~5x faster than creating tables per test because:
     - No create_engine() per test
     - No create_all() per test
     - No bcrypt hashing per test (admin exists)
@@ -119,7 +124,7 @@ def isolated_test_database(_module_engine, monkeypatch):
 
     yield _module_engine
 
-    # Cleanup: Delete all data except admin user
+    # Cleanup: Delete all data except the admin user (the app commits, so no rollback is possible)
     # Order matters due to foreign key constraints
     with Session(_module_engine) as session:
         session.exec(text("DELETE FROM withdrawal"))
@@ -138,9 +143,15 @@ def isolated_test_database(_module_engine, monkeypatch):
 # ============================================================================
 
 
+# Fixtures, die main.py über NiceGUIs Testplugin laden (Routen werden dabei neu registriert)
+NICEGUI_FIXTURES = {"user", "logged_in_user", "create_user"}
+
+
 @pytest.fixture(scope="function", autouse=True)
-def cleanup_ui_packages():
-    """Remove UI package modules after each test.
+def cleanup_ui_packages(request: pytest.FixtureRequest):
+    """Remove UI package modules around each test that uses a NiceGUI user fixture.
+
+    Unit and service tests never load main.py, so they keep their imports (Issue #392).
 
     This fixture ensures that:
     1. Routes are correctly re-registered between tests
@@ -157,15 +168,18 @@ def cleanup_ui_packages():
     - Remove app.ui.* modules from sys.modules
     - Forces Python to re-import and re-register routes
 
-    Scope: function (cleanup before and after each test)
-    Autouse: True (applies to ALL tests)
+    Scope: function (cleanup before and after each UI test)
+    Autouse: True, but a no-op for tests without user/logged_in_user/create_user
 
     The cleanup also runs BEFORE the test: test modules that import a page module
     at collection time (e.g. ``from app.ui.pages.items import _sort_items``) would
     otherwise leave that module in sys.modules, so the first ``user`` fixture of the
     session re-runs main.py without re-executing the page and its route is missing
-    (404 on the real page). See Issue #392 for the broader test-infra cleanup.
+    (404 on the real page).
     """
+    if NICEGUI_FIXTURES.isdisjoint(request.fixturenames):
+        yield
+        return
     _purge_ui_modules()
     yield  # Run test
     _purge_ui_modules()
