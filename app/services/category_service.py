@@ -19,6 +19,11 @@ from sqlmodel import func
 from sqlmodel import select
 
 
+# Gleiche sort_order (z. B. alle Seed-Kategorien): ohne id als zweites Kriterium
+# ist die Reihenfolge unter PostgreSQL nicht festgelegt (#467)
+CATEGORY_ORDER = (col(Category.sort_order), col(Category.id))
+
+
 def _validate_parent(session: Session, category_id: int | None, parent_id: int | None) -> None:
     """Guards für die einstufige Hierarchie (Issue #395).
 
@@ -107,17 +112,15 @@ def create_category(
 
 
 def get_all_categories(session: Session) -> list[Category]:
-    """Get all categories sorted by sort_order.
+    """Get all categories sorted by sort_order, then by creation (id).
 
     Args:
         session: Database session
 
     Returns:
-        List of all categories sorted by sort_order
+        List of all categories sorted by sort_order, then id
     """
-    return list(
-        session.exec(select(Category).order_by(Category.sort_order)).all()  # type: ignore[arg-type]
-    )
+    return list(session.exec(select(Category).order_by(*CATEGORY_ORDER)).all())
 
 
 def get_category(session: Session, id: int) -> Category:
@@ -286,14 +289,14 @@ def get_categories_for_item_type(session: Session, item_type: ItemType) -> list[
 
     if storage_type is None:
         # PURCHASED_FRESH: all leaf categories
-        all_cats = session.exec(select(Category).order_by(Category.sort_order)).all()  # type: ignore[arg-type]
+        all_cats = session.exec(select(Category).order_by(*CATEGORY_ORDER)).all()
         return [c for c in all_cats if c.id not in parent_ids]
 
     # Kategorien mit eigener Haltbarkeit für den Storage-Type; Kinder erben die ihrer Eltern (#395)
     with_shelf_life = set(
         session.exec(select(CategoryShelfLife.category_id).where(CategoryShelfLife.storage_type == storage_type)).all()
     )
-    all_cats = session.exec(select(Category).order_by(Category.sort_order)).all()  # type: ignore[arg-type]
+    all_cats = session.exec(select(Category).order_by(*CATEGORY_ORDER)).all()
     return [
         c for c in all_cats if c.id not in parent_ids and (c.id in with_shelf_life or c.parent_id in with_shelf_life)
     ]
