@@ -51,7 +51,7 @@ def add_item() -> None:
     # Apply smart defaults with time windows
     default_item_type = get_default_item_type(last_entry, window_minutes=30)
     default_unit = get_default_unit(last_entry)
-    default_location_id = get_default_location(last_entry)
+    default_location_id = get_default_location(last_entry, window_minutes=60)
     default_category_id = get_default_category(last_entry, window_minutes=30)
 
     # Form state with smart defaults applied
@@ -231,6 +231,10 @@ def add_item() -> None:
             # Category Chips (always required, filtered by item type)
             with next(get_session()) as session:
                 grouped_categories = category_service.get_grouped_categories_for_item_type(session, item_type)
+            # Smart-Default oder frühere Wahl verwerfen, wenn sie für diesen Typ nicht angeboten wird (#385)
+            offered_category_ids = {c.id for _, cats in grouped_categories for c in cats}
+            if form_data.get("category_id") not in offered_category_ids:
+                form_data["category_id"] = None
 
             ui.label("Kategorie *").classes("text-sm font-medium mb-2")
 
@@ -398,6 +402,10 @@ def add_item() -> None:
             # Fetch locations filtered by item type
             with next(get_session()) as session:
                 locations = location_service.get_locations_for_item_type(session, item_type)
+            # Smart-Default oder frühere Wahl verwerfen, wenn der Lagerort nicht zum Typ passt (#385):
+            # sonst war Speichern aktiv, obwohl kein Chip gewählt war, und TK-Ware zog Frisches in die Truhe
+            if form_data.get("location_id") not in {loc.id for loc in locations}:
+                form_data["location_id"] = None
 
             # Location Selection (required)
             ui.label("Lagerort *").classes("text-sm font-medium mb-1")

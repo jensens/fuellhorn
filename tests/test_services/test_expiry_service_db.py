@@ -51,7 +51,7 @@ def _mhd_item(session: Session, world: dict, name: str, days: int) -> Item:
     )
 
 
-def _frozen_item(session: Session, world: dict, name: str, frozen_days_ago: int, category_key: str = "soups") -> Item:
+def _frozen_item(session: Session, world: dict, name: str, frozen_days_ago: int) -> Item:
     freeze = date.today() - timedelta(days=frozen_days_ago)
     return item_service.create_item(
         session,
@@ -62,9 +62,17 @@ def _frozen_item(session: Session, world: dict, name: str, frozen_days_ago: int,
         item_type=ItemType.HOMEMADE_FROZEN,
         location_id=world["freezer"],
         created_by=world["admin"],
-        category_id=world[category_key],
+        category_id=world["soups"],
         freeze_date=freeze,
     )
+
+
+def _remove_frozen_shelf_life(session: Session, world: dict) -> None:
+    """Haltbarkeit der Suppen nachträglich löschen → bestehende Artikel werden 'unknown' (Issue #385:
+    anlegen ohne passende Haltbarkeit lehnt der Service inzwischen ab)."""
+    shelf_life = shelf_life_service.get_shelf_life(session, world["soups"], StorageType.FROZEN)
+    assert shelf_life is not None and shelf_life.id is not None
+    shelf_life_service.delete_shelf_life(session, shelf_life.id)
 
 
 def test_get_item_expiry_view_looks_up_category_shelf_life(session: Session, world: dict) -> None:
@@ -75,8 +83,9 @@ def test_get_item_expiry_view_looks_up_category_shelf_life(session: Session, wor
 
 
 def test_get_item_expiry_view_is_unknown_without_shelf_life(session: Session, world: dict) -> None:
-    """Eingefrorener Artikel in einer Kategorie ohne FROZEN-Haltbarkeit → unknown."""
-    item = _frozen_item(session, world, "Eingefrorene Milch", frozen_days_ago=0, category_key="dairy")
+    """Eingefrorener Artikel, dessen Kategorie keine FROZEN-Haltbarkeit mehr hat → unknown."""
+    item = _frozen_item(session, world, "Eingefrorene Suppe", frozen_days_ago=0)
+    _remove_frozen_shelf_life(session, world)
     assert get_item_expiry_view(session, item).status == "unknown"
 
 
@@ -118,7 +127,8 @@ def test_get_items_expiring_soon_includes_frozen_item_past_optimal_date(session:
 
 def test_get_items_expiring_soon_excludes_unknown_and_consumed(session: Session, world: dict) -> None:
     """unknown (keine Haltbarkeit) und verbrauchte Artikel erscheinen nicht."""
-    _frozen_item(session, world, "Eingefrorene Milch", frozen_days_ago=400, category_key="dairy")
+    _frozen_item(session, world, "Alte Suppe ohne Daten", frozen_days_ago=400)
+    _remove_frozen_shelf_life(session, world)
     consumed = _mhd_item(session, world, "Verbrauchter Joghurt", days=1)
     assert consumed.id is not None
     item_service.mark_item_consumed(session, consumed.id, world["admin"])

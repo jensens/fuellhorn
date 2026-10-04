@@ -3,13 +3,104 @@
 from ..models.category import Category
 from ..models.item import Item
 from ..models.item import ItemType
+from ..models.location import LocationType
 from ..models.withdrawal import Withdrawal
 from . import expiry_calculator
 from . import shelf_life_service
+from .category_service import get_category
+from .errors import ServiceValidationError
+from .location_service import get_location
+from .location_service import get_valid_location_types
+from .validation import require_non_empty
 from datetime import date
 from sqlalchemy import func
 from sqlmodel import Session
 from sqlmodel import select
+
+
+ITEM_TYPE_LABELS: dict[ItemType, str] = {
+    ItemType.PURCHASED_FRESH: "Frisch eingekauft",
+    ItemType.PURCHASED_FROZEN: "TK-Ware gekauft",
+    ItemType.PURCHASED_THEN_FROZEN: "Frisch gekauft → eingefroren",
+    ItemType.HOMEMADE_FROZEN: "Selbst eingefroren",
+    ItemType.HOMEMADE_PRESERVED: "Selbst eingemacht",
+}
+LOCATION_TYPE_LABELS: dict[LocationType, str] = {
+    LocationType.FROZEN: "Gefroren",
+    LocationType.CHILLED: "Gekühlt",
+    LocationType.AMBIENT: "Raumtemperatur",
+}
+STORAGE_TYPE_LABELS = {"frozen": "Tiefkühlung", "chilled": "Kühlung", "ambient": "Raumtemperatur"}
+FREEZE_DATE_REQUIRED_TYPES = {ItemType.PURCHASED_THEN_FROZEN, ItemType.HOMEMADE_FROZEN}
+
+
+def validate_item_data(
+    session: Session,
+    *,
+    product_name: str | None,
+    quantity: float | None,
+    unit: str | None,
+    item_type: ItemType,
+    location_id: int | None,
+    category_id: int | None,
+    best_before_date: date | None,
+    freeze_date: date | None,
+) -> str:
+    """Invarianten eines Artikels prüfen (Issue #385); liefert den getrimmten Produktnamen.
+
+    Pydantic-Constraints wie ``Field(gt=0)`` wirken bei ``table=True`` nicht, und
+    die UI-Validierung schützt weder CLI, Seed noch künftige API. Deshalb prüft
+    der Service selbst:
+
+    - Produktname und Einheit nicht leer, Menge > 0, Datum vorhanden
+    - Einfrierdatum für selbst eingefrorene Artikel; bei Selbstgemachtem nicht
+      vor dem Produktionsdatum
+    - Lagerort existiert und seine Lagerart passt zum Artikel-Typ
+    - Artikel-Typen mit Haltbarkeitsberechnung brauchen eine Kategorie mit
+      passender Haltbarkeit (sonst ist kein Ablaufdatum berechenbar)
+
+    Raises:
+        ServiceValidationError: Regel verletzt (deutsche Meldung)
+        ValueError: Lagerort oder Kategorie nicht gefunden
+    """
+    cleaned_name = require_non_empty(product_name, "Produktname")
+    require_non_empty(unit, "Einheit")
+    if quantity is None or not quantity > 0:
+        raise ServiceValidationError("Menge muss größer als 0 sein.")
+    if best_before_date is None:
+        raise ServiceValidationError("Datum ist erforderlich.")
+
+    if item_type in FREEZE_DATE_REQUIRED_TYPES and freeze_date is None:
+        raise ServiceValidationError(f"Einfrierdatum ist für '{ITEM_TYPE_LABELS[item_type]}' erforderlich.")
+    if item_type == ItemType.HOMEMADE_FROZEN and freeze_date is not None and freeze_date < best_before_date:
+        raise ServiceValidationError("Einfrierdatum darf nicht vor dem Produktionsdatum liegen.")
+
+    if location_id is None:
+        raise ServiceValidationError("Lagerort ist erforderlich.")
+    location = get_location(session, location_id)
+    valid_types = get_valid_location_types(item_type)
+    if location.location_type not in valid_types:
+        allowed = ", ".join(LOCATION_TYPE_LABELS[t] for t in valid_types)
+        raise ServiceValidationError(
+            f"Lagerort '{location.name}' ({LOCATION_TYPE_LABELS[location.location_type]}) passt nicht zu "
+            f"'{ITEM_TYPE_LABELS[item_type]}'. Erlaubt: {allowed}."
+        )
+
+    storage_type = expiry_calculator.get_storage_type_for_item_type(item_type)
+    if category_id is None:
+        if storage_type is not None:
+            raise ServiceValidationError(
+                f"'{ITEM_TYPE_LABELS[item_type]}' braucht eine Kategorie mit Haltbarkeit für "
+                f"{STORAGE_TYPE_LABELS[storage_type.value]}."
+            )
+        return cleaned_name
+    category = get_category(session, category_id)
+    if storage_type is not None and shelf_life_service.get_shelf_life(session, category_id, storage_type) is None:
+        raise ServiceValidationError(
+            f"Kategorie '{category.name}' hat keine Haltbarkeit für {STORAGE_TYPE_LABELS[storage_type.value]}. "
+            "Bitte eine passende Kategorie wählen."
+        )
+    return cleaned_name
 
 
 def create_item(
@@ -45,7 +136,22 @@ def create_item(
 
     Returns:
         Created item
+
+    Raises:
+        ServiceValidationError: Invariante verletzt (Issue #385)
+        ValueError: Lagerort oder Kategorie nicht gefunden
     """
+    product_name = validate_item_data(
+        session,
+        product_name=product_name,
+        quantity=quantity,
+        unit=unit,
+        item_type=item_type,
+        location_id=location_id,
+        category_id=category_id,
+        best_before_date=best_before_date,
+        freeze_date=freeze_date,
+    )
 
     item = Item(
         product_name=product_name,
@@ -183,8 +289,23 @@ def update_item(
 
     Raises:
         ValueError: If item not found
+        ServiceValidationError: Invariante des zusammengeführten Zustands verletzt (Issue #385)
     """
     item = get_item(session, id)
+
+    # Zusammengeführten Zustand prüfen, bevor etwas am Objekt geändert wird
+    new_item_type = item_type if item_type is not None else item.item_type
+    product_name = validate_item_data(
+        session,
+        product_name=product_name if product_name is not None else item.product_name,
+        quantity=quantity if quantity is not None else item.quantity,
+        unit=unit if unit is not None else item.unit,
+        item_type=new_item_type,
+        location_id=location_id if location_id is not None else item.location_id,
+        category_id=category_id if category_id is not None else item.category_id,
+        best_before_date=best_before_date if best_before_date is not None else item.best_before_date,
+        freeze_date=freeze_date if freeze_date is not None else item.freeze_date,
+    )
 
     if product_name is not None:
         item.product_name = product_name

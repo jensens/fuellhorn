@@ -213,19 +213,32 @@ def test_get_default_unit_returns_g_when_no_entry() -> None:
     assert result == "g"
 
 
-def test_get_default_location_always_returns_last() -> None:
-    """Test location default always returns last value."""
+def test_get_default_location_returns_last_when_within_window() -> None:
+    """Lagerort-Default gilt innerhalb des Zeitfensters (Issue #385: vorher ohne Zeitfenster)."""
     from app.ui.smart_defaults import get_default_location
 
-    # Even with old timestamp, location should be returned
+    recent_timestamp = (datetime.now() - timedelta(minutes=10)).isoformat()
+    last_entry = {
+        "timestamp": recent_timestamp,
+        "location_id": 42,
+    }
+
+    result = get_default_location(last_entry, window_minutes=60)
+    assert result == 42
+
+
+def test_get_default_location_returns_none_when_outside_window() -> None:
+    """Nach Ablauf des Zeitfensters wird kein alter Lagerort mehr vorbelegt (Issue #385)."""
+    from app.ui.smart_defaults import get_default_location
+
     old_timestamp = (datetime.now() - timedelta(hours=2)).isoformat()
     last_entry = {
         "timestamp": old_timestamp,
         "location_id": 42,
     }
 
-    result = get_default_location(last_entry)
-    assert result == 42
+    result = get_default_location(last_entry, window_minutes=60)
+    assert result is None
 
 
 def test_get_default_location_returns_none_when_no_entry() -> None:

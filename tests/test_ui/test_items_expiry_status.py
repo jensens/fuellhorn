@@ -79,9 +79,13 @@ def _item_cards(user: User) -> list[ui.card]:
 async def test_items_page_frozen_item_without_shelf_life_shows_unknown(
     logged_in_user: User, isolated_test_database, expiry_world: dict[str, int]
 ) -> None:
-    """Eingefrorener Artikel ohne Haltbarkeits-Konfiguration zeigt 'Keine Haltbarkeitsdaten' statt 'Abgelaufen'."""
+    """Eingefrorener Artikel, dessen Kategorie die Haltbarkeit verloren hat, zeigt 'Keine Haltbarkeitsdaten'."""
     with Session(isolated_test_database) as session:
-        _frozen_item(session, expiry_world, "Eingefrorene Reste", "rest", days_ago=60)
+        _frozen_item(session, expiry_world, "Eingefrorene Reste", "soups", days_ago=60)
+        # Anlegen braucht eine passende Haltbarkeit (Issue #385); danach entfernt → unknown
+        shelf_life = shelf_life_service.get_shelf_life(session, expiry_world["soups"], StorageType.FROZEN)
+        assert shelf_life is not None and shelf_life.id is not None
+        shelf_life_service.delete_shelf_life(session, shelf_life.id)
 
     await logged_in_user.open("/items")
     await logged_in_user.should_see("Keine Haltbarkeitsdaten")
