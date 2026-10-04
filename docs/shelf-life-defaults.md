@@ -166,7 +166,14 @@ Für die lokale Entwicklung ohne installiertes Paket tut das Script `scripts/see
 dasselbe. Angelegt werden:
 
 1. **Kategorien** (falls nicht vorhanden)
-2. **Haltbarkeiten pro Kategorie und Lagertyp** mit Quellenangaben
+2. **Haltbarkeiten pro Kategorie und Lagertyp** mit Quellenangaben (falls nicht vorhanden)
+
+Der Seed legt nur Fehlendes an und überschreibt nichts: Angepasste Haltbarkeiten, Farben
+und Gruppen bleiben erhalten, auch wenn sie vom Standard abweichen. Eine bestehende
+Kategorie ohne Gruppe wird nur dann ihrer Standardgruppe zugeordnet, wenn der Seed diese
+Gruppe im selben Lauf neu anlegt (Datenbanken aus der Zeit vor der Kategorie-Hierarchie).
+Korrekturen an bestehenden Standardwerten laufen über Alembic-Migrationen, die nur Werte im
+unveränderten Originalzustand anfassen.
 
 Ausführung lokal:
 ```bash
