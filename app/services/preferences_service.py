@@ -219,6 +219,24 @@ def get_all_user_preferences(session: Session, user: User) -> dict[str, Any]:
     return result
 
 
+def get_system_defaults(session: Session) -> dict[str, Any]:
+    """Hardcoded-Defaults, überlagert von gesetzten Systemeinstellungen (Admin-Seite, Issue #397).
+
+    Systemeinstellungen liegen als Strings vor und werden wie in ``get_preference`` als int gelesen.
+    """
+    result: dict[str, Any] = {}
+    for key, default_value in HARDCODED_DEFAULTS.items():
+        setting = get_system_setting(session, key)
+        if setting is None:
+            result[key] = default_value
+            continue
+        try:
+            result[key] = int(setting.value)
+        except ValueError:
+            result[key] = setting.value
+    return result
+
+
 def change_user_password(
     session: Session,
     user: User,

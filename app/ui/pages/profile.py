@@ -21,10 +21,8 @@ from sqlmodel import Session
 from typing import Any
 
 
-# Default time windows in minutes
-DEFAULT_ITEM_TYPE_TIME_WINDOW = 30
-DEFAULT_CATEGORY_TIME_WINDOW = 30
-DEFAULT_LOCATION_TIME_WINDOW = 60
+# Eine Quelle für Fallback-Werte: preferences_service.HARDCODED_DEFAULTS (Issue #397)
+DEFAULTS = preferences_service.HARDCODED_DEFAULTS
 
 
 @ui.page("/profile")
@@ -203,11 +201,7 @@ def _get_user_preferences(current_user: User) -> dict[str, Any]:
         user = session.get(type(current_user), current_user.id)
         if user:
             return preferences_service.get_all_user_preferences(session, user)
-    return {
-        "item_type_time_window": DEFAULT_ITEM_TYPE_TIME_WINDOW,
-        "category_time_window": DEFAULT_CATEGORY_TIME_WINDOW,
-        "location_time_window": DEFAULT_LOCATION_TIME_WINDOW,
-    }
+    return dict(DEFAULTS)
 
 
 def _render_smart_defaults_section(current_user: User) -> None:
@@ -248,9 +242,9 @@ def _render_smart_defaults_section(current_user: User) -> None:
         ).classes("w-full mb-4")
 
         def save_preferences() -> None:
-            item_type_val = int(item_type_input.value) if item_type_input.value else DEFAULT_ITEM_TYPE_TIME_WINDOW
-            category_val = int(category_input.value) if category_input.value else DEFAULT_CATEGORY_TIME_WINDOW
-            location_val = int(location_input.value) if location_input.value else DEFAULT_LOCATION_TIME_WINDOW
+            item_type_val = int(item_type_input.value) if item_type_input.value else DEFAULTS["item_type_time_window"]
+            category_val = int(category_input.value) if category_input.value else DEFAULTS["category_time_window"]
+            location_val = int(location_input.value) if location_input.value else DEFAULTS["location_time_window"]
 
             with Session(get_engine()) as session:
                 # Re-fetch user to get fresh data
