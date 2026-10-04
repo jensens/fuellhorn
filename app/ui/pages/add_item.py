@@ -1,6 +1,10 @@
 """Item Capture Wizard - 3-Step Mobile-First Form."""
 
+from ...auth import Permission
 from ...auth import require_auth
+from ...auth.dependencies import AuthenticationError
+from ...auth.dependencies import AuthorizationError
+from ...auth.dependencies import require_permission
 from ...database import get_session
 from ...models.item import ItemType
 from ...services import category_service
@@ -492,12 +496,19 @@ def add_item() -> None:
             ui.notify("Bitte alle Pflichtfelder ausfüllen", type="warning")
             return False
 
-        # Get current user from session
-        user_id = app.storage.user.get("user_id")
-
-        if not user_id:
-            ui.notify("Keine Berechtigung - bitte neu anmelden", type="negative")
+        # Nutzer frisch aus der DB und Berechtigung zur Laufzeit prüfen (#381)
+        try:
+            acting_user = require_permission(Permission.ITEMS_WRITE)
+        except AuthenticationError:
+            ui.notify("Bitte neu anmelden", type="negative")
             ui.navigate.to("/login")
+            return False
+        except AuthorizationError:
+            ui.notify("Keine Berechtigung zum Erfassen", type="negative")
+            return False
+        user_id = acting_user.id
+        if user_id is None:
+            ui.notify("Bitte neu anmelden", type="negative")
             return False
 
         # Save to database

@@ -7,7 +7,10 @@ Based on UI_KONZEPT.md Section 7: Bottom Sheet
 - Mobile-optimized with 48px touch targets
 """
 
-from ...auth.dependencies import get_current_user_id
+from ...auth import Permission
+from ...auth.dependencies import AuthenticationError
+from ...auth.dependencies import AuthorizationError
+from ...auth.dependencies import require_permission
 from ...database import get_session
 from ...models.item import Item
 from ...models.location import Location
@@ -273,10 +276,10 @@ def _handle_withdraw(
                     error_label.set_visibility(True)
                 return
 
-            user_id = get_current_user_id()
+            user_id = _acting_user_id()
             if user_id is None:
                 if error_label:
-                    error_label.set_text("Bitte neu anmelden")
+                    error_label.set_text(NO_PERMISSION_MESSAGE)
                     error_label.set_visibility(True)
                 return
 
@@ -359,6 +362,17 @@ def _handle_edit(
         on_close()
 
 
+NO_PERMISSION_MESSAGE = "Keine Berechtigung oder Sitzung abgelaufen, bitte neu anmelden"
+
+
+def _acting_user_id() -> int | None:
+    """Nutzer-ID aus frischem DB-Stand mit Berechtigungsprüfung (#381); None, wenn nicht erlaubt."""
+    try:
+        return require_permission(Permission.ITEMS_WRITE).id
+    except (AuthenticationError, AuthorizationError):
+        return None
+
+
 def _handle_consume(
     dialog: ui.dialog,
     item: Item,
@@ -370,9 +384,9 @@ def _handle_consume(
         ui.notify("Item-ID nicht gefunden", type="negative")
         return
 
-    user_id = get_current_user_id()
+    user_id = _acting_user_id()
     if user_id is None:
-        ui.notify("Bitte neu anmelden", type="negative")
+        ui.notify(NO_PERMISSION_MESSAGE, type="negative")
         return
 
     try:

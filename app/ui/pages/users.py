@@ -8,6 +8,7 @@ Issue #31: Users Page - Benutzer löschen
 
 from ...auth import Permission
 from ...auth import require_permissions
+from ...auth.decorators import with_permission_check
 from ...auth.dependencies import get_current_user
 from ...database import get_session
 from ...models.user import Role
@@ -183,6 +184,7 @@ def _open_create_dialog() -> None:
         with ui.row().classes("w-full justify-end gap-2"):
             ui.button("Abbrechen", on_click=dialog.close).classes("sp-btn-ghost").props("flat")
 
+            @with_permission_check(Permission.USER_MANAGE)  # Laufzeit-Check, nicht nur beim Seitenaufbau (#381)
             def save_user() -> None:
                 """Validate and save the new user."""
                 username = username_input.value.strip() if username_input.value else ""
@@ -325,6 +327,7 @@ def _open_edit_dialog(
         with ui.row().classes("w-full justify-end gap-2"):
             ui.button("Abbrechen", on_click=dialog.close).classes("sp-btn-ghost").props("flat")
 
+            @with_permission_check(Permission.USER_MANAGE)
             def save_changes() -> None:
                 """Validate and save the user changes."""
                 username = username_input.value.strip() if username_input.value else ""
@@ -407,6 +410,7 @@ def _open_delete_dialog(user_id: int, username: str) -> None:
         with ui.row().classes("w-full justify-end gap-2"):
             ui.button("Abbrechen", on_click=dialog.close).classes("sp-btn-ghost").props("flat")
 
+            @with_permission_check(Permission.USER_MANAGE)
             def confirm_delete() -> None:
                 """Perform the deletion."""
                 acting_user = get_current_user(require_auth=True)
