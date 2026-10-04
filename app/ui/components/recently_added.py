@@ -15,6 +15,7 @@ from ...models.location import Location
 from ...models.location import LocationType
 from ...services import item_service
 from ...services import location_service
+from ...services.expiry_service import get_entered_dates
 from ..theme.icons import create_icon
 from ..utils.date_utils import format_relative_date
 from .item_card import get_location_icon_name
@@ -70,10 +71,12 @@ def create_recently_added_row(
         .mark(f"recent-item-{item.id}")
         .on("click", lambda: on_click(item) if on_click else None)
     ):
-        # Left: Product name (truncated)
-        ui.label(item.product_name).classes("text-sm text-charcoal font-medium truncate flex-1 mr-3").style(
-            "min-width: 0;"
-        )
+        # Left: Product name (truncated) + entered dates (Issue #342)
+        with ui.column().classes("gap-0 flex-1 mr-3").style("min-width: 0;"):
+            ui.label(item.product_name).classes("text-sm text-charcoal font-medium truncate")
+            entered = " · ".join(f"{label} {value:%d.%m.%Y}" for label, value in get_entered_dates(item))
+            if entered:
+                ui.label(entered).classes("text-xs text-stone truncate")
 
         # Center: Relative date
         ui.label(relative_date).classes("text-xs text-stone whitespace-nowrap mr-3")
