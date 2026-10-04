@@ -10,7 +10,7 @@ class Category(SQLModel, table=True):
 
     Categories are used to classify items. Shelf life is configured
     separately per storage type in CategoryShelfLife.
-    Flat structure (no hierarchy).
+    Supports one-level hierarchy via parent_id for UI grouping.
     """
 
     __tablename__ = "category"
@@ -18,6 +18,7 @@ class Category(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     name: str = Field(index=True, unique=True)
     color: str | None = Field(default=None)  # Hex color code (e.g., "#FF5733")
+    parent_id: int | None = Field(default=None, foreign_key="category.id")
     sort_order: int = Field(default=0)  # For drag & drop sorting
     created_at: datetime = Field(default_factory=datetime.now)
     created_by: int = Field(foreign_key="users.id")

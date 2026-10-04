@@ -7,7 +7,7 @@ from ...services import category_service
 from ...services import item_service
 from ...services import location_service
 from ..components import create_bottom_nav
-from ..components import create_category_chip_group
+from ..components import create_grouped_category_chip_group
 from ..components import create_item_type_chip_group
 from ..components import create_location_chip_group
 from ..components import create_mobile_page_container
@@ -15,7 +15,6 @@ from ..components import create_unit_chip_group
 from ..theme.icons import create_icon
 from ..utils.date_utils import format_german_date
 from ..utils.date_utils import parse_german_date
-from ..validation import requires_category
 from datetime import date as date_type
 from nicegui import ui
 from typing import Any
@@ -30,7 +29,7 @@ def edit_item(item_id: int) -> None:
         with next(get_session()) as session:
             item = item_service.get_item(session, item_id)
             # Load related data
-            categories = category_service.get_all_categories(session)
+            grouped_categories = category_service.get_grouped_categories_for_item_type(session, item.item_type)
             locations = location_service.get_locations_for_item_type(session, item.item_type)
 
             # Store item data for form
@@ -72,10 +71,8 @@ def edit_item(item_id: int) -> None:
             and form_data["quantity"] > 0
             and form_data["unit"]
             and form_data["location_id"]
+            and form_data.get("category_id")
         )
-        # Check category requirement
-        if requires_category(form_data["item_type"]) and not form_data.get("category_id"):
-            is_valid = False
 
         if is_valid:
             save_button.props(remove="disabled")
@@ -94,6 +91,21 @@ def edit_item(item_id: int) -> None:
                 locations=locations,
                 value=form_data.get("location_id"),
                 on_change=on_location_change,
+            )
+        update_validation()
+
+    def update_categories_for_item_type() -> None:
+        """Update available categories when item type changes."""
+        nonlocal grouped_categories
+        with next(get_session()) as session:
+            grouped_categories = category_service.get_grouped_categories_for_item_type(session, form_data["item_type"])
+        # Rebuild category chips
+        category_container.clear()
+        with category_container:
+            create_grouped_category_chip_group(
+                grouped_categories=grouped_categories,
+                value=form_data.get("category_id"),
+                on_change=on_category_change,
             )
         update_validation()
 
@@ -153,8 +165,7 @@ def edit_item(item_id: int) -> None:
         def on_item_type_change(value: ItemType) -> None:
             form_data["item_type"] = value
             update_locations_for_item_type()
-            # Show/hide category based on item type
-            category_section.set_visibility(requires_category(value))
+            update_categories_for_item_type()
             # Show/hide freeze date based on item type
             freeze_date_section.set_visibility(
                 value
@@ -197,18 +208,17 @@ def edit_item(item_id: int) -> None:
             on_change=on_unit_change,
         )
 
-        # Category (conditional based on item type)
-        needs_category = requires_category(form_data["item_type"])
-        with ui.element("div").classes("mt-4") as category_section:
-            category_section.set_visibility(needs_category)
-            ui.label("Kategorie *").classes("text-sm font-medium mb-2")
+        # Category (always required, filtered by item type)
+        ui.label("Kategorie *").classes("text-sm font-medium mb-2 mt-4")
 
-            def on_category_change(category_id: int) -> None:
-                form_data["category_id"] = category_id
-                update_validation()
+        def on_category_change(category_id: int) -> None:
+            form_data["category_id"] = category_id
+            update_validation()
 
-            create_category_chip_group(
-                categories=categories,
+        category_container = ui.element("div")
+        with category_container:
+            create_grouped_category_chip_group(
+                grouped_categories=grouped_categories,
                 value=form_data.get("category_id"),
                 on_change=on_category_change,
             )

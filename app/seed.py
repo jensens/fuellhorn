@@ -41,51 +41,83 @@ SOURCES = {
     "edeka_pesto": "https://www.edeka.de/wissen/tipps-und-tricks/wie-kann-ich-pesto-haltbar-machen/",
 }
 
-# Format: (name, color, [(storage_type, min, max, source_key), ...])
-CATEGORIES_WITH_SHELF_LIFE: list[tuple[str, str | None, list[tuple[StorageType, int, int, str]]]] = [
-    # === FROZEN (Tiefgekühlt) ===
-    ("Gemüse", "#4CAF50", [(StorageType.FROZEN, 6, 12, "vsz_be")]),
-    ("Kräuter", "#8BC34A", [(StorageType.FROZEN, 3, 4, "vsz_be")]),
-    ("Obst", "#FF9800", [(StorageType.FROZEN, 9, 12, "vsz_be")]),
-    ("Fleisch", "#F44336", [(StorageType.FROZEN, 3, 12, "vsz_be")]),
-    ("Rindfleisch", "#D32F2F", [(StorageType.FROZEN, 9, 12, "t_online")]),
-    ("Schweinefleisch", "#E57373", [(StorageType.FROZEN, 4, 7, "t_online")]),
-    ("Geflügel", "#FFEB3B", [(StorageType.FROZEN, 3, 12, "t_online")]),
-    ("Hackfleisch", "#C62828", [(StorageType.FROZEN, 1, 3, "t_online")]),
-    ("Fisch", "#2196F3", [(StorageType.FROZEN, 2, 4, "vsz_be")]),
-    ("Fisch (mager)", "#64B5F6", [(StorageType.FROZEN, 4, 6, "t_online")]),
-    ("Fisch (fett)", "#1976D2", [(StorageType.FROZEN, 2, 3, "t_online")]),
-    ("Wurst", "#795548", [(StorageType.FROZEN, 1, 6, "vsz_be")]),
-    ("Backwaren", "#FFC107", [(StorageType.FROZEN, 1, 3, "vsz_be")]),
-    ("Brot", "#FFE082", [(StorageType.FROZEN, 1, 3, "t_online")]),
-    ("Kuchen", "#FF80AB", [(StorageType.FROZEN, 2, 4, "t_online")]),
-    ("Milchprodukte", "#FFFFFF", [(StorageType.FROZEN, 2, 6, "vsz_be")]),
-    ("Butter", "#FFF9C4", [(StorageType.FROZEN, 6, 8, "t_online")]),
-    ("Käse", "#FFE0B2", [(StorageType.FROZEN, 2, 4, "t_online")]),
-    ("Fertiggerichte", "#9E9E9E", [(StorageType.FROZEN, 2, 3, "t_online")]),
-    ("Suppen", "#FFCCBC", [(StorageType.FROZEN, 2, 3, "usda")]),
-    ("Eintöpfe", "#BCAAA4", [(StorageType.FROZEN, 2, 3, "usda")]),
-    # === AMBIENT (Eingemachtes) ===
-    ("Marmelade", "#E91E63", [(StorageType.AMBIENT, 12, 24, "vz_de")]),
-    ("Konfitüre", "#F48FB1", [(StorageType.AMBIENT, 12, 24, "vz_de")]),
-    ("Gelee", "#CE93D8", [(StorageType.AMBIENT, 12, 24, "food_in_jars")]),
-    ("Kompott", "#FFAB91", [(StorageType.AMBIENT, 12, 12, "food_in_jars")]),
-    ("Obstmus", "#FF8A65", [(StorageType.AMBIENT, 12, 18, "haltbarkeit_net")]),
-    ("Apfelmus", "#A5D6A7", [(StorageType.AMBIENT, 12, 18, "haltbarkeit_net")]),
-    ("Pflaumenmus", "#7E57C2", [(StorageType.AMBIENT, 12, 18, "haltbarkeit_net")]),
-    ("Eingelegtes", "#AED581", [(StorageType.AMBIENT, 6, 12, "nchfp")]),
-    ("Essiggurken", "#689F38", [(StorageType.AMBIENT, 6, 12, "nchfp")]),
-    ("Mixed Pickles", "#7CB342", [(StorageType.AMBIENT, 6, 12, "nchfp")]),
-    ("Chutney", "#FF7043", [(StorageType.AMBIENT, 6, 12, "foodwissen_chutney")]),
-    ("Relish", "#8D6E63", [(StorageType.AMBIENT, 6, 12, "nchfp")]),
-    ("Tomatensoße", "#EF5350", [(StorageType.AMBIENT, 12, 12, "tomaten_de")]),
-    ("Sugo", "#E53935", [(StorageType.AMBIENT, 12, 12, "tomaten_de")]),
-    ("Ketchup", "#D32F2F", [(StorageType.AMBIENT, 6, 12, "haus_und_beet")]),
-    ("Pesto", "#558B2F", [(StorageType.AMBIENT, 6, 12, "edeka_pesto")]),
-    ("Antipasti", "#FFA726", [(StorageType.AMBIENT, 3, 6, "nchfp")]),
-    ("Senf", "#FFCA28", [(StorageType.AMBIENT, 3, 6, "vz_de")]),
-    ("Fruchtsirup", "#AB47BC", [(StorageType.AMBIENT, 12, 12, "vz_de")]),
-    ("Sauerkraut", "#C5E1A5", [(StorageType.AMBIENT, 6, 12, "nchfp")]),
+# Format: (name, color, parent_name, [(storage_type, min, max, source_key), ...])
+# parent_name = None for top-level/standalone categories.
+# Parents MUST appear before their children in this list.
+CATEGORIES_WITH_SHELF_LIFE: list[tuple[str, str | None, str | None, list[tuple[StorageType, int, int, str]]]] = [
+    # === FROZEN — Standalone ===
+    ("Gemüse", "#4CAF50", None, [(StorageType.FROZEN, 6, 12, "vsz_be")]),
+    ("Kräuter", "#8BC34A", None, [(StorageType.FROZEN, 3, 4, "vsz_be")]),
+    ("Obst", "#FF9800", None, [(StorageType.FROZEN, 9, 12, "vsz_be")]),
+    # === FROZEN — Fleisch (Gruppe) ===
+    ("Fleisch", "#F44336", None, [(StorageType.FROZEN, 3, 12, "vsz_be")]),
+    ("Rindfleisch", "#D32F2F", "Fleisch", [(StorageType.FROZEN, 9, 12, "t_online")]),
+    ("Schweinefleisch", "#E57373", "Fleisch", [(StorageType.FROZEN, 4, 7, "t_online")]),
+    ("Geflügel", "#FFEB3B", "Fleisch", [(StorageType.FROZEN, 3, 12, "t_online")]),
+    ("Hackfleisch", "#C62828", "Fleisch", [(StorageType.FROZEN, 1, 3, "t_online")]),
+    ("Wurst", "#795548", "Fleisch", [(StorageType.FROZEN, 1, 6, "vsz_be")]),
+    # === FROZEN — Fisch (Gruppe) ===
+    ("Fisch", "#2196F3", None, [(StorageType.FROZEN, 2, 4, "vsz_be")]),
+    ("Fisch (mager)", "#64B5F6", "Fisch", [(StorageType.FROZEN, 4, 6, "t_online")]),
+    ("Fisch (fett)", "#1976D2", "Fisch", [(StorageType.FROZEN, 2, 3, "t_online")]),
+    ("Meeresfrüchte", "#0097A7", "Fisch", [(StorageType.FROZEN, 2, 4, "vsz_be")]),
+    # === FROZEN — Backwaren (Gruppe) ===
+    ("Backwaren", "#FFC107", None, [(StorageType.FROZEN, 1, 3, "vsz_be")]),
+    ("Brot", "#FFE082", "Backwaren", [(StorageType.FROZEN, 1, 3, "t_online")]),
+    ("Kuchen", "#FF80AB", "Backwaren", [(StorageType.FROZEN, 2, 4, "t_online")]),
+    # === FROZEN — Milchprodukte (Gruppe) ===
+    ("Milchprodukte", "#FFFFFF", None, [(StorageType.FROZEN, 2, 6, "vsz_be")]),
+    ("Butter", "#FFF9C4", "Milchprodukte", [(StorageType.FROZEN, 6, 8, "t_online")]),
+    ("Käse", "#FFE0B2", "Milchprodukte", [(StorageType.FROZEN, 2, 4, "t_online")]),
+    # === FROZEN — Gekochtes (Gruppe) ===
+    ("Gekochtes", "#8D6E63", None, [(StorageType.FROZEN, 2, 3, "usda")]),
+    ("Suppen", "#FFCCBC", "Gekochtes", [(StorageType.FROZEN, 2, 3, "usda")]),
+    ("Eintöpfe", "#BCAAA4", "Gekochtes", [(StorageType.FROZEN, 2, 3, "usda")]),
+    ("Fertiggerichte", "#9E9E9E", "Gekochtes", [(StorageType.FROZEN, 2, 3, "t_online")]),
+    # === AMBIENT — Fruchtaufstriche (Gruppe) ===
+    ("Fruchtaufstriche", "#E91E63", None, [(StorageType.AMBIENT, 12, 24, "vz_de")]),
+    ("Marmelade", "#C2185B", "Fruchtaufstriche", [(StorageType.AMBIENT, 12, 24, "vz_de")]),
+    ("Gelee", "#CE93D8", "Fruchtaufstriche", [(StorageType.AMBIENT, 12, 24, "food_in_jars")]),
+    # === AMBIENT — Obstmus (Gruppe) ===
+    ("Obstmus", "#FF8A65", None, [(StorageType.AMBIENT, 12, 18, "haltbarkeit_net")]),
+    ("Apfelmus", "#A5D6A7", "Obstmus", [(StorageType.AMBIENT, 12, 18, "haltbarkeit_net")]),
+    ("Pflaumenmus", "#7E57C2", "Obstmus", [(StorageType.AMBIENT, 12, 18, "haltbarkeit_net")]),
+    ("Kompott", "#FFAB91", "Obstmus", [(StorageType.AMBIENT, 12, 12, "food_in_jars")]),
+    # === AMBIENT — Eingelegtes (Gruppe) ===
+    ("Eingelegtes", "#AED581", None, [(StorageType.AMBIENT, 6, 12, "nchfp")]),
+    ("Essiggurken", "#689F38", "Eingelegtes", [(StorageType.AMBIENT, 6, 12, "nchfp")]),
+    ("Mixed Pickles", "#7CB342", "Eingelegtes", [(StorageType.AMBIENT, 6, 12, "nchfp")]),
+    # === AMBIENT — Soßen (Gruppe) ===
+    ("Soßen", "#EF5350", None, [(StorageType.AMBIENT, 6, 12, "tomaten_de")]),
+    ("Tomatensoße", "#E53935", "Soßen", [(StorageType.AMBIENT, 12, 12, "tomaten_de")]),
+    ("Sugo", "#D32F2F", "Soßen", [(StorageType.AMBIENT, 12, 12, "tomaten_de")]),
+    ("Ketchup", "#C62828", "Soßen", [(StorageType.AMBIENT, 6, 12, "haus_und_beet")]),
+    ("Pesto", "#558B2F", "Soßen", [(StorageType.AMBIENT, 6, 12, "edeka_pesto")]),
+    # === AMBIENT — Würziges (Gruppe) ===
+    ("Würziges", "#FF7043", None, [(StorageType.AMBIENT, 3, 12, "foodwissen_chutney")]),
+    ("Chutney", "#E64A19", "Würziges", [(StorageType.AMBIENT, 6, 12, "foodwissen_chutney")]),
+    ("Relish", "#8D6E63", "Würziges", [(StorageType.AMBIENT, 6, 12, "nchfp")]),
+    ("Senf", "#FFCA28", "Würziges", [(StorageType.AMBIENT, 3, 6, "vz_de")]),
+    # === AMBIENT — Standalone ===
+    ("Antipasti", "#FFA726", None, [(StorageType.AMBIENT, 3, 6, "nchfp")]),
+    ("Fruchtsirup", "#AB47BC", None, [(StorageType.AMBIENT, 12, 12, "vz_de")]),
+    ("Sauerkraut", "#C5E1A5", None, [(StorageType.AMBIENT, 6, 12, "nchfp")]),
+]
+
+# Categories without shelf-life, for general item classification (PURCHASED_FRESH etc.)
+# Format: (name, color)
+CATEGORIES_FRESH_ONLY: list[tuple[str, str]] = [
+    ("Nudeln & Pasta", "#FFCC80"),
+    ("Reis & Getreide", "#D7CCC8"),
+    ("Backzutaten", "#FFECB3"),
+    ("Konserven", "#90A4AE"),
+    ("Gewürze", "#A1887F"),
+    ("Öle & Essig", "#C8E6C9"),
+    ("Getränke", "#81D4FA"),
+    ("Snacks", "#FFE082"),
+    ("Eier", "#FFF3E0"),
+    ("Aufschnitt", "#FFAB91"),
+    ("Milchprodukte (frisch)", "#E1BEE7"),
 ]
 
 
@@ -142,13 +174,25 @@ def get_or_create_system_user(session: Session) -> int:
     return system_user.id
 
 
-def get_or_create_category(session: Session, name: str, color: str | None, admin_id: int) -> Category:
+def get_or_create_category(
+    session: Session,
+    name: str,
+    color: str | None,
+    admin_id: int,
+    parent_id: int | None = None,
+) -> Category:
     """Get existing category or create new one."""
     category = session.exec(select(Category).where(Category.name == name)).first()
     if category:
+        # Update parent_id if it changed
+        if category.parent_id != parent_id:
+            category.parent_id = parent_id
+            session.add(category)
+            session.commit()
+            session.refresh(category)
         return category
 
-    category = Category(name=name, color=color, created_by=admin_id)
+    category = Category(name=name, color=color, parent_id=parent_id, created_by=admin_id)
     session.add(category)
     session.commit()
     session.refresh(category)
@@ -209,8 +253,13 @@ def seed_shelf_life_defaults(session: Session) -> tuple[int, int]:
     categories_created = 0
     shelf_lives_created = 0
 
-    for name, color, shelf_lives in CATEGORIES_WITH_SHELF_LIFE:
-        category = get_or_create_category(session, name, color, admin_id)
+    # Track created categories by name for parent lookup
+    category_by_name: dict[str, Category] = {}
+
+    for name, color, parent_name, shelf_lives in CATEGORIES_WITH_SHELF_LIFE:
+        parent_id = category_by_name[parent_name].id if parent_name else None
+        category = get_or_create_category(session, name, color, admin_id, parent_id)
+        category_by_name[name] = category
         categories_created += 1
 
         for storage_type, months_min, months_max, source_key in shelf_lives:
@@ -224,6 +273,11 @@ def seed_shelf_life_defaults(session: Session) -> tuple[int, int]:
                 source_url,
             )
             shelf_lives_created += 1
+
+    # Fresh-only categories (no shelf-life)
+    for name, color in CATEGORIES_FRESH_ONLY:
+        get_or_create_category(session, name, color, admin_id)
+        categories_created += 1
 
     return categories_created, shelf_lives_created
 

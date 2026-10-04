@@ -1,7 +1,13 @@
 """Category service - Business logic for category management."""
 
 from ..models.category import Category
+from ..models.category_shelf_life import CategoryShelfLife
+from ..models.category_shelf_life import StorageType
+from ..models.item import ItemType
+from ..services.expiry_calculator import get_storage_type_for_item_type
+from collections import defaultdict
 from sqlmodel import Session
+from sqlmodel import col
 from sqlmodel import func
 from sqlmodel import select
 
@@ -162,3 +168,87 @@ def update_category_order(session: Session, category_ids: list[int]) -> None:
         session.add(category)
 
     session.commit()
+
+
+def _get_storage_type_for_filtering(item_type: ItemType) -> StorageType | None:
+    """Get storage type for category filtering.
+
+    PURCHASED_FROZEN filters to FROZEN categories (unlike expiry calculation
+    where it uses MHD directly). PURCHASED_FRESH shows all categories.
+    """
+    if item_type == ItemType.PURCHASED_FROZEN:
+        return StorageType.FROZEN
+    return get_storage_type_for_item_type(item_type)
+
+
+def get_categories_for_item_type(session: Session, item_type: ItemType) -> list[Category]:
+    """Get leaf categories filtered by item type.
+
+    Returns only categories appropriate for the given item type:
+    - PURCHASED_FRESH: All leaf categories
+    - PURCHASED_FROZEN: Only categories with FROZEN shelf-life
+    - PURCHASED_THEN_FROZEN / HOMEMADE_FROZEN: Only FROZEN shelf-life
+    - HOMEMADE_PRESERVED: Only AMBIENT shelf-life
+
+    Only returns leaf categories (those without children).
+    """
+    storage_type = _get_storage_type_for_filtering(item_type)
+
+    # Get IDs of categories that have children (= parent categories)
+    parent_ids_query = (
+        select(Category.parent_id).where(Category.parent_id.is_not(None)).distinct()  # type: ignore[union-attr]
+    )
+    parent_ids = set(session.exec(parent_ids_query).all())
+
+    if storage_type is None:
+        # PURCHASED_FRESH: all leaf categories
+        all_cats = session.exec(select(Category).order_by(Category.sort_order)).all()  # type: ignore[arg-type]
+        return [c for c in all_cats if c.id not in parent_ids]
+
+    # Filter by storage type via CategoryShelfLife join
+    cats_with_shelf_life = session.exec(
+        select(Category)
+        .join(CategoryShelfLife, col(Category.id) == col(CategoryShelfLife.category_id))
+        .where(CategoryShelfLife.storage_type == storage_type)
+        .order_by(Category.sort_order)  # type: ignore[arg-type]
+    ).all()
+
+    return [c for c in cats_with_shelf_life if c.id not in parent_ids]
+
+
+def get_grouped_categories_for_item_type(
+    session: Session, item_type: ItemType
+) -> list[tuple[str | None, list[Category]]]:
+    """Get categories grouped by parent for UI rendering.
+
+    Returns a list of (group_name, categories) tuples:
+    - group_name is the parent category name, or None for standalone categories
+    - categories is the list of leaf categories in that group
+
+    Groups are ordered: grouped categories first, then standalone.
+    """
+    leaves = get_categories_for_item_type(session, item_type)
+
+    # Group by parent_id
+    grouped: dict[int | None, list[Category]] = defaultdict(list)
+    for cat in leaves:
+        grouped[cat.parent_id].append(cat)
+
+    # Build result: resolve parent names
+    result: list[tuple[str | None, list[Category]]] = []
+    seen_parents: set[int] = set()
+
+    # First: categories with parents (grouped)
+    for cat in leaves:
+        if cat.parent_id is not None and cat.parent_id not in seen_parents:
+            seen_parents.add(cat.parent_id)
+            parent = session.get(Category, cat.parent_id)
+            group_name = parent.name if parent else None
+            result.append((group_name, grouped[cat.parent_id]))
+
+    # Then: standalone categories (no parent)
+    standalone = grouped.get(None, [])
+    if standalone:
+        result.append((None, standalone))
+
+    return result
