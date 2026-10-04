@@ -16,9 +16,24 @@ from ..components.errors import show_service_error
 from ..theme.icons import create_icon
 from ..utils.date_utils import format_german_date
 from ..utils.date_utils import parse_german_date
+from ..validation import validate_step1
+from ..validation import validate_step2
+from ..validation import validate_step3
 from datetime import date as date_type
 from nicegui import ui
 from typing import Any
+
+
+FREEZE_DATE_TYPES = {ItemType.PURCHASED_THEN_FROZEN, ItemType.HOMEMADE_FROZEN}
+
+
+def _date_label(item_type: ItemType) -> str:
+    """Beschriftung des Datumsfelds je Artikel-Typ (best_before_date ist überladen, siehe #387)."""
+    if item_type in {ItemType.PURCHASED_FRESH, ItemType.PURCHASED_FROZEN}:
+        return "Mindesthaltbarkeitsdatum *"
+    if item_type == ItemType.PURCHASED_THEN_FROZEN:
+        return "Einkaufsdatum *"
+    return "Produktionsdatum *"
 
 
 @ui.page("/items/{item_id}/edit")
@@ -64,24 +79,28 @@ def edit_item(item_id: int) -> None:
         return
 
     # References for validation
-    save_button: Any = None
+    save_button: ui.button | None = None
+
+    def validation_errors() -> dict[str, str]:
+        """Dieselben Regeln wie im Wizard (Issue #386): Trim, 2 Zeichen, Menge > 0, Einfrierdatum, Lagerort."""
+        errors = validate_step1(
+            form_data["product_name"], form_data["item_type"], form_data["quantity"], form_data["unit"]
+        )
+        errors.update(
+            validate_step2(
+                form_data["item_type"],
+                form_data.get("best_before_date"),
+                form_data.get("freeze_date"),
+                form_data.get("category_id"),
+            )
+        )
+        errors.update(validate_step3(form_data.get("location_id")))
+        return errors
 
     def update_validation() -> None:
         """Update save button state based on validation."""
-        is_valid = bool(
-            form_data["product_name"]
-            and form_data["item_type"]
-            and form_data["quantity"]
-            and form_data["quantity"] > 0
-            and form_data["unit"]
-            and form_data["location_id"]
-            and form_data.get("category_id")
-        )
-
-        if is_valid:
-            save_button.props(remove="disabled")
-        else:
-            save_button.props(add="disabled")
+        if save_button is not None:
+            save_button.set_enabled(not validation_errors())
 
     def update_locations_for_item_type() -> None:
         """Update available locations when item type changes."""
@@ -127,12 +146,21 @@ def edit_item(item_id: int) -> None:
 
     def save_item() -> None:
         """Save changes to database."""
+        # Re-Validierung wie im Wizard: ein Klick kann den Server erreichen, bevor der
+        # deaktivierte Button im Browser angekommen ist (Issue #386)
+        errors = validation_errors()
+        if errors:
+            ui.notify(next(iter(errors.values())), type="warning")
+            update_validation()
+            return
+
         try:
             with next(get_session()) as session:
+                # Nullable-Felder explizit übergeben: None leert sie (UNSET-Sentinel im Service)
                 item_service.update_item(
                     session=session,
                     id=item_id,
-                    product_name=form_data["product_name"],
+                    product_name=form_data["product_name"].strip(),
                     quantity=form_data["quantity"],
                     unit=form_data["unit"],
                     best_before_date=form_data["best_before_date"],
@@ -140,7 +168,7 @@ def edit_item(item_id: int) -> None:
                     location_id=form_data["location_id"],
                     category_id=form_data.get("category_id"),
                     item_type=form_data["item_type"],
-                    notes=form_data.get("notes") or None,
+                    notes=(form_data.get("notes") or "").strip() or None,
                 )
             ui.notify(f"{form_data['product_name']} gespeichert!", type="positive")
             ui.navigate.to("/items")
@@ -169,7 +197,7 @@ def edit_item(item_id: int) -> None:
             .props("outlined")
         )
         product_name_input.bind_value(form_data, "product_name")
-        product_name_input.on("blur", update_validation)
+        product_name_input.on_value_change(lambda _: update_validation())
 
         # Item Type
         ui.label("Artikel-Typ *").classes("text-sm font-medium mb-2 mt-4")
@@ -178,14 +206,15 @@ def edit_item(item_id: int) -> None:
             form_data["item_type"] = value
             update_locations_for_item_type()
             update_categories_for_item_type()
-            # Show/hide freeze date based on item type
-            freeze_date_section.set_visibility(
-                value
-                in {
-                    ItemType.PURCHASED_THEN_FROZEN,
-                    ItemType.HOMEMADE_FROZEN,
-                }
-            )
+            # Einfrierdatum setzen bzw. leeren und Datumslabel anpassen (Issue #386)
+            needs_freeze_date = value in FREEZE_DATE_TYPES
+            freeze_date_section.set_visibility(needs_freeze_date)
+            if needs_freeze_date:
+                if form_data.get("freeze_date") is None:
+                    freeze_date_input.value = format_german_date(date_type.today())
+            else:
+                freeze_date_input.value = ""
+            date_label.set_text(_date_label(value))
             update_validation()
 
         create_item_type_chip_group(
@@ -206,7 +235,7 @@ def edit_item(item_id: int) -> None:
             .props("outlined clearable")
         )
         quantity_input.bind_value(form_data, "quantity")
-        quantity_input.on("blur", update_validation)
+        quantity_input.on_value_change(lambda _: update_validation())
 
         # Unit
         ui.label("Einheit *").classes("text-sm font-medium mb-1 mt-4")
@@ -235,16 +264,8 @@ def edit_item(item_id: int) -> None:
                 on_change=on_category_change,
             )
 
-        # Best Before Date / Production Date
-        item_type = form_data["item_type"]
-        if item_type in {ItemType.PURCHASED_FRESH, ItemType.PURCHASED_FROZEN}:
-            date_label = "Mindesthaltbarkeitsdatum *"
-        elif item_type == ItemType.PURCHASED_THEN_FROZEN:
-            date_label = "Einkaufsdatum *"
-        else:
-            date_label = "Produktionsdatum *"
-
-        ui.label(date_label).classes("text-sm font-medium mb-1 mt-4")
+        # Best Before Date / Production Date (Label folgt dem Typ, siehe on_item_type_change)
+        date_label = ui.label(_date_label(form_data["item_type"])).classes("text-sm font-medium mb-1 mt-4")
         date_value = form_data.get("best_before_date") or date_type.today()
         form_data["best_before_date"] = date_value
 
@@ -266,10 +287,7 @@ def edit_item(item_id: int) -> None:
         date_input.on_value_change(lambda _: update_validation())
 
         # Freeze Date (conditional)
-        show_freeze_date = form_data["item_type"] in {
-            ItemType.PURCHASED_THEN_FROZEN,
-            ItemType.HOMEMADE_FROZEN,
-        }
+        show_freeze_date = form_data["item_type"] in FREEZE_DATE_TYPES
         with ui.element("div").classes("mt-4") as freeze_date_section:
             freeze_date_section.set_visibility(show_freeze_date)
             ui.label("Einfrierdatum *").classes("text-sm font-medium mb-1")
@@ -310,7 +328,7 @@ def edit_item(item_id: int) -> None:
         # Notes (optional)
         ui.label("Notizen (optional)").classes("text-sm font-medium mb-1 mt-4")
         notes_input = (
-            ui.textarea(placeholder="z.B. je 12 Stueck, 300g pro Packung", value=form_data["notes"])
+            ui.textarea(placeholder="z.B. je 12 Stück, 300g pro Packung", value=form_data["notes"])
             .classes("w-full")
             .props("outlined rows=2")
         )

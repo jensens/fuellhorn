@@ -46,7 +46,9 @@ def frozen_pizza_fixture(isolated_test_database) -> dict:
 
 def _is_disabled(user: User, marker: str) -> bool:
     element = user.find(marker=marker).elements.pop()
-    return bool(element._props.get("disabled"))
+    return bool(element._props.get("disabled") or element._props.get("disable")) or not getattr(
+        element, "enabled", True
+    )
 
 
 async def test_type_change_drops_incompatible_location_and_disables_save(

@@ -51,7 +51,9 @@ def _set_quantity(user: User, quantity: float) -> None:
 
 def _is_disabled(user: User, marker: str) -> bool:
     element = user.find(marker=marker).elements.pop()
-    return bool(element._props.get("disabled"))
+    return bool(element._props.get("disabled") or element._props.get("disable")) or not getattr(
+        element, "enabled", True
+    )
 
 
 async def _step1(user: User, product_name: str, item_type: str, unit: str) -> None:
