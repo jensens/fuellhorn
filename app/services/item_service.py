@@ -13,6 +13,8 @@ from .errors import ServiceValidationError
 from .errors import StaleStockError
 from .location_service import get_location
 from .location_service import get_valid_location_types
+from .sentinels import UNSET
+from .sentinels import Unset
 from .validation import require_non_empty
 from datetime import date
 from sqlalchemy import func
@@ -50,19 +52,8 @@ def effective_best_before_date(item_type: ItemType, best_before_date: date, free
     return best_before_date
 
 
-class Unset:
-    """Sentinel für ``update_item``: Feld nicht übergeben (Issue #386).
-
-    Nullable-Felder (``notes``, ``freeze_date``, ``category_id``) brauchen den
-    Unterschied zwischen "nicht angefasst" und "auf None setzen"; mit ``None``
-    als Default ließen sie sich nie leeren.
-    """
-
-    def __repr__(self) -> str:
-        return "UNSET"
-
-
-UNSET = Unset()
+# Nullable-Felder (notes, freeze_date, category_id) brauchen den Unterschied zwischen
+# "nicht angefasst" (UNSET) und "auf None setzen" (Issue #386); Sentinel in services/sentinels.py
 
 
 def validate_item_data(
@@ -126,7 +117,10 @@ def validate_item_data(
             )
         return cleaned_name
     category = get_category(session, category_id)
-    if storage_type is not None and shelf_life_service.get_shelf_life(session, category_id, storage_type) is None:
+    if (
+        storage_type is not None
+        and shelf_life_service.get_shelf_life_with_fallback(session, category_id, storage_type) is None
+    ):
         raise ServiceValidationError(
             f"Kategorie '{category.name}' hat keine Haltbarkeit für {STORAGE_TYPE_LABELS[storage_type.value]}. "
             "Bitte eine passende Kategorie wählen."
@@ -606,11 +600,7 @@ def get_item_expiry_info(
         # No category - can't look up shelf life
         return (None, None, None)
 
-    shelf_life = shelf_life_service.get_shelf_life(
-        session=session,
-        category_id=item.category_id,
-        storage_type=storage_type,
-    )
+    shelf_life = shelf_life_service.get_shelf_life_with_fallback(session, item.category_id, storage_type)
 
     if shelf_life is None:
         # No shelf life config for this category

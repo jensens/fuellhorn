@@ -12,13 +12,18 @@ from ...auth import require_permissions
 from ...auth.decorators import with_permission_check
 from ...auth.dependencies import get_current_user
 from ...database import get_session
+from ...models.category import Category
 from ...models.category_shelf_life import StorageType
 from ...services import category_service
 from ...services import shelf_life_service
+from ...services.sentinels import UNSET
+from ...services.sentinels import Unset
 from ..components import create_mobile_page_container
 from ..components.errors import show_service_error
 from ..theme.icons import create_icon
+from collections import defaultdict
 from nicegui import ui
+from sqlmodel import Session
 
 
 # Storage type labels for UI
@@ -61,12 +66,29 @@ def categories_page() -> None:
         _render_categories_list()
 
 
+def _sibling_ids(session: Session, category_id: int) -> list[int]:
+    """IDs der Geschwister (gleicher Parent) in Sortierreihenfolge; Hoch/Runter bleibt in der Gruppe (#395)."""
+    categories = category_service.get_all_categories(session)
+    current = next((c for c in categories if c.id == category_id), None)
+    if current is None:
+        return []
+    return [c.id for c in categories if c.parent_id == current.parent_id and c.id is not None]
+
+
+def _parent_options(session: Session, exclude_id: int | None = None) -> dict[int, str]:
+    """Wählbare Gruppen: Top-Level-Kategorien außer der bearbeiteten; 0 = keine Gruppe (#395)."""
+    options: dict[int, str] = {0: "Keine Gruppe"}
+    for category in category_service.get_all_categories(session):
+        if category.id is not None and category.parent_id is None and category.id != exclude_id:
+            options[category.id] = category.name
+    return options
+
+
 @with_permission_check(Permission.CONFIG_MANAGE)  # Laufzeit-Check, nicht nur beim Seitenaufbau (#381)
 def _move_category_up(category_id: int) -> None:
-    """Move a category up in the sort order."""
+    """Move a category up in the sort order (within its siblings)."""
     with next(get_session()) as session:
-        categories = category_service.get_all_categories(session)
-        category_ids = [c.id for c in categories if c.id is not None]
+        category_ids = _sibling_ids(session, category_id)
 
         # Find current position
         try:
@@ -93,10 +115,9 @@ def _move_category_up(category_id: int) -> None:
 
 @with_permission_check(Permission.CONFIG_MANAGE)
 def _move_category_down(category_id: int) -> None:
-    """Move a category down in the sort order."""
+    """Move a category down in the sort order (within its siblings)."""
     with next(get_session()) as session:
-        categories = category_service.get_all_categories(session)
-        category_ids = [c.id for c in categories if c.id is not None]
+        category_ids = _sibling_ids(session, category_id)
 
         # Find current position
         try:
@@ -122,85 +143,11 @@ def _move_category_down(category_id: int) -> None:
 
 
 def _render_categories_list() -> None:
-    """Render the list of categories with reorder buttons."""
+    """Render the list of categories: top-level in order, children indented under their group (#395)."""
     with next(get_session()) as session:
         categories = category_service.get_all_categories(session)
 
-        if categories:
-            # Display categories as cards with reorder buttons
-            for index, category in enumerate(categories):
-                # Get shelf lives for this category
-                cat_id = category.id
-                if cat_id is None:
-                    continue
-                shelf_lives = shelf_life_service.get_all_shelf_lives_for_category(session, cat_id)
-                shelf_life_dict = {sl.storage_type: sl for sl in shelf_lives}
-
-                is_first = index == 0
-                is_last = index == len(categories) - 1
-
-                # Admin list item (Solarpunk theme)
-                with ui.element("div").classes("sp-admin-list-item w-full"):
-                    # Left side: reorder buttons + color + name
-                    with ui.row().classes("items-center gap-3 flex-1"):
-                        # Reorder buttons (drag handle style)
-                        with ui.column().classes("gap-0 sp-admin-drag"):
-                            ui.button(
-                                icon="keyboard_arrow_up",
-                                on_click=lambda cid=cat_id: _move_category_up(cid),
-                            ).props(f"flat round dense size=xs {'disabled' if is_first else ''}").classes("h-5").mark(
-                                f"move-up-{category.name}"
-                            )
-                            ui.button(
-                                icon="keyboard_arrow_down",
-                                on_click=lambda cid=cat_id: _move_category_down(cid),
-                            ).props(f"flat round dense size=xs {'disabled' if is_last else ''}").classes("h-5").mark(
-                                f"move-down-{category.name}"
-                            )
-
-                        # Color indicator (Solarpunk admin color dot)
-                        if category.color:
-                            ui.element("div").classes("sp-admin-color-dot").style(f"background-color: {category.color}")
-                        else:
-                            ui.element("div").classes("sp-admin-color-dot bg-oat")
-                        # Category name
-                        ui.label(category.name).classes("font-medium text-lg text-charcoal")
-
-                    # Right side: shelf life info and buttons
-                    with ui.row().classes("items-center gap-2"):
-                        # Shelf life info (compact display)
-                        _render_shelf_life_badges(shelf_life_dict)
-
-                        # Capture category data for the closures
-                        cat_name = category.name
-                        cat_color = category.color
-
-                        # Action buttons (Solarpunk theme)
-                        with ui.row().classes("sp-admin-actions items-center gap-1"):
-                            # Edit button
-                            with (
-                                ui.button(
-                                    on_click=lambda cid=cat_id, cn=cat_name, cc=cat_color: _open_edit_dialog(
-                                        cid, cn, cc
-                                    ),
-                                )
-                                .props("flat round size=sm")
-                                .classes("edit")
-                                .mark(f"edit-{cat_name}")
-                            ):
-                                create_icon("actions/edit", size="20px")
-
-                            # Delete button
-                            with (
-                                ui.button(
-                                    on_click=lambda cid=cat_id, cn=cat_name: _open_delete_dialog(cid, cn),
-                                )
-                                .props("flat round size=sm")
-                                .classes("delete")
-                                .mark(f"delete-{cat_name}")
-                            ):
-                                create_icon("actions/delete", size="20px")
-        else:
+        if not categories:
             # Empty state (Solarpunk theme)
             with ui.card().classes("sp-dashboard-card w-full"):
                 with ui.column().classes("w-full items-center py-8"):
@@ -209,6 +156,121 @@ def _render_categories_list() -> None:
                     ui.label("Kategorien helfen beim Organisieren des Vorrats.").classes(
                         "text-sm text-stone text-center"
                     )
+            return
+
+        children_by_parent: dict[int, list[Category]] = defaultdict(list)
+        for category in categories:
+            if category.parent_id is not None:
+                children_by_parent[category.parent_id].append(category)
+        top_level = [c for c in categories if c.parent_id is None]
+
+        for index, category in enumerate(top_level):
+            children = children_by_parent.get(category.id, []) if category.id is not None else []
+            _render_category_row(
+                session,
+                category,
+                is_first=index == 0,
+                is_last=index == len(top_level) - 1,
+                child_count=len(children),
+            )
+            for child_index, child in enumerate(children):
+                _render_category_row(
+                    session,
+                    child,
+                    is_first=child_index == 0,
+                    is_last=child_index == len(children) - 1,
+                    parent_name=category.name,
+                )
+
+
+def _render_category_row(
+    session: Session,
+    category: Category,
+    *,
+    is_first: bool,
+    is_last: bool,
+    child_count: int = 0,
+    parent_name: str | None = None,
+) -> None:
+    """Eine Zeile der Admin-Liste; Kinder eingerückt und markiert, Gruppen mit Badge (#395)."""
+    cat_id = category.id
+    if cat_id is None:
+        return
+    shelf_lives = shelf_life_service.get_all_shelf_lives_for_category(session, cat_id)
+    shelf_life_dict = {sl.storage_type: sl for sl in shelf_lives}
+
+    row = ui.element("div").classes("sp-admin-list-item w-full")
+    if parent_name is not None:
+        row.classes("ml-8").mark(f"child-of-{parent_name}-{category.name}")
+
+    # Admin list item (Solarpunk theme)
+    with row:
+        # Left side: reorder buttons + color + name
+        with ui.row().classes("items-center gap-3 flex-1"):
+            # Reorder buttons (drag handle style); Hoch/Runter bewegt innerhalb der Geschwister
+            with ui.column().classes("gap-0 sp-admin-drag"):
+                ui.button(
+                    icon="keyboard_arrow_up",
+                    on_click=lambda cid=cat_id: _move_category_up(cid),
+                ).props(f"flat round dense size=xs {'disabled' if is_first else ''}").classes("h-5").mark(
+                    f"move-up-{category.name}"
+                )
+                ui.button(
+                    icon="keyboard_arrow_down",
+                    on_click=lambda cid=cat_id: _move_category_down(cid),
+                ).props(f"flat round dense size=xs {'disabled' if is_last else ''}").classes("h-5").mark(
+                    f"move-down-{category.name}"
+                )
+
+            # Color indicator (Solarpunk admin color dot)
+            if category.color:
+                ui.element("div").classes("sp-admin-color-dot").style(f"background-color: {category.color}")
+            else:
+                ui.element("div").classes("sp-admin-color-dot bg-oat")
+            # Category name
+            ui.label(category.name).classes("font-medium text-lg text-charcoal")
+            if child_count:
+                ui.label("Gruppe").classes(
+                    "text-xs font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-oat text-charcoal"
+                ).mark(f"group-badge-{category.name}")
+
+        # Right side: shelf life info and buttons
+        with ui.row().classes("items-center gap-2"):
+            # Shelf life info (compact display)
+            _render_shelf_life_badges(shelf_life_dict)
+
+            # Capture category data for the closures
+            cat_name = category.name
+            cat_color = category.color
+            cat_parent_id = category.parent_id
+
+            # Action buttons (Solarpunk theme)
+            with ui.row().classes("sp-admin-actions items-center gap-1"):
+                # Edit button
+                with (
+                    ui.button(
+                        on_click=lambda cid=cat_id,
+                        cn=cat_name,
+                        cc=cat_color,
+                        cp=cat_parent_id,
+                        cc_count=child_count: _open_edit_dialog(cid, cn, cc, cp, cc_count),
+                    )
+                    .props("flat round size=sm")
+                    .classes("edit")
+                    .mark(f"edit-{cat_name}")
+                ):
+                    create_icon("actions/edit", size="20px")
+
+                # Delete button
+                with (
+                    ui.button(
+                        on_click=lambda cid=cat_id, cn=cat_name: _open_delete_dialog(cid, cn),
+                    )
+                    .props("flat round size=sm")
+                    .classes("delete")
+                    .mark(f"delete-{cat_name}")
+                ):
+                    create_icon("actions/delete", size="20px")
 
 
 def _render_shelf_life_badges(shelf_life_dict: dict) -> None:
@@ -249,6 +311,16 @@ def _open_create_dialog() -> None:
                     f"background-color: {e.value}" if e.value else "background-color: #E5E7EB"
                 )
             )
+
+        # Gruppe (Eltern-Kategorie, eine Ebene; #395)
+        with next(get_session()) as session:
+            parent_options = _parent_options(session)
+        parent_select = (
+            ui.select(parent_options, label="Gruppe", value=0)
+            .classes("w-full mb-4")
+            .props("outlined")
+            .mark("create-parent")
+        )
 
         # Shelf life section
         ui.label("Haltbarkeit (Monate)").classes("text-subtitle1 font-medium mb-2")
@@ -356,6 +428,7 @@ def _open_create_dialog() -> None:
                             name=name,
                             created_by=current_user.id,
                             color=color,
+                            parent_id=parent_select.value or None,
                         )
 
                         # Save shelf lives if provided
@@ -391,12 +464,15 @@ def _open_edit_dialog(
     category_id: int,
     current_name: str,
     current_color: str | None,
+    current_parent_id: int | None = None,
+    child_count: int = 0,
 ) -> None:
-    """Open dialog to edit an existing category with shelf life configuration."""
+    """Open dialog to edit an existing category with group and shelf life configuration."""
     # Load existing shelf lives
     with next(get_session()) as session:
         shelf_lives = shelf_life_service.get_all_shelf_lives_for_category(session, category_id)
         existing_shelf_lives = {sl.storage_type: sl for sl in shelf_lives}
+        parent_options = _parent_options(session, exclude_id=category_id)
 
     with ui.dialog() as dialog, ui.card().classes("sp-dashboard-card w-full max-w-lg"):
         ui.label("Kategorie bearbeiten").classes("text-h6 font-semibold mb-4 text-fern")
@@ -420,6 +496,20 @@ def _open_edit_dialog(
                 lambda e: color_preview.style(
                     f"background-color: {e.value}" if e.value else "background-color: #E5E7EB"
                 )
+            )
+
+        # Gruppe (Eltern-Kategorie, eine Ebene; #395). Eine Gruppe kann selbst kein Kind werden.
+        parent_select: ui.select | None = None
+        if child_count:
+            ui.label(f"Gruppe mit {child_count} Unterkategorien; kann selbst keiner Gruppe zugeordnet werden.").classes(
+                "text-xs text-stone mb-4"
+            )
+        else:
+            parent_select = (
+                ui.select(parent_options, label="Gruppe", value=current_parent_id or 0)
+                .classes("w-full mb-4")
+                .props("outlined")
+                .mark("edit-parent")
             )
 
         # Shelf life section
@@ -515,6 +605,10 @@ def _open_edit_dialog(
                         error_label.set_visibility(True)
                         return
 
+                new_parent_id: int | None | Unset = UNSET
+                if parent_select is not None:
+                    new_parent_id = parent_select.value or None
+
                 try:
                     with next(get_session()) as session:
                         # Update category
@@ -523,6 +617,7 @@ def _open_edit_dialog(
                             id=category_id,
                             name=name if name != current_name else None,
                             color=color,
+                            parent_id=new_parent_id,
                         )
 
                         # Update shelf lives
