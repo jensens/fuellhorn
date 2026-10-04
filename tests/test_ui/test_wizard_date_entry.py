@@ -6,9 +6,11 @@ Artikel ``date.today()``, weil das Datumsfeld nie an ``form_data`` gebunden war.
 """
 
 from app.models import Category
+from app.models import CategoryShelfLife
 from app.models import Item
 from app.models import Location
 from app.models import LocationType
+from app.models import StorageType
 from datetime import date
 from nicegui import ui
 from nicegui.testing import User
@@ -26,6 +28,17 @@ def chilled_location_fixture(isolated_test_database) -> Location:
         session.commit()
         session.refresh(location)
         return location
+
+
+@pytest.fixture(name="fresh_category")
+def fresh_category_fixture(isolated_test_database) -> Category:
+    """Kategorie ohne Haltbarkeitsdaten (für PURCHASED_FRESH wählbar, Kategorie ist Pflicht)."""
+    with Session(isolated_test_database) as session:
+        category = Category(name="Milchprodukte (frisch)", created_by=1)
+        session.add(category)
+        session.commit()
+        session.refresh(category)
+        return category
 
 
 def _set_quantity(user: User, quantity: float) -> None:
@@ -52,13 +65,14 @@ def _type_date(user: User, marker: str, value: str) -> None:
 
 
 async def test_wizard_persists_typed_best_before_date(
-    logged_in_user: User, isolated_test_database, chilled_location: Location
+    logged_in_user: User, isolated_test_database, chilled_location: Location, fresh_category: Category
 ) -> None:
     """Ein getipptes MHD landet als best_before_date in der Datenbank."""
     await logged_in_user.open("/items/add")
     await _fill_step1(logged_in_user, "Milch", "purchased_fresh", 1, "l")
 
     await logged_in_user.should_see("Schritt 2 von 3")
+    logged_in_user.find(marker=f"category-chip-{fresh_category.id}").click()
     _type_date(logged_in_user, "wizard-date-input", "15.01.2027")
     logged_in_user.find("Weiter").click()
 
@@ -74,12 +88,19 @@ async def test_wizard_persists_typed_best_before_date(
 
 @pytest.fixture(name="frozen_setup")
 def frozen_setup_fixture(isolated_test_database) -> tuple[Location, Category]:
-    """Tiefkühl-Lagerort und Kategorie (Pflicht für HOMEMADE_FROZEN)."""
+    """Tiefkühl-Lagerort und FROZEN-Kategorie (für HOMEMADE_FROZEN nur solche wählbar)."""
     with Session(isolated_test_database) as session:
         location = Location(name="Tiefkühltruhe", location_type=LocationType.FROZEN, created_by=1)
         category = Category(name="Suppen", created_by=1)
         session.add(location)
         session.add(category)
+        session.commit()
+        session.refresh(location)
+        session.refresh(category)
+        assert category.id is not None
+        session.add(
+            CategoryShelfLife(category_id=category.id, storage_type=StorageType.FROZEN, months_min=2, months_max=3)
+        )
         session.commit()
         session.refresh(location)
         session.refresh(category)
@@ -126,11 +147,14 @@ async def test_wizard_keeps_typed_date_after_back_and_next(logged_in_user: User)
     assert date_input.value == "15.01.2027"
 
 
-async def test_wizard_summary_shows_typed_date(logged_in_user: User, chilled_location: Location) -> None:
+async def test_wizard_summary_shows_typed_date(
+    logged_in_user: User, chilled_location: Location, fresh_category: Category
+) -> None:
     """Die Zusammenfassung in Schritt 3 zeigt das getippte Datum, nicht 'heute' (Issue #340)."""
     await logged_in_user.open("/items/add")
     await _fill_step1(logged_in_user, "Joghurt", "purchased_fresh", 4, "Stück")
     await logged_in_user.should_see("Schritt 2 von 3")
+    logged_in_user.find(marker=f"category-chip-{fresh_category.id}").click()
     _type_date(logged_in_user, "wizard-date-input", "15.01.2027")
     logged_in_user.find("Weiter").click()
 
