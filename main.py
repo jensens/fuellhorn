@@ -1,10 +1,12 @@
 """NiceGUI Application - Entry Point."""
 
-import os
-
+from app.config import config
 from app.config import get_storage_secret
 from app.database import create_db_and_tables
-from nicegui import app, ui
+from nicegui import app
+from nicegui import ui
+import os
+
 
 # Serve static files (CSS, icons, etc.)
 app.add_static_files("/static", "app/static")
@@ -13,9 +15,7 @@ app.add_static_files("/static", "app/static")
 app.add_static_file(url_path="/manifest.json", local_file="app/static/manifest.json")
 app.add_static_file(url_path="/icon-192.png", local_file="app/static/pwa/fuellhorn-icon-192.png")
 app.add_static_file(url_path="/icon-512.png", local_file="app/static/pwa/fuellhorn-icon-512.png")
-app.add_static_file(
-    url_path="/apple-touch-icon.png", local_file="app/static/pwa/fuellhorn-icon-180.png"
-)
+app.add_static_file(url_path="/apple-touch-icon.png", local_file="app/static/pwa/fuellhorn-icon-180.png")
 
 
 # Load Solarpunk theme CSS and JavaScript for each client connection
@@ -32,14 +32,13 @@ def _load_theme() -> None:
     # Apple-spezifische PWA Meta-Tags
     ui.add_head_html('<link rel="apple-touch-icon" href="/apple-touch-icon.png">')
     ui.add_head_html('<meta name="apple-mobile-web-app-capable" content="yes">')
-    ui.add_head_html(
-        '<meta name="apple-mobile-web-app-status-bar-style" content="default">'
-    )
+    ui.add_head_html('<meta name="apple-mobile-web-app-status-bar-style" content="default">')
     ui.add_head_html('<meta name="apple-mobile-web-app-title" content="Fuellhorn">')
 
 
 # Import pages to register routes
 import app.ui.pages as _pages  # noqa: F401, E402
+
 
 # Import test pages only during testing (for component tests)
 if os.environ.get("TESTING") == "true":
@@ -55,15 +54,13 @@ if __name__ in {"__main__", "__mp_main__"}:
     # Datenbank initialisieren
     create_db_and_tables()
 
-    # Port aus Environment (für parallele Entwicklung in Worktrees)
-    port = int(os.environ.get("PORT", "8080"))
-
-    # NiceGUI starten
+    # NiceGUI starten (HOST/PORT aus der Umgebung, z.B. eigener Port je Worktree)
     ui.run(
         title="Füllhorn - Lebensmittelvorrats-Verwaltung",
         favicon="app/static/pwa/fuellhorn-icon-192.png",
         storage_secret=get_storage_secret(),
-        port=port,
+        host=config.HOST,
+        port=config.PORT,
         reload=True,  # Auto-Reload waehrend Entwicklung
         show=False,  # Browser nicht automatisch oeffnen
     )

@@ -16,8 +16,7 @@ Die einfachste Methode verwendet das veröffentlichte GHCR-Image:
 cp .env.example .env
 
 # WICHTIG: Secrets anpassen!
-# - SECRET_KEY: Mindestens 32 Zeichen
-# - FUELLHORN_SECRET: Mindestens 32 Zeichen
+# - FUELLHORN_SECRET: Mindestens 32 Zeichen (signiert Session-Cookies)
 # - POSTGRES_PASSWORD: Sicheres Datenbankpasswort
 
 # Container starten
@@ -55,13 +54,14 @@ Hinweise:
 
 | Variable | Beschreibung | Erforderlich | Default |
 |----------|--------------|--------------|---------|
-| `SECRET_KEY` | App-Secret (min. 32 Zeichen) | Ja | - |
-| `FUELLHORN_SECRET` | NiceGUI Storage Secret | Ja | - |
+| `FUELLHORN_SECRET` | Signiert die Session-Cookies (NiceGUI `storage_secret`). Rotation meldet alle Nutzer ab. | Ja | - |
 | `POSTGRES_PASSWORD` | Datenbank-Passwort | Ja | - |
 | `POSTGRES_USER` | Datenbank-Benutzer | Nein | `fuellhorn` |
 | `POSTGRES_DB` | Datenbank-Name | Nein | `fuellhorn` |
 | `APP_PORT` | Externer Port | Nein | `8080` |
+| `HOST` / `PORT` | Bind-Adresse und Port im Container | Nein | `0.0.0.0` / `8080` |
 | `DEBUG` | Debug-Modus | Nein | `false` |
+| `SQL_ECHO` | Alle SQL-Statements samt Parametern loggen (nur zur Fehlersuche, enthält Hashes und Tokens) | Nein | `false` |
 | `TRUSTED_PROXIES` | Kommagetrennte IPs von Reverse-Proxys, deren `X-Forwarded-For` für das Login-Rate-Limiting vertraut wird. Leer: direkte Client-IP zählt. | Nein | leer |
 | `FUELLHORN_DATA_DIR` | Datenverzeichnis für die SQLite-Datei (nur ohne `DATABASE_URL` relevant). Muss im Container auf das gemountete Volume zeigen. | Nein | `/app/data` im Image, sonst `./data` |
 

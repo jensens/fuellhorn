@@ -17,6 +17,10 @@ import sys
 # Set TESTING environment variable so main.py imports test pages
 os.environ["TESTING"] = "true"
 
+# NiceGUI-Testplugin (user/screen-Fixtures, ini-Option main_file) einmal zentral laden.
+# In Unter-conftests ist pytest_plugins deprecated und die Option fehlte bei Teil-Läufen (#374).
+pytest_plugins = ["nicegui.testing.plugin"]
+
 
 @pytest.fixture(name="session")
 def session_fixture() -> Generator[Session, None, None]:

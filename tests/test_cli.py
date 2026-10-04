@@ -1,6 +1,5 @@
 """Tests for CLI entry point."""
 
-import os
 from pathlib import Path
 from unittest.mock import MagicMock
 from unittest.mock import patch
@@ -146,10 +145,10 @@ class TestRunApp:
             assert call_args[0][0] == "/static"
             assert "static" in call_args[0][1]
 
-    def test_uses_default_port_8080(self) -> None:
-        """Should use port 8080 when PORT env var not set."""
-        env = os.environ.copy()
-        env.pop("PORT", None)
+    def test_uses_configured_port(self) -> None:
+        """Der Port aus der Konfiguration (PORT) wird an ui.run durchgereicht."""
+        import app.config
+
         mock_app = self._create_mock_app()
 
         with (
@@ -157,17 +156,18 @@ class TestRunApp:
             patch("nicegui.app", mock_app),
             patch("nicegui.ui.run") as mock_run,
             patch("app.config.get_storage_secret", return_value="test-secret"),
-            patch.dict(os.environ, env, clear=True),
+            patch.object(app.config.config, "PORT", 9000),
         ):
             from app.cli import run_app
 
             run_app()
 
-            call_kwargs = mock_run.call_args[1]
-            assert call_kwargs["port"] == 8080
+            assert mock_run.call_args[1]["port"] == 9000
 
-    def test_uses_custom_port_from_environment(self) -> None:
-        """Should use port from PORT env var."""
+    def test_uses_configured_host(self) -> None:
+        """Die Bind-Adresse aus der Konfiguration (HOST) wird an ui.run durchgereicht (Issue #374)."""
+        import app.config
+
         mock_app = self._create_mock_app()
 
         with (
@@ -175,14 +175,13 @@ class TestRunApp:
             patch("nicegui.app", mock_app),
             patch("nicegui.ui.run") as mock_run,
             patch("app.config.get_storage_secret", return_value="test-secret"),
-            patch.dict(os.environ, {"PORT": "9000"}),
+            patch.object(app.config.config, "HOST", "127.0.0.1"),
         ):
             from app.cli import run_app
 
             run_app()
 
-            call_kwargs = mock_run.call_args[1]
-            assert call_kwargs["port"] == 9000
+            assert mock_run.call_args[1]["host"] == "127.0.0.1"
 
     def test_runs_nicegui_with_correct_settings(self) -> None:
         """Should run NiceGUI with correct configuration."""

@@ -26,7 +26,6 @@ def main() -> None:
     # Setze Umgebungsvariablen für Test-Modus
     # WICHTIG: TESTING NICHT setzen, da sonst NiceGUI Test-Modus aktiviert wird
     # und NICEGUI_SCREEN_TEST_PORT erwartet
-    os.environ["SECRET_KEY"] = "test-secret-key-for-e2e-tests"
     os.environ["FUELLHORN_SECRET"] = "test-fuellhorn-secret-for-e2e-tests"
     # Verwende temporäre Datei statt in-memory für bessere Stabilität
     import tempfile

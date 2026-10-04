@@ -1,7 +1,7 @@
-"""Demo page for Swipe Card component.
+"""Test page for the Swipe Card component.
 
-This page allows interactive testing of the swipe card component in the browser.
-Route: /demo/swipe (only visible in development)
+Interaktive Test-Seite für die Swipe-Komponente (E2E-Tests in tests/test_e2e/test_swipe_demo.py).
+Route: /demo/swipe, wird wie alle Test-Seiten nur unter TESTING geladen, nie in Produktion (#374).
 
 Features:
 - Demo card with example content
@@ -117,14 +117,6 @@ def demo_swipe() -> None:
         )
 
         # Last Event Display
-        with (
-            ui.element("div")
-            .classes("swipe-demo-last-event")
-            .bind_visibility_from(globals(), "events", backward=lambda e: len(e) > 0)
-        ):
-            last_event_label = ui.label("Letztes Event: -")
-
-        # Actually, let's use a simpler approach for visibility
         last_event_label = ui.label("Warte auf Aktion...").classes("swipe-demo-last-event")
 
         # Event Log

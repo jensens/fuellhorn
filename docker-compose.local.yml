@@ -46,7 +46,6 @@ services:
       DB_TYPE: postgresql
       DATABASE_URL: postgresql://${POSTGRES_USER:-fuellhorn}:${POSTGRES_PASSWORD:-fuellhorn}@db:5432/${POSTGRES_DB:-fuellhorn}
       # Security (development defaults - change for real usage!)
-      SECRET_KEY: ${SECRET_KEY:-dev-secret-key-min-32-chars-long!!}
       FUELLHORN_SECRET: ${FUELLHORN_SECRET:-dev-fuellhorn-secret-32-chars!!}
       # App Configuration
       DEBUG: ${DEBUG:-true}
