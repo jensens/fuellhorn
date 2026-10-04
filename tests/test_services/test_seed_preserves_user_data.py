@@ -89,17 +89,31 @@ def test_seed_groups_existing_categories_under_newly_created_group(session: Sess
     assert _category(session, "Suppen").parent_id == _category(session, "Gekochtes").id
 
 
-def test_seed_adds_missing_shelf_life_and_category(session: Session, test_admin: User) -> None:
-    """Fehlende Haltbarkeiten und Kategorien werden weiterhin angelegt."""
+def test_seed_keeps_deleted_shelf_life_of_existing_category(session: Session, test_admin: User) -> None:
+    """Eine gelöschte Haltbarkeit bleibt gelöscht: sonst bekämen Artikel plötzlich ein Ablaufdatum (#462)."""
     seed_shelf_life_defaults(session)
     session.delete(_shelf_life(session, "Senf", StorageType.AMBIENT))
+    session.commit()
+
+    seed_shelf_life_defaults(session)
+
+    senf = _category(session, "Senf")
+    assert session.exec(select(CategoryShelfLife).where(CategoryShelfLife.category_id == senf.id)).all() == []
+
+
+def test_seed_adds_missing_category_with_shelf_life(session: Session, test_admin: User) -> None:
+    """Fehlende Kategorien werden samt Standard-Haltbarkeit angelegt."""
+    seed_shelf_life_defaults(session)
+    session.delete(_shelf_life(session, "Senf", StorageType.AMBIENT))
+    session.commit()
+    session.delete(_category(session, "Senf"))
     session.delete(_category(session, "Getränke"))
     session.commit()
 
     seed_shelf_life_defaults(session)
 
-    senf = _shelf_life(session, "Senf", StorageType.AMBIENT)
-    assert (senf.months_min, senf.months_max) == (3, 6)
+    senf_shelf_life = _shelf_life(session, "Senf", StorageType.AMBIENT)
+    assert (senf_shelf_life.months_min, senf_shelf_life.months_max) == (3, 6)
     assert _category(session, "Getränke").parent_id is None
 
 

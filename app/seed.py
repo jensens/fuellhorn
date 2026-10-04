@@ -245,8 +245,9 @@ def create_shelf_life_if_missing(
 def seed_shelf_life_defaults(session: Session) -> tuple[int, int]:
     """Seed default shelf life data.
 
-    Legt nur Fehlendes an: Kategorien und Haltbarkeiten, die es noch nicht gibt.
-    Bestehende Werte bleiben unverändert, auch wenn sie vom Standard abweichen (#460);
+    Legt nur fehlende Kategorien an, samt ihrer Standard-Haltbarkeiten. Bestehende
+    Kategorien bleiben unverändert, auch wenn sie vom Standard abweichen (#460) oder
+    eine Haltbarkeit fehlt, etwa weil der Nutzer sie gelöscht hat (#462);
     Korrekturen an Standardwerten gehören in eine Migration.
 
     Returns:
@@ -274,6 +275,9 @@ def seed_shelf_life_defaults(session: Session) -> tuple[int, int]:
             new_groups.add(name)
         category_by_name[name] = category
         categories_created += 1
+
+        if existed:
+            continue  # fehlende Haltbarkeit nicht nachtragen: verschöbe Ablaufdaten (#462)
 
         for storage_type, months_min, months_max, source_key in shelf_lives:
             source_url = SOURCES.get(source_key, "")

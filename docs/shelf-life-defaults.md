@@ -166,10 +166,12 @@ Für die lokale Entwicklung ohne installiertes Paket tut das Script `scripts/see
 dasselbe. Angelegt werden:
 
 1. **Kategorien** (falls nicht vorhanden)
-2. **Haltbarkeiten pro Kategorie und Lagertyp** mit Quellenangaben (falls nicht vorhanden)
+2. **Haltbarkeiten pro Kategorie und Lagertyp** mit Quellenangaben (nur für neu angelegte Kategorien)
 
 Der Seed legt nur Fehlendes an und überschreibt nichts: Angepasste Haltbarkeiten, Farben
-und Gruppen bleiben erhalten, auch wenn sie vom Standard abweichen. Eine bestehende
+und Gruppen bleiben erhalten, auch wenn sie vom Standard abweichen. Fehlt einer bestehenden
+Kategorie eine Haltbarkeit (z. B. vom Nutzer gelöscht), trägt der Seed sie nicht nach, sonst
+bekämen bestehende Artikel plötzlich ein anderes Ablaufdatum. Eine bestehende
 Kategorie ohne Gruppe wird nur dann ihrer Standardgruppe zugeordnet, wenn der Seed diese
 Gruppe im selben Lauf neu anlegt (Datenbanken aus der Zeit vor der Kategorie-Hierarchie).
 Korrekturen an bestehenden Standardwerten laufen über Alembic-Migrationen, die nur Werte im
