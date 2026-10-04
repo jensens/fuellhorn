@@ -292,9 +292,9 @@ def create_item_card(
                     )
                 ):
                     # Product name (truncate on overflow)
-                    ui.label(item.product_name).classes("font-semibold text-base truncate").style(
-                        "line-height: 1.3; flex: 1; min-width: 0;"
-                    )
+                    ui.label(item.product_name).mark(f"item-name-{item.id}").classes(
+                        "font-semibold text-base truncate"
+                    ).style("line-height: 1.3; flex: 1; min-width: 0;")
 
                     # Expiry badge (color-coded, Issue #212)
                     ui.label(badge_text).classes(f"expiry-badge {badge_class}")
@@ -358,7 +358,7 @@ def create_item_card(
                         ui.button(
                             icon="remove",
                             on_click=lambda i=item: on_consume(i),
-                        ).classes("sp-quick-action").props("round flat")
+                        ).classes("sp-quick-action").props("round flat").mark(f"item-consume-{item.id}")
 
                 # === FOOTER ZONE ===
                 # Location with temperature icon (Issue #197)

@@ -535,10 +535,14 @@ def items_page(filter: str | None = None, location: int | None = None) -> None: 
             )
 
             # Direction toggle button
-            sort_direction_btn = ui.button(
-                icon="arrow_upward",
-                on_click=toggle_sort_direction,
-            ).props("flat dense")
+            sort_direction_btn = (
+                ui.button(
+                    icon="arrow_upward",
+                    on_click=toggle_sort_direction,
+                )
+                .props("flat dense")
+                .mark("sort-direction")
+            )
 
         # Category filter chips (load categories once)
         with next(get_session()) as session:
