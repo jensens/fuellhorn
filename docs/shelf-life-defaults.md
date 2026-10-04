@@ -66,6 +66,10 @@ Die Angaben gelten für korrekt eingekochte/sterilisierte Produkte in luftdicht 
 | Senf (selbstgemacht) | 3 | 6 | [4] |
 | Fruchtsirup | 12 | 12 | [4] |
 | Sauerkraut (eingemacht) | 6 | 12 | [6] |
+| Trockenobst (selbst gedörrt) | 6 | 12 | [21], [22], [23], [24] |
+| Trockengemüse (inkl. getrocknete Tomaten) | 6 | 12 | [25], [21] |
+| Getrocknete Pilze | 6 | 12 | [25] |
+| Getrocknete Kräuter & Tee | 6 | 12 | [26], [27] |
 
 ### Hinweise zu Ambient
 
@@ -73,6 +77,8 @@ Die Angaben gelten für korrekt eingekochte/sterilisierte Produkte in luftdicht 
 - **Vakuum prüfen**: Der Deckel darf nicht knacken oder nachgeben.
 - **Nach dem Öffnen**: Geöffnete Gläser im Kühlschrank lagern und innerhalb von 1-4 Wochen verbrauchen.
 - **Faustregel**: Eingemachtes bis zur nächsten Erntesaison aufbrauchen (Qualität von Farbe und Aroma).
+- **Getrocknetes (#476)**: Die Werte beschreiben die Qualität, nicht die Sicherheit; richtig getrocknet bleibt es sicher, verliert aber Geschmack und Aroma. Je wärmer, desto kürzer: Trockenobst hält bei ca. 15 °C etwa 1 Jahr, bei ca. 27 °C etwa 6 Monate [21]; Gemüse etwa halb so lange wie Obst [21]. Luftdicht, dunkel und trocken lagern; Schimmeliges wegwerfen [21]. Dörrobstmotte beachten [28]. Getrocknete Pilze im Kühlschrank einweichen und durchgaren [29]. Für Pilze gibt es keine eigene Monatsangabe; der Wert entspricht Trockengemüse.
+- **Nicht aufgenommen**: Selbst gemachtes Dörrfleisch/Jerky hält bei Raumtemperatur nur etwa 2 Wochen [30] (unter dem Minimum von 1 Monat), Fruchtleder nur 1–2 Monate; für Kerne und Pulver gibt es keine belastbaren Zahlen.
 
 ---
 
@@ -175,6 +181,48 @@ Diese Werte sind für zukünftige Erweiterungen vorgesehen.
 
 20. **Verbraucherzentrale NRW** - "Ab in die Tiefkühltruhe!" – „Milchprodukte wie Joghurt, Dickmilch, Saure Sahne und Creme Fraiche flocken aus und werden grießig.“
     - URL: https://www.verbraucherzentrale.nrw/faq/ab-in-die-tiefkuehltruhe-86532
+    - Abgerufen: Oktober 2026
+
+### Ambient – Getrocknetes (#476)
+
+21. **National Center for Home Food Preservation** - "Packaging and Storing Dried Foods" – „Most dried fruits can be stored for 1 year at 60ºF, 6 months at 80ºF. Vegetables have about half the shelf-life of fruits.“
+    - URL: https://nchfp.uga.edu/how/dry/drying-general/packaging-and-storing-dried-foods/
+    - Abgerufen: Oktober 2026
+
+22. **Colorado State University Extension** - "Drying Fruits" – „Properly stored, dried fruits keep well for six to 12 months.“
+    - URL: https://extension.colostate.edu/resource/drying-fruits/
+    - Abgerufen: Oktober 2026
+
+23. **BZfE** - "Getrocknete Leckereien" – „Am besten verbraucht man sie innerhalb eines Jahres, da sie bei längerer Lagerung Geschmack und Aroma verlieren.“
+    - URL: https://www.bzfe.de/presse/pressemeldungen-archiv/getrocknete-leckereien
+    - Abgerufen: Oktober 2026
+
+24. **Landwirtschaftskammer Salzburg** - "Trockenfrüchte selbst gemacht" – „Richtig gelagert sind getrocknete Köstlichkeiten durchaus ein Jahr lang haltbar.“
+    - URL: https://sbg.lko.at/trockenfr%C3%BCchte-selbst-gemacht+2400+2815365
+    - Abgerufen: Oktober 2026
+
+25. **Colorado State University Extension** - "Drying Vegetables" – „Properly stored, dried vegetables keep well for six to 12 months.“ (Pilze und Tomaten in Tabelle 2)
+    - URL: https://extension.colostate.edu/resource/drying-vegetables/
+    - Abgerufen: Oktober 2026
+
+26. **Oregon State University Extension** - "Drying Herbs" (SP 50-921) – „Dried herbs can be stored effectively for up to one year in a cool, dry, dark place.“ / „For best flavor, use within six months to one year.“
+    - URL: https://extension.oregonstate.edu/food/preservation/drying-herbs
+    - Abgerufen: Oktober 2026
+
+27. **Landwirtschaftskammer Salzburg / Natur im Garten** - "Speisekammer aus dem Garten: Kräuter ernten und trocknen" – „… bis zu einem Jahr ihre Geschmacks- und Inhaltsstoffe.“
+    - URL: https://sbg.lko.at/speisekammer-aus-dem-garten-kr%C3%A4uter-ernten-und-trocknen+2400+4069856
+    - Abgerufen: Oktober 2026
+
+28. **AGES** - "Dörrobstmotte"
+    - URL: https://www.ages.at/pflanze/pflanzengesundheit/schaderreger-von-a-bis-z/doerrobstmotte
+    - Abgerufen: Oktober 2026
+
+29. **University of Wisconsin–Madison Extension** - "Preserve it Fresh, Preserve it Safe" (Mai/Juni 2023) – „When rehydrating, do so in the fridge…“
+    - URL: https://winnebago.extension.wisc.edu/2023/05/03/preserve-it-fresh-preserve-it-save-a-newsletter-for-those-who-preserve-food-at-home-may-june-2023/
+    - Abgerufen: Oktober 2026
+
+30. **National Center for Home Food Preservation** - "Jerky" – „Properly dried jerky will keep at room temperature two weeks in a sealed container.“
+    - URL: https://nchfp.uga.edu/how/dry/recipes/jerky/
     - Abgerufen: Oktober 2026
 
 ---
