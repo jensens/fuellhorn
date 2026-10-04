@@ -333,6 +333,10 @@
     document.addEventListener('mouseup', onDragEnd);
     document.addEventListener('touchend', onDragEnd);
 
+    // Marker für Tests: die Geste wird erst nach dieser Initialisierung erkannt (init läuft per
+    // setTimeout nach dem Rendern; E2E-Tests warten darauf statt auf eine feste Zeit, #392)
+    container.dataset.swipeReady = '1';
+
     // Click outside to close
     document.addEventListener('click', (e) => {
       if (!container.contains(e.target) && currentlyOpenCard === cardId) {
