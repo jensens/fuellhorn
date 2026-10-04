@@ -153,7 +153,10 @@ fuellhorn migrate
 # Admin-Benutzer erstellen (benötigt ADMIN_PASSWORD Env-Variable)
 fuellhorn create-admin
 
-# Standard-Kategorien mit Haltbarkeiten importieren
+# Standard-Kategorien mit Haltbarkeiten importieren (idempotent).
+# Nach dem Update auf die Kategorie-Hierarchie einmal ausführen: Die Migration
+# ordnet nur bestehende Kategorien zu, neue Gruppen (z.B. Gekochtes,
+# Fruchtaufstriche) und Kategorien legt erst dieser Seed an.
 fuellhorn seed shelf-life-defaults
 
 # Testdaten importieren (Admin, Kategorien, Lagerorte, Beispiel-Items)
