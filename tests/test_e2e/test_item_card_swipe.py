@@ -9,16 +9,6 @@ These tests verify the swipe integration in Item Cards:
 
 from playwright.sync_api import Page
 from playwright.sync_api import expect
-import pytest
-import time
-
-
-# Dwell-time triggers don't fire reliably in automated tests
-# See: https://github.com/jensens/fuellhorn/issues/231
-XFAIL_DWELL_TIME = pytest.mark.xfail(
-    reason="Dwell-time triggers unreliable in Playwright (Issue #231)",
-    strict=False,
-)
 
 
 def _swipe_element(
@@ -41,7 +31,8 @@ def _swipe_element(
     page.mouse.move(center_x + delta_x, center_y, steps=10)
 
     if hold_ms > 0:
-        time.sleep(hold_ms / 1000)
+        # Verweildauer ist Teil der Geste (Dwell-Trigger), kein Warten auf die Seite
+        page.wait_for_timeout(hold_ms)
 
     page.mouse.up()
 
@@ -76,83 +67,72 @@ class TestItemCardSwipe:
     def test_item_card_swipe_left_reveals_buttons(self, page: Page, live_server: str) -> None:
         """Test: Swiping left on item card reveals Teil and Alles buttons."""
         page.goto(f"{live_server}/test-item-card-swipe")
-        page.wait_for_timeout(500)
+        expect(page.locator(".swipe-card-content").first).to_be_visible()
         card = page.locator(".swipe-card-content").first
         box = card.bounding_box()
         if box:
             _swipe_element(page, ".swipe-card-content", int(-box["width"] * 0.3))
-        page.wait_for_timeout(100)
         expect(page.locator(".swipe-action-teil")).to_be_visible()
 
     def test_item_card_swipe_right_reveals_edit(self, page: Page, live_server: str) -> None:
         """Test: Swiping right on item card reveals Edit button."""
         page.goto(f"{live_server}/test-item-card-swipe")
-        page.wait_for_timeout(500)
+        expect(page.locator(".swipe-card-content").first).to_be_visible()
         card = page.locator(".swipe-card-content").first
         box = card.bounding_box()
         if box:
             _swipe_element(page, ".swipe-card-content", int(box["width"] * 0.3))
-        page.wait_for_timeout(100)
         expect(page.locator(".swipe-action-edit")).to_be_visible()
 
-    @XFAIL_DWELL_TIME
     def test_item_card_swipe_partial_callback(self, page: Page, live_server: str) -> None:
         """Test: Swipe left + dwell triggers partial consume callback."""
         page.goto(f"{live_server}/test-item-card-swipe")
-        page.wait_for_timeout(500)
+        expect(page.locator(".swipe-card-content").first).to_be_visible()
         card = page.locator(".swipe-card-content").first
         box = card.bounding_box()
         if box:
             _swipe_element(page, ".swipe-card-content", int(-box["width"] * 0.25), 600)
-        page.wait_for_timeout(200)
         expect(page.get_by_text("partial_consume")).to_be_visible(timeout=2000)
 
-    @XFAIL_DWELL_TIME
     def test_item_card_swipe_all_callback(self, page: Page, live_server: str) -> None:
         """Test: Swipe left full + dwell triggers consume all callback."""
         page.goto(f"{live_server}/test-item-card-swipe")
-        page.wait_for_timeout(500)
+        expect(page.locator(".swipe-card-content").first).to_be_visible()
         card = page.locator(".swipe-card-content").first
         box = card.bounding_box()
         if box:
             _swipe_element(page, ".swipe-card-content", int(-box["width"] * 0.5), 600)
-        page.wait_for_timeout(200)
         expect(page.get_by_text("consume_all")).to_be_visible(timeout=2000)
 
-    @XFAIL_DWELL_TIME
     def test_item_card_swipe_through_triggers_all(self, page: Page, live_server: str) -> None:
         """Test: Swipe through left triggers consume all callback."""
         page.goto(f"{live_server}/test-item-card-swipe")
-        page.wait_for_timeout(500)
+        expect(page.locator(".swipe-card-content").first).to_be_visible()
         _swipe_through(page, ".swipe-card-content", "left")
-        page.wait_for_timeout(200)
         expect(page.get_by_text("consume_all")).to_be_visible(timeout=2000)
 
     def test_item_card_swipe_edit_callback(self, page: Page, live_server: str) -> None:
         """Test: Swipe right + dwell triggers edit callback."""
         page.goto(f"{live_server}/test-item-card-swipe")
-        page.wait_for_timeout(500)
+        expect(page.locator(".swipe-card-content").first).to_be_visible()
         card = page.locator(".swipe-card-content").first
         box = card.bounding_box()
         if box:
             _swipe_element(page, ".swipe-card-content", int(box["width"] * 0.25), 600)
-        page.wait_for_timeout(200)
         expect(page.get_by_text("edit", exact=True)).to_be_visible(timeout=2000)
 
     def test_item_card_swipe_through_right_triggers_edit(self, page: Page, live_server: str) -> None:
         """Test: Swipe through right triggers edit callback."""
         page.goto(f"{live_server}/test-item-card-swipe")
-        page.wait_for_timeout(500)
+        expect(page.locator(".swipe-card-content").first).to_be_visible()
         _swipe_through(page, ".swipe-card-content", "right")
-        page.wait_for_timeout(200)
         expect(page.get_by_text("edit", exact=True)).to_be_visible(timeout=2000)
 
     def test_item_card_quick_action_preserved(self, page: Page, live_server: str) -> None:
         """Test: Quick-action button functionality is preserved."""
         page.goto(f"{live_server}/test-item-card-swipe-with-consume")
-        page.wait_for_timeout(500)
+        expect(page.locator(".swipe-card-content").first).to_be_visible()
         button = page.locator(".sp-quick-action").first
         expect(button).to_be_visible()
         button.click()
-        page.wait_for_timeout(200)
         expect(page.get_by_text("quick_consume")).to_be_visible(timeout=2000)
