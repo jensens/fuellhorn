@@ -53,8 +53,8 @@ def dashboard() -> None:
                 .on("click", lambda: ui.navigate.to("/items/quick"))
                 .mark("dashboard-quick")
             ):
-                with ui.row().classes("w-full items-center justify-between gap-2"):
-                    with ui.column().classes("gap-1"):
+                with ui.row().classes("w-full items-center justify-between gap-2 no-wrap"):
+                    with ui.column().classes("gap-1 flex-1 min-w-0"):
                         ui.label("Schnell erfassen").classes("text-base font-medium text-charcoal")
                         ui.label("Nur Name, Menge und Ort - den Rest später").classes("text-sm text-stone")
                     create_icon("navigation/add", size="24px")
@@ -70,10 +70,10 @@ def dashboard() -> None:
                     .on("click", lambda: ui.navigate.to("/items/incomplete"))
                     .mark("dashboard-incomplete")
                 ):
-                    with ui.row().classes("w-full items-center justify-between gap-2"):
-                        with ui.column().classes("gap-1"):
+                    with ui.row().classes("w-full items-center justify-between gap-2 no-wrap"):
+                        with ui.column().classes("gap-1 flex-1 min-w-0"):
                             ui.label(f"Nachpflegen ({incomplete_count})").classes("text-base font-medium text-charcoal")
-                            ui.label("Schnell erfasste Artikel ergänzen").classes("text-sm text-stone")
+                            ui.label("Fehlende Angaben ergänzen").classes("text-sm text-stone")
                         create_icon("actions/edit", size="24px")
 
             # Expiring items section with count badge (Issue #244)
