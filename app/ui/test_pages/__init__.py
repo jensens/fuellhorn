@@ -8,8 +8,8 @@ from . import test_bottom_sheet
 from . import test_chips
 from . import test_dashboard
 from . import test_item_card
-from . import test_items_page
+from . import test_login
 from . import test_swipe
 
 
-__all__ = ["test_bottom_sheet", "test_chips", "test_dashboard", "test_item_card", "test_items_page", "test_swipe"]
+__all__ = ["test_bottom_sheet", "test_chips", "test_dashboard", "test_item_card", "test_login", "test_swipe"]
