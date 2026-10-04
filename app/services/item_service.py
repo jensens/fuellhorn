@@ -117,7 +117,10 @@ def validate_item_data(
             )
         return cleaned_name
     category = get_category(session, category_id)
-    if storage_type is not None and shelf_life_service.get_shelf_life(session, category_id, storage_type) is None:
+    if (
+        storage_type is not None
+        and shelf_life_service.get_shelf_life_with_fallback(session, category_id, storage_type) is None
+    ):
         raise ServiceValidationError(
             f"Kategorie '{category.name}' hat keine Haltbarkeit für {STORAGE_TYPE_LABELS[storage_type.value]}. "
             "Bitte eine passende Kategorie wählen."
@@ -597,11 +600,7 @@ def get_item_expiry_info(
         # No category - can't look up shelf life
         return (None, None, None)
 
-    shelf_life = shelf_life_service.get_shelf_life(
-        session=session,
-        category_id=item.category_id,
-        storage_type=storage_type,
-    )
+    shelf_life = shelf_life_service.get_shelf_life_with_fallback(session, item.category_id, storage_type)
 
     if shelf_life is None:
         # No shelf life config for this category

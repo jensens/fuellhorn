@@ -13,6 +13,7 @@ Status, Anzeigedatum und Beschriftung ausschließlich von hier. Die Regeln:
   ``unknown`` – es gibt keinen Rückfall auf das Produktionsdatum.
 """
 
+from ..models.category import Category
 from ..models.category_shelf_life import CategoryShelfLife
 from ..models.category_shelf_life import StorageType
 from ..models.item import Item
@@ -136,11 +137,26 @@ def _load_shelf_life_index(session: Session) -> ShelfLifeIndex:
     return {(row.category_id, row.storage_type): row for row in rows}
 
 
-def _shelf_life_from_index(item: Item, index: ShelfLifeIndex) -> CategoryShelfLife | None:
+ParentIndex = dict[int, int | None]
+
+
+def _load_parent_index(session: Session) -> ParentIndex:
+    """Kategorie-ID → Eltern-ID mit einer Abfrage (Fallback der Haltbarkeit, Issue #395)."""
+    rows = session.exec(select(Category.id, Category.parent_id)).all()
+    return {category_id: parent_id for category_id, parent_id in rows if category_id is not None}
+
+
+def _shelf_life_from_index(item: Item, index: ShelfLifeIndex, parents: ParentIndex) -> CategoryShelfLife | None:
     storage_type = get_storage_type_for_item_type(item.item_type)
     if storage_type is None or item.category_id is None:
         return None
-    return index.get((item.category_id, storage_type))
+    own = index.get((item.category_id, storage_type))
+    if own is not None:
+        return own
+    parent_id = parents.get(item.category_id)
+    if parent_id is None:
+        return None
+    return index.get((parent_id, storage_type))
 
 
 def get_item_expiry_view(session: Session, item: Item, today: date | None = None) -> ExpiryView:
@@ -148,20 +164,30 @@ def get_item_expiry_view(session: Session, item: Item, today: date | None = None
     shelf_life = None
     storage_type = get_storage_type_for_item_type(item.item_type)
     if storage_type is not None and item.category_id is not None:
-        shelf_life = shelf_life_service.get_shelf_life(session, item.category_id, storage_type)
+        shelf_life = shelf_life_service.get_shelf_life_with_fallback(session, item.category_id, storage_type)
     return compute_expiry_view(item, shelf_life, get_expiry_thresholds(session), today)
 
 
-def get_expiry_views(session: Session, items: list[Item], today: date | None = None) -> dict[int, ExpiryView]:
+def get_expiry_views(
+    session: Session,
+    items: list[Item],
+    today: date | None = None,
+    parents: ParentIndex | None = None,
+) -> dict[int, ExpiryView]:
     """Haltbarkeitsstatus für viele Artikel; lädt Haltbarkeiten und Schwellen nur einmal.
+
+    Args:
+        parents: Kategorie-ID → Eltern-ID, falls der Aufrufer die Kategorien schon geladen hat
+            (spart die Abfrage; Issue #393/#395)
 
     Returns:
         Mapping Artikel-ID → ExpiryView (Artikel ohne ID werden übersprungen).
     """
     thresholds = get_expiry_thresholds(session)
     index = _load_shelf_life_index(session)
+    parent_index = _load_parent_index(session) if parents is None else parents
     return {
-        item.id: compute_expiry_view(item, _shelf_life_from_index(item, index), thresholds, today)
+        item.id: compute_expiry_view(item, _shelf_life_from_index(item, index, parent_index), thresholds, today)
         for item in items
         if item.id is not None
     }

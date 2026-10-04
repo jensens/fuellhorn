@@ -1,5 +1,6 @@
 """Shelf life service - Business logic for CategoryShelfLife management."""
 
+from ..models.category import Category
 from ..models.category_shelf_life import CategoryShelfLife
 from ..models.category_shelf_life import StorageType
 from ..services.validation import validate_shelf_life_months
@@ -82,6 +83,25 @@ def get_shelf_life(
             CategoryShelfLife.storage_type == storage_type,
         )
     ).first()
+
+
+def get_shelf_life_with_fallback(
+    session: Session,
+    category_id: int,
+    storage_type: StorageType,
+) -> CategoryShelfLife | None:
+    """Haltbarkeit der Kategorie, sonst die der Eltern-Kategorie (eine Ebene, Issue #395).
+
+    Eltern-Kategorien wie 'Fleisch' tragen eine Gruppen-Haltbarkeit; Kinder ohne eigenen
+    Eintrag erben sie, statt kommentarlos aus dem Wizard zu verschwinden.
+    """
+    own = get_shelf_life(session, category_id, storage_type)
+    if own is not None:
+        return own
+    category = session.get(Category, category_id)
+    if category is None or category.parent_id is None:
+        return None
+    return get_shelf_life(session, category.parent_id, storage_type)
 
 
 def get_all_shelf_lives_for_category(

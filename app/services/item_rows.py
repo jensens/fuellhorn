@@ -65,7 +65,8 @@ def get_item_rows(session: Session, items: Sequence[Item], today: date | None = 
         ).all()
     )
 
-    views = expiry_service.get_expiry_views(session, saved, today)
+    parents = {category_id: category.parent_id for category_id, category in categories.items() if category_id}
+    views = expiry_service.get_expiry_views(session, saved, today, parents=parents)
 
     return [
         ItemRow(

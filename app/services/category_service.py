@@ -6,7 +6,10 @@ from ..models.category_shelf_life import StorageType
 from ..models.item import Item
 from ..models.item import ItemType
 from ..services.errors import DuplicateNameError
+from ..services.errors import ServiceValidationError
 from ..services.expiry_calculator import get_storage_type_for_item_type
+from ..services.sentinels import UNSET
+from ..services.sentinels import Unset
 from ..services.validation import require_non_empty
 from ..services.validation import validate_hex_color
 from collections import defaultdict
@@ -16,11 +19,45 @@ from sqlmodel import func
 from sqlmodel import select
 
 
+def _validate_parent(session: Session, category_id: int | None, parent_id: int | None) -> None:
+    """Guards für die einstufige Hierarchie (Issue #395).
+
+    - nicht sich selbst zuordnen
+    - der Parent muss existieren und darf selbst keinen Parent haben (eine Ebene)
+    - eine Kategorie mit Unterkategorien kann kein Kind werden
+    - eine Kategorie mit Artikeln kann keine Gruppe werden (Gruppen sind nicht wählbar)
+    """
+    if parent_id is None:
+        return
+    if category_id is not None and parent_id == category_id:
+        raise ServiceValidationError("Eine Kategorie kann nicht sich selbst zugeordnet werden.")
+    parent = get_category(session, parent_id)
+    if parent.parent_id is not None:
+        raise ServiceValidationError(
+            f"'{parent.name}' ist selbst eine Unterkategorie; die Hierarchie hat nur eine Ebene."
+        )
+    if category_id is not None:
+        child_count = session.exec(
+            select(func.count()).select_from(Category).where(Category.parent_id == category_id)
+        ).one()
+        if child_count:
+            raise ServiceValidationError(
+                f"Die Kategorie hat {child_count} Unterkategorien und kann nicht selbst Unterkategorie werden."
+            )
+    item_count = session.exec(select(func.count()).select_from(Item).where(Item.category_id == parent_id)).one()
+    if item_count:
+        raise ServiceValidationError(
+            f"'{parent.name}' hat {item_count} Artikel und kann keine Gruppe werden; "
+            "Gruppen sind beim Erfassen nicht wählbar."
+        )
+
+
 def create_category(
     session: Session,
     name: str,
     created_by: int,
     color: str | None = None,
+    parent_id: int | None = None,
 ) -> Category:
     """Create a new category.
 
@@ -29,16 +66,18 @@ def create_category(
         name: Category name (case-insensitive unique)
         created_by: User ID who created the category
         color: Hex color code (e.g., "#FF5733")
+        parent_id: Eltern-Kategorie (eine Ebene, Issue #395)
 
     Returns:
         Created category
 
     Raises:
-        ServiceValidationError: leerer Name oder ungültige Farbe (Issue #383)
+        ServiceValidationError: leerer Name, ungültige Farbe oder unzulässiger Parent (Issue #383, #395)
         DuplicateNameError: If category with same name already exists
     """
     name = require_non_empty(name, "Kategoriename")
     color = validate_hex_color(color)
+    _validate_parent(session, None, parent_id)
 
     # Check for duplicate name (case-insensitive)
     existing = session.exec(
@@ -56,6 +95,7 @@ def create_category(
         name=name,
         created_by=created_by,
         color=color,
+        parent_id=parent_id,
         sort_order=next_order,
     )
 
@@ -106,6 +146,7 @@ def update_category(
     id: int,
     name: str | None = None,
     color: str | None = None,
+    parent_id: int | None | Unset = UNSET,
 ) -> Category:
     """Update category.
 
@@ -114,6 +155,7 @@ def update_category(
         id: Category ID
         name: New name (case-insensitive unique)
         color: New color code
+        parent_id: Eltern-Kategorie; ``UNSET`` lässt sie unverändert, ``None`` löst sie (Issue #395)
 
     Returns:
         Updated category
@@ -142,11 +184,23 @@ def update_category(
     if color is not None:
         category.color = color
 
+    if not isinstance(parent_id, Unset):
+        _validate_parent(session, id, parent_id)
+        category.parent_id = parent_id
+
     session.add(category)
     session.commit()
     session.refresh(category)
 
     return category
+
+
+def expand_category_filter(session: Session, category_ids: set[int]) -> set[int]:
+    """Eltern-Kategorien im Filter stehen für alle ihre Kinder (Issue #395)."""
+    if not category_ids:
+        return set()
+    children = session.exec(select(Category.id).where(col(Category.parent_id).in_(category_ids))).all()
+    return set(category_ids) | {child_id for child_id in children if child_id is not None}
 
 
 def delete_category(session: Session, id: int) -> None:
@@ -237,15 +291,14 @@ def get_categories_for_item_type(session: Session, item_type: ItemType) -> list[
         all_cats = session.exec(select(Category).order_by(Category.sort_order)).all()  # type: ignore[arg-type]
         return [c for c in all_cats if c.id not in parent_ids]
 
-    # Filter by storage type via CategoryShelfLife join
-    cats_with_shelf_life = session.exec(
-        select(Category)
-        .join(CategoryShelfLife, col(Category.id) == col(CategoryShelfLife.category_id))
-        .where(CategoryShelfLife.storage_type == storage_type)
-        .order_by(Category.sort_order)  # type: ignore[arg-type]
-    ).all()
-
-    return [c for c in cats_with_shelf_life if c.id not in parent_ids]
+    # Kategorien mit eigener Haltbarkeit für den Storage-Type; Kinder erben die ihrer Eltern (#395)
+    with_shelf_life = set(
+        session.exec(select(CategoryShelfLife.category_id).where(CategoryShelfLife.storage_type == storage_type)).all()
+    )
+    all_cats = session.exec(select(Category).order_by(Category.sort_order)).all()  # type: ignore[arg-type]
+    return [
+        c for c in all_cats if c.id not in parent_ids and (c.id in with_shelf_life or c.parent_id in with_shelf_life)
+    ]
 
 
 def get_grouped_categories_for_item_type(
