@@ -1,4 +1,5 @@
-"""Unit Tests - kein NiceGUI, keine DB nötig.
+"""Unit-Tests: kein NiceGUI-Browser-Kontext.
 
-Diese Tests testen reine Python-Funktionen ohne UI-Interaktion.
+Reine Funktionen (Validierung, Konfiguration, Icons, Smart Defaults) und Tests, die
+die In-Memory-``session``-Fixture aus ``tests/conftest.py`` nutzen (CLI, Startup).
 """
