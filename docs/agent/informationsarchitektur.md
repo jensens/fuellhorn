@@ -113,11 +113,13 @@ Schritt 3: Lagerort & Kategorien
                    [💾 Speichern & Nächster]
 ```
 
-**Smart Defaults (Zeitfenster 30 Min):**
-- Artikel-Typ: Letzter Typ oder "Gekauft (nicht gefroren)"
-- Einheit: Letzte verwendete Einheit
-- Lagerort: Letzter Lagerort
-- Kategorien: Letzte Kategorien
+**Smart Defaults** (letzter Eintrag pro Nutzer in `user.preferences`; Zeitfenster aus Profil > System-Default >
+Hardcoded: Typ 30, Kategorie 30, Lagerort 60 Min; Issue #397):
+- Artikel-Typ: Letzter Typ innerhalb des Zeitfensters, sonst **keine Vorauswahl** – der Typ bestimmt
+  Datums-Semantik und Filter (#387), ein stiller Default wäre eine Fehlerquelle
+- Einheit: Letzte verwendete Einheit (ohne Zeitfenster), sonst "g"
+- Lagerort: Letzter Lagerort innerhalb des Zeitfensters, sofern er zum Typ passt (#385)
+- Kategorie: Letzte Kategorie innerhalb des Zeitfensters, sofern sie für den Typ angeboten wird
 
 **"Speichern & Nächster":** Wichtigster Button für Bulk-Erfassung!
 
