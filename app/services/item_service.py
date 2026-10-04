@@ -220,16 +220,18 @@ def update_item(
     return item
 
 
-def mark_item_consumed(session: Session, id: int, user_id: int | None = None) -> Item:
+def mark_item_consumed(session: Session, id: int, user_id: int) -> Item:
     """Mark item as consumed.
 
-    Creates a Withdrawal entry to track when and by whom the item was consumed.
-    Sets quantity to 0 to ensure correct initial quantity calculation.
+    Always creates a Withdrawal entry (who, when, how much): without it the item
+    would vanish from both the active list and the consumed list, which is an
+    inner join on withdrawals (Issue #367). Sets quantity to 0 to ensure correct
+    initial quantity calculation.
 
     Args:
         session: Database session
         id: Item ID
-        user_id: User ID who consumed the item (for tracking)
+        user_id: User ID who consumed the item (required)
 
     Returns:
         Updated item
@@ -240,13 +242,12 @@ def mark_item_consumed(session: Session, id: int, user_id: int | None = None) ->
     item = get_item(session, id)
 
     # Create withdrawal entry for the full remaining quantity
-    if user_id is not None:
-        withdrawal = Withdrawal(
-            item_id=item.id,
-            quantity=item.quantity,
-            withdrawn_by=user_id,
-        )
-        session.add(withdrawal)
+    withdrawal = Withdrawal(
+        item_id=item.id,
+        quantity=item.quantity,
+        withdrawn_by=user_id,
+    )
+    session.add(withdrawal)
 
     # Set quantity to 0 (Bug #222: was missing, causing wrong initial quantity calc)
     item.quantity = 0
@@ -331,11 +332,11 @@ def withdraw_partial(
     session: Session,
     item_id: int,
     withdraw_quantity: float,
-    user_id: int | None = None,
+    user_id: int,
 ) -> Item:
     """Withdraw a partial quantity from an item.
 
-    Creates a Withdrawal entry to track the withdrawal. Quantities are compared
+    Always creates a Withdrawal entry (Issue #367). Quantities are compared
     and stored at QUANTITY_DECIMALS resolution so float noise can neither block
     the last withdrawal nor leave a residue that keeps the item "active".
 
@@ -343,7 +344,7 @@ def withdraw_partial(
         session: Database session
         item_id: Item ID
         withdraw_quantity: Quantity to withdraw
-        user_id: User ID who withdrew the item (for tracking)
+        user_id: User ID who withdrew the item (required)
 
     Returns:
         Updated item
@@ -373,13 +374,12 @@ def withdraw_partial(
         )
 
     # Create withdrawal entry
-    if user_id is not None:
-        withdrawal = Withdrawal(
-            item_id=item.id,
-            quantity=withdraw_quantity,
-            withdrawn_by=user_id,
-        )
-        session.add(withdrawal)
+    withdrawal = Withdrawal(
+        item_id=item.id,
+        quantity=withdraw_quantity,
+        withdrawn_by=user_id,
+    )
+    session.add(withdrawal)
 
     # Update quantity
     item.quantity = remaining

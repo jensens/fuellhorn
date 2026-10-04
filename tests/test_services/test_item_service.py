@@ -164,7 +164,7 @@ def test_mark_item_consumed(session: Session, test_admin: User) -> None:
         category_id=category.id,
     )
 
-    updated = item_service.mark_item_consumed(session, created.id)
+    updated = item_service.mark_item_consumed(session, created.id, test_admin.id)
 
     assert updated.is_consumed is True
 
@@ -297,6 +297,7 @@ def test_withdraw_partial_reduces_quantity(session: Session, test_admin: User) -
         session=session,
         item_id=item.id,
         withdraw_quantity=200,
+        user_id=test_admin.id,
     )
 
     assert updated.quantity == 300
@@ -336,6 +337,7 @@ def test_withdraw_partial_complete_marks_consumed(session: Session, test_admin: 
         session=session,
         item_id=item.id,
         withdraw_quantity=500,
+        user_id=test_admin.id,
     )
 
     assert updated.quantity == 0
@@ -376,6 +378,7 @@ def test_withdraw_partial_exceeds_quantity_fails(session: Session, test_admin: U
             session=session,
             item_id=item.id,
             withdraw_quantity=600,
+            user_id=test_admin.id,
         )
 
 
@@ -413,6 +416,7 @@ def test_withdraw_partial_zero_quantity_fails(session: Session, test_admin: User
             session=session,
             item_id=item.id,
             withdraw_quantity=0,
+            user_id=test_admin.id,
         )
 
 
@@ -450,6 +454,7 @@ def test_withdraw_partial_negative_quantity_fails(session: Session, test_admin: 
             session=session,
             item_id=item.id,
             withdraw_quantity=-100,
+            user_id=test_admin.id,
         )
 
 
@@ -460,6 +465,7 @@ def test_withdraw_partial_item_not_found_fails(session: Session) -> None:
             session=session,
             item_id=999,
             withdraw_quantity=100,
+            user_id=1,
         )
 
 
@@ -493,13 +499,14 @@ def test_withdraw_partial_consumed_item_fails(session: Session, test_admin: User
     )
 
     # Mark as consumed first
-    item_service.mark_item_consumed(session, item.id)
+    item_service.mark_item_consumed(session, item.id, test_admin.id)
 
     with pytest.raises(ValueError, match="Item is already consumed"):
         item_service.withdraw_partial(
             session=session,
             item_id=item.id,
             withdraw_quantity=200,
+            user_id=test_admin.id,
         )
 
 
@@ -1286,7 +1293,7 @@ def test_get_recently_added_items_excludes_consumed(session: Session, test_admin
         created_by=test_admin.id,
         category_id=category.id,
     )
-    item_service.mark_item_consumed(session, consumed_item.id)
+    item_service.mark_item_consumed(session, consumed_item.id, test_admin.id)
 
     items = item_service.get_recently_added_items(session, limit=5)
 
@@ -1400,7 +1407,7 @@ def test_get_item_count_by_location_excludes_consumed(session: Session, test_adm
         created_by=test_admin.id,
         category_id=category.id,
     )
-    item_service.mark_item_consumed(session, consumed_item.id)
+    item_service.mark_item_consumed(session, consumed_item.id, test_admin.id)
 
     counts = item_service.get_item_count_by_location(session)
 
@@ -1512,7 +1519,7 @@ def test_get_item_count_by_category_excludes_consumed(session: Session, test_adm
         created_by=test_admin.id,
         category_id=category.id,
     )
-    item_service.mark_item_consumed(session, consumed_item.id)
+    item_service.mark_item_consumed(session, consumed_item.id, test_admin.id)
 
     counts = item_service.get_item_count_by_category(session)
 

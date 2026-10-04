@@ -39,10 +39,13 @@ def make_item_fixture(session: Session, test_admin: User):
     return _make
 
 
+ADMIN_ID = 1  # test_admin ist der erste User der Test-DB
+
+
 def _withdraw_all(session: Session, item: Item, *amounts: float) -> Item:
     assert item.id is not None
     for amount in amounts:
-        item = item_service.withdraw_partial(session, item.id, amount)
+        item = item_service.withdraw_partial(session, item.id, amount, ADMIN_ID)
     return item
 
 
@@ -75,7 +78,7 @@ def test_withdrawal_that_rounds_to_zero_is_rejected(session: Session, make_item)
     item = make_item(1.0)
     assert item.id is not None
     with pytest.raises(ValueError, match="positive"):
-        item_service.withdraw_partial(session, item.id, 0.0004)
+        item_service.withdraw_partial(session, item.id, 0.0004, ADMIN_ID)
 
 
 def test_withdrawal_slightly_above_remaining_due_to_float_noise_is_allowed(session: Session, make_item) -> None:
