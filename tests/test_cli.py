@@ -200,13 +200,16 @@ class TestRunApp:
             mock_run.assert_called_once()
             call_kwargs = mock_run.call_args[1]
 
-            assert call_kwargs["title"] == "Fuellhorn"
+            from app.startup import APP_TITLE
+
+            assert call_kwargs["title"] == APP_TITLE
+            assert call_kwargs["favicon"].endswith("fuellhorn-icon-192.png")
             assert call_kwargs["storage_secret"] == "my-secret"
             assert call_kwargs["reload"] is False
             assert call_kwargs["show"] is False
 
-    def test_registers_on_connect_handler(self) -> None:
-        """Should register on_connect handler for theme loading."""
+    def test_registers_pwa_routes_like_main(self) -> None:
+        """Das CLI (Prod-Image) liefert Manifest und Icons wie main.py (Issue #375)."""
         mock_app = self._create_mock_app()
 
         with (
@@ -219,7 +222,8 @@ class TestRunApp:
 
             run_app()
 
-            mock_app.on_connect.assert_called_once()
+            registered = {call.kwargs["url_path"] for call in mock_app.add_static_file.call_args_list}
+            assert {"/manifest.json", "/icon-192.png", "/icon-512.png", "/apple-touch-icon.png"} <= registered
 
 
 class TestMainEntryPoint:
