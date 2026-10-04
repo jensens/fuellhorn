@@ -12,7 +12,6 @@ dieselben Tests gegen PostgreSQL (die Datenbank wird dabei geleert).
 
 from alembic import command
 from alembic.config import Config as AlembicConfig
-from app.config import Config
 from app.models import Category
 from app.models import CategoryShelfLife
 from app.models import Item
@@ -21,6 +20,7 @@ from app.models import User
 from collections.abc import Iterator
 from datetime import date
 from datetime import datetime
+import importlib
 import os
 from pathlib import Path
 import pytest
@@ -110,19 +110,22 @@ def _reset_postgres(cfg: AlembicConfig, engine: sa.Engine) -> None:
 def migration_db_fixture(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[tuple[AlembicConfig, sa.Engine]]:
     """Alembic-Konfiguration und Engine für eine leere Datenbank.
 
-    ``app/alembic/env.py`` liest die URL aus ``Config.get_database_url()``,
-    deshalb wird die Klassenkonfiguration umgebogen.
+    ``app/alembic/env.py`` holt die URL über ``app.config.config.get_database_url()``.
+    Gepatcht wird die aktuell in ``sys.modules`` liegende Instanz, weil andere
+    Tests (``tests/test_config.py``) das Modul neu laden.
     """
     url = os.environ.get("MIGRATION_TEST_DATABASE_URL") or f"sqlite:///{tmp_path / 'migration.db'}"
     is_postgres = url.startswith("postgres")
-    monkeypatch.setattr(Config, "DB_TYPE", "postgresql" if is_postgres else "sqlite")
-    monkeypatch.setattr(Config, "DATABASE_URL", url)
+    if url.startswith("postgresql://"):
+        url = url.replace("postgresql://", "postgresql+psycopg://", 1)
+    config_module = importlib.import_module("app.config")
+    monkeypatch.setattr(config_module.config, "get_database_url", lambda: url)
 
     cfg = AlembicConfig()
     cfg.set_main_option("script_location", str(ALEMBIC_DIR))
-    cfg.set_main_option("sqlalchemy.url", Config.get_database_url())
+    cfg.set_main_option("sqlalchemy.url", url)
 
-    engine = create_engine(Config.get_database_url())
+    engine = create_engine(url)
     if is_postgres:
         _reset_postgres(cfg, engine)
     yield cfg, engine
