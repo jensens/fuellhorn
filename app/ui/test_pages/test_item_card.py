@@ -13,12 +13,19 @@ from ...models.item import ItemType
 from ...models.location import Location
 from ...models.location import LocationType
 from ...models.withdrawal import Withdrawal
+from ...services.item_rows import get_item_rows
 from ..components.item_card import create_item_card
 from datetime import date
 from datetime import datetime
 from datetime import timedelta
 from nicegui import ui
 from sqlmodel import Session
+
+
+def _row(session: Session, item: Item):
+    """Anzeigedaten für eine einzelne Karte (die Seiten laden sie für alle Karten auf einmal)."""
+    (row,) = get_item_rows(session, [item])
+    return row
 
 
 def _create_test_location(
@@ -136,7 +143,7 @@ def page_item_card() -> None:
         location = _create_test_location(session)
         category = _create_test_category(session, with_shelf_life=True)
         item = _create_shelf_life_item(session, location, category, freeze_days_ago=30)
-        create_item_card(item, session)
+        create_item_card(_row(session, item))
 
 
 @ui.page("/test-item-card-with-categories")
@@ -146,7 +153,7 @@ def page_item_card_with_categories() -> None:
         location = _create_test_location(session)
         category = _create_test_category(session, with_shelf_life=True)
         item = _create_shelf_life_item(session, location, category, freeze_days_ago=30)
-        create_item_card(item, session)
+        create_item_card(_row(session, item))
 
 
 @ui.page("/test-item-card-critical")
@@ -157,7 +164,7 @@ def page_item_card_critical() -> None:
         category = _create_test_category(session, with_shelf_life=True)
         # Frozen 11.5 months ago = 2 days before max (12 months)
         item = _create_shelf_life_item(session, location, category, freeze_days_ago=350)
-        create_item_card(item, session)
+        create_item_card(_row(session, item))
 
 
 @ui.page("/test-item-card-warning")
@@ -168,7 +175,7 @@ def page_item_card_warning() -> None:
         category = _create_test_category(session, with_shelf_life=True)
         # Frozen 7 months ago = past optimal (6 months), before max (12 months)
         item = _create_shelf_life_item(session, location, category, freeze_days_ago=210)
-        create_item_card(item, session)
+        create_item_card(_row(session, item))
 
 
 @ui.page("/test-item-card-ok")
@@ -179,7 +186,7 @@ def page_item_card_ok() -> None:
         category = _create_test_category(session, with_shelf_life=True)
         # Frozen 30 days ago = well before optimal (6 months)
         item = _create_shelf_life_item(session, location, category, freeze_days_ago=30)
-        create_item_card(item, session)
+        create_item_card(_row(session, item))
 
 
 # =============================================================================
@@ -194,7 +201,7 @@ def page_item_card_mhd() -> None:
         location = _create_test_location(session, LocationType.CHILLED)
         category = _create_test_category(session, with_shelf_life=False)
         item = _create_mhd_item(session, location, category, mhd_days_from_now=10)
-        create_item_card(item, session)
+        create_item_card(_row(session, item))
 
 
 @ui.page("/test-item-card-mhd-critical")
@@ -204,7 +211,7 @@ def page_item_card_mhd_critical() -> None:
         location = _create_test_location(session, LocationType.CHILLED)
         category = _create_test_category(session, with_shelf_life=False)
         item = _create_mhd_item(session, location, category, mhd_days_from_now=2)
-        create_item_card(item, session)
+        create_item_card(_row(session, item))
 
 
 @ui.page("/test-item-card-mhd-warning")
@@ -214,7 +221,7 @@ def page_item_card_mhd_warning() -> None:
         location = _create_test_location(session, LocationType.CHILLED)
         category = _create_test_category(session, with_shelf_life=False)
         item = _create_mhd_item(session, location, category, mhd_days_from_now=5)
-        create_item_card(item, session)
+        create_item_card(_row(session, item))
 
 
 # =============================================================================
@@ -229,7 +236,7 @@ def page_item_card_with_consume() -> None:
         location = _create_test_location(session)
         category = _create_test_category(session, with_shelf_life=True)
         item = _create_shelf_life_item(session, location, category, freeze_days_ago=30)
-        create_item_card(item, session, on_consume=lambda i: None)
+        create_item_card(_row(session, item), on_consume=lambda i: None)
 
 
 # =============================================================================
@@ -300,7 +307,7 @@ def page_item_card_partial_withdrawal() -> None:
         # Create withdrawal of 200g (initial was 500g)
         _create_withdrawal(session, item, quantity=200, user_id=user_id)
 
-        create_item_card(item, session)
+        create_item_card(_row(session, item))
 
 
 @ui.page("/test-item-card-no-withdrawal")
@@ -310,7 +317,7 @@ def page_item_card_no_withdrawal() -> None:
         location = _create_test_location(session)
         category = _create_test_category(session, with_shelf_life=True)
         item = _create_shelf_life_item(session, location, category, freeze_days_ago=30)
-        create_item_card(item, session)
+        create_item_card(_row(session, item))
 
 
 # =============================================================================
@@ -356,7 +363,7 @@ def page_item_card_progress_high() -> None:
     with next(get_session()) as session:
         # 400/500 = 80% -> high (green)
         item = _create_item_with_withdrawal(session, current_qty=400, withdrawn_qty=100)
-        create_item_card(item, session)
+        create_item_card(_row(session, item))
 
 
 @ui.page("/test-item-card-progress-medium")
@@ -365,7 +372,7 @@ def page_item_card_progress_medium() -> None:
     with next(get_session()) as session:
         # 250/500 = 50% -> medium (gold)
         item = _create_item_with_withdrawal(session, current_qty=250, withdrawn_qty=250)
-        create_item_card(item, session)
+        create_item_card(_row(session, item))
 
 
 @ui.page("/test-item-card-progress-low")
@@ -374,7 +381,7 @@ def page_item_card_progress_low() -> None:
     with next(get_session()) as session:
         # 100/500 = 20% -> low (coral)
         item = _create_item_with_withdrawal(session, current_qty=100, withdrawn_qty=400)
-        create_item_card(item, session)
+        create_item_card(_row(session, item))
 
 
 # =============================================================================
@@ -407,8 +414,7 @@ def page_item_card_swipe() -> None:
         ui.label("Item Card Swipe Test").classes("text-xl font-bold mb-4")
 
         create_item_card(
-            item,
-            session,
+            _row(session, item),
             on_partial_consume=lambda i: log_event("partial_consume"),
             on_consume_all=lambda i: log_event("consume_all"),
             on_edit=lambda i: log_event("edit"),
@@ -442,8 +448,7 @@ def page_item_card_swipe_with_consume() -> None:
         ui.label("Item Card Swipe + Quick Action Test").classes("text-xl font-bold mb-4")
 
         create_item_card(
-            item,
-            session,
+            _row(session, item),
             on_consume=lambda i: log_event("quick_consume"),
             on_partial_consume=lambda i: log_event("partial_consume"),
             on_consume_all=lambda i: log_event("consume_all"),

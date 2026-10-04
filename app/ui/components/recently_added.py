@@ -14,13 +14,14 @@ from ...models.item import Item
 from ...models.location import Location
 from ...models.location import LocationType
 from ...services import item_service
-from ...services import location_service
 from ...services.expiry_service import get_entered_dates
 from ..theme.icons import create_icon
 from ..utils.date_utils import format_relative_date
 from .item_card import get_location_icon_name
 from nicegui import ui
 from sqlmodel import Session
+from sqlmodel import col
+from sqlmodel import select
 from typing import Callable
 
 
@@ -112,20 +113,22 @@ def create_recently_added_section(
     # Section title
     ui.label("Kürzlich hinzugefügt").classes("sp-page-title text-base mb-3 mt-6")
 
+    # Lagerorte aller Zeilen in einer Abfrage statt einer pro Zeile (#393)
+    location_ids = {item.location_id for item in recently_added}
+    locations = {
+        location.id: location
+        for location in session.exec(select(Location).where(col(Location.id).in_(location_ids))).all()
+    }
+
     # Compact card container for the list
     with ui.card().classes("sp-dashboard-card w-full p-0 overflow-hidden"):
         for item in recently_added:
-            # Get location for this item
-            try:
-                location = location_service.get_location(session, item.location_id)
-            except ValueError:
-                # Create fallback location if not found
-                location = Location(
-                    id=item.location_id,
-                    name=f"Lagerort {item.location_id}",
-                    location_type=LocationType.AMBIENT,
-                    created_by=1,
-                )
+            location = locations.get(item.location_id) or Location(
+                id=item.location_id,
+                name=f"Lagerort {item.location_id}",
+                location_type=LocationType.AMBIENT,
+                created_by=1,
+            )
 
             # Default click handler: open the edit page (there is no detail page, Issue #366)
             def handle_click(i: Item = item) -> None:

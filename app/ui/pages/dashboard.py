@@ -11,6 +11,7 @@ from ...services import category_service
 from ...services import expiry_service
 from ...services import item_service
 from ...services import location_service
+from ...services.item_rows import get_item_rows
 from ...services.preferences_service import get_expiry_thresholds
 from ..components import create_bottom_nav
 from ..components import create_bottom_sheet
@@ -50,16 +51,13 @@ def dashboard() -> None:
             if expiring_items:
                 # Display expiring items using unified card component
                 shown_items = expiring_items[:5]  # Show max 5 items
-                expiry_views = expiry_service.get_expiry_views(session, shown_items)
-                for item in shown_items:
+                for row in get_item_rows(session, shown_items):
                     create_item_card(
-                        item,
-                        session,
-                        on_consume=lambda i=item: handle_consume(i),
-                        on_partial_consume=lambda i=item: handle_consume(i),
-                        on_consume_all=lambda i=item: handle_consume_all(i),
-                        on_edit=lambda i=item: ui.navigate.to(f"/items/{i.id}/edit"),
-                        expiry_view=expiry_views.get(item.id),
+                        row,
+                        on_consume=lambda i=row.item: handle_consume(i),
+                        on_partial_consume=lambda i=row.item: handle_consume(i),
+                        on_consume_all=lambda i=row.item: handle_consume_all(i),
+                        on_edit=lambda i=row.item: ui.navigate.to(f"/items/{i.id}/edit"),
                     )
 
                 # "Alle anzeigen" link (Issue #244)
@@ -81,8 +79,8 @@ def dashboard() -> None:
             # "Auf einen Blick" section - 2x2 tile grid (Issue #245)
             ui.label("Auf einen Blick").classes("sp-page-title text-base mb-3 mt-6")
 
-            all_items = item_service.get_all_items(session)
-            active_items = [i for i in all_items if not i.is_consumed]
+            # Zählen statt alle Artikel laden (#393)
+            active_item_count = item_service.count_active_items(session)
             locations = location_service.get_all_locations(session)
             categories = category_service.get_all_categories(session)
 
@@ -93,7 +91,7 @@ def dashboard() -> None:
                     .classes("sp-dashboard-card text-center cursor-pointer hover:shadow-sp-md transition-shadow")
                     .on("click", lambda: ui.navigate.to("/items"))
                 ):
-                    ui.label(str(len(active_items))).classes("sp-stats-number primary")
+                    ui.label(str(active_item_count)).classes("sp-stats-number primary")
                     ui.label("Artikel").classes("sp-stats-label")
 
                 # Tile 2: Ablauf -> navigates to /items?filter=expiring
@@ -158,10 +156,10 @@ def handle_consume(item: Item) -> None:
 
     with next(get_session()) as session:
         location = location_service.get_location(session, item.location_id)
+        # Nur nach einer Änderung neu laden (on_close feuerte zusätzlich, #393)
         sheet = create_bottom_sheet(
             item=item,
             location=location,
-            on_close=refresh_dashboard,
             on_withdraw=lambda _: refresh_dashboard(),
             on_edit=lambda i: ui.navigate.to(f"/items/{i.id}/edit"),
             on_consume=lambda _: refresh_dashboard(),
