@@ -35,6 +35,17 @@ spec:
                   name: {{ .Values.database.external.existingSecret | default (printf "%s-db" (include "fuellhorn.fullname" .)) }}
                   key: url
             {{- end }}
+            # app.config verlangt SECRET_KEY/FUELLHORN_SECRET bereits beim Import (#370)
+            - name: SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.existingSecret | default (printf "%s-secrets" (include "fuellhorn.fullname" .)) }}
+                  key: secret-key
+            - name: FUELLHORN_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.existingSecret | default (printf "%s-secrets" (include "fuellhorn.fullname" .)) }}
+                  key: fuellhorn-secret
           {{- if eq .Values.database.type "sqlite" }}
           volumeMounts:
             - name: data
