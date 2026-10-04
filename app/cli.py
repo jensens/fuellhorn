@@ -158,31 +158,22 @@ def cli_seed(subcommand: str | None) -> int:
 def run_app() -> None:
     """Run the fuellhorn application."""
     import app.api.health  # noqa: F401
-    from app.config import config
     from app.config import get_storage_secret
+    from app.startup import configure_app
+    from app.startup import run_kwargs
     import app.ui.pages  # noqa: F401
     from nicegui import app as nicegui_app
     from nicegui import ui
 
     run_migrations()
 
-    # Serve static files (CSS, icons, etc.)
-    static_dir = Path(__file__).parent / "static"
-    nicegui_app.add_static_files("/static", str(static_dir))
-
-    # Load Solarpunk theme CSS and JavaScript for each client connection
-    @nicegui_app.on_connect
-    def _load_theme() -> None:
-        ui.add_head_html('<link rel="stylesheet" href="/static/css/solarpunk-theme.css">')
-        ui.add_head_html('<script src="/static/js/swipe-card.js"></script>')
+    # Static-Dateien, PWA-Routen und Seitenkopf: dieselbe Funktion wie main.py (#375)
+    configure_app(nicegui_app)
 
     ui.run(
-        title="Fuellhorn",
         storage_secret=get_storage_secret(),
-        host=config.HOST,
-        port=config.PORT,
         reload=False,
-        show=False,
+        **run_kwargs(),
     )
 
 

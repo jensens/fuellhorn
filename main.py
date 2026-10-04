@@ -1,40 +1,19 @@
-"""NiceGUI Application - Entry Point."""
+"""NiceGUI Application - Entry Point (Entwicklung, mit Auto-Reload).
 
-from app.config import config
-from app.config import get_storage_secret
+Produktion startet über das ``fuellhorn``-CLI (``app/cli.py``). Beide nutzen
+dieselbe Startkonfiguration aus ``app/startup.py`` (Issue #375).
+"""
+
 from app.database import create_db_and_tables
+from app.startup import configure_app
+from app.startup import run_kwargs
 from nicegui import app
 from nicegui import ui
 import os
 
 
-# Serve static files (CSS, icons, etc.)
-app.add_static_files("/static", "app/static")
-
-# PWA: Register manifest and icons at root URLs for browser compatibility
-app.add_static_file(url_path="/manifest.json", local_file="app/static/manifest.json")
-app.add_static_file(url_path="/icon-192.png", local_file="app/static/pwa/fuellhorn-icon-192.png")
-app.add_static_file(url_path="/icon-512.png", local_file="app/static/pwa/fuellhorn-icon-512.png")
-app.add_static_file(url_path="/apple-touch-icon.png", local_file="app/static/pwa/fuellhorn-icon-180.png")
-
-
-# Load Solarpunk theme CSS and JavaScript for each client connection
-@app.on_connect
-def _load_theme() -> None:
-    ui.add_head_html('<link rel="stylesheet" href="/static/css/solarpunk-theme.css">')
-    ui.add_head_html('<script src="/static/js/swipe-card.js"></script>')
-
-    # PWA Meta-Tags
-    ui.add_head_html('<link rel="manifest" href="/manifest.json">')
-    ui.add_head_html('<meta name="theme-color" content="#4A7C59">')
-    ui.add_head_html('<meta name="mobile-web-app-capable" content="yes">')
-
-    # Apple-spezifische PWA Meta-Tags
-    ui.add_head_html('<link rel="apple-touch-icon" href="/apple-touch-icon.png">')
-    ui.add_head_html('<meta name="apple-mobile-web-app-capable" content="yes">')
-    ui.add_head_html('<meta name="apple-mobile-web-app-status-bar-style" content="default">')
-    ui.add_head_html('<meta name="apple-mobile-web-app-title" content="Fuellhorn">')
-
+# Static-Dateien, PWA-Routen (Manifest, Icons) und gemeinsamer Seitenkopf
+configure_app(app)
 
 # Import pages to register routes
 import app.ui.pages as _pages  # noqa: F401, E402
@@ -49,18 +28,14 @@ import app.api.health as _api_health  # noqa: F401, E402
 
 
 if __name__ in {"__main__", "__mp_main__"}:
-    from nicegui import ui
+    from app.config import get_storage_secret
 
     # Datenbank initialisieren
     create_db_and_tables()
 
-    # NiceGUI starten (HOST/PORT aus der Umgebung, z.B. eigener Port je Worktree)
+    # NiceGUI starten (Titel, Favicon, HOST/PORT aus app.startup bzw. der Konfiguration)
     ui.run(
-        title="Füllhorn - Lebensmittelvorrats-Verwaltung",
-        favicon="app/static/pwa/fuellhorn-icon-192.png",
         storage_secret=get_storage_secret(),
-        host=config.HOST,
-        port=config.PORT,
         reload=True,  # Auto-Reload waehrend Entwicklung
-        show=False,  # Browser nicht automatisch oeffnen
+        **run_kwargs(),
     )
