@@ -11,6 +11,7 @@ Extended in Issue #17 to allow showing consumed items via toggle.
 
 from ...auth import require_auth
 from ...database import get_session
+from ...models.category import Category
 from ...models.item import Item
 from ...models.item import ItemType
 from ...services import category_service
@@ -25,6 +26,7 @@ from ..components import create_mobile_page_container
 from ..components.consume_all import confirm_consume_all
 from ..theme import get_contrast_text_color
 from ..theme.icons import create_icon
+from collections import defaultdict
 from datetime import date
 from nicegui import app
 from nicegui import ui
@@ -307,8 +309,9 @@ def items_page(filter: str | None = None, location: int | None = None) -> None: 
                     filter_state["item_type"],
                 )
 
-                # Apply category filter
-                filtered_items = _filter_items_by_categories(filtered_items, selected_categories, item_category_map)
+                # Eltern-Chips stehen für alle ihre Kinder (#395)
+                effective_categories = category_service.expand_category_filter(session, selected_categories)
+                filtered_items = _filter_items_by_categories(filtered_items, effective_categories, item_category_map)
 
                 # Alles für die Karten in konstant vielen Abfragen (Issue #363, #393)
                 rows_by_id = {
@@ -550,27 +553,44 @@ def items_page(filter: str | None = None, location: int | None = None) -> None: 
             all_categories = category_service.get_all_categories(session)
 
         if all_categories:
-            with ui.row().classes("w-full gap-2 flex-wrap mb-4"):
-                for cat in all_categories:
-                    if cat.id is not None:
-                        # Store category color for styling
-                        color = cat.color or "#6B7280"  # Default gray
-                        category_colors[cat.id] = color
+            children_by_parent: dict[int, list[Category]] = defaultdict(list)
+            for cat in all_categories:
+                if cat.parent_id is not None:
+                    children_by_parent[cat.parent_id].append(cat)
 
-                        # Create chip with colored dot prefix
-                        chip = (
-                            ui.button(
-                                f"● {cat.name}",
-                                on_click=lambda _, cid=cat.id: toggle_category(cid),
-                            )
-                            .classes("rounded-full px-4 py-1 text-sm")
-                            .props("flat no-caps")
-                        )
-                        # Apply initial unselected style with category color (!important to override defaults)
-                        chip.style(
-                            f"background-color: #E5E7EB !important; border: 2px solid {color}; color: #374151 !important;"
-                        )
-                        chip_elements[cat.id] = chip
+            def render_chip(cat: Category, *, is_group: bool = False) -> None:
+                if cat.id is None:
+                    return
+                color = cat.color or "#6B7280"  # Default gray
+                category_colors[cat.id] = color
+                chip = (
+                    ui.button(
+                        f"● {cat.name}",
+                        on_click=lambda _, cid=cat.id: toggle_category(cid),
+                    )
+                    .classes("rounded-full px-4 py-1 text-sm" + (" font-semibold" if is_group else ""))
+                    .props("flat no-caps")
+                    .mark(f"filter-category-{cat.id}")
+                )
+                # Apply initial unselected style with category color (!important to override defaults)
+                chip.style(
+                    f"background-color: #E5E7EB !important; border: 2px solid {color}; color: #374151 !important;"
+                )
+                chip_elements[cat.id] = chip
+
+            # Gruppiert wie im Wizard: Eltern-Chip gefolgt von seinen Kindern, danach eigenständige (#395)
+            with ui.column().classes("w-full gap-2 mb-4"):
+                for parent in all_categories:
+                    if parent.id in children_by_parent:
+                        with ui.row().classes("w-full gap-2 flex-wrap items-center"):
+                            render_chip(parent, is_group=True)
+                            for child in children_by_parent[parent.id]:
+                                render_chip(child)
+                standalone = [c for c in all_categories if c.parent_id is None and c.id not in children_by_parent]
+                if standalone:
+                    with ui.row().classes("w-full gap-2 flex-wrap"):
+                        for cat in standalone:
+                            render_chip(cat)
 
         # Reset filters button (only visible when filters are active)
         reset_btn = (
