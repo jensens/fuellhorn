@@ -142,6 +142,48 @@ jobs:
           build-args: |
             FUELLHORN_VERSION=${{ steps.version.outputs.version }}
 
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v6
+
+      # Schlägt der Smoke-Test fehl, bricht der Job ab und das Multi-Arch-Manifest
+      # (Versions- und latest-Tag) wird nicht erzeugt (#414)
+      - name: Smoke test image (lock, migrate, create-admin, health)
+        env:
+          IMAGE: ghcr.io/${{ github.repository }}:${{ steps.version.outputs.version }}-${{ steps.platform.outputs.suffix }}
+        run: |
+          set -euo pipefail
+          docker pull "$IMAGE"
+
+          echo "::group::Installierte Versionen entsprechen uv.lock"
+          uv export --frozen --no-dev --no-emit-project --no-hashes \
+            | grep -E '^[A-Za-z0-9_.-]+==' | sed 's/ .*//' | tr 'A-Z_' 'a-z-' | sort > /tmp/expected.txt
+          docker run --rm "$IMAGE" uv pip freeze --python /app/.venv/bin/python \
+            | grep -E '^[A-Za-z0-9_.-]+==' | grep -vi '^fuellhorn==' | tr 'A-Z_' 'a-z-' | sort > /tmp/actual.txt
+          if comm -23 /tmp/actual.txt /tmp/expected.txt | grep .; then
+            echo "::error::Im Image installierte Versionen weichen von uv.lock ab (siehe oben)"
+            exit 1
+          fi
+          echo "::endgroup::"
+
+          echo "::group::migrate + create-admin (SQLite)"
+          docker run --rm \
+            -e FUELLHORN_SECRET=smoke-test-secret-0123456789abcdef \
+            -e ADMIN_PASSWORD=smoke-test-password \
+            "$IMAGE" sh -c "fuellhorn migrate && fuellhorn create-admin"
+          echo "::endgroup::"
+
+          echo "::group::Start + /api/health"
+          cid=$(docker run -d -p 18080:8080 -e FUELLHORN_SECRET=smoke-test-secret-0123456789abcdef "$IMAGE")
+          ok=0
+          for i in $(seq 1 30); do
+            if curl -sf http://127.0.0.1:18080/api/health; then ok=1; break; fi
+            sleep 2
+          done
+          docker logs "$cid" | tail -20
+          docker rm -f "$cid" > /dev/null
+          echo "::endgroup::"
+          test "$ok" = 1
+
       - name: Export digest
         run: |
           mkdir -p /tmp/digests
