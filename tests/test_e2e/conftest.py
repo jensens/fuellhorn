@@ -36,14 +36,17 @@ import time
 E2E_MAX_WORKERS = 4
 
 
-def pytest_xdist_auto_num_workers(config) -> int:
-    """Limit xdist auto-workers for E2E tests to prevent system overload.
+def pytest_xdist_auto_num_workers(config) -> int | None:
+    """Limit xdist auto-workers to E2E_MAX_WORKERS, but only for E2E runs.
 
-    When running with -n auto, xdist uses CPU count. For E2E tests,
-    we limit this to E2E_MAX_WORKERS (4) to prevent system overload
-    since each worker starts its own server process.
+    Each E2E worker starts its own server process, so -n auto is capped at 4.
+    Without --run-e2e the hook returns None and xdist uses the CPU count:
+    testpaths loads this conftest for every run, and the cap used to hit the
+    unit and UI suites as well (Issue #391).
     """
-    return E2E_MAX_WORKERS
+    if config.getoption("--run-e2e", default=False):
+        return E2E_MAX_WORKERS
+    return None
 
 
 def pytest_collection_modifyitems(config, items):

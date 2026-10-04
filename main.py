@@ -28,11 +28,16 @@ import app.api.health as _api_health  # noqa: F401, E402
 
 
 if __name__ in {"__main__", "__mp_main__"}:
+    from app.config import config as app_config
     from app.config import get_storage_secret
 
     # Schema per Alembic anlegen/aktualisieren (wie in Produktion). create_all legte
-    # Tabellen ohne alembic_version an, ein späteres 'alembic upgrade head' scheiterte (#376)
-    run_migrations()
+    # Tabellen ohne alembic_version an, ein späteres 'alembic upgrade head' scheiterte (#376).
+    # FUELLHORN_SKIP_MIGRATIONS wie im CLI (#377). Unter TESTING keine Migration: NiceGUIs
+    # User-Fixture führt main.py als __main__ aus, sonst migriert jeder UI-Test die konfigurierte
+    # Datenbank (lokal data/fuellhorn.db, in CI mit -n auto ein Wettlauf, #391).
+    if not app_config.SKIP_MIGRATIONS and os.environ.get("TESTING") != "true":
+        run_migrations()
 
     # NiceGUI starten (Titel, Favicon, HOST/PORT aus app.startup bzw. der Konfiguration)
     ui.run(

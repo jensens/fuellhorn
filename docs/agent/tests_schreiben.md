@@ -22,25 +22,36 @@ uv run pytest tests/test_services/test_item_service.py -v
 
 ### Parallele Ausführung mit pytest-xdist
 
-Tests können mit mehreren Workern parallel ausgeführt werden:
+Alle Suiten laufen parallel (`-n auto` nutzt alle CPU-Kerne):
 
 ```bash
-# Mit 4 parallelen Workern
-uv run pytest -n 4
-
-# Automatisch (nutzt alle CPU-Kerne)
+# Alle außer E2E, parallel
 uv run pytest -n auto
 
-# E2E parallel (empfohlen, ~75% schneller)
-uv run pytest -m e2e --run-e2e -n auto
+# Nur UI-Tests, parallel
+uv run pytest tests/test_ui -n auto
+
+# E2E parallel (automatisch auf 4 Worker gedeckelt, jeder startet einen Server)
+uv run pytest tests/test_e2e --run-e2e -n auto
 ```
 
 **Warum funktioniert das?**
-- Jeder Test bekommt eigenen Port (`_find_free_port()`)
-- Separate in-memory SQLite-DB pro Test
-- Eigene Browser-Instanz pro E2E-Test
+- Jeder Testprozess bekommt einen eigenen NiceGUI-Storage (`NICEGUI_STORAGE_PATH` in `tests/conftest.py`, Issue #391)
+- Separate in-memory SQLite-DB pro Testmodul, Rollback pro Test
+- E2E: eigener Port (`_find_free_port()`) und Server-Prozess pro Worker, eigene Browser-Instanz pro Test
 
-**CI:** E2E-Tests laufen im CI automatisch mit `-n auto`.
+**CI** (`.github/workflows/tests.yaml`, pro Pull Request):
+
+| Job | Inhalt |
+|-----|--------|
+| Unit & Service Tests | `tests/test_services`, `test_api`, `test_unit`, `test_auth`, `test_utils`, `test_migrations`, `test_pwa`, `test_cli.py`, `test_config.py`, `test_database_isolation.py` mit `-n auto` |
+| UI Tests | `tests/test_ui` mit `-n auto` |
+| Migrations (PostgreSQL) | `tests/test_migrations` gegen einen PostgreSQL-Service-Container |
+| E2E Tests | `tests/test_e2e --run-e2e -n auto` mit Playwright/Chromium |
+| Coverage | kombiniert die Daten aus Unit/Service und UI (`coverage combine`), Schwelle `--fail-under=85`, Report im Job-Summary |
+
+Die Coverage-Schwelle (Stand bei Einführung: 89 %) steigt schrittweise Richtung 90 % (Issue #205); sie gilt nur für den
+kombinierten Report, nicht für Teil-Läufe.
 
 ## Fixtures
 
