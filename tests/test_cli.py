@@ -248,9 +248,9 @@ class TestDispatchCommand:
         assert result == 1
 
     def test_seed_command_with_unknown_subcommand_returns_error(self) -> None:
-        """Should return 1 for unknown seed subcommand."""
+        """Should return 1 for unknown seed subcommand (ohne Migrationen anzustoßen)."""
         with (
-            patch("app.database.create_db_and_tables"),
+            patch("app.cli.run_migrations") as mock_migrations,
             patch("app.database.get_engine"),
         ):
             from app.cli import dispatch_command
@@ -258,11 +258,12 @@ class TestDispatchCommand:
             result = dispatch_command(["seed", "unknown"])
 
             assert result == 1
+            mock_migrations.assert_not_called()
 
-    def test_seed_shelf_life_defaults_calls_seed_function(self) -> None:
-        """Should call seed_shelf_life_defaults for shelf-life-defaults subcommand."""
+    def test_seed_shelf_life_defaults_runs_migrations_then_seeds(self) -> None:
+        """shelf-life-defaults migriert per Alembic (statt create_all) und seedet dann (#376)."""
         with (
-            patch("app.database.create_db_and_tables"),
+            patch("app.cli.run_migrations") as mock_migrations,
             patch("app.database.get_engine"),
             patch("app.seed.seed_shelf_life_defaults", return_value=(10, 20)) as mock_seed,
         ):
@@ -270,13 +271,14 @@ class TestDispatchCommand:
 
             result = dispatch_command(["seed", "shelf-life-defaults"])
 
+            mock_migrations.assert_called_once()
             mock_seed.assert_called_once()
             assert result == 0
 
     def test_seed_testdata_calls_seed_function(self) -> None:
-        """Should call seed_testdata for testdata subcommand."""
+        """Should call seed_testdata for testdata subcommand (mit ausdrücklichem Dev-Flag)."""
         with (
-            patch("app.database.create_db_and_tables"),
+            patch("app.cli.run_migrations"),
             patch("app.database.get_engine"),
             patch(
                 "app.seed.seed_testdata", return_value={"admin": 1, "categories": 5, "locations": 3, "items": 8}
@@ -284,7 +286,7 @@ class TestDispatchCommand:
         ):
             from app.cli import dispatch_command
 
-            result = dispatch_command(["seed", "testdata"])
+            result = dispatch_command(["seed", "testdata", "--i-know-this-is-dev"])
 
             mock_seed.assert_called_once()
             assert result == 0
