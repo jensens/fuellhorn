@@ -228,14 +228,12 @@ cp .env.example .env
 
 ```bash
 # Secrets generieren:
-python -c "import secrets; print('SECRET_KEY=' + secrets.token_urlsafe(32))"
 python -c "import secrets; print('FUELLHORN_SECRET=' + secrets.token_urlsafe(32))"
 python -c "import secrets; print('POSTGRES_PASSWORD=' + secrets.token_urlsafe(16))"
 ```
 
 Mindestens diese Werte in `.env` anpassen:
-- `SECRET_KEY` - JWT/Session Secret (min. 32 Zeichen)
-- `FUELLHORN_SECRET` - NiceGUI Storage Secret
+- `FUELLHORN_SECRET` - signiert die Session-Cookies (min. 32 Zeichen; Rotation meldet alle Nutzer ab)
 - `POSTGRES_PASSWORD` - PostgreSQL Passwort
 
 #### Schritt 3: Container starten
@@ -280,8 +278,7 @@ docker build -t fuellhorn .
 docker run -d \
   --name fuellhorn \
   -p 8080:8080 \
-  -e SECRET_KEY="your-secret-key-min-32-chars" \
-  -e FUELLHORN_SECRET="your-nicegui-secret" \
+  -e FUELLHORN_SECRET="your-nicegui-secret-min-32-chars" \
   -v fuellhorn-data:/app/data \
   fuellhorn
 ```
@@ -296,7 +293,6 @@ Füllhorn bietet einen Helm Chart für Kubernetes-Deployments mit automatischer 
 
 ```bash
 helm install fuellhorn ./charts/fuellhorn \
-  --set secrets.secretKey="your-secret-key-min-32-chars-here" \
   --set secrets.fuellhornSecret="your-fuellhorn-secret-min-32-chars" \
   --set database.type=postgresql \
   --set database.external.host=postgres.example.com \
@@ -318,8 +314,7 @@ Siehe [charts/fuellhorn/README.md](charts/fuellhorn/README.md) für vollständig
 
 | Variable | Beschreibung | Beispiel |
 |----------|--------------|----------|
-| `SECRET_KEY` | Geheimer Schlüssel für JWT/Sessions. **Min. 32 Zeichen!** | `secrets.token_urlsafe(32)` |
-| `FUELLHORN_SECRET` | Secret für NiceGUI Browser-Storage | `secrets.token_urlsafe(32)` |
+| `FUELLHORN_SECRET` | Signiert die Session-Cookies (NiceGUI `storage_secret`). **Min. 32 Zeichen!** Rotation meldet alle Nutzer ab, Passwörter bleiben gültig. | `secrets.token_urlsafe(32)` |
 
 ### Datenbank-Konfiguration
 
@@ -336,6 +331,7 @@ Siehe [charts/fuellhorn/README.md](charts/fuellhorn/README.md) für vollständig
 | Variable | Beschreibung | Default |
 |----------|--------------|---------|
 | `DEBUG` | Debug-Modus aktivieren | `false` |
+| `SQL_ECHO` | Alle SQL-Statements samt Parametern loggen (nur zur Fehlersuche, enthält Hashes und Tokens) | `false` |
 | `HOST` | Bind-Adresse | `0.0.0.0` |
 | `PORT` | Port | `8080` |
 | `APP_PORT` | Externer Port (docker-compose) | `8080` |
@@ -346,12 +342,6 @@ Siehe [charts/fuellhorn/README.md](charts/fuellhorn/README.md) für vollständig
 |----------|--------------|---------|
 | `SESSION_MAX_AGE` | Session-Dauer in Sekunden (ohne "Angemeldet bleiben") | `86400` (24h) |
 | `REMEMBER_ME_MAX_AGE` | Session-Dauer mit "Angemeldet bleiben" | `2592000` (30 Tage) |
-
-### Logging
-
-| Variable | Beschreibung | Default |
-|----------|--------------|---------|
-| `LOG_LEVEL` | Log-Level: `DEBUG`, `INFO`, `WARNING`, `ERROR` | `INFO` |
 
 ---
 
