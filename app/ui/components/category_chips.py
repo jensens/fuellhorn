@@ -12,149 +12,42 @@ from collections.abc import Sequence
 from nicegui import ui
 
 
+def _group_by_parent(categories: Sequence[Category]) -> list[tuple[str | None, list[Category]]]:
+    """Gruppiert eine flache Liste nach parent_id; Gruppenname ist der Name des Parents, falls er in der Liste ist.
+
+    Gruppen zuerst (in Reihenfolge des ersten Kindes), danach eigenständige Kategorien unter "Weitere",
+    sobald es mindestens eine Gruppe gibt.
+    """
+    names = {cat.id: cat.name for cat in categories if cat.id is not None}
+    grouped: dict[int | None, list[Category]] = {}
+    for cat in categories:
+        grouped.setdefault(cat.parent_id, []).append(cat)
+
+    result: list[tuple[str | None, list[Category]]] = []
+    for parent_id, cats in grouped.items():
+        if parent_id is not None:
+            result.append((names.get(parent_id), cats))
+    standalone = grouped.get(None, [])
+    if standalone:
+        result.append(("Weitere" if result else None, standalone))
+    return result
+
+
 def create_category_chip_group(
     categories: Sequence[Category],
     value: int | None = None,
     on_change: Callable[[int], None] | None = None,
 ) -> ui.element:
-    """Create a chip group for selecting categories, with optional grouping.
+    """Chip-Gruppe aus einer flachen Kategorienliste; Kinder werden unter ihrem Parent gruppiert.
 
-    Categories with a parent_id are grouped under their parent's name.
-    Standalone categories (no parent_id) are shown without a group header.
+    Dünne Hülle um ``create_grouped_category_chip_group`` (eine Implementierung, Issue #398).
 
     Args:
-        categories: List of Category objects (leaf categories only)
-        value: Initially selected category_id (optional)
-        on_change: Callback when selection changes (receives category_id)
-
-    Returns:
-        The container element with all chips
+        categories: Kategorien (nur Blätter)
+        value: vorausgewählte category_id
+        on_change: Callback bei Auswahl (erhält die category_id)
     """
-    # Store current selection, chip references, and category colors
-    current_value: list[int | None] = [value]
-    chip_refs: dict[int, ui.element] = {}
-    dot_refs: dict[int, ui.element] = {}
-    category_colors: dict[int, str] = {}
-
-    def update_chip_styles() -> None:
-        """Update all chips to reflect current selection and category color."""
-        for category_id, chip in chip_refs.items():
-            is_selected = category_id == current_value[0]
-            dot = dot_refs[category_id]
-            color = category_colors.get(category_id, "#6B7280")
-            text_color = get_contrast_text_color(color)
-            dot_color = "white" if text_color == "white" else color
-
-            if is_selected:
-                chip.classes(add="active")
-                chip.style(
-                    f"--chip-color: {color}; "
-                    f"background-color: {color} !important; border-color: {color}; color: {text_color} !important;"
-                )
-                dot.style(
-                    f"border-color: {dot_color}; background: radial-gradient(circle, {dot_color} 35%, transparent 35%);"
-                )
-            else:
-                # Default state - colored border, theme background.
-                # replace= drops the background-color/color set on selection; style(add) would keep them (#341)
-                chip.classes(remove="active")
-                chip.style(replace=f"--chip-color: {color}; border-color: {color};")
-                dot.style(f"border-color: {color}; background: white;")
-
-    def select_category(category_id: int) -> None:
-        """Handle chip selection."""
-        if current_value[0] != category_id:
-            current_value[0] = category_id
-            update_chip_styles()
-            if on_change:
-                on_change(category_id)
-
-    def _render_chip(category: Category, is_selected: bool) -> None:
-        """Render a single category chip."""
-        if category.id is None:
-            return
-        cat_id: int = category.id
-        color = category.color or "#6B7280"
-        text_color = get_contrast_text_color(color)
-        category_colors[cat_id] = color
-
-        chip = (
-            ui.button(
-                on_click=lambda _, cid=cat_id: select_category(cid),
-            )
-            .classes("sp-chip sp-chip-category" + (" active" if is_selected else ""))
-            .style(
-                f"--chip-color: {color}; "
-                + (
-                    f"background-color: {color} !important; border-color: {color}; color: {text_color} !important;"
-                    if is_selected
-                    else f"border-color: {color};"
-                )
-            )
-            .props("flat no-caps")
-            .mark(f"category-chip-{cat_id}")
-        )
-        chip_refs[cat_id] = chip
-
-        dot_color = "white" if text_color == "white" else color
-        with chip:
-            with ui.row().classes("items-center gap-2").style("flex-wrap: nowrap;"):
-                dot = (
-                    ui.element("div")
-                    .classes("sp-ring-dot")
-                    .style(
-                        f"border-color: {dot_color if is_selected else color}; "
-                        + (
-                            f"background: radial-gradient(circle, {dot_color} 35%, transparent 35%);"
-                            if is_selected
-                            else ""
-                        )
-                    )
-                )
-                dot_refs[cat_id] = dot
-                ui.label(category.name).classes("text-sm font-medium whitespace-nowrap")
-
-    with ui.column().classes("gap-3 w-full") as container:
-        # Group categories by parent_id
-        grouped: dict[int | None, list[Category]] = {}
-        for cat in categories:
-            grouped.setdefault(cat.parent_id, []).append(cat)
-
-        # Render grouped categories first (those with parent_id)
-        rendered_parents: set[int] = set()
-        for cat in categories:
-            if cat.parent_id is not None and cat.parent_id not in rendered_parents:
-                rendered_parents.add(cat.parent_id)
-                # Find parent name from any child's parent_id
-                # (we use the parent_id value, parent name comes from DB)
-                group_cats = grouped[cat.parent_id]
-                # Try to get parent name - we need to look it up
-                parent_name = _get_parent_name(categories, cat.parent_id)
-                if parent_name:
-                    ui.label(parent_name).classes("text-xs font-bold uppercase tracking-wide text-stone-500 mt-1")
-                with ui.row().classes("flex-wrap gap-2"):
-                    for group_cat in group_cats:
-                        _render_chip(group_cat, group_cat.id == value)
-
-        # Render standalone categories (no parent_id)
-        standalone = grouped.get(None, [])
-        if standalone:
-            if rendered_parents:
-                ui.label("Weitere").classes("text-xs font-bold uppercase tracking-wide text-stone-500 mt-1")
-            with ui.row().classes("flex-wrap gap-2"):
-                for cat in standalone:
-                    _render_chip(cat, cat.id == value)
-
-    return container
-
-
-def _get_parent_name(categories: Sequence[Category], parent_id: int) -> str | None:
-    """Try to get parent name from categories list or return None."""
-    # Parent itself might be in the list (shouldn't be, but handle gracefully)
-    for cat in categories:
-        if cat.id == parent_id:
-            return cat.name
-    return None
+    return create_grouped_category_chip_group(_group_by_parent(categories), value=value, on_change=on_change)
 
 
 def create_grouped_category_chip_group(
