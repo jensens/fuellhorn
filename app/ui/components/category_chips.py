@@ -55,8 +55,10 @@ def create_category_chip_group(
                     f"border-color: {dot_color}; background: radial-gradient(circle, {dot_color} 35%, transparent 35%);"
                 )
             else:
+                # Default state - colored border, theme background.
+                # replace= drops the background-color/color set on selection; style(add) would keep them (#341)
                 chip.classes(remove="active")
-                chip.style(f"--chip-color: {color}; border-color: {color};")
+                chip.style(replace=f"--chip-color: {color}; border-color: {color};")
                 dot.style(f"border-color: {color}; background: white;")
 
     def select_category(category_id: int) -> None:
@@ -90,6 +92,7 @@ def create_category_chip_group(
                 )
             )
             .props("flat no-caps")
+            .mark(f"category-chip-{cat_id}")
         )
         chip_refs[cat_id] = chip
 
@@ -193,8 +196,9 @@ def create_grouped_category_chip_group(
                     f"border-color: {dot_color}; background: radial-gradient(circle, {dot_color} 35%, transparent 35%);"
                 )
             else:
+                # replace= drops the background-color/color set on selection (#341)
                 chip.classes(remove="active")
-                chip.style(f"--chip-color: {color}; border-color: {color};")
+                chip.style(replace=f"--chip-color: {color}; border-color: {color};")
                 dot.style(f"border-color: {color}; background: white;")
 
     def select_category(category_id: int) -> None:
@@ -226,6 +230,7 @@ def create_grouped_category_chip_group(
                 )
             )
             .props("flat no-caps")
+            .mark(f"category-chip-{cat_id}")
         )
         chip_refs[cat_id] = chip
 

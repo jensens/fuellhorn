@@ -66,6 +66,7 @@ def create_unit_chip_group(
                     + ("color: white !important;" if is_selected else "color: var(--sp-charcoal) !important;")
                 )
                 .props("flat no-caps")
+                .mark(f"unit-chip-{unit}")
             )
 
             chip_refs[unit] = chip

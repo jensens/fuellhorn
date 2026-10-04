@@ -72,12 +72,15 @@ async def test_dashboard_mhd_item_expired_shows_correctly(user: TestUser) -> Non
     await user.should_see("Abgelaufen")
 
 
-async def test_dashboard_shows_correct_days_for_shelf_life_item(user: TestUser) -> None:
-    """Test that days until expiry is calculated from shelf life, not freeze date."""
+async def test_dashboard_shelf_life_item_before_optimal_date_is_not_expiring(user: TestUser) -> None:
+    """Issue #363: Vor 30 Tagen eingefroren mit 6–12 Monaten Haltbarkeit ist Status ok.
+
+    Der Artikel gehört damit nicht in 'Bald ablaufend' (früher zählte er wegen des
+    Vergleichs auf best_before_date = Einfrierdatum fälschlich als ablaufend).
+    """
     await user.open("/test-dashboard-shelf-life-ok")
-    # Should show "Läuft ab: in X Tagen" where X is based on optimal date (6 months from freeze)
-    # NOT "Abgelaufen" which would happen if using freeze_date directly
-    await user.should_see("Läuft ab:")
+    await user.should_see("Bald ablaufend (0)")
+    await user.should_see("Alles frisch!")
 
 
 async def test_dashboard_no_expiring_items_message(user: TestUser) -> None:

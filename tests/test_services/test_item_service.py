@@ -7,7 +7,6 @@ from app.services import category_service
 from app.services import item_service
 from app.services import location_service
 from datetime import date
-from datetime import timedelta
 import pytest
 from sqlmodel import Session
 
@@ -165,7 +164,7 @@ def test_mark_item_consumed(session: Session, test_admin: User) -> None:
         category_id=category.id,
     )
 
-    updated = item_service.mark_item_consumed(session, created.id)
+    updated = item_service.mark_item_consumed(session, created.id, test_admin.id)
 
     assert updated.is_consumed is True
 
@@ -256,51 +255,8 @@ def test_get_items_by_location(session: Session, test_admin: User) -> None:
     assert items[0].product_name == "Eis"
 
 
-def test_get_items_expiring_soon(session: Session, test_admin: User) -> None:
-    """Test getting items expiring within X days."""
-    location = location_service.create_location(
-        session=session,
-        name="Kühlschrank",
-        location_type=LocationType.CHILLED,
-        created_by=test_admin.id,
-    )
-    category = category_service.create_category(
-        session=session,
-        name="Frische",
-        created_by=test_admin.id,
-    )
-
-    assert category.id is not None
-
-    # Item expiring in 5 days
-    item_service.create_item(
-        session=session,
-        product_name="Joghurt",
-        best_before_date=date.today() + timedelta(days=5),
-        quantity=1,
-        unit="Becher",
-        item_type=ItemType.PURCHASED_FRESH,
-        location_id=location.id,
-        created_by=test_admin.id,
-        category_id=category.id,
-    )
-    # Item expiring in 20 days
-    item_service.create_item(
-        session=session,
-        product_name="Käse",
-        best_before_date=date.today() + timedelta(days=20),
-        quantity=1,
-        unit="Packung",
-        item_type=ItemType.PURCHASED_FRESH,
-        location_id=location.id,
-        created_by=test_admin.id,
-        category_id=category.id,
-    )
-
-    items = item_service.get_items_expiring_soon(session, days=7)
-
-    assert len(items) == 1
-    assert items[0].product_name == "Joghurt"
+# get_items_expiring_soon lebt seit Issue #363 in expiry_service (statusbasiert),
+# siehe tests/test_services/test_expiry_service_db.py
 
 
 # =============================================================================
@@ -341,6 +297,7 @@ def test_withdraw_partial_reduces_quantity(session: Session, test_admin: User) -
         session=session,
         item_id=item.id,
         withdraw_quantity=200,
+        user_id=test_admin.id,
     )
 
     assert updated.quantity == 300
@@ -380,6 +337,7 @@ def test_withdraw_partial_complete_marks_consumed(session: Session, test_admin: 
         session=session,
         item_id=item.id,
         withdraw_quantity=500,
+        user_id=test_admin.id,
     )
 
     assert updated.quantity == 0
@@ -420,6 +378,7 @@ def test_withdraw_partial_exceeds_quantity_fails(session: Session, test_admin: U
             session=session,
             item_id=item.id,
             withdraw_quantity=600,
+            user_id=test_admin.id,
         )
 
 
@@ -457,6 +416,7 @@ def test_withdraw_partial_zero_quantity_fails(session: Session, test_admin: User
             session=session,
             item_id=item.id,
             withdraw_quantity=0,
+            user_id=test_admin.id,
         )
 
 
@@ -494,6 +454,7 @@ def test_withdraw_partial_negative_quantity_fails(session: Session, test_admin: 
             session=session,
             item_id=item.id,
             withdraw_quantity=-100,
+            user_id=test_admin.id,
         )
 
 
@@ -504,6 +465,7 @@ def test_withdraw_partial_item_not_found_fails(session: Session) -> None:
             session=session,
             item_id=999,
             withdraw_quantity=100,
+            user_id=1,
         )
 
 
@@ -537,13 +499,14 @@ def test_withdraw_partial_consumed_item_fails(session: Session, test_admin: User
     )
 
     # Mark as consumed first
-    item_service.mark_item_consumed(session, item.id)
+    item_service.mark_item_consumed(session, item.id, test_admin.id)
 
     with pytest.raises(ValueError, match="Item is already consumed"):
         item_service.withdraw_partial(
             session=session,
             item_id=item.id,
             withdraw_quantity=200,
+            user_id=test_admin.id,
         )
 
 
@@ -1330,7 +1293,7 @@ def test_get_recently_added_items_excludes_consumed(session: Session, test_admin
         created_by=test_admin.id,
         category_id=category.id,
     )
-    item_service.mark_item_consumed(session, consumed_item.id)
+    item_service.mark_item_consumed(session, consumed_item.id, test_admin.id)
 
     items = item_service.get_recently_added_items(session, limit=5)
 
@@ -1444,7 +1407,7 @@ def test_get_item_count_by_location_excludes_consumed(session: Session, test_adm
         created_by=test_admin.id,
         category_id=category.id,
     )
-    item_service.mark_item_consumed(session, consumed_item.id)
+    item_service.mark_item_consumed(session, consumed_item.id, test_admin.id)
 
     counts = item_service.get_item_count_by_location(session)
 
@@ -1556,7 +1519,7 @@ def test_get_item_count_by_category_excludes_consumed(session: Session, test_adm
         created_by=test_admin.id,
         category_id=category.id,
     )
-    item_service.mark_item_consumed(session, consumed_item.id)
+    item_service.mark_item_consumed(session, consumed_item.id, test_admin.id)
 
     counts = item_service.get_item_count_by_category(session)
 

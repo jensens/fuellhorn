@@ -7,16 +7,17 @@ Based on UI_KONZEPT.md Section 7: Bottom Sheet
 - Mobile-optimized with 48px touch targets
 """
 
+from ...auth.dependencies import get_current_user_id
 from ...database import get_session
 from ...models.item import Item
 from ...models.location import Location
 from ...models.withdrawal import Withdrawal
 from ...services import auth_service
+from ...services import expiry_service
 from ...services import item_service
-from ...services.expiry_calculator import get_expiry_status
 from ..theme.icons import create_icon
+from ..utils.quantity import format_quantity
 from datetime import date
-from nicegui import app
 from nicegui import ui
 from typing import Callable
 
@@ -36,6 +37,8 @@ def get_expiry_badge_classes(status: str) -> str:
         return f"{base_classes} bg-red-100 text-red-800"
     elif status == "warning":
         return f"{base_classes} bg-yellow-100 text-yellow-800"
+    elif status == "unknown":
+        return f"{base_classes} bg-gray-100 text-gray-700"
     else:
         return f"{base_classes} bg-green-100 text-green-800"
 
@@ -118,7 +121,7 @@ def create_bottom_sheet(
                     create_icon("misc/scale", size="20px", classes="text-fern")
                     with ui.column().classes("gap-0"):
                         ui.label("Menge").classes("sp-info-label")
-                        ui.label(f"{item.quantity} {item.unit}").classes("sp-info-value")
+                        ui.label(format_quantity(item.quantity, item.unit)).classes("sp-info-value")
 
                 # Location
                 with ui.row().classes("sp-info-row"):
@@ -127,17 +130,33 @@ def create_bottom_sheet(
                         ui.label("Lagerort").classes("sp-info-label")
                         ui.label(location.name).classes("sp-info-value")
 
-                # Expiry date with status badge (using best_before_date as fallback)
-                expiry_status = get_expiry_status(item.best_before_date)
+                # Expiry: status, display date and label come from the service (Issue #363)
+                with next(get_session()) as session:
+                    expiry_view = expiry_service.get_item_expiry_view(session, item)
                 with ui.row().classes("sp-info-row"):
                     create_icon("status/calendar", size="20px", classes="text-fern")
                     with ui.column().classes("gap-0"):
-                        ui.label("Haltbarkeit").classes("sp-info-label")
-                        with ui.row().classes("items-center gap-2"):
-                            ui.label(item.best_before_date.strftime("%d.%m.%Y")).classes("sp-info-value")
-                            ui.label(get_expiry_label(item.best_before_date)).classes(
-                                get_expiry_badge_classes(expiry_status)
-                            )
+                        if expiry_view.display_date is not None:
+                            ui.label(expiry_view.label).classes("sp-info-label")
+                            with ui.row().classes("items-center gap-2"):
+                                ui.label(expiry_view.display_date.strftime("%d.%m.%Y")).classes("sp-info-value")
+                                ui.label(get_expiry_label(expiry_view.display_date)).classes(
+                                    get_expiry_badge_classes(expiry_view.status)
+                                )
+                        else:
+                            ui.label("Haltbarkeit").classes("sp-info-label")
+                            ui.label(expiry_view.label).classes(get_expiry_badge_classes("unknown"))
+
+                # Entered dates (production / freeze date), Issue #342. The MHD of purchased
+                # items is already the expiry row above and is not repeated.
+                for date_label, entered_date in expiry_service.get_entered_dates(item):
+                    if date_label == expiry_view.label:
+                        continue
+                    with ui.row().classes("sp-info-row"):
+                        create_icon("status/calendar", size="20px", classes="text-stone")
+                        with ui.column().classes("gap-0"):
+                            ui.label(date_label).classes("sp-info-label")
+                            ui.label(entered_date.strftime("%d.%m.%Y")).classes("sp-info-value")
 
                 # Notes (if present)
                 if item.notes:
@@ -239,10 +258,10 @@ def _handle_withdraw(
                 error_label.set_visibility(True)
             return
 
-        # Validation: not more than available
-        if withdraw_qty > item.quantity:
+        # Validation: not more than available (at quantity resolution, Issue #365)
+        if item_service.normalize_quantity(withdraw_qty - item.quantity) > 0:
             if error_label:
-                error_label.set_text(f"Nicht mehr als {int(item.quantity)} verfügbar")
+                error_label.set_text(f"Nicht mehr als {format_quantity(item.quantity, item.unit)} verfügbar")
                 error_label.set_visibility(True)
             return
 
@@ -254,8 +273,14 @@ def _handle_withdraw(
                     error_label.set_visibility(True)
                 return
 
+            user_id = get_current_user_id()
+            if user_id is None:
+                if error_label:
+                    error_label.set_text("Bitte neu anmelden")
+                    error_label.set_visibility(True)
+                return
+
             with next(get_session()) as session:
-                user_id = app.storage.user.get("user_id")
                 item_service.withdraw_partial(
                     session=session,
                     item_id=item.id,
@@ -264,7 +289,7 @@ def _handle_withdraw(
                 )
 
             # Show success notification
-            ui.notify(f"{int(withdraw_qty)} {item.unit} entnommen", type="positive")
+            ui.notify(f"{format_quantity(withdraw_qty, item.unit)} entnommen", type="positive")
 
             # Close both dialogs
             withdraw_dialog.close()
@@ -291,19 +316,20 @@ def _handle_withdraw(
             ui.label("Menge entnehmen").classes("text-lg font-semibold mb-2")
 
             # Available quantity info
-            ui.label(f"Verfügbar: {int(item.quantity)} {item.unit}").classes("text-sm text-gray-600 mb-4")
+            ui.label(f"Verfügbar: {format_quantity(item.quantity, item.unit)}").classes("text-sm text-gray-600 mb-4")
 
-            # Quantity input
+            # Quantity input: decimals allowed down to the quantity resolution (Issue #365).
+            # NiceGUI clamps to ``min`` on blur, so a minimum of 1 silently turned 0.5 into 1.
             quantity_input = (
                 ui.number(
                     label="Entnahmemenge",
-                    min=1,
+                    min=10**-item_service.QUANTITY_DECIMALS,
                     max=item.quantity,
-                    step=1,
+                    precision=item_service.QUANTITY_DECIMALS,
                     value=item.quantity,
                 )
                 .classes("w-full mb-2")
-                .props("outlined")
+                .props("outlined step=any")
             )
 
             # Error message (hidden by default)
@@ -344,9 +370,13 @@ def _handle_consume(
         ui.notify("Item-ID nicht gefunden", type="negative")
         return
 
+    user_id = get_current_user_id()
+    if user_id is None:
+        ui.notify("Bitte neu anmelden", type="negative")
+        return
+
     try:
         with next(get_session()) as session:
-            user_id = app.storage.user.get("user_id")
             item_service.mark_item_consumed(session, item.id, user_id)
 
         ui.notify(f"{item.product_name} vollständig entnommen", type="positive")

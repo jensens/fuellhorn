@@ -140,17 +140,21 @@ class TestGetRequiredDelay:
         assert delay == 0
 
     def test_delay_after_multiple_failures(self, session: Session) -> None:
-        """Nach mehreren Fehlversuchen gibt es Wartezeit."""
+        """Nach drei Fehlversuchen sind genau 2 Sekunden Wartezeit fällig.
+
+        Mit eingefrorener Zeit ist der Wert exakt; ``<= 2`` wäre auch bei einem
+        komplett defekten Limiter (0) grün gewesen (Review 2026-10-03).
+        """
         ip = "192.168.1.100"
 
-        # 3 Fehlversuche = 2 Sekunden Verzögerung
-        rate_limit_service.record_failed_attempt(session, ip)
-        rate_limit_service.record_failed_attempt(session, ip)
-        rate_limit_service.record_failed_attempt(session, ip)
+        with freeze_time("2026-10-04 12:00:00"):
+            rate_limit_service.record_failed_attempt(session, ip)
+            rate_limit_service.record_failed_attempt(session, ip)
+            rate_limit_service.record_failed_attempt(session, ip)
 
-        delay = rate_limit_service.get_required_delay(session, ip)
-        # Sollte ungefähr 2 Sekunden sein (könnte etwas weniger sein wegen Zeitablauf)
-        assert delay <= 2
+            delay = rate_limit_service.get_required_delay(session, ip)
+
+        assert delay == 2
 
     def test_delay_resets_after_24_hours(self, session: Session) -> None:
         """Verzögerung wird nach 24h ohne Aktivität zurückgesetzt."""

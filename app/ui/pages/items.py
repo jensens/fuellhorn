@@ -14,14 +14,17 @@ from ...database import get_session
 from ...models.item import Item
 from ...models.item import ItemType
 from ...services import category_service
+from ...services import expiry_service
 from ...services import item_service
 from ...services import location_service
 from ..components import create_bottom_nav
 from ..components import create_bottom_sheet
 from ..components import create_item_card
 from ..components import create_mobile_page_container
+from ..components.consume_all import confirm_consume_all
 from ..theme import get_contrast_text_color
 from ..theme.icons import create_icon
+from datetime import date
 from nicegui import app
 from nicegui import ui
 from typing import Any
@@ -95,7 +98,7 @@ def _render_empty_state() -> None:
         ui.label("Erfasse deinen ersten Artikel!").classes("text-sm text-stone")
         ui.button(
             "Artikel erfassen",
-            on_click=lambda: ui.navigate.to("/add-item"),
+            on_click=lambda: ui.navigate.to("/items/add"),
         ).classes("mt-4 sp-btn-primary")
 
 
@@ -184,19 +187,35 @@ def _filter_items_by_categories(
     return [item for item in items if item.id is not None and item_category_map.get(item.id) in selected_categories]
 
 
-def _sort_items(items: list[Item], sort_field: str, ascending: bool) -> list[Item]:
+def _sort_items(
+    items: list[Item],
+    sort_field: str,
+    ascending: bool,
+    display_dates: dict[int, date | None] | None = None,
+) -> list[Item]:
     """Sort items by the specified field.
 
     Args:
         items: List of items to sort
         sort_field: Field to sort by (best_before_date, product_name, created_at)
         ascending: True for ascending, False for descending
+        display_dates: Effective expiry date per item ID (from expiry_service); when given,
+            "best_before_date" sorts by it so frozen/preserved items use their optimal
+            date instead of the production date (Issue #363). Items without a date sort last.
 
     Returns:
         Sorted list of items
     """
     if sort_field == "best_before_date":
-        return sorted(items, key=lambda x: x.best_before_date, reverse=not ascending)
+        if display_dates is None:
+            return sorted(items, key=lambda x: x.best_before_date, reverse=not ascending)
+
+        def _effective_date(item: Item) -> date:
+            if item.id is None:
+                return date.max
+            return display_dates.get(item.id) or date.max
+
+        return sorted(items, key=_effective_date, reverse=not ascending)
     elif sort_field == "product_name":
         return sorted(items, key=lambda x: x.product_name.lower(), reverse=not ascending)
     elif sort_field == "created_at":
@@ -274,8 +293,8 @@ def items_page(filter: str | None = None, location: int | None = None) -> None: 
                     # Show only consumed/partially withdrawn items, sorted by last withdrawal
                     all_items = item_service.get_consumed_items(session)
                 elif filter_state.get("expiring_only"):
-                    # Show only items expiring in next 7 days (Issue #244)
-                    all_items = item_service.get_items_expiring_soon(session, days=7)
+                    # Show only items with status warning/critical (Issue #244, #363)
+                    all_items = expiry_service.get_items_expiring_soon(session)
                 else:
                     all_items = item_service.get_active_items(session)
 
@@ -293,12 +312,16 @@ def items_page(filter: str | None = None, location: int | None = None) -> None: 
                 # Apply category filter
                 filtered_items = _filter_items_by_categories(filtered_items, selected_categories, item_category_map)
 
+                # Expiry status for all shown items in one go (Issue #363)
+                expiry_views = expiry_service.get_expiry_views(session, filtered_items)
+
                 # Apply sorting (skip when showing consumed - already sorted by withdrawal date)
                 if not filter_state["show_consumed"]:
                     filtered_items = _sort_items(
                         filtered_items,
                         filter_state["sort_field"],
                         filter_state["sort_ascending"],
+                        display_dates={item_id: view.display_date for item_id, view in expiry_views.items()},
                     )
 
                 if not all_items:
@@ -317,6 +340,7 @@ def items_page(filter: str | None = None, location: int | None = None) -> None: 
                             on_partial_consume=handle_consume,  # Swipe "Teil" -> opens dialog
                             on_consume_all=handle_consume_all,  # Swipe "Alles" -> consume all
                             on_edit=lambda i=item: ui.navigate.to(f"/items/{i.id}/edit"),
+                            expiry_view=expiry_views.get(item.id),  # type: ignore[arg-type]
                         )
                 else:
                     # Filters yielded no results
@@ -449,11 +473,8 @@ def items_page(filter: str | None = None, location: int | None = None) -> None: 
             sheet.open()
 
     def handle_consume_all(item: Item) -> None:
-        """Handle consuming all of an item via swipe action (Issue #226)."""
-        with next(get_session()) as session:
-            item_service.mark_item_consumed(session, item.id)  # type: ignore[arg-type]
-            ui.notify(f"{item.product_name} komplett entnommen", type="positive")
-        refresh_items()
+        """Handle consuming all of an item via swipe action (Issue #226, #367: with confirmation + user)."""
+        confirm_consume_all(item, refresh_items)
 
     # Header with toggle (Solarpunk theme)
     with ui.row().classes("sp-page-header w-full items-center justify-between"):

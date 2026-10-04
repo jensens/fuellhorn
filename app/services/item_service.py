@@ -7,7 +7,6 @@ from ..models.withdrawal import Withdrawal
 from . import expiry_calculator
 from . import shelf_life_service
 from datetime import date
-from datetime import timedelta
 from sqlalchemy import func
 from sqlmodel import Session
 from sqlmodel import select
@@ -221,16 +220,18 @@ def update_item(
     return item
 
 
-def mark_item_consumed(session: Session, id: int, user_id: int | None = None) -> Item:
+def mark_item_consumed(session: Session, id: int, user_id: int) -> Item:
     """Mark item as consumed.
 
-    Creates a Withdrawal entry to track when and by whom the item was consumed.
-    Sets quantity to 0 to ensure correct initial quantity calculation.
+    Always creates a Withdrawal entry (who, when, how much): without it the item
+    would vanish from both the active list and the consumed list, which is an
+    inner join on withdrawals (Issue #367). Sets quantity to 0 to ensure correct
+    initial quantity calculation.
 
     Args:
         session: Database session
         id: Item ID
-        user_id: User ID who consumed the item (for tracking)
+        user_id: User ID who consumed the item (required)
 
     Returns:
         Updated item
@@ -241,13 +242,12 @@ def mark_item_consumed(session: Session, id: int, user_id: int | None = None) ->
     item = get_item(session, id)
 
     # Create withdrawal entry for the full remaining quantity
-    if user_id is not None:
-        withdrawal = Withdrawal(
-            item_id=item.id,
-            quantity=item.quantity,
-            withdrawn_by=user_id,
-        )
-        session.add(withdrawal)
+    withdrawal = Withdrawal(
+        item_id=item.id,
+        quantity=item.quantity,
+        withdrawn_by=user_id,
+    )
+    session.add(withdrawal)
 
     # Set quantity to 0 (Bug #222: was missing, causing wrong initial quantity calc)
     item.quantity = 0
@@ -316,54 +316,45 @@ def get_items_by_location(session: Session, location_id: int) -> list[Item]:
     return list(session.exec(select(Item).where(Item.location_id == location_id)).all())
 
 
-def get_items_expiring_soon(session: Session, days: int = 7) -> list[Item]:
-    """Get items with best_before_date within X days.
+QUANTITY_DECIMALS = 3
+"""Auflösung von Mengen (Nachkommastellen). Mengen sind Floats; ohne Rundung erreicht
+ein Restbestand nie exakt 0 und 1,0 − 0,3 − 0,3 verweigert die letzte Entnahme von 0,4
+(Issue #365)."""
 
-    Note: For items that use shelf life calculation (frozen/preserved),
-    this is a rough approximation. Use get_item_expiry_info() for accurate dates.
 
-    Args:
-        session: Database session
-        days: Number of days to look ahead (default 7)
-
-    Returns:
-        List of items with best_before_date coming up soon
-    """
-    cutoff_date = date.today() + timedelta(days=days)
-
-    return list(
-        session.exec(
-            select(Item).where(
-                Item.best_before_date <= cutoff_date,
-                Item.is_consumed.is_(False),  # type: ignore
-            )
-        ).all()
-    )
+def normalize_quantity(value: float) -> float:
+    """Rundet eine Menge auf die Auflösung und entfernt negative Nullen."""
+    rounded = round(value, QUANTITY_DECIMALS)
+    return 0.0 if rounded == 0 else rounded
 
 
 def withdraw_partial(
     session: Session,
     item_id: int,
     withdraw_quantity: float,
-    user_id: int | None = None,
+    user_id: int,
 ) -> Item:
     """Withdraw a partial quantity from an item.
 
-    Creates a Withdrawal entry to track the withdrawal.
+    Always creates a Withdrawal entry (Issue #367). Quantities are compared
+    and stored at QUANTITY_DECIMALS resolution so float noise can neither block
+    the last withdrawal nor leave a residue that keeps the item "active".
 
     Args:
         session: Database session
         item_id: Item ID
         withdraw_quantity: Quantity to withdraw
-        user_id: User ID who withdrew the item (for tracking)
+        user_id: User ID who withdrew the item (required)
 
     Returns:
         Updated item
 
     Raises:
-        ValueError: If item not found, already consumed, withdraw_quantity <= 0,
-                   or withdraw_quantity > available quantity
+        ValueError: If item not found, already consumed, withdraw_quantity <= 0
+                   (after rounding), or withdraw_quantity > available quantity
     """
+    withdraw_quantity = normalize_quantity(withdraw_quantity)
+
     # Validate withdraw quantity is positive
     if withdraw_quantity <= 0:
         raise ValueError("Withdraw quantity must be positive")
@@ -375,26 +366,26 @@ def withdraw_partial(
     if item.is_consumed:
         raise ValueError("Item is already consumed")
 
-    # Validate withdraw quantity doesn't exceed available
-    if withdraw_quantity > item.quantity:
+    # Validate withdraw quantity doesn't exceed available (at quantity resolution)
+    remaining = normalize_quantity(item.quantity - withdraw_quantity)
+    if remaining < 0:
         raise ValueError(
             f"Cannot withdraw more than available. Requested: {withdraw_quantity}, Available: {item.quantity}"
         )
 
     # Create withdrawal entry
-    if user_id is not None:
-        withdrawal = Withdrawal(
-            item_id=item.id,
-            quantity=withdraw_quantity,
-            withdrawn_by=user_id,
-        )
-        session.add(withdrawal)
+    withdrawal = Withdrawal(
+        item_id=item.id,
+        quantity=withdraw_quantity,
+        withdrawn_by=user_id,
+    )
+    session.add(withdrawal)
 
     # Update quantity
-    item.quantity = item.quantity - withdraw_quantity
+    item.quantity = remaining
 
     # Mark as consumed if quantity reaches zero
-    if item.quantity == 0:
+    if remaining == 0:
         item.is_consumed = True
 
     session.add(item)

@@ -19,11 +19,14 @@ Card Structure (3-zone layout):
 from ...models.item import Item
 from ...models.item import ItemType
 from ...models.location import LocationType
+from ...services import expiry_service
 from ...services import item_service
 from ...services import location_service
+from ...services.expiry_service import ExpiryView
 from ..theme import ITEM_TYPE_COLORS
 from ..theme import get_contrast_text_color
 from ..theme.icons import create_icon
+from ..utils.quantity import format_quantity
 from .swipe_card import create_swipe_card
 from datetime import date
 from nicegui import ui
@@ -66,9 +69,8 @@ def _format_quantity_display(
     Returns:
         Tuple of (formatted string, has_withdrawals bool)
     """
-    # Format numbers: remove decimal if whole number
-    current = int(current_qty) if current_qty == int(current_qty) else current_qty
-    initial = int(initial_qty) if initial_qty == int(initial_qty) else initial_qty
+    current = format_quantity(current_qty)
+    initial = format_quantity(initial_qty)
 
     has_withdrawals = initial_qty > current_qty
 
@@ -138,64 +140,23 @@ def get_status_text_class(status: str) -> str:
     return "sp-expiry-ok"
 
 
-def _format_expiry_display(expiry_date: date, item_type: ItemType) -> tuple[str, str]:
-    """Calculate expiry display label and value.
-
-    Returns:
-        Tuple of (label, value) for display.
-        Label is "MHD" or "Ablauf".
-        Value is either date format or relative text.
-    """
-    today = date.today()
-    days_until = (expiry_date - today).days
-
-    # Frozen items always show date format
-    is_frozen = item_type in (
-        ItemType.PURCHASED_FROZEN,
-        ItemType.PURCHASED_THEN_FROZEN,
-        ItemType.HOMEMADE_FROZEN,
-    )
-
-    if is_frozen or days_until > 7:
-        # Show date format: TT.MM.JJ
-        return "MHD", expiry_date.strftime("%d.%m.%y")
-    elif days_until < 0:
-        return "Ablauf", "Abgelaufen"
-    elif days_until == 0:
-        return "Ablauf", "Heute"
-    elif days_until == 1:
-        return "Ablauf", "Morgen"
-    else:
-        return "Ablauf", f"in {days_until} Tagen"
-
-
-def _calculate_status(days_until: int) -> str:
-    """Calculate status based on days until expiry."""
-    if days_until < 3:
-        return "critical"
-    elif days_until <= 7:
-        return "warning"
-    else:
-        return "ok"
-
-
-def get_expiry_badge_class(days_until: int) -> str:
-    """Get CSS class for expiry badge based on days until expiry.
+def get_expiry_badge_class(status: str, days_until: int | None) -> str:
+    """Map the service status to the badge CSS variant (presentation only, Issue #363).
 
     Badge variants:
-    - expired: days < 0 (red gradient, white text)
-    - warning: days = 0-1 (orange gradient, white text)
-    - soon: days = 2-7 (gold gradient, dark text)
-    - ok: days > 7 (cream background, stone text)
+    - expired: critical and the display date has passed (red gradient)
+    - warning: critical, display date today or upcoming (orange gradient)
+    - soon: warning, e.g. past the optimal date but before the maximum (gold gradient)
+    - ok: ok (cream)
+    - unknown: no expiry data available (grey)
     """
-    if days_until < 0:
-        return "expired"
-    elif days_until <= 1:
-        return "warning"
-    elif days_until <= 7:
+    if status == "unknown":
+        return "unknown"
+    if status == "critical":
+        return "expired" if days_until is not None and days_until < 0 else "warning"
+    if status == "warning":
         return "soon"
-    else:
-        return "ok"
+    return "ok"
 
 
 def get_expiry_badge_text(expiry_date: date, item_type: ItemType) -> str:
@@ -242,6 +203,7 @@ def create_item_card(
     on_partial_consume: Callable[[Item], None] | None = None,
     on_consume_all: Callable[[Item], None] | None = None,
     on_edit: Callable[[Item], None] | None = None,
+    expiry_view: ExpiryView | None = None,
 ) -> None:
     """Create a unified, mobile-optimized item card component.
 
@@ -260,6 +222,7 @@ def create_item_card(
         on_partial_consume: Optional callback for swipe partial consume action
         on_consume_all: Optional callback for swipe consume all action
         on_edit: Optional callback for swipe edit action
+        expiry_view: Precomputed expiry status (lists compute it in bulk); fetched if None
     """
     # Get related data
     try:
@@ -274,28 +237,16 @@ def create_item_card(
 
     category = item_service.get_item_category(session, item.id)  # type: ignore[arg-type]
 
-    # Get expiry info (optimal_date, max_date, best_before_date)
-    optimal_date, max_date, mhd_date = item_service.get_item_expiry_info(
-        session,
-        item.id,  # type: ignore[arg-type]
-    )
-
-    # Determine effective expiry date
-    if mhd_date is not None:
-        effective_expiry = mhd_date
-    elif optimal_date is not None:
-        effective_expiry = optimal_date
+    # Expiry status comes exclusively from the service (Issue #363)
+    view = expiry_view or expiry_service.get_item_expiry_view(session, item)
+    status_css_class = get_status_css_class(view.status)
+    if view.display_date is not None:
+        days_until: int | None = (view.display_date - date.today()).days
+        badge_text = get_expiry_badge_text(view.display_date, item.item_type)
     else:
-        effective_expiry = item.best_before_date
-
-    # Calculate status
-    days_until = (effective_expiry - date.today()).days
-    status = _calculate_status(days_until)
-    status_css_class = get_status_css_class(status)
-
-    # Get expiry badge info
-    badge_class = get_expiry_badge_class(days_until)
-    badge_text = get_expiry_badge_text(effective_expiry, item.item_type)
+        days_until = None
+        badge_text = view.label
+    badge_class = get_expiry_badge_class(view.status, days_until)
 
     # Get initial quantity and format display
     initial_qty = item_service.get_item_initial_quantity(session, item.id)  # type: ignore[arg-type]
@@ -435,6 +386,7 @@ def create_item_card(
             on_partial=lambda: on_partial_consume(item) if on_partial_consume else None,
             on_consume_all=lambda: on_consume_all(item) if on_consume_all else None,
             on_edit=lambda: on_edit(item) if on_edit else None,
+            card_id=f"swipe-item-{item.id}",
         )
     else:
         _create_card_content()

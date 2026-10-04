@@ -431,13 +431,15 @@ async def test_bottom_sheet_withdraw_validates_max_quantity(user: User) -> None:
     # Try to confirm - should show error
     user.find("Bestätigen").click()
 
-    # Verify error message
-    await user.should_see("Nicht mehr als 500 verfügbar")
+    # Verify error message (with unit since Issue #365)
+    await user.should_see("Nicht mehr als 500 g verfügbar")
 
 
-async def test_bottom_sheet_withdraw_partial_success(user: User) -> None:
-    """Test successful partial withdrawal updates quantity."""
+async def test_bottom_sheet_withdraw_partial_success(logged_in_user: User) -> None:
+    """Test successful partial withdrawal updates quantity (requires a logged-in user since #367)."""
     from app.database import get_session
+
+    user = logged_in_user
 
     with next(get_session()) as session:
         location = Location(

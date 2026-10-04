@@ -393,6 +393,14 @@ h1, h2, h3 {
   border: 1px solid var(--sp-stone-light, #D4CFC7);
 }
 
+/* No expiry data available (missing category shelf life or freeze date, Issue #363) */
+.expiry-badge.unknown {
+  background: #ECEAE6;
+  color: #6B6760;
+  border: 1px dashed var(--sp-stone-light, #D4CFC7);
+  font-weight: 500;
+}
+
 /* ----------------------------------------
    CHIPS - BASE
    ---------------------------------------- */
