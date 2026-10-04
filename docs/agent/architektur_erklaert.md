@@ -37,6 +37,23 @@
 
 `best_before_date` ist überladen (MHD bzw. Herstellungsdatum). Beschriftungen überall gleich: "MHD", "Hergestellt am", "Eingefroren am" (Wizard, Edit-View, Bottom-Sheet; Issue #387). `freeze_date` ist Pflicht für `purchased_then_frozen` und `homemade_frozen`; die Reihenfolge Herstellung ≤ Einfrieren wird nur bei `homemade_frozen` geprüft (`app/ui/validation/wizard_validation.py`, `item_service.validate_item_data`).
 
+### Kategorie-Hierarchie (eine Ebene)
+
+`Category.parent_id` bildet genau eine Ebene: Gruppen (z.B. "Fleisch") und ihre Kinder ("Rindfleisch", "Wurst").
+Gruppen sind beim Erfassen nicht wählbar; nur Blätter tragen Artikel. Die Regeln setzt
+`category_service._validate_parent` durch (Issue #395):
+
+- Eine Kategorie kann nicht sich selbst zugeordnet werden; der Parent muss selbst Top-Level sein.
+- Eine Kategorie mit Unterkategorien kann kein Kind werden; eine Kategorie mit Artikeln keine Gruppe.
+- Admin-UI: Liste gruppiert (Badge "Gruppe", Kinder eingerückt), Parent-Auswahl im Dialog, Hoch/Runter nur
+  innerhalb der Geschwister.
+
+**Haltbarkeit wird vererbt, nicht ausgeblendet:** Ein Kind ohne eigenen `CategoryShelfLife`-Eintrag nutzt den
+seiner Gruppe (`shelf_life_service.get_shelf_life_with_fallback`, Index-Pfad in `expiry_service`). Deshalb bleibt
+die Haltbarkeits-Eingabe für Gruppen im Admin sichtbar: Sie ist der Default für alle Kinder. Der Wizard bietet
+Kinder an, deren Haltbarkeit für die Lagerart aus der Gruppe kommt (`get_categories_for_item_type`). Im
+Vorratsfilter steht ein Gruppen-Chip für alle Kinder (`category_service.expand_category_filter`).
+
 
 ### Rollen (2 Stück)
 
