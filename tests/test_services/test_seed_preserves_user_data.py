@@ -114,7 +114,7 @@ def test_seed_adds_missing_category_with_shelf_life(session: Session, test_admin
 
     senf_shelf_life = _shelf_life(session, "Senf", StorageType.AMBIENT)
     assert (senf_shelf_life.months_min, senf_shelf_life.months_max) == (3, 6)
-    assert _category(session, "Getränke").parent_id is None
+    assert _category(session, "Getränke").parent_id == _category(session, "Vorrat").id
 
 
 def test_seed_is_idempotent(session: Session, test_admin: User) -> None:

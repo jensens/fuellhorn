@@ -39,6 +39,9 @@ SOURCES = {
     "tomaten_de": "https://www.tomaten.de/tomatensauce-haltbar-machen/",
     "haus_und_beet": "https://haus-und-beet.de/ketchup-selber-machen/",
     "edeka_pesto": "https://www.edeka.de/wissen/tipps-und-tricks/wie-kann-ich-pesto-haltbar-machen/",
+    "oekotest_milch": "https://www.oekotest.de/essen-trinken/Milch-einfrieren-So-bleibt-Milch-lange-haltbar_11630_1.html",
+    "utopia_sahne": "https://utopia.de/ratgeber/sahne-einfrieren-so-klappt-es/",
+    "vz_nrw_einfrieren": "https://www.verbraucherzentrale.nrw/9-lebensmittel-die-man-einfrieren-kann-butter-eier-rohen-teig-mehr-99308",
 }
 
 # Format: (name, color, parent_name, [(storage_type, min, max, source_key), ...])
@@ -46,75 +49,81 @@ SOURCES = {
 # Leere Haltbarkeitsliste = nur für frisch Gekauftes (z. B. Nudeln, Getränke).
 # Parents MUST appear before their children in this list.
 CATEGORIES: list[tuple[str, str | None, str | None, list[tuple[StorageType, int, int, str]]]] = [
-    # === FROZEN — Standalone ===
-    ("Gemüse", "#4CAF50", None, [(StorageType.FROZEN, 6, 12, "vsz_be")]),
-    ("Kräuter", "#8BC34A", None, [(StorageType.FROZEN, 3, 4, "vsz_be")]),
-    ("Obst", "#FF9800", None, [(StorageType.FROZEN, 9, 12, "vsz_be")]),
-    # === FROZEN — Fleisch (Gruppe) ===
-    ("Fleisch", "#F44336", None, [(StorageType.FROZEN, 3, 12, "vsz_be")]),
-    ("Rindfleisch", "#D32F2F", "Fleisch", [(StorageType.FROZEN, 9, 12, "t_online")]),
-    ("Schweinefleisch", "#E57373", "Fleisch", [(StorageType.FROZEN, 4, 7, "t_online")]),
-    ("Geflügel", "#FFEB3B", "Fleisch", [(StorageType.FROZEN, 3, 12, "t_online")]),
-    ("Hackfleisch", "#C62828", "Fleisch", [(StorageType.FROZEN, 1, 3, "t_online")]),
-    ("Wurst", "#795548", "Fleisch", [(StorageType.FROZEN, 1, 6, "vsz_be")]),
-    # === FROZEN — Fisch (Gruppe) ===
+    # Eine Gruppe hat nur dann eine eigene Haltbarkeit, wenn alle ihre Kategorien sie
+    # brauchen: Kategorien ohne eigenen Wert erben ihn (#395), und eine geerbte
+    # Gefrierzeit würde z. B. Joghurt beim Einfrieren anbieten (#456).
+    # === Obst & Gemüse ===
+    ("Obst & Gemüse", "#66BB6A", None, []),
+    ("Gemüse", "#4CAF50", "Obst & Gemüse", [(StorageType.FROZEN, 6, 12, "vsz_be")]),
+    ("Obst", "#FF9800", "Obst & Gemüse", [(StorageType.FROZEN, 9, 12, "vsz_be")]),
+    ("Kräuter", "#8BC34A", "Obst & Gemüse", [(StorageType.FROZEN, 3, 4, "vsz_be")]),
+    # === Fleisch & Wurst ===
+    ("Fleisch & Wurst", "#F44336", None, [(StorageType.FROZEN, 3, 12, "vsz_be")]),
+    ("Rindfleisch", "#D32F2F", "Fleisch & Wurst", [(StorageType.FROZEN, 9, 12, "t_online")]),
+    ("Schweinefleisch", "#E57373", "Fleisch & Wurst", [(StorageType.FROZEN, 4, 7, "t_online")]),
+    ("Geflügel", "#FFEB3B", "Fleisch & Wurst", [(StorageType.FROZEN, 3, 12, "t_online")]),
+    ("Hackfleisch", "#C62828", "Fleisch & Wurst", [(StorageType.FROZEN, 1, 3, "t_online")]),
+    ("Wurst", "#795548", "Fleisch & Wurst", [(StorageType.FROZEN, 1, 6, "vsz_be")]),
+    # === Fisch ===
     ("Fisch", "#2196F3", None, [(StorageType.FROZEN, 2, 4, "vsz_be")]),
     ("Fisch (mager)", "#64B5F6", "Fisch", [(StorageType.FROZEN, 4, 6, "t_online")]),
     ("Fisch (fett)", "#1976D2", "Fisch", [(StorageType.FROZEN, 2, 3, "t_online")]),
     ("Meeresfrüchte", "#0097A7", "Fisch", [(StorageType.FROZEN, 2, 4, "vsz_be")]),
-    # === FROZEN — Backwaren (Gruppe) ===
+    # === Milchprodukte & Eier: Frischkäse, Joghurt, Sauerrahm werden gefroren grießig ===
+    ("Milchprodukte & Eier", "#78909C", None, []),
+    ("Butter", "#F9A825", "Milchprodukte & Eier", [(StorageType.FROZEN, 6, 8, "t_online")]),
+    ("Käse", "#FFB74D", "Milchprodukte & Eier", [(StorageType.FROZEN, 2, 4, "t_online")]),
+    ("Milch", "#5C9BD5", "Milchprodukte & Eier", [(StorageType.FROZEN, 2, 3, "oekotest_milch")]),
+    ("Sahne", "#D4B483", "Milchprodukte & Eier", [(StorageType.FROZEN, 2, 3, "utopia_sahne")]),
+    ("Topfen", "#C9A66B", "Milchprodukte & Eier", [(StorageType.FROZEN, 10, 12, "vz_nrw_einfrieren")]),
+    ("Frischkäse", "#9FA8DA", "Milchprodukte & Eier", []),
+    ("Joghurt", "#BA68C8", "Milchprodukte & Eier", []),
+    ("Sauerrahm & Schmand", "#7986CB", "Milchprodukte & Eier", []),
+    ("Eier", "#D4A373", "Milchprodukte & Eier", []),
+    # === Backwaren ===
     ("Backwaren", "#FFC107", None, [(StorageType.FROZEN, 1, 3, "vsz_be")]),
     ("Brot", "#FFE082", "Backwaren", [(StorageType.FROZEN, 1, 3, "t_online")]),
     ("Kuchen", "#FF80AB", "Backwaren", [(StorageType.FROZEN, 2, 4, "t_online")]),
-    # === FROZEN — Milchprodukte (Gruppe) ===
-    ("Milchprodukte", "#FFFFFF", None, [(StorageType.FROZEN, 2, 6, "vsz_be")]),
-    ("Butter", "#FFF9C4", "Milchprodukte", [(StorageType.FROZEN, 6, 8, "t_online")]),
-    ("Käse", "#FFE0B2", "Milchprodukte", [(StorageType.FROZEN, 2, 4, "t_online")]),
-    # === FROZEN — Gekochtes (Gruppe) ===
+    # === Gekochtes ===
     ("Gekochtes", "#8D6E63", None, [(StorageType.FROZEN, 2, 3, "usda")]),
     ("Suppen", "#FFCCBC", "Gekochtes", [(StorageType.FROZEN, 2, 3, "usda")]),
     ("Eintöpfe", "#BCAAA4", "Gekochtes", [(StorageType.FROZEN, 2, 3, "usda")]),
     ("Fertiggerichte", "#9E9E9E", "Gekochtes", [(StorageType.FROZEN, 2, 3, "t_online")]),
-    # === AMBIENT — Fruchtaufstriche (Gruppe) ===
-    ("Fruchtaufstriche", "#E91E63", None, [(StorageType.AMBIENT, 12, 24, "vz_de")]),
-    ("Marmelade", "#C2185B", "Fruchtaufstriche", [(StorageType.AMBIENT, 12, 24, "vz_de")]),
-    ("Gelee", "#CE93D8", "Fruchtaufstriche", [(StorageType.AMBIENT, 12, 24, "food_in_jars")]),
-    # === AMBIENT — Obstmus (Gruppe) ===
-    ("Obstmus", "#FF8A65", None, [(StorageType.AMBIENT, 12, 18, "haltbarkeit_net")]),
-    ("Apfelmus", "#A5D6A7", "Obstmus", [(StorageType.AMBIENT, 12, 18, "haltbarkeit_net")]),
-    ("Pflaumenmus", "#7E57C2", "Obstmus", [(StorageType.AMBIENT, 12, 18, "haltbarkeit_net")]),
-    ("Kompott", "#FFAB91", "Obstmus", [(StorageType.AMBIENT, 12, 12, "food_in_jars")]),
-    # === AMBIENT — Eingelegtes (Gruppe) ===
+    # === Süßes Eingemachtes ===
+    ("Süßes Eingemachtes", "#E91E63", None, [(StorageType.AMBIENT, 12, 24, "vz_de")]),
+    ("Marmelade", "#C2185B", "Süßes Eingemachtes", [(StorageType.AMBIENT, 12, 24, "vz_de")]),
+    ("Gelee", "#CE93D8", "Süßes Eingemachtes", [(StorageType.AMBIENT, 12, 24, "food_in_jars")]),
+    ("Apfelmus", "#A5D6A7", "Süßes Eingemachtes", [(StorageType.AMBIENT, 12, 18, "haltbarkeit_net")]),
+    ("Pflaumenmus", "#7E57C2", "Süßes Eingemachtes", [(StorageType.AMBIENT, 12, 18, "haltbarkeit_net")]),
+    ("Kompott", "#FFAB91", "Süßes Eingemachtes", [(StorageType.AMBIENT, 12, 12, "food_in_jars")]),
+    ("Fruchtsirup", "#AB47BC", "Süßes Eingemachtes", [(StorageType.AMBIENT, 12, 12, "vz_de")]),
+    # === Eingelegtes ===
     ("Eingelegtes", "#AED581", None, [(StorageType.AMBIENT, 6, 12, "nchfp")]),
     ("Essiggurken", "#689F38", "Eingelegtes", [(StorageType.AMBIENT, 6, 12, "nchfp")]),
     ("Mixed Pickles", "#7CB342", "Eingelegtes", [(StorageType.AMBIENT, 6, 12, "nchfp")]),
-    # === AMBIENT — Soßen (Gruppe) ===
+    ("Sauerkraut", "#C5E1A5", "Eingelegtes", [(StorageType.AMBIENT, 6, 12, "nchfp")]),
+    ("Antipasti", "#FFA726", "Eingelegtes", [(StorageType.AMBIENT, 3, 6, "nchfp")]),
+    # === Soßen ===
     ("Soßen", "#EF5350", None, [(StorageType.AMBIENT, 6, 12, "tomaten_de")]),
     ("Tomatensoße", "#E53935", "Soßen", [(StorageType.AMBIENT, 12, 12, "tomaten_de")]),
     ("Sugo", "#D32F2F", "Soßen", [(StorageType.AMBIENT, 12, 12, "tomaten_de")]),
-    ("Ketchup", "#C62828", "Soßen", [(StorageType.AMBIENT, 6, 12, "haus_und_beet")]),
     ("Pesto", "#558B2F", "Soßen", [(StorageType.AMBIENT, 6, 12, "edeka_pesto")]),
-    # === AMBIENT — Würziges (Gruppe) ===
-    ("Würziges", "#FF7043", None, [(StorageType.AMBIENT, 3, 12, "foodwissen_chutney")]),
-    ("Chutney", "#E64A19", "Würziges", [(StorageType.AMBIENT, 6, 12, "foodwissen_chutney")]),
-    ("Relish", "#8D6E63", "Würziges", [(StorageType.AMBIENT, 6, 12, "nchfp")]),
-    ("Senf", "#FFCA28", "Würziges", [(StorageType.AMBIENT, 3, 6, "vz_de")]),
-    # === AMBIENT — Standalone ===
-    ("Antipasti", "#FFA726", None, [(StorageType.AMBIENT, 3, 6, "nchfp")]),
-    ("Fruchtsirup", "#AB47BC", None, [(StorageType.AMBIENT, 12, 12, "vz_de")]),
-    ("Sauerkraut", "#C5E1A5", None, [(StorageType.AMBIENT, 6, 12, "nchfp")]),
-    # === Nur frisch (ohne Haltbarkeit) ===
-    ("Nudeln & Pasta", "#FFCC80", None, []),
-    ("Reis & Getreide", "#D7CCC8", None, []),
-    ("Backzutaten", "#FFECB3", None, []),
-    ("Konserven", "#90A4AE", None, []),
-    ("Gewürze", "#A1887F", None, []),
-    ("Öle & Essig", "#C8E6C9", None, []),
-    ("Getränke", "#81D4FA", None, []),
-    ("Snacks", "#FFE082", None, []),
-    ("Eier", "#FFF3E0", None, []),
-    ("Aufschnitt", "#FFAB91", None, []),
-    ("Milchprodukte (frisch)", "#E1BEE7", None, []),
+    # === Würzsaucen ===
+    ("Würzsaucen", "#FF7043", None, [(StorageType.AMBIENT, 3, 12, "foodwissen_chutney")]),
+    ("Ketchup", "#C62828", "Würzsaucen", [(StorageType.AMBIENT, 6, 12, "haus_und_beet")]),
+    ("Senf", "#FFCA28", "Würzsaucen", [(StorageType.AMBIENT, 3, 6, "vz_de")]),
+    ("Chutney", "#E64A19", "Würzsaucen", [(StorageType.AMBIENT, 6, 12, "foodwissen_chutney")]),
+    ("Relish", "#8D6E63", "Würzsaucen", [(StorageType.AMBIENT, 6, 12, "nchfp")]),
+    # === Vorrat (nur frisch gekauft, ohne Haltbarkeit) ===
+    ("Vorrat", "#6D4C41", None, []),
+    ("Nudeln & Pasta", "#FFCC80", "Vorrat", []),
+    ("Reis & Getreide", "#D7CCC8", "Vorrat", []),
+    ("Backzutaten", "#FFECB3", "Vorrat", []),
+    ("Konserven", "#90A4AE", "Vorrat", []),
+    ("Gewürze", "#A1887F", "Vorrat", []),
+    ("Öle & Essig", "#C8E6C9", "Vorrat", []),
+    ("Getränke", "#81D4FA", "Vorrat", []),
+    ("Snacks", "#FFE082", "Vorrat", []),
 ]
 
 
