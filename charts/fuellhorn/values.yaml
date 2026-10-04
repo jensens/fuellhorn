@@ -107,6 +107,23 @@ persistence:
   # false: Helm löscht die PVC und damit die SQLite-Datenbank mit dem Release.
   keep: true
 
+# Login-Sitzungen (NiceGUI-Storage). Im SQLite-Modus liegen sie auf dem Daten-PVC (/app/data/.nicegui).
+# Im PostgreSQL-Modus wären sie ohne Volume flüchtig: jeder Pod-Neustart meldet alle Benutzer ab (#434).
+sessions:
+  # "pvc": kleines RWO-Volume nur für Sitzungen (PostgreSQL-Modus); erzwingt replicaCount=1 und Recreate.
+  # "redis": NiceGUI-Storage in Redis (NICEGUI_REDIS_URL); Voraussetzung für replicaCount > 1.
+  backend: pvc
+  persistence:
+    storageClass: ""
+    size: 100Mi
+    accessMode: ReadWriteOnce
+    keep: true
+  redis:
+    # Verbindungs-URL, z.B. redis://redis.default.svc:6379/0 – oder existingSecret mit Key "redis-url"
+    url: ""
+    existingSecret: ""
+    keyPrefix: "fuellhorn:"
+
 resources:
   limits:
     cpu: 500m
