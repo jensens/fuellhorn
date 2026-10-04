@@ -8,6 +8,7 @@ from ...services import item_service
 from ...services import item_types
 from ...services import location_service
 from ..components import create_bottom_nav
+from ..components import create_date_field
 from ..components import create_grouped_category_chip_group
 from ..components import create_item_type_chip_group
 from ..components import create_location_chip_group
@@ -16,8 +17,6 @@ from ..components import create_unit_chip_group
 from ..components.errors import show_service_error
 from ..components.field_errors import FieldErrors
 from ..theme.icons import create_icon
-from ..utils.date_utils import format_german_date
-from ..utils.date_utils import parse_german_date
 from ..validation import validate_step1
 from ..validation import validate_step2
 from ..validation import validate_step3
@@ -218,9 +217,9 @@ def edit_item(item_id: int) -> None:
             freeze_date_section.set_visibility(needs_freeze_date)
             if needs_freeze_date:
                 if form_data.get("freeze_date") is None:
-                    freeze_date_input.value = format_german_date(date_type.today())
+                    freeze_date_field.set_value(date_type.today())
             else:
-                freeze_date_input.value = ""
+                freeze_date_field.set_value(None)
             date_label.set_text(_date_label(value))
             best_before_section.set_visibility(value != ItemType.PURCHASED_THEN_FROZEN)
             update_validation()
@@ -281,56 +280,40 @@ def edit_item(item_id: int) -> None:
         with ui.element("div").mark("edit-best-before-section") as best_before_section:
             best_before_section.set_visibility(form_data["item_type"] != ItemType.PURCHASED_THEN_FROZEN)
             # Best Before Date / Production Date (Label folgt dem Typ, siehe on_item_type_change)
-            date_label = ui.label(_date_label(form_data["item_type"])).classes("text-sm font-medium mb-1 mt-4")
             date_value = form_data.get("best_before_date") or date_type.today()
             form_data["best_before_date"] = date_value
 
-            with (
-                ui.input(value=format_german_date(date_value))
-                .classes("w-full")
-                .props('outlined mask="##.##.####"')
-                .style("max-width: 500px")
-                .mark("edit-date-input") as date_input
-            ):
-                with date_input.add_slot("append"):
-                    with ui.element("div").classes("cursor-pointer"):
-                        create_icon("status/calendar", size="24px")
-                        with ui.menu() as date_menu:
-                            date_picker = ui.date().bind_value(date_input).props('locale="de" mask="DD.MM.YYYY"')
-                            date_picker.on_value_change(lambda _: date_menu.close())
-            # Typed or picked dates reach form_data only through this binding (Issue #362)
-            date_input.bind_value(form_data, "best_before_date", forward=parse_german_date, backward=format_german_date)
-            date_input.on_value_change(lambda _: update_validation())
+            def on_best_before_change(value: date_type | None) -> None:
+                form_data["best_before_date"] = value
+                update_validation()
+
+            best_before_field = create_date_field(
+                label=_date_label(form_data["item_type"]),
+                value=date_value,
+                marker="edit-date-input",
+                on_change=on_best_before_change,
+            )
+            date_label = best_before_field.label
             field_errors.slot("best_before")
 
         # Freeze Date (conditional)
         show_freeze_date = form_data["item_type"] in FREEZE_DATE_TYPES
         with ui.element("div").classes("mt-4") as freeze_date_section:
             freeze_date_section.set_visibility(show_freeze_date)
-            ui.label("Eingefroren am *").classes("text-sm font-medium mb-1")
             freeze_date_value = form_data.get("freeze_date") or date_type.today()
             if show_freeze_date:
                 form_data["freeze_date"] = freeze_date_value
 
-            with (
-                ui.input(value=format_german_date(form_data.get("freeze_date")))
-                .classes("w-full")
-                .props('outlined mask="##.##.####"')
-                .style("max-width: 500px")
-                .mark("edit-freeze-date-input") as freeze_date_input
-            ):
-                with freeze_date_input.add_slot("append"):
-                    with ui.element("div").classes("cursor-pointer"):
-                        create_icon("status/calendar", size="24px")
-                        with ui.menu() as freeze_date_menu:
-                            freeze_date_picker = (
-                                ui.date().bind_value(freeze_date_input).props('locale="de" mask="DD.MM.YYYY"')
-                            )
-                            freeze_date_picker.on_value_change(lambda _: freeze_date_menu.close())
-            freeze_date_input.bind_value(
-                form_data, "freeze_date", forward=parse_german_date, backward=format_german_date
+            def on_freeze_date_change(value: date_type | None) -> None:
+                form_data["freeze_date"] = value
+                update_validation()
+
+            freeze_date_field = create_date_field(
+                label="Eingefroren am *",
+                value=form_data.get("freeze_date"),
+                marker="edit-freeze-date-input",
+                on_change=on_freeze_date_change,
             )
-            freeze_date_input.on_value_change(lambda _: update_validation())
             field_errors.slot("freeze_date")
 
         # Location
