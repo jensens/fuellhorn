@@ -8,6 +8,7 @@ Issue #27: Locations Page - Lagerort löschen
 
 from ...auth import Permission
 from ...auth import require_permissions
+from ...auth.decorators import with_permission_check
 from ...auth.dependencies import get_current_user
 from ...database import get_session
 from ...models.location import Location
@@ -222,6 +223,7 @@ def _open_edit_dialog(location: Location) -> None:
         with ui.row().classes("w-full justify-end gap-2"):
             ui.button("Abbrechen", on_click=dialog.close).classes("sp-btn-ghost").props("flat")
 
+            @with_permission_check(Permission.CONFIG_MANAGE)  # Laufzeit-Check (#381)
             def save_location() -> None:
                 """Validate and save the location changes."""
                 name = name_input.value.strip() if name_input.value else ""
@@ -337,6 +339,7 @@ def _open_create_dialog() -> None:
         with ui.row().classes("w-full justify-end gap-2"):
             ui.button("Abbrechen", on_click=dialog.close).classes("sp-btn-ghost").props("flat")
 
+            @with_permission_check(Permission.CONFIG_MANAGE)  # Laufzeit-Check (#381)
             def save_location() -> None:
                 """Validate and save the new location."""
                 name = name_input.value.strip() if name_input.value else ""
@@ -401,6 +404,7 @@ def _open_delete_dialog(location_id: int, location_name: str) -> None:
         with ui.row().classes("w-full justify-end gap-2"):
             ui.button("Abbrechen", on_click=dialog.close).classes("sp-btn-ghost").props("flat")
 
+            @with_permission_check(Permission.CONFIG_MANAGE)
             def confirm_delete() -> None:
                 """Perform the deletion."""
                 try:

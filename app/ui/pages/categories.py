@@ -9,6 +9,7 @@ Issue #107: Haltbarkeiten verwalten
 
 from ...auth import Permission
 from ...auth import require_permissions
+from ...auth.decorators import with_permission_check
 from ...auth.dependencies import get_current_user
 from ...database import get_session
 from ...models.category_shelf_life import StorageType
@@ -63,6 +64,7 @@ def categories_page() -> None:
         _render_categories_list()
 
 
+@with_permission_check(Permission.CONFIG_MANAGE)  # Laufzeit-Check, nicht nur beim Seitenaufbau (#381)
 def _move_category_up(category_id: int) -> None:
     """Move a category up in the sort order."""
     with next(get_session()) as session:
@@ -92,6 +94,7 @@ def _move_category_up(category_id: int) -> None:
     ui.navigate.to("/admin/categories")
 
 
+@with_permission_check(Permission.CONFIG_MANAGE)
 def _move_category_down(category_id: int) -> None:
     """Move a category down in the sort order."""
     with next(get_session()) as session:
@@ -308,6 +311,7 @@ def _open_create_dialog() -> None:
         with ui.row().classes("w-full justify-end gap-2"):
             ui.button("Abbrechen", on_click=dialog.close).classes("sp-btn-ghost").props("flat")
 
+            @with_permission_check(Permission.CONFIG_MANAGE)
             def save_category() -> None:
                 """Validate and save the new category."""
                 name = name_input.value.strip() if name_input.value else ""
@@ -485,6 +489,7 @@ def _open_edit_dialog(
         with ui.row().classes("w-full justify-end gap-2"):
             ui.button("Abbrechen", on_click=dialog.close).classes("sp-btn-ghost").props("flat")
 
+            @with_permission_check(Permission.CONFIG_MANAGE)
             def save_changes() -> None:
                 """Validate and save the category changes."""
                 name = name_input.value.strip() if name_input.value else ""
@@ -584,6 +589,7 @@ def _open_delete_dialog(category_id: int, category_name: str) -> None:
         with ui.row().classes("w-full justify-end gap-2"):
             ui.button("Abbrechen", on_click=dialog.close).classes("sp-btn-ghost").props("flat")
 
+            @with_permission_check(Permission.CONFIG_MANAGE)
             def confirm_delete() -> None:
                 """Perform the deletion."""
                 try:

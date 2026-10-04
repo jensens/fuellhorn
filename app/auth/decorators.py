@@ -11,6 +11,7 @@ from .permissions import Permission
 from .permissions import get_permissions_for_user
 from collections.abc import Callable
 from functools import wraps
+from nicegui import app
 from nicegui import ui
 from typing import ParamSpec
 from typing import TypeVar
@@ -102,10 +103,11 @@ def require_permissions(
 
                 if not has_access:
                     perm_names = ", ".join(p.value for p in permissions)
-                    ui.notify(
-                        f"Keine Berechtigung für diese Seite ({perm_names})",
-                        type="negative",
-                    )
+                    message = f"Keine Berechtigung für diese Seite ({perm_names})"
+                    # Die Notification geht beim sofortigen Redirect verloren; die Zielseite
+                    # zeigt sie über die Flash-Nachricht an (#381)
+                    app.storage.user["flash"] = {"message": message, "type": "negative"}
+                    ui.notify(message, type="negative")
                     ui.navigate.to(redirect_to)
                     return None
 

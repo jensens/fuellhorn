@@ -8,6 +8,7 @@ Issue #85: System-Defaults in DB speichern (Fallback für User ohne eigene Einst
 from ...auth import Permission
 from ...auth import get_current_user
 from ...auth import require_permissions
+from ...auth import with_permission_check
 from ...database import get_engine
 from ...services import preferences_service
 from ..components import create_bottom_nav
@@ -106,7 +107,6 @@ def _render_system_defaults_section() -> None:
 
     These are fallback values for users who haven't set their own preferences.
     """
-    current_user = get_current_user(require_auth=True)
     defaults = _get_system_defaults()
 
     ui.label("System-Standardwerte").classes("text-h6 font-semibold mb-3 text-fern")
@@ -143,8 +143,10 @@ def _render_system_defaults_section() -> None:
         ).classes("w-full mb-4")
 
         # Save button for time windows
+        @with_permission_check(Permission.CONFIG_MANAGE)  # Nutzer zur Laufzeit, nicht aus der Build-Closure (#381)
         def save_system_defaults() -> None:
-            if current_user is None or current_user.id is None:
+            acting_user = get_current_user(require_auth=True)
+            if acting_user is None or acting_user.id is None:
                 ui.notify("Nicht authentifiziert", type="negative")
                 return
 
@@ -154,13 +156,13 @@ def _render_system_defaults_section() -> None:
 
             with Session(get_engine()) as session:
                 preferences_service.set_system_setting(
-                    session, "item_type_time_window", str(item_type_val), current_user.id
+                    session, "item_type_time_window", str(item_type_val), acting_user.id
                 )
                 preferences_service.set_system_setting(
-                    session, "category_time_window", str(category_val), current_user.id
+                    session, "category_time_window", str(category_val), acting_user.id
                 )
                 preferences_service.set_system_setting(
-                    session, "location_time_window", str(location_val), current_user.id
+                    session, "location_time_window", str(location_val), acting_user.id
                 )
 
             ui.notify("System-Standardwerte gespeichert", type="positive")
@@ -197,8 +199,10 @@ def _render_system_defaults_section() -> None:
         ).classes("w-full mb-4")
 
         # Save button for expiry thresholds
+        @with_permission_check(Permission.CONFIG_MANAGE)
         def save_expiry_thresholds() -> None:
-            if current_user is None or current_user.id is None:
+            acting_user = get_current_user(require_auth=True)
+            if acting_user is None or acting_user.id is None:
                 ui.notify("Nicht authentifiziert", type="negative")
                 return
 
@@ -214,11 +218,9 @@ def _render_system_defaults_section() -> None:
 
             with Session(get_engine()) as session:
                 preferences_service.set_system_setting(
-                    session, "expiry_critical_days", str(critical_val), current_user.id
+                    session, "expiry_critical_days", str(critical_val), acting_user.id
                 )
-                preferences_service.set_system_setting(
-                    session, "expiry_warning_days", str(warning_val), current_user.id
-                )
+                preferences_service.set_system_setting(session, "expiry_warning_days", str(warning_val), acting_user.id)
 
             ui.notify("Ablauf-Schwellwerte gespeichert", type="positive")
 

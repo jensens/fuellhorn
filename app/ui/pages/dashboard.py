@@ -18,6 +18,7 @@ from ..components import create_item_card
 from ..components import create_mobile_page_container
 from ..components import create_user_dropdown
 from ..components.consume_all import confirm_consume_all
+from ..components.flash import show_flash
 from ..components.location_overview import create_location_overview_chips
 from ..components.recently_added import create_recently_added_section
 from nicegui import ui
@@ -28,6 +29,8 @@ from nicegui import ui
 def dashboard() -> None:
     """Dashboard mit Ablaufübersicht und Statistiken (Mobile-First)."""
     # Theme-CSS und swipe-card.js kommen aus dem gemeinsamen Seitenkopf (app/startup.py, #375)
+    # Nachricht eines vorangegangenen Redirects (z.B. "Keine Berechtigung") anzeigen (#381)
+    show_flash()
     # Header with user dropdown (Solarpunk theme)
     with ui.row().classes("sp-page-header w-full items-center justify-between"):
         ui.label("Füllhorn").classes("sp-page-title")
