@@ -2,7 +2,7 @@
 
 Diese Dokumentation enthält die recherchierten Haltbarkeitszeiten für verschiedene Lebensmittelkategorien mit Quellenangaben.
 
-**Letzte Aktualisierung:** November 2024
+**Letzte Aktualisierung:** Oktober 2026
 
 ---
 
@@ -27,9 +27,11 @@ Die Angaben beziehen sich auf eine Lagertemperatur von -18°C.
 | Backwaren | 1 | 3 | [1], [2] |
 | Brot/Brötchen | 1 | 3 | [2], [3] |
 | Kuchen | 2 | 4 | [2] |
-| Milchprodukte | 2 | 6 | [1], [2] |
 | Butter | 6 | 8 | [2], [3] |
 | Käse (Hart-/Schnittkäse) | 2 | 4 | [2] |
+| Milch | 2 | 3 | [16], [17] |
+| Sahne (Schlagsahne/Obers) | 2 | 3 | [17], [18] |
+| Topfen (Quark) | 10 | 12 | [19] |
 | Fertiggerichte | 2 | 3 | [2], [3] |
 | Suppen/Eintöpfe | 2 | 3 | [3] |
 
@@ -38,6 +40,8 @@ Die Angaben beziehen sich auf eine Lagertemperatur von -18°C.
 - **Fettgehalt beeinflusst Haltbarkeit**: Fettreiche Lebensmittel (z.B. fetter Fisch, Wurst) haben kürzere Haltbarkeiten durch Oxidation.
 - **Industriell vs. selbst eingefroren**: Industriell eingefrorene Produkte halten oft länger, da sie schneller und bei niedrigeren Temperaturen eingefroren werden.
 - **Generelle Obergrenze**: Nach 12 Monaten sollten die meisten Lebensmittel verzehrt werden.
+- **Milchprodukte ohne Gefrierzeit**: Frischkäse, Joghurt, Sauerrahm/Schmand/Crème fraîche flocken beim Auftauen aus und werden grießig [20]; sie haben bewusst keine Gefrierzeit und werden beim Einfrieren nicht angeboten. Die Gruppe „Milchprodukte & Eier“ hat deshalb keine eigene Gefrierzeit, die sie vererben könnte (früher pauschal 2–6 Monate [1]).
+- **Milch** nach dem Auftauen kräftig schütteln, Fett und Eiweiß trennen sich [16]. Aufgetaute **Sahne** eignet sich zum Kochen.
 
 ---
 
@@ -151,6 +155,28 @@ Diese Werte sind für zukünftige Erweiterungen vorgesehen.
     - URL: https://www.oekotest.de/essen-trinken/Pesto-einfrieren-So-machen-Sie-die-Kraeuterpaste-haltbar_14526_1.html
     - Abgerufen: November 2024
 
+### Frozen – Milchprodukte (#456)
+
+16. **ÖKO-TEST** - "Milch einfrieren: So bleibt Milch lange haltbar" – „Gefrorene Milch ist zwei bis drei Monate haltbar.“
+    - URL: https://www.oekotest.de/essen-trinken/Milch-einfrieren-So-bleibt-Milch-lange-haltbar_11630_1.html
+    - Abgerufen: Oktober 2026
+
+17. **University of Kentucky Cooperative Extension** - FCS3-595 (nach USDA FSIS) – Fluid milk 1–3 Monate, Whipping cream 2 Monate
+    - URL: https://publications.ca.uky.edu/sites/publications.ca.uky.edu/files/FCS3595.pdf
+    - Abgerufen: Oktober 2026
+
+18. **Utopia** - "Sahne einfrieren" – nach Landesvereinigung der Bayerischen Milchwirtschaft „bis zu drei Monate“
+    - URL: https://utopia.de/ratgeber/sahne-einfrieren-so-klappt-es/
+    - Abgerufen: Oktober 2026
+
+19. **Verbraucherzentrale NRW** - "9 Lebensmittel, die man einfrieren kann" – „Quark, Frischkäse einfrieren – Hält zehn bis 12 Monate.“ (Frischkäse in der Praxis grießig, daher nur Topfen)
+    - URL: https://www.verbraucherzentrale.nrw/9-lebensmittel-die-man-einfrieren-kann-butter-eier-rohen-teig-mehr-99308
+    - Abgerufen: Oktober 2026
+
+20. **Verbraucherzentrale NRW** - "Ab in die Tiefkühltruhe!" – „Milchprodukte wie Joghurt, Dickmilch, Saure Sahne und Creme Fraiche flocken aus und werden grießig.“
+    - URL: https://www.verbraucherzentrale.nrw/faq/ab-in-die-tiefkuehltruhe-86532
+    - Abgerufen: Oktober 2026
+
 ---
 
 ## Verwendung
@@ -176,6 +202,22 @@ Kategorie ohne Gruppe wird nur dann ihrer Standardgruppe zugeordnet, wenn der Se
 Gruppe im selben Lauf neu anlegt (Datenbanken aus der Zeit vor der Kategorie-Hierarchie).
 Korrekturen an bestehenden Standardwerten laufen über Alembic-Migrationen, die nur Werte im
 unveränderten Originalzustand anfassen.
+
+### Neugruppierung bestehender Datenbanken (#456)
+
+Die Migration `e5f1a9c3d2b8` überführt bestehende Datenbanken in die neue Gruppierung und
+verändert dabei keine Nutzerdaten:
+
+- Geändert wird nur, was noch exakt dem früheren Standard entspricht (Name, Gruppe, Farbe,
+  Haltbarkeit). Vom Nutzer Verändertes bleibt.
+- Kein Artikel wechselt die Kategorie. Ersetzte Kategorien (Obstmus, Aufschnitt,
+  Milchprodukte (frisch)) werden nur gelöscht, wenn sie leer sind; belegte bleiben stehen
+  und werden von Hand aufgeräumt.
+- Kein Ablaufdatum ändert sich: Würde eine belegte Kategorie nach dem Umhängen eine andere
+  Haltbarkeit von ihrer Gruppe erben, bleibt sie, wo sie ist.
+
+Danach einmal `fuellhorn seed shelf-life-defaults` ausführen: legt die neuen Gruppen und
+Kategorien an.
 
 Ausführung lokal:
 ```bash
