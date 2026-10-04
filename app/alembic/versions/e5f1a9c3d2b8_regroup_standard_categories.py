@@ -148,6 +148,8 @@ def _reparent(conn: sa.Connection, child: str, expected: str | None, target: str
         return
     if _parent_id(conn, child_id) != expected_id:
         return  # vom Nutzer umgehängt
+    if _children(conn, child_id) or (target_id is not None and _parent_id(conn, target_id) is not None):
+        return  # Hierarchie ist einstufig: keine Gruppe als Kind, kein Kind als Gruppe
     if _has_items(conn, child_id) and not _inheritance_unchanged(conn, child_id, expected_id, target_id):
         return  # würde Ablaufdaten verschieben
     conn.execute(sa.update(category).where(category.c.id == child_id).values(parent_id=target_id))

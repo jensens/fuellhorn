@@ -365,3 +365,26 @@ def test_upgrade_downgrade_upgrade_is_stable(migration_db: tuple[AlembicConfig, 
     command.upgrade(cfg, "head")
 
     assert _state(engine) == after_first
+
+
+def _user_built_subgroups(session: Session) -> None:
+    """Nutzer hat Sauerkraut zur Gruppe gemacht und Eingelegtes unter Gekochtes gehängt."""
+    sauerkraut = _category(session, "Sauerkraut")
+    eingelegtes = _category(session, "Eingelegtes")
+    gekochtes = _category(session, "Gekochtes")
+    admin_id = session.exec(select(User.id)).one()
+    assert sauerkraut and eingelegtes and gekochtes
+    session.add(Category(name="Rotkraut", parent_id=sauerkraut.id, created_by=admin_id))  # type: ignore[arg-type]
+    # Zielgruppe hängt selbst in einer Gruppe: Antipasti darf nicht darunter
+    eingelegtes.parent_id = gekochtes.id
+    session.add(eingelegtes)
+
+
+def test_upgrade_never_creates_a_second_group_level(migration_db: tuple[AlembicConfig, sa.Engine]) -> None:
+    """Die Hierarchie bleibt einstufig: keine Gruppe wird Kind, kein Kind bekommt Kinder."""
+    cfg, engine = migration_db
+    _upgrade_from_old_state(cfg, engine, _user_built_subgroups)
+
+    with Session(engine) as session:
+        assert _parent_name(session, "Sauerkraut") is None
+        assert _parent_name(session, "Antipasti") is None
