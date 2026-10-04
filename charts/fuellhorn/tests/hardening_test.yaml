@@ -35,13 +35,15 @@ tests:
           path: spec.strategy.type
           value: Recreate
 
-  - it: should keep the default rolling strategy for PostgreSQL
+  - it: should keep the default rolling strategy for PostgreSQL with Redis sessions
     template: templates/deployment.yaml
     set:
       secrets.fuellhornSecret: test-secret
       database.type: postgresql
       database.external.host: postgres.example.com
       database.external.password: testpass
+      sessions.backend: redis
+      sessions.redis.url: redis://redis:6379/0
     asserts:
       - isNull:
           path: spec.strategy

@@ -22,10 +22,12 @@ tests:
           path: spec.accessModes[0]
           value: ReadWriteOnce
 
-  - it: should not create PVC for PostgreSQL
+  - it: should not create a data PVC for PostgreSQL (sessions live in Redis here)
     set:
       database.type: postgresql
       persistence.enabled: true
+      sessions.backend: redis
+      sessions.redis.url: redis://redis:6379/0
     asserts:
       - hasDocuments:
           count: 0

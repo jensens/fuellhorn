@@ -107,10 +107,57 @@ Session-Secret der App (signiert Cookies)
 {{- end }}
 
 {{/*
-Volume-Mount für die SQLite-Daten
+"true", wenn PostgreSQL-Sitzungen auf einem eigenen kleinen PVC liegen (#434)
+*/}}
+{{- define "fuellhorn.sessionsOnPvc" -}}
+{{- if and (eq .Values.database.type "postgresql") (eq .Values.sessions.backend "pvc") }}true{{- end }}
+{{- end }}
+
+{{/*
+"true", wenn ein RWO-Volume gemountet wird (SQLite-Daten oder Sitzungs-PVC)
+*/}}
+{{- define "fuellhorn.usesDataVolume" -}}
+{{- if or (eq .Values.database.type "sqlite") (eq (include "fuellhorn.sessionsOnPvc" .) "true") }}true{{- end }}
+{{- end }}
+
+{{/*
+Name des PVC, das unter /app/data gemountet wird
+*/}}
+{{- define "fuellhorn.dataClaimName" -}}
+{{- if eq .Values.database.type "sqlite" }}{{ include "fuellhorn.fullname" . }}-data{{- else }}{{ include "fuellhorn.fullname" . }}-sessions{{- end }}
+{{- end }}
+
+{{/*
+Umgebung für den Sitzungs-Speicher im PostgreSQL-Modus (SQLite setzt NICEGUI_STORAGE_PATH in databaseEnv, #429)
+*/}}
+{{- define "fuellhorn.sessionEnv" -}}
+{{- if eq .Values.database.type "postgresql" }}
+{{- if eq .Values.sessions.backend "redis" }}
+# Gemeinsamer Sitzungs-Speicher für alle Replicas (#434)
+- name: NICEGUI_REDIS_URL
+{{- if .Values.sessions.redis.existingSecret }}
+  valueFrom:
+    secretKeyRef:
+      name: {{ .Values.sessions.redis.existingSecret }}
+      key: redis-url
+{{- else }}
+  value: {{ .Values.sessions.redis.url | quote }}
+{{- end }}
+- name: NICEGUI_REDIS_KEY_PREFIX
+  value: {{ .Values.sessions.redis.keyPrefix | quote }}
+{{- else }}
+# Sitzungen auf dem Sitzungs-PVC, sonst meldet jeder Neustart alle ab (#434)
+- name: NICEGUI_STORAGE_PATH
+  value: /app/data/.nicegui
+{{- end }}
+{{- end }}
+{{- end }}
+
+{{/*
+Volume-Mount für SQLite-Daten bzw. das Sitzungs-PVC
 */}}
 {{- define "fuellhorn.dataVolumeMount" -}}
-{{- if eq .Values.database.type "sqlite" }}
+{{- if eq (include "fuellhorn.usesDataVolume" .) "true" }}
 volumeMounts:
   - name: data
     mountPath: /app/data

@@ -97,7 +97,7 @@ helm install fuellhorn oci://ghcr.io/jensens/fuellhorn \
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| `replicaCount` | Number of replicas (must be `1` with SQLite) | `1` |
+| `replicaCount` | Number of replicas (`1` with SQLite or PVC sessions; more only with `sessions.backend: redis`) | `1` |
 | `timezone` | Container time zone, e.g. `Europe/Vienna`; the app stores naive local timestamps, empty means UTC | `""` |
 | `image.repository` | Image repository | `ghcr.io/jensens/fuellhorn` |
 | `image.tag` | Image tag; empty uses the chart's `appVersion` (immutable, matches the chart). `latest` points to the newest stable release only | `""` |
@@ -165,6 +165,23 @@ helm install fuellhorn oci://ghcr.io/jensens/fuellhorn \
 | `persistence.accessMode` | PVC access mode | `ReadWriteOnce` |
 | `persistence.keep` | Keep the PVC on `helm uninstall` (`helm.sh/resource-policy: keep`) | `true` |
 
+### Login sessions
+
+Login sessions live in NiceGUI's storage. With SQLite they sit on the data PVC. With PostgreSQL the chart
+either mounts a small dedicated PVC (default, one replica, `Recreate` rollout) or points NiceGUI at Redis,
+which is shared by all replicas and survives pod restarts (#434).
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `sessions.backend` | `pvc` (small RWO volume, PostgreSQL only) or `redis` (`NICEGUI_REDIS_URL`, required for `replicaCount > 1`) | `pvc` |
+| `sessions.persistence.size` | Size of the sessions PVC | `100Mi` |
+| `sessions.persistence.storageClass` | Storage class of the sessions PVC | `""` |
+| `sessions.persistence.accessMode` | Access mode of the sessions PVC | `ReadWriteOnce` |
+| `sessions.persistence.keep` | Keep the sessions PVC on `helm uninstall` | `true` |
+| `sessions.redis.url` | Redis URL, e.g. `redis://redis.default.svc:6379/0` | `""` |
+| `sessions.redis.existingSecret` | Secret with key `redis-url` (alternative to `sessions.redis.url`) | `""` |
+| `sessions.redis.keyPrefix` | Key prefix in Redis | `fuellhorn:` |
+
 ### Resources
 
 | Parameter | Description | Default |
@@ -220,6 +237,26 @@ database:
     database: fuellhorn
     username: fuellhorn
     existingSecret: postgres-credentials  # Secret with key "password"
+
+secrets:
+  existingSecret: fuellhorn-secrets
+```
+
+### PostgreSQL with several replicas (Redis sessions)
+
+```yaml
+replicaCount: 3
+
+database:
+  type: postgresql
+  external:
+    host: postgres.database.svc.cluster.local
+    existingSecret: postgres-credentials
+
+sessions:
+  backend: redis
+  redis:
+    existingSecret: redis-credentials  # Secret with key "redis-url"
 
 secrets:
   existingSecret: fuellhorn-secrets

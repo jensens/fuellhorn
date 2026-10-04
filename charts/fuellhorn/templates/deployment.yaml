@@ -1,6 +1,12 @@
 {{- if and (eq .Values.database.type "sqlite") (gt (int .Values.replicaCount) 1) }}
 {{- fail "database.type=sqlite erlaubt nur replicaCount=1 (eine SQLite-Datei auf einem RWO-Volume)" }}
 {{- end }}
+{{- if and (gt (int .Values.replicaCount) 1) (ne .Values.sessions.backend "redis") }}
+{{- fail "replicaCount>1 braucht sessions.backend=redis (gemeinsamer Sitzungs-Speicher), sonst sind Benutzer je Pod abgemeldet (#434)" }}
+{{- end }}
+{{- if and (eq .Values.sessions.backend "redis") (not .Values.sessions.redis.url) (not .Values.sessions.redis.existingSecret) }}
+{{- fail "sessions.backend=redis braucht sessions.redis.url oder sessions.redis.existingSecret (Key redis-url)" }}
+{{- end }}
 {{- if and .Values.initContainers.adminUser.enabled (not .Values.initContainers.adminUser.existingSecret) }}
 {{- fail "initContainers.adminUser.existingSecret ist Pflicht (Secret mit Key admin-password); Klartext-Passwörter in Values werden nicht unterstützt" }}
 {{- end }}
@@ -14,8 +20,8 @@ metadata:
     {{- include "fuellhorn.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
-  {{- if eq .Values.database.type "sqlite" }}
-  # RWO-Volume: der alte Pod muss weg, bevor der neue startet (#377)
+  {{- if eq (include "fuellhorn.usesDataVolume" .) "true" }}
+  # RWO-Volume (SQLite-Daten oder Sitzungs-PVC): der alte Pod muss weg, bevor der neue startet (#377, #434)
   strategy:
     type: Recreate
   {{- end }}
@@ -85,6 +91,7 @@ spec:
           env:
             {{- include "fuellhorn.databaseEnv" . | nindent 12 }}
             {{- include "fuellhorn.secretEnv" . | nindent 12 }}
+            {{- include "fuellhorn.sessionEnv" . | nindent 12 }}
             {{- with .Values.timezone }}
             # Naive lokale Zeitstempel (Sperrzeiten, Erfassungszeit) gelten in dieser Zone (#401)
             - name: TZ
@@ -102,11 +109,11 @@ spec:
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           {{- include "fuellhorn.dataVolumeMount" . | nindent 10 }}
-      {{- if eq .Values.database.type "sqlite" }}
+      {{- if eq (include "fuellhorn.usesDataVolume" .) "true" }}
       volumes:
         - name: data
           persistentVolumeClaim:
-            claimName: {{ include "fuellhorn.fullname" . }}-data
+            claimName: {{ include "fuellhorn.dataClaimName" . }}
       {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:

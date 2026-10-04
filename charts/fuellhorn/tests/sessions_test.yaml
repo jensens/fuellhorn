@@ -1,0 +1,160 @@
+suite: session storage tests (#434)
+templates:
+  - templates/deployment.yaml
+  - templates/pvc.yaml
+tests:
+  - it: should keep PostgreSQL sessions on a small PVC by default
+    template: templates/pvc.yaml
+    set:
+      secrets.fuellhornSecret: test-secret
+      database.type: postgresql
+      database.external.host: postgres.example.com
+      database.external.password: testpass
+    asserts:
+      - hasDocuments:
+          count: 1
+      - equal:
+          path: metadata.name
+          value: RELEASE-NAME-fuellhorn-sessions
+      - equal:
+          path: spec.resources.requests.storage
+          value: 100Mi
+      - equal:
+          path: metadata.annotations["helm.sh/resource-policy"]
+          value: keep
+
+  - it: should mount the sessions PVC and point NiceGUI at it (PostgreSQL)
+    template: templates/deployment.yaml
+    set:
+      secrets.fuellhornSecret: test-secret
+      database.type: postgresql
+      database.external.host: postgres.example.com
+      database.external.password: testpass
+    asserts:
+      - equal:
+          path: spec.template.spec.volumes[0].persistentVolumeClaim.claimName
+          value: RELEASE-NAME-fuellhorn-sessions
+      - equal:
+          path: spec.template.spec.containers[0].volumeMounts[0].mountPath
+          value: /app/data
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: NICEGUI_STORAGE_PATH
+            value: /app/data/.nicegui
+      - equal:
+          path: spec.strategy.type
+          value: Recreate
+
+  - it: should use Redis for sessions without any volume
+    template: templates/deployment.yaml
+    set:
+      secrets.fuellhornSecret: test-secret
+      database.type: postgresql
+      database.external.host: postgres.example.com
+      database.external.password: testpass
+      sessions.backend: redis
+      sessions.redis.url: redis://redis.default.svc:6379/0
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: NICEGUI_REDIS_URL
+            value: redis://redis.default.svc:6379/0
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: NICEGUI_REDIS_KEY_PREFIX
+            value: "fuellhorn:"
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: NICEGUI_STORAGE_PATH
+          any: true
+      - isNull:
+          path: spec.template.spec.volumes
+      - isNull:
+          path: spec.strategy
+
+  - it: should not create any PVC with Redis sessions on PostgreSQL
+    template: templates/pvc.yaml
+    set:
+      secrets.fuellhornSecret: test-secret
+      database.type: postgresql
+      database.external.host: postgres.example.com
+      database.external.password: testpass
+      sessions.backend: redis
+      sessions.redis.url: redis://redis:6379/0
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should read the Redis URL from an existing secret
+    template: templates/deployment.yaml
+    set:
+      secrets.fuellhornSecret: test-secret
+      database.type: postgresql
+      database.external.host: postgres.example.com
+      database.external.password: testpass
+      sessions.backend: redis
+      sessions.redis.existingSecret: redis-credentials
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: NICEGUI_REDIS_URL
+            valueFrom:
+              secretKeyRef:
+                name: redis-credentials
+                key: redis-url
+
+  - it: should allow several replicas with Redis sessions
+    template: templates/deployment.yaml
+    set:
+      secrets.fuellhornSecret: test-secret
+      database.type: postgresql
+      database.external.host: postgres.example.com
+      database.external.password: testpass
+      replicaCount: 3
+      sessions.backend: redis
+      sessions.redis.url: redis://redis:6379/0
+    asserts:
+      - equal:
+          path: spec.replicas
+          value: 3
+
+  - it: should fail for several replicas without shared session storage
+    template: templates/deployment.yaml
+    set:
+      secrets.fuellhornSecret: test-secret
+      database.type: postgresql
+      database.external.host: postgres.example.com
+      database.external.password: testpass
+      replicaCount: 2
+    asserts:
+      - failedTemplate:
+          errorPattern: sessions.backend=redis
+
+  - it: should fail for Redis sessions without a URL or secret
+    template: templates/deployment.yaml
+    set:
+      secrets.fuellhornSecret: test-secret
+      database.type: postgresql
+      database.external.host: postgres.example.com
+      database.external.password: testpass
+      sessions.backend: redis
+    asserts:
+      - failedTemplate:
+          errorPattern: sessions.redis.url
+
+  - it: should leave SQLite sessions on the data volume
+    template: templates/pvc.yaml
+    set:
+      secrets.fuellhornSecret: test-secret
+      database.type: sqlite
+    asserts:
+      - hasDocuments:
+          count: 1
+      - equal:
+          path: metadata.name
+          value: RELEASE-NAME-fuellhorn-data

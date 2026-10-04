@@ -128,12 +128,14 @@ tests:
             name: FUELLHORN_DATA_DIR
             value: /app/data
 
-  - it: should not mount data volume for PostgreSQL
+  - it: should not mount data volume for PostgreSQL with Redis sessions
     set:
       secrets.fuellhornSecret: test-secret
       database.type: postgresql
       database.external.host: postgres.example.com
       database.external.password: testpass
+      sessions.backend: redis
+      sessions.redis.url: redis://redis:6379/0
     asserts:
       - isNull:
           path: spec.template.spec.containers[0].volumeMounts
@@ -189,6 +191,8 @@ tests:
       database.external.host: postgres.example.com
       database.external.password: testpass
       replicaCount: 3
+      sessions.backend: redis
+      sessions.redis.url: redis://redis:6379/0
     asserts:
       - equal:
           path: spec.replicas
