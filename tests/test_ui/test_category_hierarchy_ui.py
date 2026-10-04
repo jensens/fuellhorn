@@ -112,6 +112,7 @@ async def test_items_parent_chip_filters_to_children(logged_in_user: User, meat_
     await logged_in_user.open("/items")
     assert sorted(_card_names(logged_in_user)) == ["Bratwurst", "Erbsen", "Steak"]
 
+    logged_in_user.find(marker="category-filter-open").click()  # Auswahl im Panel (#471)
     logged_in_user.find(marker=f"filter-category-{meat_world['meat']}").click()
     await logged_in_user.should_see("Steak")
     assert _card_names(logged_in_user) == ["Steak"]
