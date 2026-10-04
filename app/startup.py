@@ -5,7 +5,7 @@ Prod-Image (CLI) lieferte keine installierbare PWA (Issue #375). Hier gibt es ge
 eine Stelle mit paketrelativen Pfaden.
 """
 
-from .config import config
+from . import config as app_config
 from nicegui import ui
 from nicegui.app import App
 from nicegui.client import Client
@@ -60,7 +60,12 @@ def configure_app(app: App) -> None:
 
 
 def run_kwargs(**overrides: Any) -> dict[str, Any]:
-    """Gemeinsame Parameter für ``ui.run`` (Titel, Favicon, Host, Port)."""
+    """Gemeinsame Parameter für ``ui.run`` (Titel, Favicon, Host, Port).
+
+    Die Config-Instanz wird zur Laufzeit über das Modul aufgelöst, nicht beim
+    Import gebunden: Tests laden ``app.config`` neu und patchen ``app.config.config``.
+    """
+    config = app_config.config
     kwargs: dict[str, Any] = {
         "title": APP_TITLE,
         "favicon": str(FAVICON),
