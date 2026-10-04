@@ -8,13 +8,17 @@ from ..models.withdrawal import Withdrawal
 from . import expiry_calculator
 from . import shelf_life_service
 from .category_service import get_category
+from .errors import AlreadyConsumedError
 from .errors import ServiceValidationError
+from .errors import StaleStockError
 from .location_service import get_location
 from .location_service import get_valid_location_types
 from .validation import require_non_empty
 from datetime import date
 from sqlalchemy import func
+from sqlalchemy import update
 from sqlmodel import Session
+from sqlmodel import col
 from sqlmodel import select
 
 
@@ -376,40 +380,63 @@ def update_item(
     return item
 
 
-def mark_item_consumed(session: Session, id: int, user_id: int) -> Item:
+def _apply_stock_change(session: Session, item: Item, baseline: float, remaining: float) -> None:
+    """Bedingtes UPDATE: nur wenn der Bestand noch ``baseline`` ist und der Artikel aktiv (Issue #394).
+
+    Verhindert das Lost Update, wenn zwei Nutzer denselben Artikel gleichzeitig entnehmen.
+    Bei 0 betroffenen Zeilen hat sich der Bestand zwischen Lesen und Schreiben geändert.
+    """
+    result = session.exec(
+        update(Item)
+        .where(col(Item.id) == item.id)
+        .where(col(Item.is_consumed).is_(False))
+        .where(col(Item.quantity) == baseline)
+        .values(quantity=remaining, is_consumed=remaining <= 0)
+    )
+    if result.rowcount != 1:
+        session.rollback()
+        raise StaleStockError()
+
+
+def _baseline_quantity(item: Item, expected_quantity: float | None) -> float:
+    """Der Bestand, von dem die Buchung ausgeht: der vom Nutzer gesehene (expected) oder der gelesene."""
+    if expected_quantity is None:
+        return item.quantity
+    if normalize_quantity(expected_quantity) != normalize_quantity(item.quantity):
+        raise StaleStockError()
+    return item.quantity
+
+
+def mark_item_consumed(session: Session, id: int, user_id: int, expected_quantity: float | None = None) -> Item:
     """Mark item as consumed.
 
     Always creates a Withdrawal entry (who, when, how much): without it the item
     would vanish from both the active list and the consumed list, which is an
     inner join on withdrawals (Issue #367). Sets quantity to 0 to ensure correct
-    initial quantity calculation.
+    initial quantity calculation. Atomar per bedingtem UPDATE (Issue #394).
 
     Args:
         session: Database session
         id: Item ID
         user_id: User ID who consumed the item (required)
+        expected_quantity: Bestand, den der Nutzer gesehen hat (UI); weicht er ab → StaleStockError
 
     Returns:
         Updated item
 
     Raises:
         ValueError: If item not found
+        AlreadyConsumedError: Artikel ist bereits vollständig entnommen
+        StaleStockError: Bestand hat sich seit dem Lesen geändert
     """
     item = get_item(session, id)
+    if item.is_consumed:
+        raise AlreadyConsumedError(item.product_name)
+    baseline = _baseline_quantity(item, expected_quantity)
 
-    # Create withdrawal entry for the full remaining quantity
-    withdrawal = Withdrawal(
-        item_id=item.id,
-        quantity=item.quantity,
-        withdrawn_by=user_id,
-    )
-    session.add(withdrawal)
-
-    # Set quantity to 0 (Bug #222: was missing, causing wrong initial quantity calc)
-    item.quantity = 0
-    item.is_consumed = True
-
-    session.add(item)
+    _apply_stock_change(session, item, baseline, 0)
+    # Withdrawal in derselben Transaktion wie die Bestandsänderung
+    session.add(Withdrawal(item_id=item.id, quantity=baseline, withdrawn_by=user_id))
     session.commit()
     session.refresh(item)
 
@@ -490,6 +517,7 @@ def withdraw_partial(
     item_id: int,
     withdraw_quantity: float,
     user_id: int,
+    expected_quantity: float | None = None,
 ) -> Item:
     """Withdraw a partial quantity from an item.
 
@@ -502,6 +530,7 @@ def withdraw_partial(
         item_id: Item ID
         withdraw_quantity: Quantity to withdraw
         user_id: User ID who withdrew the item (required)
+        expected_quantity: Bestand, den der Nutzer gesehen hat (UI); weicht er ab → StaleStockError
 
     Returns:
         Updated item
@@ -509,6 +538,7 @@ def withdraw_partial(
     Raises:
         ValueError: If item not found, already consumed, withdraw_quantity <= 0
                    (after rounding), or withdraw_quantity > available quantity
+        StaleStockError: Bestand hat sich seit dem Lesen geändert (Issue #394)
     """
     withdraw_quantity = normalize_quantity(withdraw_quantity)
 
@@ -522,30 +552,18 @@ def withdraw_partial(
     # Check if item is already consumed
     if item.is_consumed:
         raise ValueError("Item is already consumed")
+    baseline = _baseline_quantity(item, expected_quantity)
 
     # Validate withdraw quantity doesn't exceed available (at quantity resolution)
-    remaining = normalize_quantity(item.quantity - withdraw_quantity)
+    remaining = normalize_quantity(baseline - withdraw_quantity)
     if remaining < 0:
         raise ValueError(
             f"Cannot withdraw more than available. Requested: {withdraw_quantity}, Available: {item.quantity}"
         )
 
-    # Create withdrawal entry
-    withdrawal = Withdrawal(
-        item_id=item.id,
-        quantity=withdraw_quantity,
-        withdrawn_by=user_id,
-    )
-    session.add(withdrawal)
-
-    # Update quantity
-    item.quantity = remaining
-
-    # Mark as consumed if quantity reaches zero
-    if remaining == 0:
-        item.is_consumed = True
-
-    session.add(item)
+    # Bestand bedingt ändern und Withdrawal in derselben Transaktion schreiben (Issue #394)
+    _apply_stock_change(session, item, baseline, remaining)
+    session.add(Withdrawal(item_id=item.id, quantity=withdraw_quantity, withdrawn_by=user_id))
     session.commit()
     session.refresh(item)
 
