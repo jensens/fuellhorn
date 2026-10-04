@@ -21,4 +21,6 @@ COPY main.py ./
 
 EXPOSE 8080
 
-CMD ["uv", "run", "python", "main.py"]
+# --no-sync: Die Umgebung ist bereits vollständig. Ohne das Flag würde uv das Projekt
+# editable bauen, was ohne .git im Build-Kontext an hatch-vcs scheitert (#373).
+CMD ["uv", "run", "--no-sync", "python", "main.py"]
