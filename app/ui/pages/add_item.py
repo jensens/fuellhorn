@@ -584,78 +584,10 @@ def add_item() -> None:
         ):
             create_icon("actions/close", size="24px")
 
-    # Main content container (max-width handled by create_mobile_page_container)
+    # Main content container (max-width handled by create_mobile_page_container);
+    # Schritt 1 wird genau wie beim Zurück-Navigieren aufgebaut (eine Quelle, Issue #396)
     content_container = create_mobile_page_container()
-    with content_container:
-        # Progress Indicator (Solarpunk theme)
-        ui.label("Schritt 1 von 3").classes("text-sm text-stone mb-4")
-
-        # Step 1: Basic Information
-        ui.label("Basisinformationen").classes("sp-page-title text-base mb-3")
-
-        # Product Name
-        ui.label("Produktname *").classes("text-sm font-medium mb-1")
-        product_name_input = (
-            ui.input(placeholder="z.B. Tomaten aus Garten").classes("w-full").props("outlined autofocus")
-        )
-        product_name_input.bind_value(form_data, "product_name")
-        product_name_input.on("blur", update_validation)
-
-        # Item Type
-        ui.label("Artikel-Typ *").classes("text-sm font-medium mb-2 mt-4")
-
-        def on_item_type_change(value: ItemType) -> None:
-            form_data["item_type"] = value
-            update_validation()
-
-        create_item_type_chip_group(
-            value=form_data["item_type"],
-            on_change=on_item_type_change,
-        )
-
-        # Quantity
-        ui.label("Menge *").classes("text-sm font-medium mb-1 mt-4")
-        quantity_input = (
-            ui.number(
-                placeholder="z.B. 500",
-                min=0,
-                step=1,
-            )
-            .classes("w-full")
-            .props("outlined clearable")
-        )
-        quantity_input.bind_value(form_data, "quantity")
-        quantity_input.on("blur", update_validation)
-
-        # Unit
-        ui.label("Einheit *").classes("text-sm font-medium mb-1 mt-4")
-
-        def on_unit_change(value: str) -> None:
-            form_data["unit"] = value
-            update_validation()
-
-        create_unit_chip_group(
-            value=form_data["unit"],
-            on_change=on_unit_change,
-        )
-
-        # Notes (optional)
-        ui.label("Notizen (optional)").classes("text-sm font-medium mb-1 mt-4")
-        notes_input = (
-            ui.textarea(placeholder="z.B. je 12 Stück, 300g pro Packung").classes("w-full").props("outlined rows=2")
-        )
-        notes_input.bind_value(form_data, "notes")
-
-        # Navigation
-        with ui.row().classes("w-full justify-end mt-6 gap-2"):
-            next_button = (
-                ui.button("Weiter", icon="arrow_forward", on_click=show_step2)
-                .props("color=primary size=lg disabled")
-                .style("min-height: 48px")
-            )
-
-        # Initial validation to set button state based on smart defaults
-        update_validation()
+    show_step1()
 
     # Bottom Navigation
     create_bottom_nav(current_page="add")
