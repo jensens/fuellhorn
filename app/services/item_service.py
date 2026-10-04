@@ -357,6 +357,7 @@ def update_item(
     notes: str | None | Unset = UNSET,
     best_before_month_only: bool | None = None,
     freeze_date_month_only: bool | None = None,
+    require_complete: bool = True,
 ) -> Item:
     """Update item.
 
@@ -378,6 +379,8 @@ def update_item(
         notes: New notes
         best_before_month_only: Genauigkeit des MHD/Herstellungsdatums; ``None`` lässt sie unverändert
         freeze_date_month_only: Genauigkeit des Einfrierdatums; ``None`` lässt sie unverändert
+        require_complete: ``False`` lässt Datum, Einfrierdatum und Kategorie leer bleiben,
+            damit sich schnell erfasste Artikel auch nur teilweise ergänzen lassen (Issue #463)
 
     Returns:
         Updated item
@@ -404,6 +407,7 @@ def update_item(
         category_id=new_category_id,
         best_before_date=best_before_date if best_before_date is not None else item.best_before_date,
         freeze_date=new_freeze_date,
+        require_complete=require_complete,
     )
 
     if product_name is not None:

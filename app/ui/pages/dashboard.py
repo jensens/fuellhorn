@@ -22,6 +22,7 @@ from ..components.consume_all import confirm_consume_all
 from ..components.flash import show_flash
 from ..components.location_overview import create_location_overview_chips
 from ..components.recently_added import create_recently_added_section
+from ..theme.icons import create_icon
 from nicegui import ui
 
 
@@ -44,6 +45,23 @@ def dashboard() -> None:
             expiring_items = expiry_service.get_items_expiring_soon(session)
             expiring_count = len(expiring_items)
             _, warning_days = get_expiry_thresholds(session)
+
+            # Schnell erfasste Artikel warten auf die fehlenden Angaben (Issue #463). Der
+            # Einstieg steht oben, weil das Nachpflegen im Warmen die Fortsetzung des
+            # Erfassens im Keller ist; ohne Lücken bleibt die Zeile weg.
+            incomplete_count = len(expiry_service.get_items_needing_completion(session))
+            if incomplete_count:
+                with (
+                    ui.card()
+                    .classes("sp-dashboard-card w-full mb-4 cursor-pointer hover:shadow-sp-md transition-shadow")
+                    .on("click", lambda: ui.navigate.to("/items/incomplete"))
+                    .mark("dashboard-incomplete")
+                ):
+                    with ui.row().classes("w-full items-center justify-between gap-2"):
+                        with ui.column().classes("gap-1"):
+                            ui.label(f"Nachpflegen ({incomplete_count})").classes("text-base font-medium text-charcoal")
+                            ui.label("Schnell erfasste Artikel ergänzen").classes("text-sm text-stone")
+                        create_icon("actions/edit", size="24px")
 
             # Expiring items section with count badge (Issue #244)
             ui.label(f"Bald ablaufend ({expiring_count})").classes("sp-page-title text-base mb-3")
