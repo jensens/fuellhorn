@@ -155,7 +155,7 @@ Füllhorn folgt einer **Solarpunk-Ästhetik** – einer hoffnungsvollen Zukunfts
 | Bottom Navigation | `app/ui/components/bottom_nav.py` | Mobile Navigation, 3 Items, sticky unten |
 | Bottom Sheet | `app/ui/components/bottom_sheet.py` | Modal-Dialog von unten |
 | Item Card | `app/ui/components/item_card.py` | Artikel-Karte mit Status-Border |
-| Expiry Badge | `app/ui/components/expiry_badge.py` | Haltbarkeits-Badge |
+| Expiry Badge | `app/ui/components/item_card.py` (`get_expiry_badge_class`) | Haltbarkeits-Badge auf Karte und Bottom-Sheet |
 | Unit Chips | `app/ui/components/unit_chips.py` | Einheiten-Auswahl |
 | Category Chips | `app/ui/components/category_chips.py` | Kategorie-Auswahl |
 | Location Chips | `app/ui/components/location_chips.py` | Lagerort-Auswahl |
@@ -205,12 +205,12 @@ Füllhorn folgt einer **Solarpunk-Ästhetik** – einer hoffnungsvollen Zukunfts
 
 ## 6. CSS-Theme Referenz
 
-**Datei:** `ci-guidelines/solarpunk-theme.css`
+**Datei:** `app/static/css/solarpunk-theme.css`
 
 ### Einbindung
 
 ```html
-<link href="/static/solarpunk-theme.css" rel="stylesheet">
+<link href="/static/css/solarpunk-theme.css" rel="stylesheet">
 ```
 
 ### CSS-Variablen (Auswahl)
@@ -318,6 +318,6 @@ Füllhorn folgt einer **Solarpunk-Ästhetik** – einer hoffnungsvollen Zukunfts
 ## Referenzen
 
 - [ci-guidelines/fuellhorn-ci-guidelines.pdf](../../ci-guidelines/fuellhorn-ci-guidelines.pdf) – Vollständige CI-Guidelines
-- [ci-guidelines/solarpunk-theme.css](../../ci-guidelines/solarpunk-theme.css) – CSS-Theme
+- [app/static/css/solarpunk-theme.css](../../app/static/css/solarpunk-theme.css) – CSS-Theme
 - [ci-guidelines/fuellhorn-logo-export/](../../ci-guidelines/fuellhorn-logo-export/) – Logo-Dateien
 - [ci-guidelines/fuellhorn-icons/](../../ci-guidelines/fuellhorn-icons/) – Icon-Set

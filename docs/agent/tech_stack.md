@@ -51,7 +51,7 @@ Eine so erzeugte Datenbank lässt `alembic upgrade head` später mit
 # 2. Migration generieren
 uv run alembic revision --autogenerate -m "Beschreibung der Änderung"
 
-# 3. Migration prüfen (in alembic/versions/)
+# 3. Migration prüfen (in app/alembic/versions/)
 #    - Generierte SQL-Statements überprüfen
 #    - Downgrade-Funktion testen
 
