@@ -59,13 +59,15 @@ class TestConfigureApp:
 
 class TestRunKwargs:
     def test_contains_title_favicon_host_and_port(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        import app.config
+        import app.startup
         from app.startup import APP_TITLE
         from app.startup import FAVICON
         from app.startup import run_kwargs
 
-        monkeypatch.setattr(app.config.config, "HOST", "127.0.0.1")
-        monkeypatch.setattr(app.config.config, "PORT", 9123)
+        # Die von app.startup gehaltene Config-Instanz patchen: andere Tests laden app.config neu,
+        # danach zeigt app.config.config auf ein anderes Objekt als app.startup.config.
+        monkeypatch.setattr(app.startup.config, "HOST", "127.0.0.1")
+        monkeypatch.setattr(app.startup.config, "PORT", 9123)
 
         kwargs = run_kwargs(reload=False)
 
