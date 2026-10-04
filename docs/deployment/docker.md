@@ -50,6 +50,21 @@ Hinweise:
 - Das Dev-Image installiert nur die Abhängigkeiten, nicht das Paket selbst, und startet mit `uv run --no-sync`. Änderungen an `pyproject.toml`/`uv.lock` wirken erst nach `--build`.
 - Weil `.git` nicht im Build-Kontext liegt, meldet das Dev-Image die Version `0.0.0.dev0`.
 
+## Produktions-Image
+
+Das Image (`Dockerfile`) wird in zwei Schritten gebaut:
+
+1. `uv sync --frozen --no-dev --no-install-project` installiert **exakt die Versionen aus `uv.lock`**, also dieselben wie in Tests und CI. Ohne diesen Schritt würde jeder Build die Abhängigkeiten neu auflösen (z.B. ein neueres `sqlmodel`, das naive Datetimes ablehnt).
+2. `uv pip install --no-deps fuellhorn==<Version>` legt das veröffentlichte Wheel dazu, ohne die Abhängigkeiten anzufassen.
+
+Der Release-Workflow prüft jedes gebaute Image, bevor Versions- und `latest`-Tag entstehen: installierte Versionen gegen `uv.lock`, `fuellhorn migrate && fuellhorn create-admin` mit SQLite und `/api/health` nach dem Start.
+
+Lokal bauen (ohne `--build-arg` wird die neueste PyPI-Version installiert):
+
+```bash
+docker build --build-arg FUELLHORN_VERSION=1.0.0a9 -t fuellhorn .
+```
+
 ## Umgebungsvariablen
 
 | Variable | Beschreibung | Erforderlich | Default |
