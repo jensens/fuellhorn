@@ -90,6 +90,9 @@ def edit_item(item_id: int) -> None:
             locations = location_service.get_locations_for_item_type(
                 session, form_data["item_type"], include_location_id=item.location_id
             )
+        # Lagerort verwerfen, der zum neuen Typ nicht passt (#385); die Chips zeigen ihn nicht mehr an
+        if form_data.get("location_id") not in {loc.id for loc in locations}:
+            form_data["location_id"] = None
         # Rebuild location chips
         location_container.clear()
         with location_container:
@@ -105,6 +108,9 @@ def edit_item(item_id: int) -> None:
         nonlocal grouped_categories
         with next(get_session()) as session:
             grouped_categories = category_service.get_grouped_categories_for_item_type(session, form_data["item_type"])
+        # Kategorie verwerfen, die für den neuen Typ nicht angeboten wird (#385)
+        if form_data.get("category_id") not in {c.id for _, cats in grouped_categories for c in cats}:
+            form_data["category_id"] = None
         # Rebuild category chips
         category_container.clear()
         with category_container:

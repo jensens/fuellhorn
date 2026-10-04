@@ -8,7 +8,7 @@ stored and used to pre-fill the next item entry.
 Time Windows (from UI_KONZEPT.md):
 - Item type: 30 minutes
 - Categories: 30 minutes
-- Location: Always (no time window)
+- Location: 60 minutes (Issue #385; vorher ohne Zeitfenster)
 - Unit: Always (no time window)
 """
 
@@ -113,16 +113,28 @@ def get_default_unit(last_entry: dict[str, Any] | None) -> str:
     return str(unit) if unit else "g"
 
 
-def get_default_location(last_entry: dict[str, Any] | None) -> int | None:
-    """Get the default location ID from last entry (no time window).
+def get_default_location(
+    last_entry: dict[str, Any] | None,
+    window_minutes: int = 60,
+) -> int | None:
+    """Get the default location ID from last entry if within time window.
+
+    Ob der Lagerort zum gewählten Artikel-Typ passt, entscheidet erst Schritt 3
+    des Wizards (Issue #385): dort wird eine ID verworfen, die nicht unter den
+    angebotenen Lagerorten ist.
 
     Args:
         last_entry: The last item entry from browser storage.
+        window_minutes: Time window in minutes (default: 60).
 
     Returns:
-        Location ID or None if not available.
+        Location ID or None if not within window.
     """
     if not last_entry:
+        return None
+
+    timestamp = last_entry.get("timestamp")
+    if not is_within_time_window(timestamp, window_minutes):
         return None
 
     return last_entry.get("location_id")
