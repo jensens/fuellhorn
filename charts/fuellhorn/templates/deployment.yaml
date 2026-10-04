@@ -35,6 +35,11 @@ spec:
                   name: {{ .Values.database.external.existingSecret | default (printf "%s-db" (include "fuellhorn.fullname" .)) }}
                   key: url
             {{- end }}
+            {{- if eq .Values.database.type "sqlite" }}
+            # SQLite-Datei explizit ins Volume, sonst landet sie im site-packages des Containers (#371)
+            - name: FUELLHORN_DATA_DIR
+              value: /app/data
+            {{- end }}
             # app.config verlangt SECRET_KEY/FUELLHORN_SECRET bereits beim Import (#370)
             - name: SECRET_KEY
               valueFrom:
@@ -66,6 +71,10 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.database.external.existingSecret | default (printf "%s-db" (include "fuellhorn.fullname" .)) }}
                   key: url
+            {{- end }}
+            {{- if eq .Values.database.type "sqlite" }}
+            - name: FUELLHORN_DATA_DIR
+              value: /app/data
             {{- end }}
             - name: ADMIN_USERNAME
               value: {{ .Values.initContainers.adminUser.username | quote }}
@@ -114,6 +123,10 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.database.external.existingSecret | default (printf "%s-db" (include "fuellhorn.fullname" .)) }}
                   key: url
+            {{- end }}
+            {{- if eq .Values.database.type "sqlite" }}
+            - name: FUELLHORN_DATA_DIR
+              value: /app/data
             {{- end }}
             - name: SECRET_KEY
               valueFrom:

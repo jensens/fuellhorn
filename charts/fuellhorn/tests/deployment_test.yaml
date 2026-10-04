@@ -96,6 +96,50 @@ tests:
           path: spec.template.spec.volumes[0].name
           value: data
 
+  # Ohne expliziten Pfad landet die SQLite-Datei im site-packages des Containers statt im Volume (#371)
+  - it: should point the SQLite data directory at the mounted volume
+    set:
+      secrets.secretKey: test-key
+      secrets.fuellhornSecret: test-secret
+      database.type: sqlite
+      initContainers.adminUser.enabled: true
+      initContainers.adminUser.password: test-admin
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: FUELLHORN_DATA_DIR
+            value: /app/data
+      - contains:
+          path: spec.template.spec.initContainers[0].env
+          content:
+            name: FUELLHORN_DATA_DIR
+            value: /app/data
+      - contains:
+          path: spec.template.spec.initContainers[1].env
+          content:
+            name: FUELLHORN_DATA_DIR
+            value: /app/data
+
+  - it: should not set the SQLite data directory for PostgreSQL
+    set:
+      secrets.secretKey: test-key
+      secrets.fuellhornSecret: test-secret
+      database.type: postgresql
+      database.external.host: postgres.example.com
+      database.external.password: testpass
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: FUELLHORN_DATA_DIR
+            value: /app/data
+      - notContains:
+          path: spec.template.spec.initContainers[0].env
+          content:
+            name: FUELLHORN_DATA_DIR
+            value: /app/data
+
   - it: should not mount data volume for PostgreSQL
     set:
       secrets.secretKey: test-key
