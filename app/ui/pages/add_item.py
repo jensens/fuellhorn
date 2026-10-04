@@ -248,21 +248,21 @@ def add_item() -> None:
                 on_change=on_category_change,
             )
 
-            # Date field - different label based on item type
+            # Date field - different label based on item type (Beschriftung wie Bottom-Sheet/Edit, #387)
             if item_type in {ItemType.PURCHASED_FRESH, ItemType.PURCHASED_FROZEN}:
                 # MHD from package
-                date_label = "Mindesthaltbarkeitsdatum"
+                date_label = "Mindesthaltbarkeitsdatum (MHD)"
                 date_field = "best_before_date"
             elif item_type == ItemType.PURCHASED_THEN_FROZEN:
-                # Freeze date for items bought fresh then frozen
-                date_label = "Einfrierdatum"
+                # Einziges Datum: Einfrierdatum; best_before_date spiegelt es im Service (#387)
+                date_label = "Eingefroren am"
                 date_field = "freeze_date"
                 # Initialize freeze_date with today if not set
                 if form_data.get("freeze_date") is None:
                     form_data["freeze_date"] = date_type.today()
             else:
                 # Production date for homemade items
-                date_label = "Produktionsdatum"
+                date_label = "Hergestellt am"
                 date_field = "best_before_date"
 
             ui.label(f"{date_label} *").classes("text-sm font-medium mb-1 mt-4")
@@ -288,7 +288,7 @@ def add_item() -> None:
 
             # Additional freeze date for homemade_frozen
             if item_type == ItemType.HOMEMADE_FROZEN:
-                ui.label("Einfrierdatum *").classes("text-sm font-medium mb-1 mt-4")
+                ui.label("Eingefroren am *").classes("text-sm font-medium mb-1 mt-4")
                 freeze_date_value = form_data.get("freeze_date") or date_type.today()
                 form_data["freeze_date"] = freeze_date_value
                 with (
@@ -391,13 +391,15 @@ def add_item() -> None:
                     summary_parts.append(category_name)
                 ui.label(" • ".join(summary_parts)).classes("sp-summary-content")
 
-                # Date info
-                best_before_str = form_data["best_before_date"].strftime("%d.%m.%Y")
-                date_info = f"Datum: {best_before_str}"
+                # Date info: nur die wirklich erfassten Daten, beschriftet wie im Bottom-Sheet (#387)
+                date_parts: list[str] = []
+                if item_type in {ItemType.PURCHASED_FRESH, ItemType.PURCHASED_FROZEN}:
+                    date_parts.append(f"MHD: {form_data['best_before_date'].strftime('%d.%m.%Y')}")
+                elif item_type != ItemType.PURCHASED_THEN_FROZEN:
+                    date_parts.append(f"Hergestellt: {form_data['best_before_date'].strftime('%d.%m.%Y')}")
                 if form_data.get("freeze_date"):
-                    freeze_str = form_data["freeze_date"].strftime("%d.%m.%Y")
-                    date_info += f" • Eingefroren: {freeze_str}"
-                ui.label(date_info).classes("sp-summary-content")
+                    date_parts.append(f"Eingefroren: {form_data['freeze_date'].strftime('%d.%m.%Y')}")
+                ui.label(" • ".join(date_parts)).classes("sp-summary-content")
 
             # Fetch locations filtered by item type
             with next(get_session()) as session:

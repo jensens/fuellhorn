@@ -99,7 +99,7 @@ async def test_switch_to_homemade_frozen_without_freeze_date_is_refused_with_mes
     await logged_in_user.should_see("Artikel bearbeiten")
 
     logged_in_user.find(marker="item-type-chip-homemade_frozen").click()
-    await logged_in_user.should_see("Einfrierdatum *")
+    await logged_in_user.should_see("Eingefroren am *")
     logged_in_user.find(marker="edit-freeze-date-input").clear()
 
     assert _is_disabled(logged_in_user, "edit-save")
@@ -118,7 +118,7 @@ async def test_switch_to_frozen_type_prefills_freeze_date_and_saves_it(
     """Typwechsel auf HOMEMADE_FROZEN setzt ein Einfrierdatum (heute) in form_data, nicht nur im Feld."""
     await logged_in_user.open(f"/items/{world['pizza']}/edit")
     logged_in_user.find(marker="item-type-chip-homemade_frozen").click()
-    await logged_in_user.should_see("Produktionsdatum *")
+    await logged_in_user.should_see("Hergestellt am *")
 
     assert not _is_disabled(logged_in_user, "edit-save")
     logged_in_user.find(marker="edit-save").click()
@@ -140,9 +140,9 @@ async def test_switch_away_from_frozen_type_clears_freeze_date(
         )
 
     await logged_in_user.open(f"/items/{world['pizza']}/edit")
-    await logged_in_user.should_see("Einkaufsdatum *")
+    await logged_in_user.should_see("Eingefroren am *")
     logged_in_user.find(marker="item-type-chip-purchased_frozen").click()
-    await logged_in_user.should_see("Mindesthaltbarkeitsdatum *")
+    await logged_in_user.should_see("Mindesthaltbarkeitsdatum (MHD) *")
     logged_in_user.find(marker="edit-save").click()
     await logged_in_user.should_see("gespeichert")
 

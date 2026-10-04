@@ -34,6 +34,18 @@ STORAGE_TYPE_LABELS = {"frozen": "Tiefkühlung", "chilled": "Kühlung", "ambient
 FREEZE_DATE_REQUIRED_TYPES = {ItemType.PURCHASED_THEN_FROZEN, ItemType.HOMEMADE_FROZEN}
 
 
+def effective_best_before_date(item_type: ItemType, best_before_date: date, freeze_date: date | None) -> date:
+    """Datums-Semantik (Issue #387): ``best_before_date`` ist je Typ MHD oder Herstellungsdatum.
+
+    Für PURCHASED_THEN_FROZEN gibt es kein eigenes Datum: das Einfrierdatum ist das
+    einzige erfasste Datum und ``best_before_date`` spiegelt es, damit Sortierung und
+    Anzeige nicht auf einem stillen Erfassungstag beruhen.
+    """
+    if item_type == ItemType.PURCHASED_THEN_FROZEN and freeze_date is not None:
+        return freeze_date
+    return best_before_date
+
+
 class Unset:
     """Sentinel für ``update_item``: Feld nicht übergeben (Issue #386).
 
@@ -170,7 +182,7 @@ def create_item(
 
     item = Item(
         product_name=product_name,
-        best_before_date=best_before_date,
+        best_before_date=effective_best_before_date(item_type, best_before_date, freeze_date),
         freeze_date=freeze_date,
         quantity=quantity,
         unit=unit,
@@ -339,8 +351,11 @@ def update_item(
     if unit is not None:
         item.unit = unit
 
-    if best_before_date is not None:
-        item.best_before_date = best_before_date
+    item.best_before_date = effective_best_before_date(
+        new_item_type,
+        best_before_date if best_before_date is not None else item.best_before_date,
+        new_freeze_date,
+    )
 
     item.freeze_date = new_freeze_date
 

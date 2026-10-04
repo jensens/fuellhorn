@@ -159,4 +159,4 @@ async def test_wizard_summary_shows_typed_date(
     logged_in_user.find("Weiter").click()
 
     await logged_in_user.should_see("Schritt 3 von 3")
-    await logged_in_user.should_see("Datum: 15.01.2027")
+    await logged_in_user.should_see("MHD: 15.01.2027")
