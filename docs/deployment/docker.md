@@ -202,7 +202,7 @@ ADMIN_PASSWORD=neues-passwort fuellhorn create-admin --reset-password
 fuellhorn seed shelf-life-defaults
 ```
 
-`fuellhorn seed testdata` (Admin `admin/admin`, Beispieldaten) ist nur für die lokale
+`fuellhorn seed testdata` (Admin `admin/admin123`, Beispieldaten) ist nur für die lokale
 Entwicklung gedacht und läuft nur mit `DEBUG=true` oder dem ausdrücklichen Flag
 `--i-know-this-is-dev`. In Produktion nicht verwenden.
 

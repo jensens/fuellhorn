@@ -136,6 +136,7 @@ def cli_seed(subcommand: str | None, options: list[str] | None = None) -> int:
     """
     from app.config import config
     from app.database import get_engine
+    from app.seed import TESTDATA_ADMIN_PASSWORD
     from app.seed import seed_shelf_life_defaults
     from app.seed import seed_testdata
 
@@ -145,7 +146,10 @@ def cli_seed(subcommand: str | None, options: list[str] | None = None) -> int:
         print("Usage: fuellhorn seed <subcommand>")
         print("Available subcommands:")
         print("  shelf-life-defaults  Seed categories with shelf life data")
-        print(f"  testdata             Seed test data (admin/admin, only with DEBUG=true or {TESTDATA_DEV_FLAG})")
+        print(
+            f"  testdata             Seed test data (admin/{TESTDATA_ADMIN_PASSWORD}, "
+            f"only with DEBUG=true or {TESTDATA_DEV_FLAG})"
+        )
         return 1
 
     if subcommand not in {"shelf-life-defaults", "testdata"}:
@@ -153,9 +157,9 @@ def cli_seed(subcommand: str | None, options: list[str] | None = None) -> int:
         print("Available: shelf-life-defaults, testdata")
         return 1
 
-    # Testdaten enthalten den Admin admin/admin: nie unbemerkt in Produktion (#376)
+    # Testdaten enthalten einen Admin mit bekanntem Passwort: nie unbemerkt in Produktion (#376)
     if subcommand == "testdata" and not (config.DEBUG or TESTDATA_DEV_FLAG in options):
-        print("Testdaten (Admin admin/admin) sind nur für die Entwicklung gedacht.")
+        print(f"Testdaten (Admin admin/{TESTDATA_ADMIN_PASSWORD}) sind nur für die Entwicklung gedacht.")
         print(f"Erlauben mit DEBUG=true oder: fuellhorn seed testdata {TESTDATA_DEV_FLAG}")
         return 1
 
@@ -176,7 +180,7 @@ def cli_seed(subcommand: str | None, options: list[str] | None = None) -> int:
             print("Seeding test data...")
             result = seed_testdata(session)
             if result["admin"]:
-                print("  Admin created (admin/admin)")
+                print(f"  Admin created (admin/{TESTDATA_ADMIN_PASSWORD})")
             else:
                 print("  Admin already exists")
             print(f"  Categories: {result['categories']}")

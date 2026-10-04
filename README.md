@@ -119,7 +119,7 @@ Das Dev-Server Script konfiguriert automatisch Port und Testdaten basierend auf 
 ```
 
 - **Port**: 8000 + Issue-Nummer (z.B. Issue 123 → Port 8123)
-- **Testdaten**: Admin-User (admin/admin), Kategorien, Lagerorte, Beispiel-Items
+- **Testdaten**: Admin-User (admin/admin123), Kategorien, Lagerorte, Beispiel-Items
 - Jeder Worktree hat eine eigene SQLite-DB
 
 ```bash
