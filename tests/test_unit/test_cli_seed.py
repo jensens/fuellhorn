@@ -126,3 +126,12 @@ def test_seed_testdata_script_is_a_thin_wrapper() -> None:
     assert "def seed_admin" not in source
     assert "def seed_categories" not in source
     assert "def seed_items" not in source
+
+
+def test_seed_shelf_life_defaults_script_is_a_thin_wrapper() -> None:
+    """scripts/seed_shelf_life_defaults.py baut die Seed-Schleife nicht nach (#460)."""
+    source = (PROJECT_ROOT / "scripts" / "seed_shelf_life_defaults.py").read_text(encoding="utf-8")
+
+    assert "from app.seed import seed_shelf_life_defaults" in source
+    assert "get_or_create_category" not in source
+    assert "create_or_update_shelf_life" not in source

@@ -180,12 +180,18 @@ def get_or_create_category(
     color: str | None,
     admin_id: int,
     parent_id: int | None = None,
+    *,
+    assign_parent: bool = False,
 ) -> Category:
-    """Get existing category or create new one."""
+    """Get existing category or create new one.
+
+    Eine bestehende Kategorie bleibt unverändert (#460). Einzige Ausnahme:
+    ``assign_parent`` ordnet eine Kategorie ohne Gruppe ``parent_id`` zu; der Seed
+    setzt das nur für Gruppen, die er im selben Lauf neu angelegt hat.
+    """
     category = session.exec(select(Category).where(Category.name == name)).first()
     if category:
-        # Update parent_id if it changed
-        if category.parent_id != parent_id:
+        if assign_parent and parent_id is not None and category.parent_id is None and category.id != parent_id:
             category.parent_id = parent_id
             session.add(category)
             session.commit()
@@ -199,7 +205,7 @@ def get_or_create_category(
     return category
 
 
-def create_or_update_shelf_life(
+def create_shelf_life_if_missing(
     session: Session,
     category_id: int,
     storage_type: StorageType,
@@ -207,7 +213,7 @@ def create_or_update_shelf_life(
     months_max: int,
     source_url: str,
 ) -> CategoryShelfLife:
-    """Create or update shelf life config."""
+    """Create shelf life config unless one exists; existing values stay untouched (#460)."""
     existing = session.exec(
         select(CategoryShelfLife).where(
             CategoryShelfLife.category_id == category_id,
@@ -216,12 +222,6 @@ def create_or_update_shelf_life(
     ).first()
 
     if existing:
-        existing.months_min = months_min
-        existing.months_max = months_max
-        existing.source_url = source_url
-        session.add(existing)
-        session.commit()
-        session.refresh(existing)
         return existing
 
     shelf_life = CategoryShelfLife(
@@ -245,6 +245,10 @@ def create_or_update_shelf_life(
 def seed_shelf_life_defaults(session: Session) -> tuple[int, int]:
     """Seed default shelf life data.
 
+    Legt nur Fehlendes an: Kategorien und Haltbarkeiten, die es noch nicht gibt.
+    Bestehende Werte bleiben unverändert, auch wenn sie vom Standard abweichen (#460);
+    Korrekturen an Standardwerten gehören in eine Migration.
+
     Returns:
         Tuple of (categories_count, shelf_lives_count)
     """
@@ -255,16 +259,25 @@ def seed_shelf_life_defaults(session: Session) -> tuple[int, int]:
 
     # Track created categories by name for parent lookup
     category_by_name: dict[str, Category] = {}
+    # Gruppen, die dieser Lauf neu anlegt: nur ihnen werden bestehende Kategorien
+    # ohne Gruppe zugeordnet (Datenbanken vor #351). Bestehende Gruppen hat der
+    # Nutzer womöglich selbst geordnet (#460).
+    new_groups: set[str] = set()
 
     for name, color, parent_name, shelf_lives in CATEGORIES_WITH_SHELF_LIFE:
         parent_id = category_by_name[parent_name].id if parent_name else None
-        category = get_or_create_category(session, name, color, admin_id, parent_id)
+        existed = session.exec(select(Category.id).where(Category.name == name)).first() is not None
+        category = get_or_create_category(
+            session, name, color, admin_id, parent_id, assign_parent=parent_name in new_groups
+        )
+        if not existed and parent_name is None:
+            new_groups.add(name)
         category_by_name[name] = category
         categories_created += 1
 
         for storage_type, months_min, months_max, source_key in shelf_lives:
             source_url = SOURCES.get(source_key, "")
-            create_or_update_shelf_life(
+            create_shelf_life_if_missing(
                 session,
                 category.id,  # type: ignore[arg-type]
                 storage_type,

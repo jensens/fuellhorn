@@ -194,7 +194,8 @@ fuellhorn create-admin
 # aktive Admin selbst aussperrt, nicht aber vergessene Passwörter.
 ADMIN_PASSWORD=neues-passwort fuellhorn create-admin --reset-password
 
-# Standard-Kategorien mit Haltbarkeiten importieren (idempotent).
+# Standard-Kategorien mit Haltbarkeiten importieren (idempotent, legt nur
+# Fehlendes an und überschreibt keine angepassten Werte).
 # Nach dem Update auf die Kategorie-Hierarchie einmal ausführen: Die Migration
 # ordnet nur bestehende Kategorien zu, neue Gruppen (z.B. Gekochtes,
 # Fruchtaufstriche) und Kategorien legt erst dieser Seed an.
