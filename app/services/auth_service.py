@@ -190,6 +190,32 @@ def revoke_remember_token(session: Session, user: User) -> None:
     session.commit()
 
 
+SELF_CHANGE_MESSAGE = (
+    "Die eigene Rolle und der eigene Aktiv-Status lassen sich nicht ändern, das eigene Konto nicht löschen."
+)
+
+
+def count_active_admins(session: Session) -> int:
+    """Anzahl aktiver Admins (nur die zählen für den Zugang zur Verwaltung)."""
+    statement = (
+        select(func.count()).select_from(User).where(User.role == Role.ADMIN.value).where(User.is_active == True)  # noqa: E712
+    )
+    return session.exec(statement).one()
+
+
+def _is_active_admin(user: User) -> bool:
+    return user.role == Role.ADMIN.value and user.is_active
+
+
+def _ensure_another_active_admin_remains(session: Session, user: User, action: str) -> None:
+    """Verweigert ``action`` an ``user``, wenn danach kein aktiver Admin mehr übrig wäre (Issue #380)."""
+    if _is_active_admin(user) and count_active_admins(session) <= 1:
+        raise ValueError(
+            f"'{user.username}' ist der letzte aktive Admin und kann nicht {action} werden. "
+            "Zuerst einen weiteren Admin anlegen."
+        )
+
+
 def update_user(
     session: Session,
     user_id: int,
@@ -198,10 +224,13 @@ def update_user(
     password: str | None = None,
     role: Role | None = None,
     is_active: bool | None = None,
+    acting_user_id: int | None = None,
 ) -> User:
     """Aktualisiert einen User.
 
-    Nur die übergebenen Felder werden aktualisiert.
+    Nur die übergebenen Felder werden aktualisiert. Rolle und Aktiv-Status des
+    eigenen Kontos sind tabu, und der letzte aktive Admin kann weder degradiert
+    noch deaktiviert werden (Issue #380).
 
     Args:
         session: Datenbank-Session
@@ -211,14 +240,25 @@ def update_user(
         password: Neues Passwort (optional, wird gehasht)
         role: Neue Rolle (optional)
         is_active: Aktiv-Status (optional)
+        acting_user_id: ID des handelnden Nutzers (für den Selbstschutz)
 
     Returns:
         Der aktualisierte User
 
     Raises:
         UserNotFoundError: Wenn der User nicht existiert
+        ValueError: Selbst-Degradierung/-Deaktivierung oder letzter aktiver Admin
     """
     user = get_user(session, user_id)
+
+    demotes = role is not None and role != Role.ADMIN and user.role == Role.ADMIN.value
+    deactivates = is_active is False and user.is_active
+    if acting_user_id == user_id and (demotes or deactivates):
+        raise ValueError(SELF_CHANGE_MESSAGE)
+    if demotes:
+        _ensure_another_active_admin_remains(session, user, "degradiert")
+    if deactivates:
+        _ensure_another_active_admin_remains(session, user, "deaktiviert")
 
     # Nur übergebene Werte aktualisieren
     if username is not None:
@@ -251,22 +291,28 @@ def count_user_references(session: Session, user_id: int) -> dict[str, int]:
     return {label: count for label, statement in references.items() if (count := session.exec(statement).one())}
 
 
-def delete_user(session: Session, user_id: int) -> None:
+def delete_user(session: Session, user_id: int, acting_user_id: int | None = None) -> None:
     """Löscht einen User ohne Referenzen.
 
     Benutzer, die Artikel, Entnahmen, Kategorien, Lagerorte oder Einstellungen
     angelegt haben, lassen sich nicht löschen (Fremdschlüssel, Nachvollziehbarkeit);
-    der Weg ist das Deaktivieren (Issue #379).
+    der Weg ist das Deaktivieren (Issue #379). Das eigene Konto und der letzte
+    aktive Admin sind ebenfalls geschützt (Issue #380).
 
     Args:
         session: Datenbank-Session
         user_id: ID des zu löschenden Users
+        acting_user_id: ID des handelnden Nutzers (für den Selbstschutz)
 
     Raises:
         UserNotFoundError: Wenn der User nicht existiert
-        ValueError: Wenn noch Datensätze auf den User verweisen
+        ValueError: Eigenes Konto, letzter aktiver Admin oder noch referenziert
     """
     user = get_user(session, user_id)
+
+    if acting_user_id == user_id:
+        raise ValueError(SELF_CHANGE_MESSAGE)
+    _ensure_another_active_admin_remains(session, user, "gelöscht")
 
     references = count_user_references(session, user_id)
     if references:
