@@ -44,6 +44,7 @@ def create_admin_user(session: Session, reset_existing: bool = False) -> bool:
     from app.models.user import Role
     from app.services.auth_service import create_user
     from app.services.auth_service import get_user_by_username
+    from app.services.validation import validate_password
 
     username = os.environ.get("ADMIN_USERNAME", "admin")
     email = os.environ.get("ADMIN_EMAIL", "admin@fuellhorn.local")
@@ -51,6 +52,7 @@ def create_admin_user(session: Session, reset_existing: bool = False) -> bool:
 
     if not password:
         raise ValueError("ADMIN_PASSWORD environment variable is required")
+    validate_password(password)
 
     # Check if admin already exists
     existing = get_user_by_username(session, username)
