@@ -18,6 +18,11 @@ _STORAGE_DIR = Path(tempfile.gettempdir()) / "fuellhorn-pytest-storage" / str(os
 os.environ["NICEGUI_STORAGE_PATH"] = str(_STORAGE_DIR)
 atexit.register(shutil.rmtree, _STORAGE_DIR, True)
 
+# Sicherheitsnetz: Tests arbeiten ausschließlich mit der In-Memory-Engine aus isolated_test_database;
+# sollte doch etwas die konfigurierte URL benutzen, trifft es eine Wegwerf-Datei pro Prozess und
+# nie data/fuellhorn.db aus der .env (load_dotenv überschreibt gesetzte Variablen nicht).
+os.environ["DATABASE_URL"] = f"sqlite:///{_STORAGE_DIR / 'fuellhorn-test.db'}"
+
 from app.database import create_sqlite_test_engine  # noqa: E402
 from app.models import User  # noqa: E402
 from app.models.category import Category  # noqa: E402
