@@ -4,6 +4,16 @@ Revision ID: 7fc1ce95c5b3
 Revises: d34a94a28640
 Create Date: 2026-02-07 16:58:32.271030
 
+Schema: ``category.parent_id`` (selbstreferenzierender Fremdschlüssel) für die
+einstufige Kategorie-Hierarchie (#351).
+
+Daten: Bestehende Kinder werden ihren bereits vorhandenen Eltern zugeordnet und
+das Duplikat "Konfitüre" geht in "Marmelade" auf. Neue Kategorien und
+Haltbarkeiten legt die Migration bewusst nicht an (#368): Dafür braucht es
+einen Benutzer für ``created_by`` (Helm führt ``migrate`` vor ``create-admin``
+aus) und die Daten gehören nur an eine Stelle. Zuständig ist der idempotente
+Seed ``fuellhorn seed shelf-life-defaults`` (``app/seed.py``), der auch die
+Eltern der neuen Gruppen (Gekochtes, Fruchtaufstriche, Soßen, Würziges) setzt.
 """
 
 from alembic import op
@@ -19,7 +29,8 @@ branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 
-# Parent-child relationships for existing categories
+# Kinder, deren Eltern im alten Seed bereits als eigene Kategorie existierten.
+# Zuordnung ausschließlich per Name; fehlende Kategorien werden übersprungen.
 PARENT_CHILDREN: dict[str, list[str]] = {
     # FROZEN
     "Fleisch": ["Rindfleisch", "Schweinefleisch", "Geflügel", "Hackfleisch", "Wurst"],
@@ -31,40 +42,10 @@ PARENT_CHILDREN: dict[str, list[str]] = {
     "Eingelegtes": ["Essiggurken", "Mixed Pickles"],
 }
 
-# New parent categories to create (with shelf-life data)
-# Format: (name, color, storage_type, months_min, months_max, children)
-NEW_PARENTS: list[tuple[str, str, str, int, int, list[str]]] = [
-    ("Gekochtes", "#8D6E63", "frozen", 2, 3, ["Suppen", "Eintöpfe", "Fertiggerichte"]),
-    ("Fruchtaufstriche", "#E91E63", "ambient", 12, 24, ["Marmelade", "Gelee"]),
-    ("Soßen", "#EF5350", "ambient", 6, 12, ["Tomatensoße", "Sugo", "Ketchup", "Pesto"]),
-    ("Würziges", "#FF7043", "ambient", 3, 12, ["Chutney", "Relish", "Senf"]),
-]
-
-# New leaf categories (with shelf-life)
-# Format: (name, color, parent_name, storage_type, months_min, months_max)
-NEW_LEAF_CATEGORIES: list[tuple[str, str, str, str, int, int]] = [
-    ("Meeresfrüchte", "#0097A7", "Fisch", "frozen", 2, 4),
-]
-
-# New categories without shelf-life (for PURCHASED_FRESH)
-# Format: (name, color)
-FRESH_ONLY_CATEGORIES: list[tuple[str, str]] = [
-    ("Nudeln & Pasta", "#FFCC80"),
-    ("Reis & Getreide", "#D7CCC8"),
-    ("Backzutaten", "#FFECB3"),
-    ("Konserven", "#90A4AE"),
-    ("Gewürze", "#A1887F"),
-    ("Öle & Essig", "#C8E6C9"),
-    ("Getränke", "#81D4FA"),
-    ("Snacks", "#FFE082"),
-    ("Eier", "#FFF3E0"),
-    ("Aufschnitt", "#FFAB91"),
-    ("Milchprodukte (frisch)", "#E1BEE7"),
-]
-
-
-def _get_connection() -> sa.Connection:
-    return op.get_bind()
+# Duplikate: alter Name -> Zielkategorie
+OBSOLETE_CATEGORIES: dict[str, str] = {
+    "Konfitüre": "Marmelade",
+}
 
 
 def _get_category_id(conn: sa.Connection, name: str) -> int | None:
@@ -73,121 +54,60 @@ def _get_category_id(conn: sa.Connection, name: str) -> int | None:
     return row[0] if row else None
 
 
-def _get_system_user_id(conn: sa.Connection) -> int:
-    result = conn.execute(sa.text("SELECT id FROM users WHERE role = 'admin' LIMIT 1"))
-    row = result.fetchone()
-    if row:
-        return row[0]
-    result = conn.execute(sa.text("SELECT id FROM users LIMIT 1"))
-    row = result.fetchone()
-    if row:
-        return row[0]
-    return 1
-
-
-def _create_category(conn: sa.Connection, name: str, color: str, user_id: int) -> int:
-    existing_id = _get_category_id(conn, name)
-    if existing_id is not None:
-        return existing_id
-    conn.execute(
-        sa.text(
-            "INSERT INTO category (name, color, sort_order, created_at, created_by) "
-            "VALUES (:name, :color, 0, datetime('now'), :user_id)"
-        ),
-        {"name": name, "color": color, "user_id": user_id},
-    )
-    return _get_category_id(conn, name)  # type: ignore[return-value]
-
-
-def _create_shelf_life(
-    conn: sa.Connection, category_id: int, storage_type: str, months_min: int, months_max: int
-) -> None:
-    result = conn.execute(
-        sa.text("SELECT id FROM category_shelf_life WHERE category_id = :cat_id AND storage_type = :st"),
-        {"cat_id": category_id, "st": storage_type},
-    )
-    if result.fetchone():
-        return
-    conn.execute(
-        sa.text(
-            "INSERT INTO category_shelf_life (category_id, storage_type, months_min, months_max) "
-            "VALUES (:cat_id, :st, :min, :max)"
-        ),
-        {"cat_id": category_id, "st": storage_type, "min": months_min, "max": months_max},
-    )
-
-
-def upgrade() -> None:
-    """Upgrade schema and migrate seed data."""
-    # Schema change (batch mode required for SQLite FK support)
-    with op.batch_alter_table("category") as batch_op:
-        batch_op.add_column(sa.Column("parent_id", sa.Integer(), nullable=True))
-        batch_op.create_foreign_key("fk_category_parent", "category", ["parent_id"], ["id"])
-
-    # Data migration
-    conn = _get_connection()
-    user_id = _get_system_user_id(conn)
-
-    # 1. Set parent_id for existing categories
+def _assign_existing_children(conn: sa.Connection) -> None:
     for parent_name, children in PARENT_CHILDREN.items():
         parent_id = _get_category_id(conn, parent_name)
         if parent_id is None:
             continue
         for child_name in children:
-            child_id = _get_category_id(conn, child_name)
-            if child_id is not None:
-                conn.execute(
-                    sa.text("UPDATE category SET parent_id = :pid WHERE id = :cid"),
-                    {"pid": parent_id, "cid": child_id},
-                )
-
-    # 2. Create new parent categories with shelf-life and assign children
-    for name, color, storage_type, months_min, months_max, children in NEW_PARENTS:
-        parent_id = _create_category(conn, name, color, user_id)
-        _create_shelf_life(conn, parent_id, storage_type, months_min, months_max)
-        for child_name in children:
-            child_id = _get_category_id(conn, child_name)
-            if child_id is not None:
-                conn.execute(
-                    sa.text("UPDATE category SET parent_id = :pid WHERE id = :cid"),
-                    {"pid": parent_id, "cid": child_id},
-                )
-
-    # 3. Create new leaf categories with shelf-life
-    for name, color, parent_name, storage_type, months_min, months_max in NEW_LEAF_CATEGORIES:
-        parent_id = _get_category_id(conn, parent_name)
-        cat_id = _create_category(conn, name, color, user_id)
-        if parent_id is not None:
             conn.execute(
-                sa.text("UPDATE category SET parent_id = :pid WHERE id = :cid"),
-                {"pid": parent_id, "cid": cat_id},
+                sa.text("UPDATE category SET parent_id = :pid WHERE name = :name AND id != :pid"),
+                {"pid": parent_id, "name": child_name},
             )
-        _create_shelf_life(conn, cat_id, storage_type, months_min, months_max)
 
-    # 4. Create FRESH-only categories (no shelf-life, no parent)
-    for name, color in FRESH_ONLY_CATEGORIES:
-        _create_category(conn, name, color, user_id)
 
-    # 5. Remove Konfitüre: reassign items to Marmelade, then delete
-    konfituere_id = _get_category_id(conn, "Konfitüre")
-    marmelade_id = _get_category_id(conn, "Marmelade")
-    if konfituere_id is not None and marmelade_id is not None:
+def _merge_obsolete_categories(conn: sa.Connection) -> None:
+    for old_name, new_name in OBSOLETE_CATEGORIES.items():
+        old_id = _get_category_id(conn, old_name)
+        if old_id is None:
+            continue
+        new_id = _get_category_id(conn, new_name)
+        if new_id is None:
+            # Ziel fehlt: umbenennen, Artikel und Haltbarkeiten bleiben erhalten
+            conn.execute(
+                sa.text("UPDATE category SET name = :new_name WHERE id = :old_id"),
+                {"new_name": new_name, "old_id": old_id},
+            )
+            continue
         conn.execute(
-            sa.text("UPDATE item SET category_id = :mid WHERE category_id = :kid"),
-            {"mid": marmelade_id, "kid": konfituere_id},
+            sa.text("UPDATE item SET category_id = :new_id WHERE category_id = :old_id"),
+            {"new_id": new_id, "old_id": old_id},
         )
         conn.execute(
-            sa.text("DELETE FROM category_shelf_life WHERE category_id = :kid"),
-            {"kid": konfituere_id},
+            sa.text("UPDATE category SET parent_id = :new_id WHERE parent_id = :old_id"),
+            {"new_id": new_id, "old_id": old_id},
         )
         conn.execute(
-            sa.text("DELETE FROM category WHERE id = :kid"),
-            {"kid": konfituere_id},
+            sa.text("DELETE FROM category_shelf_life WHERE category_id = :old_id"),
+            {"old_id": old_id},
         )
+        conn.execute(sa.text("DELETE FROM category WHERE id = :old_id"), {"old_id": old_id})
+
+
+def upgrade() -> None:
+    """Spalte parent_id anlegen, bestehende Kategorien zuordnen, Duplikate zusammenführen."""
+    # Batch-Modus: SQLite kann Fremdschlüssel nicht per ALTER TABLE ergänzen
+    with op.batch_alter_table("category") as batch_op:
+        batch_op.add_column(sa.Column("parent_id", sa.Integer(), nullable=True))
+        batch_op.create_foreign_key("fk_category_parent", "category", ["parent_id"], ["id"])
+
+    conn = op.get_bind()
+    _assign_existing_children(conn)
+    _merge_obsolete_categories(conn)
 
 
 def downgrade() -> None:
-    """Downgrade schema."""
+    """Spalte parent_id entfernen (Zusammenführung von Duplikaten bleibt bestehen)."""
     with op.batch_alter_table("category") as batch_op:
         batch_op.drop_constraint("fk_category_parent", type_="foreignkey")
         batch_op.drop_column("parent_id")
