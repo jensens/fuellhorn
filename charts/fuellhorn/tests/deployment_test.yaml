@@ -269,3 +269,14 @@ tests:
               secretKeyRef:
                 name: my-app-secrets
                 key: fuellhorn-secret
+
+  - it: should keep NiceGUI session storage on the data volume for SQLite (#429)
+    set:
+      secrets.fuellhornSecret: test-secret
+      database.type: sqlite
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: NICEGUI_STORAGE_PATH
+            value: /app/data/.nicegui

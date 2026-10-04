@@ -345,7 +345,8 @@ Siehe [charts/fuellhorn/README.md](charts/fuellhorn/README.md) für vollständig
 
 Eine Passwortänderung (selbst, durch einen Admin oder per `create-admin --reset-password`) meldet alle anderen
 Sitzungen dieses Benutzers beim nächsten Aufruf ab. Sitzungsdaten liegen serverseitig im NiceGUI-Storage
-(`.nicegui/`, konfigurierbar über `NICEGUI_STORAGE_PATH`); im Browser liegt nur ein signiertes Cookie.
+(`$FUELLHORN_DATA_DIR/.nicegui`, überschreibbar über `NICEGUI_STORAGE_PATH`; im Container also auf dem
+Daten-Volume, sonst meldet jeder Neustart alle Benutzer ab); im Browser liegt nur ein signiertes Cookie.
 
 ---
 

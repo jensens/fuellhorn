@@ -76,3 +76,6 @@ worktrees/
 
 # MCP-Konfiguration (enthielt frueher Secrets, nie committen)
 .mcp.json
+
+# NiceGUI-Storage (Login-Sitzungen) liegt im Datenverzeichnis (#429)
+data/.nicegui/
