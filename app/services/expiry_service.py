@@ -53,6 +53,32 @@ class ExpiryView:
 
 UNKNOWN_VIEW = ExpiryView(status="unknown", display_date=None, label=LABEL_UNKNOWN)
 
+LABEL_PRODUCED = "Hergestellt am"
+LABEL_FROZEN = "Eingefroren am"
+
+
+def get_entered_dates(item: Item) -> list[tuple[str, date]]:
+    """Die vom Nutzer erfassten Daten eines Artikels mit typabhängiger Beschriftung (Issue #342).
+
+    - PURCHASED_FRESH / PURCHASED_FROZEN: das MHD der Packung
+    - HOMEMADE_PRESERVED: Herstellungsdatum
+    - HOMEMADE_FROZEN: Herstellungs- und Einfrierdatum
+    - PURCHASED_THEN_FROZEN: nur das Einfrierdatum; best_before_date ist dort nur der
+      Erfassungstag (siehe #387) und wird nicht gezeigt
+
+    Returns:
+        Liste von (Beschriftung, Datum), fehlende Einfrierdaten werden ausgelassen.
+    """
+    if item.item_type in (ItemType.PURCHASED_FRESH, ItemType.PURCHASED_FROZEN):
+        return [(LABEL_MHD, item.best_before_date)]
+
+    entries: list[tuple[str, date]] = []
+    if item.item_type != ItemType.PURCHASED_THEN_FROZEN:
+        entries.append((LABEL_PRODUCED, item.best_before_date))
+    if item.item_type in FREEZE_DATE_TYPES and item.freeze_date is not None:
+        entries.append((LABEL_FROZEN, item.freeze_date))
+    return entries
+
 
 def compute_expiry_view(
     item: Item,

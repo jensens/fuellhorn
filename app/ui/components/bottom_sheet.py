@@ -147,6 +147,17 @@ def create_bottom_sheet(
                             ui.label("Haltbarkeit").classes("sp-info-label")
                             ui.label(expiry_view.label).classes(get_expiry_badge_classes("unknown"))
 
+                # Entered dates (production / freeze date), Issue #342. The MHD of purchased
+                # items is already the expiry row above and is not repeated.
+                for date_label, entered_date in expiry_service.get_entered_dates(item):
+                    if date_label == expiry_view.label:
+                        continue
+                    with ui.row().classes("sp-info-row"):
+                        create_icon("status/calendar", size="20px", classes="text-stone")
+                        with ui.column().classes("gap-0"):
+                            ui.label(date_label).classes("sp-info-label")
+                            ui.label(entered_date.strftime("%d.%m.%Y")).classes("sp-info-value")
+
                 # Notes (if present)
                 if item.notes:
                     with ui.row().classes("sp-info-row"):
