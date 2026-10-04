@@ -26,6 +26,7 @@ from ...services.expiry_service import ExpiryView
 from ..theme import ITEM_TYPE_COLORS
 from ..theme import get_contrast_text_color
 from ..theme.icons import create_icon
+from ..utils.quantity import format_quantity
 from .swipe_card import create_swipe_card
 from datetime import date
 from nicegui import ui
@@ -68,9 +69,8 @@ def _format_quantity_display(
     Returns:
         Tuple of (formatted string, has_withdrawals bool)
     """
-    # Format numbers: remove decimal if whole number
-    current = int(current_qty) if current_qty == int(current_qty) else current_qty
-    initial = int(initial_qty) if initial_qty == int(initial_qty) else initial_qty
+    current = format_quantity(current_qty)
+    initial = format_quantity(initial_qty)
 
     has_withdrawals = initial_qty > current_qty
 

@@ -315,6 +315,18 @@ def get_items_by_location(session: Session, location_id: int) -> list[Item]:
     return list(session.exec(select(Item).where(Item.location_id == location_id)).all())
 
 
+QUANTITY_DECIMALS = 3
+"""Auflösung von Mengen (Nachkommastellen). Mengen sind Floats; ohne Rundung erreicht
+ein Restbestand nie exakt 0 und 1,0 − 0,3 − 0,3 verweigert die letzte Entnahme von 0,4
+(Issue #365)."""
+
+
+def normalize_quantity(value: float) -> float:
+    """Rundet eine Menge auf die Auflösung und entfernt negative Nullen."""
+    rounded = round(value, QUANTITY_DECIMALS)
+    return 0.0 if rounded == 0 else rounded
+
+
 def withdraw_partial(
     session: Session,
     item_id: int,
@@ -323,7 +335,9 @@ def withdraw_partial(
 ) -> Item:
     """Withdraw a partial quantity from an item.
 
-    Creates a Withdrawal entry to track the withdrawal.
+    Creates a Withdrawal entry to track the withdrawal. Quantities are compared
+    and stored at QUANTITY_DECIMALS resolution so float noise can neither block
+    the last withdrawal nor leave a residue that keeps the item "active".
 
     Args:
         session: Database session
@@ -335,9 +349,11 @@ def withdraw_partial(
         Updated item
 
     Raises:
-        ValueError: If item not found, already consumed, withdraw_quantity <= 0,
-                   or withdraw_quantity > available quantity
+        ValueError: If item not found, already consumed, withdraw_quantity <= 0
+                   (after rounding), or withdraw_quantity > available quantity
     """
+    withdraw_quantity = normalize_quantity(withdraw_quantity)
+
     # Validate withdraw quantity is positive
     if withdraw_quantity <= 0:
         raise ValueError("Withdraw quantity must be positive")
@@ -349,8 +365,9 @@ def withdraw_partial(
     if item.is_consumed:
         raise ValueError("Item is already consumed")
 
-    # Validate withdraw quantity doesn't exceed available
-    if withdraw_quantity > item.quantity:
+    # Validate withdraw quantity doesn't exceed available (at quantity resolution)
+    remaining = normalize_quantity(item.quantity - withdraw_quantity)
+    if remaining < 0:
         raise ValueError(
             f"Cannot withdraw more than available. Requested: {withdraw_quantity}, Available: {item.quantity}"
         )
@@ -365,10 +382,10 @@ def withdraw_partial(
         session.add(withdrawal)
 
     # Update quantity
-    item.quantity = item.quantity - withdraw_quantity
+    item.quantity = remaining
 
     # Mark as consumed if quantity reaches zero
-    if item.quantity == 0:
+    if remaining == 0:
         item.is_consumed = True
 
     session.add(item)
