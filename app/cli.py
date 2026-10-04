@@ -158,6 +158,7 @@ def cli_seed(subcommand: str | None) -> int:
 def run_app() -> None:
     """Run the fuellhorn application."""
     import app.api.health  # noqa: F401
+    from app.config import config
     from app.config import get_storage_secret
     import app.ui.pages  # noqa: F401
     from nicegui import app as nicegui_app
@@ -175,11 +176,11 @@ def run_app() -> None:
         ui.add_head_html('<link rel="stylesheet" href="/static/css/solarpunk-theme.css">')
         ui.add_head_html('<script src="/static/js/swipe-card.js"></script>')
 
-    port = int(os.environ.get("PORT", "8080"))
     ui.run(
         title="Fuellhorn",
         storage_secret=get_storage_secret(),
-        port=port,
+        host=config.HOST,
+        port=config.PORT,
         reload=False,
         show=False,
     )
