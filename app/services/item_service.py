@@ -34,6 +34,21 @@ STORAGE_TYPE_LABELS = {"frozen": "Tiefkühlung", "chilled": "Kühlung", "ambient
 FREEZE_DATE_REQUIRED_TYPES = {ItemType.PURCHASED_THEN_FROZEN, ItemType.HOMEMADE_FROZEN}
 
 
+class Unset:
+    """Sentinel für ``update_item``: Feld nicht übergeben (Issue #386).
+
+    Nullable-Felder (``notes``, ``freeze_date``, ``category_id``) brauchen den
+    Unterschied zwischen "nicht angefasst" und "auf None setzen"; mit ``None``
+    als Default ließen sie sich nie leeren.
+    """
+
+    def __repr__(self) -> str:
+        return "UNSET"
+
+
+UNSET = Unset()
+
+
 def validate_item_data(
     session: Session,
     *,
@@ -263,13 +278,17 @@ def update_item(
     quantity: float | None = None,
     unit: str | None = None,
     best_before_date: date | None = None,
-    freeze_date: date | None = None,
+    freeze_date: date | None | Unset = UNSET,
     location_id: int | None = None,
-    category_id: int | None = None,
+    category_id: int | None | Unset = UNSET,
     item_type: ItemType | None = None,
-    notes: str | None = None,
+    notes: str | None | Unset = UNSET,
 ) -> Item:
     """Update item.
+
+    Pflichtfelder: ``None`` heißt "nicht ändern". Nullable-Felder (``freeze_date``,
+    ``category_id``, ``notes``): ``UNSET`` heißt "nicht ändern", ``None`` leert das
+    Feld (Issue #386).
 
     Args:
         session: Database session
@@ -293,6 +312,10 @@ def update_item(
     """
     item = get_item(session, id)
 
+    new_freeze_date = item.freeze_date if isinstance(freeze_date, Unset) else freeze_date
+    new_category_id = item.category_id if isinstance(category_id, Unset) else category_id
+    new_notes = item.notes if isinstance(notes, Unset) else notes
+
     # Zusammengeführten Zustand prüfen, bevor etwas am Objekt geändert wird
     new_item_type = item_type if item_type is not None else item.item_type
     product_name = validate_item_data(
@@ -302,9 +325,9 @@ def update_item(
         unit=unit if unit is not None else item.unit,
         item_type=new_item_type,
         location_id=location_id if location_id is not None else item.location_id,
-        category_id=category_id if category_id is not None else item.category_id,
+        category_id=new_category_id,
         best_before_date=best_before_date if best_before_date is not None else item.best_before_date,
-        freeze_date=freeze_date if freeze_date is not None else item.freeze_date,
+        freeze_date=new_freeze_date,
     )
 
     if product_name is not None:
@@ -319,20 +342,17 @@ def update_item(
     if best_before_date is not None:
         item.best_before_date = best_before_date
 
-    if freeze_date is not None:
-        item.freeze_date = freeze_date
+    item.freeze_date = new_freeze_date
 
     if location_id is not None:
         item.location_id = location_id
 
-    if category_id is not None:
-        item.category_id = category_id
+    item.category_id = new_category_id
 
     if item_type is not None:
         item.item_type = item_type
 
-    if notes is not None:
-        item.notes = notes
+    item.notes = new_notes
 
     session.add(item)
     session.commit()
