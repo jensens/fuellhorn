@@ -128,13 +128,18 @@ def quick_capture() -> None:
             .props("outlined autofocus")
             .classes("w-full")
             .mark("quick-name")
+            # Mit offener Handytastatur liegt der Knopf außer Sicht: Enter erfasst direkt, danach
+            # steht der Fokus (autofocus) wieder im leeren Namensfeld
+            .on("keydown.enter", capture)
         )
 
         ui.label("Menge *").classes("text-sm font-medium text-charcoal mb-1 mt-4")
+        # min=0 wie im Wizard: Bei min=0.01 und step=1 markiert der Browser die 1 als ungültig;
+        # "größer als 0" prüft validate_step1
         (
             ui.number(
                 value=form["quantity"],
-                min=0.01,
+                min=0,
                 step=1,
                 on_change=lambda event: form.update(quantity=event.value),
             )

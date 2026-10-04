@@ -201,3 +201,30 @@ async def test_deactivated_user_cannot_capture_anymore(
         _set_admin_active(isolated_test_database, active=True)
 
     assert _items(isolated_test_database) == []
+
+
+async def test_default_quantity_satisfies_the_browser_constraints(
+    logged_in_user: User, isolated_test_database, places: dict[str, int]
+) -> None:
+    """Die vorbelegte Menge darf im Browser nicht als ungültig markiert sein (Schritt passt zum Minimum)."""
+    await logged_in_user.open("/items/quick")
+    await _choose_location(logged_in_user, places["freezer"])
+
+    field = logged_in_user.find(marker="quick-quantity", kind=ui.number).elements.pop()
+    minimum, step = field.props["min"], field.props["step"]
+    assert field.value is not None and field.value >= minimum
+    assert ((field.value - minimum) / step).is_integer()
+
+
+async def test_enter_in_the_name_field_captures(
+    logged_in_user: User, isolated_test_database, places: dict[str, int]
+) -> None:
+    """Mit offener Handytastatur liegt der Knopf außer Sicht; Enter erfasst direkt."""
+    await logged_in_user.open("/items/quick")
+    await _choose_location(logged_in_user, places["freezer"])
+    logged_in_user.find(marker="item-type-chip-homemade_frozen").click()
+
+    logged_in_user.find(marker="quick-name").type("Ribisel").trigger("keydown.enter")
+    await logged_in_user.should_see("Gerade erfasst (1)")
+
+    assert [item.product_name for item in _items(isolated_test_database)] == ["Ribisel"]
