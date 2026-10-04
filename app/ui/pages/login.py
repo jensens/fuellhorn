@@ -15,6 +15,6 @@ def index() -> None:
 
 
 @ui.page("/login")
-def login() -> None:
-    """Login-Seite."""
-    show_login_page()
+def login(next: str = "/dashboard") -> None:
+    """Login-Seite; ``next`` ist die Seite, die den Login verlangt hat (nur relative Pfade)."""
+    show_login_page(next_url=next)

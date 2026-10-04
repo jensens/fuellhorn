@@ -15,10 +15,20 @@ from nicegui import app
 from nicegui import ui
 from typing import ParamSpec
 from typing import TypeVar
+from urllib.parse import quote
 
 
 P = ParamSpec("P")
 R = TypeVar("R")
+
+
+def _requested_path() -> str:
+    """Pfad samt Query der aktuellen Anfrage; Fallback Dashboard."""
+    try:
+        url = ui.context.client.request.url
+    except (AttributeError, RuntimeError):
+        return "/dashboard"
+    return f"{url.path}?{url.query}" if url.query else url.path
 
 
 def require_auth(func: Callable[P, R]) -> Callable[P, R | None]:
@@ -46,7 +56,8 @@ def require_auth(func: Callable[P, R]) -> Callable[P, R | None]:
             get_current_user(require_auth=True)
             return func(*args, **kwargs)
         except AuthenticationError:
-            ui.navigate.to("/login")
+            # Zielseite mitgeben, damit der Login dorthin zurückkehrt (Issue #402)
+            ui.navigate.to(f"/login?next={quote(_requested_path(), safe='/?=&')}")
             return None
 
     return wrapper

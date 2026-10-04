@@ -12,9 +12,13 @@ from ..services.validation import validate_email
 from ..services.validation import validate_password
 from ..services.validation import validate_username
 from datetime import datetime
+import logging
 from sqlmodel import Session
 from sqlmodel import func
 from sqlmodel import select
+
+
+logger = logging.getLogger(__name__)
 
 
 class UserNotFoundError(Exception):
@@ -124,6 +128,9 @@ def get_user_by_username(session: Session, username: str) -> User | None:
     return user
 
 
+LOGIN_FAILED_MESSAGE = "Username oder Passwort falsch"
+
+
 def authenticate_user(session: Session, username: str, password: str) -> User:
     """Authentifiziert einen User mit Username und Passwort.
 
@@ -139,23 +146,21 @@ def authenticate_user(session: Session, username: str, password: str) -> User:
         Der authentifizierte User
 
     Raises:
-        AuthenticationError: Wenn Username oder Passwort falsch sind,
-                            oder wenn der User deaktiviert/gesperrt ist
+        AuthenticationError: immer mit derselben Meldung, egal ob der Benutzer unbekannt,
+            deaktiviert oder das Passwort falsch ist (kein User-Enumeration-Leck, Issue #402);
+            der eigentliche Grund steht im Log.
     """
     user = get_user_by_username(session, username)
 
     if user is None:
-        raise AuthenticationError("Username oder Passwort falsch")
+        raise AuthenticationError(LOGIN_FAILED_MESSAGE)
 
     if not user.is_active:
-        raise AuthenticationError("Benutzer ist deaktiviert")
-
-    # Manuelles Admin-Lock prüfen (separate von IP-basiertem Rate Limiting)
-    if user.locked_until is not None and user.locked_until > datetime.now():
-        raise AuthenticationError(f"Account ist gesperrt bis {user.locked_until.strftime('%H:%M Uhr')}")
+        logger.info("Login abgelehnt: Benutzer %r ist deaktiviert", username)
+        raise AuthenticationError(LOGIN_FAILED_MESSAGE)
 
     if not user.check_password(password):
-        raise AuthenticationError("Username oder Passwort falsch")
+        raise AuthenticationError(LOGIN_FAILED_MESSAGE)
 
     # Login erfolgreich
     user.last_login = datetime.now()

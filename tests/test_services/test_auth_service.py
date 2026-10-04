@@ -8,8 +8,8 @@ from app.models.user import User
 from app.services import auth_service
 from app.services.auth_service import AuthenticationError
 from datetime import datetime
-from datetime import timedelta
 from freezegun import freeze_time
+import logging
 import pytest
 from sqlmodel import Session
 
@@ -37,31 +37,26 @@ class TestAuthenticateUser:
         with pytest.raises(AuthenticationError, match="Username oder Passwort falsch"):
             auth_service.authenticate_user(session, "anna", "falsch")
 
-    def test_inactive_user_is_rejected(self, session: Session, anna: User) -> None:
+    def test_inactive_user_gets_the_generic_message_and_the_reason_is_logged(
+        self, session: Session, anna: User, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """Kein User-Enumeration-Leck: „deaktiviert“ steht nur im Log (Issue #402)."""
         anna.is_active = False
         session.add(anna)
         session.commit()
 
-        with pytest.raises(AuthenticationError, match="deaktiviert"):
+        with (
+            caplog.at_level(logging.INFO, logger="app.services.auth_service"),
+            pytest.raises(AuthenticationError) as excinfo,
+        ):
             auth_service.authenticate_user(session, "anna", "richtig-geheim")
 
-    def test_locked_user_is_rejected_until_lock_expires(self, session: Session, anna: User) -> None:
-        anna.locked_until = NOW + timedelta(minutes=30)
-        session.add(anna)
-        session.commit()
+        assert str(excinfo.value) == "Username oder Passwort falsch"
+        assert "deaktiviert" in caplog.text and "anna" in caplog.text
 
-        with freeze_time(NOW), pytest.raises(AuthenticationError, match="gesperrt bis 12:30 Uhr"):
-            auth_service.authenticate_user(session, "anna", "richtig-geheim")
-
-    def test_expired_lock_does_not_block(self, session: Session, anna: User) -> None:
-        anna.locked_until = NOW - timedelta(minutes=1)
-        session.add(anna)
-        session.commit()
-
-        with freeze_time(NOW):
-            user = auth_service.authenticate_user(session, "anna", "richtig-geheim")
-
-        assert user.id == anna.id
+    def test_user_model_has_no_manual_lock_anymore(self) -> None:
+        """locked_until hatte keinen Schreiber und keine UI; Deaktivieren über is_active reicht (Issue #402)."""
+        assert "locked_until" not in User.model_fields
 
     def test_successful_login_updates_last_login(self, session: Session, anna: User) -> None:
         assert anna.last_login is None

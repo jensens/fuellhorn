@@ -94,16 +94,6 @@ class TestSessionProblem:
 
         assert session_problem(legacy, _user(), now=NOW, max_age=DAY) == SESSION_EXPIRED_MESSAGE
 
-    def test_locked_user_is_rejected_until_lock_expires(self) -> None:
-        storage: dict = {}
-        start_session(_user(), remember_me=True, storage=storage, now=NOW)
-        locked = _user(locked_until=NOW + timedelta(minutes=30))
-
-        problem = session_problem(storage, locked, now=NOW, max_age=DAY)
-
-        assert problem is not None and "gesperrt" in problem
-        assert session_problem(storage, locked, now=NOW + timedelta(hours=1), max_age=DAY) is None
-
     def test_refresh_session_version_keeps_own_session_after_password_change(self) -> None:
         storage: dict = {}
         user = _user(session_version=3)
