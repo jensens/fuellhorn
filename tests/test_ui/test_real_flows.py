@@ -293,3 +293,52 @@ async def test_non_admin_is_redirected_from_admin_page_with_message(
         await logged_in_user.should_not_see("Neuen Benutzer")
     finally:
         _set_role(Role.ADMIN)
+
+
+async def test_items_type_filter_category_chip_and_reset(
+    logged_in_user: User, isolated_test_database, world: dict[str, int]
+) -> None:
+    """Artikel-Typ-Filter, Kategorie-Chip und 'Filter zurücksetzen' auf der echten Seite."""
+    with Session(isolated_test_database) as session:
+        _mhd_item(session, world, "Joghurt", days=5)
+        _frozen_soup(session, world, "Kürbissuppe", frozen_days_ago=0)
+
+    await logged_in_user.open("/items")
+    assert sorted(_card_names(logged_in_user)) == ["Joghurt", "Kürbissuppe"]
+
+    (type_select,) = [s for s in logged_in_user.find(kind=ui.select).elements if s._props.get("label") == "Artikel-Typ"]
+    type_select.set_value(ItemType.HOMEMADE_FROZEN.value)
+    await logged_in_user.should_see("Kürbissuppe")
+    assert _card_names(logged_in_user) == ["Kürbissuppe"]
+
+    logged_in_user.find("Filter zurücksetzen").click()
+    await logged_in_user.should_see("Joghurt")
+    assert sorted(_card_names(logged_in_user)) == ["Joghurt", "Kürbissuppe"]
+
+    logged_in_user.find("● Milchprodukte").click()
+    await logged_in_user.should_see("Joghurt")
+    assert _card_names(logged_in_user) == ["Joghurt"]
+    logged_in_user.find("● Milchprodukte").click()
+    assert sorted(_card_names(logged_in_user)) == ["Joghurt", "Kürbissuppe"]
+
+
+async def test_items_consumed_toggle_shows_withdrawn_items(
+    logged_in_user: User, isolated_test_database, world: dict[str, int]
+) -> None:
+    """'Entnommene anzeigen' listet verbrauchte Artikel; ohne Entnahmen erscheint der Hinweis."""
+    with Session(isolated_test_database) as session:
+        _mhd_item(session, world, "Joghurt", days=5)
+        consumed_id = _mhd_item(session, world, "Alte Butter", days=5)
+        item_service.mark_item_consumed(session, consumed_id, user_id=1)
+
+    await logged_in_user.open("/items")
+    assert _card_names(logged_in_user) == ["Joghurt"]
+
+    (toggle,) = logged_in_user.find(kind=ui.switch).elements
+    toggle.set_value(True)
+    await logged_in_user.should_see("Alte Butter")
+    assert _card_names(logged_in_user) == ["Alte Butter"]
+
+    toggle.set_value(False)
+    await logged_in_user.should_see("Joghurt")
+    assert _card_names(logged_in_user) == ["Joghurt"]
