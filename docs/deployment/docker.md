@@ -47,6 +47,10 @@ Rebuild nach Dependency-Änderungen:
 docker compose -f docker-compose.local.yml up --build
 ```
 
+Hinweise:
+- Das Dev-Image installiert nur die Abhängigkeiten, nicht das Paket selbst, und startet mit `uv run --no-sync`. Änderungen an `pyproject.toml`/`uv.lock` wirken erst nach `--build`.
+- Weil `.git` nicht im Build-Kontext liegt, meldet das Dev-Image die Version `0.0.0.dev0`.
+
 ## Umgebungsvariablen
 
 | Variable | Beschreibung | Erforderlich | Default |
