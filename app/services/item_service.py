@@ -3,9 +3,9 @@
 from ..models.category import Category
 from ..models.item import Item
 from ..models.item import ItemType
-from ..models.location import LocationType
 from ..models.withdrawal import Withdrawal
 from . import expiry_calculator
+from . import item_types
 from . import shelf_life_service
 from .category_service import get_category
 from .errors import AlreadyConsumedError
@@ -24,20 +24,11 @@ from sqlmodel import col
 from sqlmodel import select
 
 
-ITEM_TYPE_LABELS: dict[ItemType, str] = {
-    ItemType.PURCHASED_FRESH: "Frisch eingekauft",
-    ItemType.PURCHASED_FROZEN: "TK-Ware gekauft",
-    ItemType.PURCHASED_THEN_FROZEN: "Frisch gekauft → eingefroren",
-    ItemType.HOMEMADE_FROZEN: "Selbst eingefroren",
-    ItemType.HOMEMADE_PRESERVED: "Selbst eingemacht",
-}
-LOCATION_TYPE_LABELS: dict[LocationType, str] = {
-    LocationType.FROZEN: "Gefroren",
-    LocationType.CHILLED: "Gekühlt",
-    LocationType.AMBIENT: "Raumtemperatur",
-}
-STORAGE_TYPE_LABELS = {"frozen": "Tiefkühlung", "chilled": "Kühlung", "ambient": "Raumtemperatur"}
-FREEZE_DATE_REQUIRED_TYPES = {ItemType.PURCHASED_THEN_FROZEN, ItemType.HOMEMADE_FROZEN}
+# Labels und Typ-Mengen kommen aus der ItemType-Spec (eine Quelle, Issue #398)
+ITEM_TYPE_LABELS = item_types.ITEM_TYPE_LABELS
+LOCATION_TYPE_LABELS = item_types.LOCATION_TYPE_LABELS
+STORAGE_TYPE_LABELS = item_types.STORAGE_TYPE_LABELS
+FREEZE_DATE_REQUIRED_TYPES = item_types.FREEZE_DATE_TYPES
 
 
 def effective_best_before_date(item_type: ItemType, best_before_date: date, freeze_date: date | None) -> date:
@@ -113,7 +104,7 @@ def validate_item_data(
         if storage_type is not None:
             raise ServiceValidationError(
                 f"'{ITEM_TYPE_LABELS[item_type]}' braucht eine Kategorie mit Haltbarkeit für "
-                f"{STORAGE_TYPE_LABELS[storage_type.value]}."
+                f"{STORAGE_TYPE_LABELS[storage_type]}."
             )
         return cleaned_name
     category = get_category(session, category_id)
@@ -122,7 +113,7 @@ def validate_item_data(
         and shelf_life_service.get_shelf_life_with_fallback(session, category_id, storage_type) is None
     ):
         raise ServiceValidationError(
-            f"Kategorie '{category.name}' hat keine Haltbarkeit für {STORAGE_TYPE_LABELS[storage_type.value]}. "
+            f"Kategorie '{category.name}' hat keine Haltbarkeit für {STORAGE_TYPE_LABELS[storage_type]}. "
             "Bitte eine passende Kategorie wählen."
         )
     return cleaned_name
@@ -607,7 +598,7 @@ def get_item_expiry_info(
         return (None, None, None)
 
     # Determine base date for calculation
-    if item.item_type in [ItemType.PURCHASED_THEN_FROZEN, ItemType.HOMEMADE_FROZEN]:
+    if item.item_type in FREEZE_DATE_REQUIRED_TYPES:
         # Use freeze_date for frozen items
         if item.freeze_date is None:
             return (None, None, None)

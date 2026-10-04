@@ -12,6 +12,7 @@ from ...models.item import ItemType
 from ...models.user import User
 from ...services import category_service
 from ...services import item_service
+from ...services import item_types
 from ...services import location_service
 from ...services import preferences_service
 from ..components import create_bottom_nav
@@ -250,14 +251,7 @@ def add_item() -> None:
             ui.label("Haltbarkeit").classes("sp-page-title text-base mb-3")
 
             # Summary from Step 1 (Solarpunk summary box)
-            item_type_labels = {
-                ItemType.PURCHASED_FRESH: "Frisch eingekauft",
-                ItemType.PURCHASED_FROZEN: "TK-Ware gekauft",
-                ItemType.PURCHASED_THEN_FROZEN: "Frisch gekauft → eingefroren",
-                ItemType.HOMEMADE_FROZEN: "Selbst eingefroren",
-                ItemType.HOMEMADE_PRESERVED: "Selbst eingemacht",
-            }
-            type_label = item_type_labels.get(item_type, "")
+            type_label = item_types.get_item_type_label(item_type)
 
             with ui.element("div").classes("sp-summary-box w-full mb-4"):
                 ui.label("Zusammenfassung:").classes("sp-summary-title")
@@ -285,21 +279,18 @@ def add_item() -> None:
             )
             field_errors.slot("category")
 
-            # Date field - different label based on item type (Beschriftung wie Bottom-Sheet/Edit, #387)
-            if item_type in {ItemType.PURCHASED_FRESH, ItemType.PURCHASED_FROZEN}:
-                # MHD from package
-                date_label = "Mindesthaltbarkeitsdatum (MHD)"
-                date_field = "best_before_date"
-            elif item_type == ItemType.PURCHASED_THEN_FROZEN:
+            # Datumsfeld je Typ aus der Spec (Beschriftung wie Bottom-Sheet/Edit, #387; eine Quelle, #398)
+            spec = item_types.spec_for(item_type)
+            best_before_label = item_types.get_best_before_input_label(item_type)
+            if best_before_label is None:
                 # Einziges Datum: Einfrierdatum; best_before_date spiegelt es im Service (#387)
-                date_label = "Eingefroren am"
+                date_label = item_types.LABEL_FROZEN
                 date_field = "freeze_date"
                 # Initialize freeze_date with today if not set
                 if form_data.get("freeze_date") is None:
                     form_data["freeze_date"] = date_type.today()
             else:
-                # Production date for homemade items
-                date_label = "Hergestellt am"
+                date_label = best_before_label
                 date_field = "best_before_date"
 
             date_error_field = "freeze_date" if date_field == "freeze_date" else "best_before"
@@ -325,8 +316,8 @@ def add_item() -> None:
             date_input.on_value_change(lambda _: touched(date_error_field, update_step2_validation))
             field_errors.slot(date_error_field)
 
-            # Additional freeze date for homemade_frozen
-            if item_type == ItemType.HOMEMADE_FROZEN:
+            # Zusätzliches Einfrierdatum, wenn der Typ Herstellungs- und Einfrierdatum erfasst (homemade_frozen)
+            if spec.uses_freeze_date and date_field != "freeze_date":
                 ui.label("Eingefroren am *").classes("text-sm font-medium mb-1 mt-4")
                 freeze_date_value = form_data.get("freeze_date") or date_type.today()
                 form_data["freeze_date"] = freeze_date_value
@@ -407,14 +398,7 @@ def add_item() -> None:
             ui.label("Lagerort & Notizen").classes("sp-page-title text-base mb-3")
 
             # Summary from Steps 1-2 (Solarpunk summary box)
-            item_type_labels = {
-                ItemType.PURCHASED_FRESH: "Frisch eingekauft",
-                ItemType.PURCHASED_FROZEN: "TK-Ware gekauft",
-                ItemType.PURCHASED_THEN_FROZEN: "Frisch gekauft → eingefroren",
-                ItemType.HOMEMADE_FROZEN: "Selbst eingefroren",
-                ItemType.HOMEMADE_PRESERVED: "Selbst eingemacht",
-            }
-            type_label = item_type_labels.get(item_type, "")
+            type_label = item_types.get_item_type_label(item_type)
 
             # Get category name for summary if selected
             category_name = None
@@ -437,10 +421,10 @@ def add_item() -> None:
 
                 # Date info: nur die wirklich erfassten Daten, beschriftet wie im Bottom-Sheet (#387)
                 date_parts: list[str] = []
-                if item_type in {ItemType.PURCHASED_FRESH, ItemType.PURCHASED_FROZEN}:
-                    date_parts.append(f"MHD: {form_data['best_before_date'].strftime('%d.%m.%Y')}")
-                elif item_type != ItemType.PURCHASED_THEN_FROZEN:
-                    date_parts.append(f"Hergestellt: {form_data['best_before_date'].strftime('%d.%m.%Y')}")
+                best_before_label = item_types.get_best_before_label(item_type)
+                if best_before_label is not None:
+                    short = "MHD" if best_before_label == item_types.LABEL_MHD else "Hergestellt"
+                    date_parts.append(f"{short}: {form_data['best_before_date'].strftime('%d.%m.%Y')}")
                 if form_data.get("freeze_date"):
                     date_parts.append(f"Eingefroren: {form_data['freeze_date'].strftime('%d.%m.%Y')}")
                 ui.label(" • ".join(date_parts)).classes("sp-summary-content")

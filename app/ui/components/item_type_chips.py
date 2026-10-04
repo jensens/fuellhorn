@@ -5,18 +5,13 @@ ring-dot indicator. Designed for mobile-first touch interaction.
 """
 
 from ...models.item import ItemType
+from ...services import item_types
 from collections.abc import Callable
 from nicegui import ui
 
 
-# German labels for item types
-ITEM_TYPE_LABELS: dict[ItemType, str] = {
-    ItemType.PURCHASED_FRESH: "Frisch eingekauft",
-    ItemType.PURCHASED_FROZEN: "TK-Ware gekauft",
-    ItemType.PURCHASED_THEN_FROZEN: "Frisch gekauft \u2192 eingefroren",
-    ItemType.HOMEMADE_FROZEN: "Selbst eingefroren",
-    ItemType.HOMEMADE_PRESERVED: "Selbst eingemacht",
-}
+# German labels for item types (eine Quelle: services/item_types, Issue #398)
+ITEM_TYPE_LABELS: dict[ItemType, str] = item_types.ITEM_TYPE_LABELS
 
 # CSS data-type attribute values for Solarpunk theme styling
 ITEM_TYPE_DATA_TYPES: dict[ItemType, str] = {

@@ -4,6 +4,7 @@ from ..models.item import Item
 from ..models.item import ItemType
 from ..models.location import Location
 from ..models.location import LocationType
+from ..services import item_types
 from ..services.errors import DuplicateNameError
 from ..services.validation import require_non_empty
 from ..services.validation import validate_hex_color
@@ -15,25 +16,8 @@ from sqlmodel import select
 
 
 def get_valid_location_types(item_type: ItemType) -> list[LocationType]:
-    """Get valid location types for a given item type.
-
-    Args:
-        item_type: The type of item
-
-    Returns:
-        List of valid LocationTypes for this item type
-    """
-    if item_type in {
-        ItemType.PURCHASED_FROZEN,
-        ItemType.PURCHASED_THEN_FROZEN,
-        ItemType.HOMEMADE_FROZEN,
-    }:
-        return [LocationType.FROZEN]
-    elif item_type in {ItemType.PURCHASED_FRESH, ItemType.HOMEMADE_PRESERVED}:
-        return [LocationType.AMBIENT, LocationType.CHILLED]
-    else:
-        # Fallback (should not happen with current ItemType enum)
-        return [LocationType.FROZEN, LocationType.CHILLED, LocationType.AMBIENT]
+    """Erlaubte Lagerort-Typen eines Artikel-Typs (Spec in item_types, #398)."""
+    return item_types.get_valid_location_types(item_type)
 
 
 def get_locations_for_item_type(

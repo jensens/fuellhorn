@@ -5,6 +5,7 @@ from ...database import get_session
 from ...models.item import ItemType
 from ...services import category_service
 from ...services import item_service
+from ...services import item_types
 from ...services import location_service
 from ..components import create_bottom_nav
 from ..components import create_grouped_category_chip_group
@@ -25,7 +26,7 @@ from nicegui import ui
 from typing import Any
 
 
-FREEZE_DATE_TYPES = {ItemType.PURCHASED_THEN_FROZEN, ItemType.HOMEMADE_FROZEN}
+FREEZE_DATE_TYPES = item_types.FREEZE_DATE_TYPES
 
 
 def _date_label(item_type: ItemType) -> str:
@@ -33,9 +34,8 @@ def _date_label(item_type: ItemType) -> str:
 
     Für PURCHASED_THEN_FROZEN ist das Feld ausgeblendet: der Service spiegelt dort das Einfrierdatum.
     """
-    if item_type in {ItemType.PURCHASED_FRESH, ItemType.PURCHASED_FROZEN}:
-        return "Mindesthaltbarkeitsdatum (MHD) *"
-    return "Hergestellt am *"
+    label = item_types.get_best_before_input_label(item_type) or item_types.LABEL_PRODUCED
+    return f"{label} *"
 
 
 @ui.page("/items/{item_id}/edit")

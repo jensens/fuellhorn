@@ -17,6 +17,7 @@ from ...models.item import ItemType
 from ...services import category_service
 from ...services import expiry_service
 from ...services import item_service
+from ...services import item_types
 from ...services import location_service
 from ...services.item_rows import get_item_rows
 from ..components import create_bottom_nav
@@ -81,14 +82,10 @@ SORT_OPTIONS: dict[str, str] = {
     "created_at": "Erfassungsdatum",
 }
 
-# Human-readable labels for item types
+# Filter-Optionen: "" = alle, sonst die Spec-Labels (eine Quelle, Issue #398)
 ITEM_TYPE_LABELS: dict[str, str] = {
     "": "Alle Typen",
-    ItemType.PURCHASED_FRESH.value: "Frisch gekauft",
-    ItemType.PURCHASED_FROZEN.value: "TK-Ware gekauft",
-    ItemType.PURCHASED_THEN_FROZEN.value: "Gekauft → eingefroren",
-    ItemType.HOMEMADE_FROZEN.value: "Selbst eingefroren",
-    ItemType.HOMEMADE_PRESERVED.value: "Eingemacht",
+    **{item_type.value: item_types.get_item_type_label(item_type) for item_type in ItemType},
 }
 
 

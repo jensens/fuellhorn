@@ -147,21 +147,16 @@ def validate_freeze_date(
         Error message if invalid, None if valid
     """
     # Import here to avoid circular dependency
-    from ...models.item import ItemType
+    from ...services import item_types
 
-    # Only self-frozen items require freeze_date
-    # PURCHASED_FROZEN has MHD on package, no freeze_date needed
-    frozen_types = {
-        ItemType.PURCHASED_THEN_FROZEN,
-        ItemType.HOMEMADE_FROZEN,
-    }
-
-    if item_type in frozen_types:
+    # Nur Typen mit Einfrierdatum (Spec, #398); PURCHASED_FROZEN läuft per MHD ab
+    if item_type in item_types.FREEZE_DATE_TYPES:
         if freeze_date is None:
             return "Einfrierdatum erforderlich für TK-Artikel"
-        # Only HOMEMADE_FROZEN collects a production date to compare against.
-        # For PURCHASED_THEN_FROZEN best_before is just the entry day (see #387).
-        if item_type == ItemType.HOMEMADE_FROZEN and best_before and freeze_date < best_before:
+        # Nur Typen, die ein Herstellungsdatum erfassen, vergleichen dagegen;
+        # bei PURCHASED_THEN_FROZEN ist best_before nur der Erfassungstag (#387).
+        collects_production_date = item_types.get_best_before_label(item_type) is not None
+        if collects_production_date and best_before and freeze_date < best_before:
             return "Einfrierdatum kann nicht vor Produktionsdatum liegen"
 
     return None
