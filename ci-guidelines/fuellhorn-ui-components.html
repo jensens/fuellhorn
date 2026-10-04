@@ -11,7 +11,7 @@
            FÜLLHORN SOLARPUNK DESIGN SYSTEM
            CSS Variables & Base Styles
            ============================================ */
-        
+
         :root {
             /* Primary - Greens */
             --fern: #4A7C59;
@@ -22,7 +22,7 @@
             --leaf-light: #9DC46A;
             --sage: #9CAF88;
             --sage-light: #B8C9A8;
-            
+
             /* Secondary - Earth & Gold */
             --amber: #E6A832;
             --amber-dark: #D49A28;
@@ -30,7 +30,7 @@
             --honey: #DAA520;
             --terracotta: #C17F59;
             --clay: #B8860B;
-            
+
             /* Neutrals */
             --cream: #FAF7F0;
             --oat: #F5F0E6;
@@ -38,30 +38,30 @@
             --stone: #A39E93;
             --stone-dark: #7D796F;
             --charcoal: #3D3D3D;
-            
+
             /* Status */
             --status-ok: #7CB342;
             --status-warning: #E6A832;
             --status-critical: #E07A5F;
             --status-critical-dark: #C96A4F;
             --status-info: #5BA3C6;
-            
+
             /* Shadows */
             --shadow-sm: 0 1px 3px rgba(74, 124, 89, 0.08);
             --shadow-md: 0 4px 12px rgba(74, 124, 89, 0.12);
             --shadow-lg: 0 8px 24px rgba(74, 124, 89, 0.16);
-            
+
             /* Borders */
             --radius-sm: 8px;
             --radius-md: 12px;
             --radius-lg: 16px;
             --radius-xl: 20px;
             --radius-full: 9999px;
-            
+
             /* Typography */
             --font-display: 'Cormorant Garamond', Georgia, serif;
             --font-body: 'Nunito', system-ui, sans-serif;
-            
+
             /* Spacing */
             --space-xs: 4px;
             --space-sm: 8px;
@@ -69,42 +69,42 @@
             --space-lg: 24px;
             --space-xl: 32px;
         }
-        
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
             font-family: var(--font-body);
             background: var(--cream);
             color: var(--charcoal);
             line-height: 1.5;
         }
-        
+
         /* ============================================
            STYLEGUIDE LAYOUT
            ============================================ */
-        
+
         .styleguide-header {
             background: linear-gradient(135deg, var(--fern) 0%, var(--moss) 100%);
             color: white;
             padding: var(--space-xl) var(--space-lg);
             text-align: center;
         }
-        
+
         .styleguide-header h1 {
             font-family: var(--font-display);
             font-size: 2.5rem;
             font-weight: 600;
             margin-bottom: var(--space-sm);
         }
-        
+
         .styleguide-header p {
             opacity: 0.9;
         }
-        
+
         .styleguide-nav {
             background: white;
             padding: var(--space-md);
@@ -116,7 +116,7 @@
             gap: var(--space-sm);
             overflow-x: auto;
         }
-        
+
         .styleguide-nav a {
             padding: var(--space-sm) var(--space-md);
             background: var(--oat);
@@ -128,28 +128,28 @@
             white-space: nowrap;
             transition: all 0.2s ease;
         }
-        
+
         .styleguide-nav a:hover {
             background: var(--fern);
             color: white;
         }
-        
+
         .container {
             max-width: 900px;
             margin: 0 auto;
             padding: var(--space-lg);
         }
-        
+
         section {
             margin-bottom: var(--space-xl);
             padding-bottom: var(--space-xl);
             border-bottom: 1px solid var(--sage-light);
         }
-        
+
         section:last-child {
             border-bottom: none;
         }
-        
+
         h2 {
             font-family: var(--font-display);
             font-size: 1.75rem;
@@ -159,36 +159,36 @@
             align-items: center;
             gap: var(--space-sm);
         }
-        
+
         h2 .material-icons {
             color: var(--amber);
         }
-        
+
         h3 {
             font-size: 1rem;
             color: var(--moss);
             margin-bottom: var(--space-md);
             font-weight: 600;
         }
-        
+
         .component-group {
             margin-bottom: var(--space-lg);
         }
-        
+
         .component-row {
             display: flex;
             flex-wrap: wrap;
             gap: var(--space-md);
             align-items: flex-start;
         }
-        
+
         .component-demo {
             background: white;
             padding: var(--space-lg);
             border-radius: var(--radius-lg);
             box-shadow: var(--shadow-sm);
         }
-        
+
         .code-hint {
             background: var(--parchment);
             padding: var(--space-sm) var(--space-md);
@@ -198,11 +198,11 @@
             color: var(--stone-dark);
             margin-top: var(--space-sm);
         }
-        
+
         /* ============================================
            1. BUTTONS
            ============================================ */
-        
+
         .btn {
             display: inline-flex;
             align-items: center;
@@ -219,72 +219,72 @@
             min-height: 48px;
             text-transform: none;
         }
-        
+
         .btn-primary {
             background: var(--fern);
             color: white;
         }
-        
+
         .btn-primary:hover {
             background: var(--fern-dark);
             box-shadow: var(--shadow-md);
         }
-        
+
         .btn-secondary {
             background: transparent;
             color: var(--fern);
             border: 2px solid var(--fern);
         }
-        
+
         .btn-secondary:hover {
             background: var(--fern);
             color: white;
         }
-        
+
         .btn-accent {
             background: var(--amber);
             color: white;
         }
-        
+
         .btn-accent:hover {
             background: var(--amber-dark);
             box-shadow: var(--shadow-md);
         }
-        
+
         .btn-danger {
             background: var(--status-critical);
             color: white;
         }
-        
+
         .btn-danger:hover {
             background: var(--status-critical-dark);
         }
-        
+
         .btn-ghost {
             background: transparent;
             color: var(--fern);
         }
-        
+
         .btn-ghost:hover {
             background: var(--oat);
         }
-        
+
         .btn-icon {
             width: 48px;
             height: 48px;
             padding: 0;
             border-radius: var(--radius-full);
         }
-        
+
         .btn:disabled {
             opacity: 0.5;
             cursor: not-allowed;
         }
-        
+
         /* ============================================
            2. CHIPS - Unit Style (simple toggle)
            ============================================ */
-        
+
         .chip {
             display: inline-flex;
             align-items: center;
@@ -298,35 +298,35 @@
             min-height: 44px;
             border: 2px solid transparent;
         }
-        
+
         .chip-unit {
             background: var(--oat);
             color: var(--charcoal);
             border-color: var(--sage-light);
         }
-        
+
         .chip-unit:hover {
             background: var(--parchment);
             border-color: var(--sage);
         }
-        
+
         .chip-unit.active {
             background: var(--fern);
             color: white;
             border-color: var(--fern);
         }
-        
+
         /* ============================================
            3. CHIPS - Category/Location Style (with ring-dot)
            ============================================ */
-        
+
         .chip-category {
             background: var(--oat);
             color: var(--charcoal);
             gap: var(--space-sm);
             padding-left: 14px;
         }
-        
+
         .chip-category .ring-dot {
             width: 18px;
             height: 18px;
@@ -335,49 +335,49 @@
             background: white;
             flex-shrink: 0;
         }
-        
+
         .chip-category:hover {
             background: var(--parchment);
         }
-        
+
         .chip-category.active {
             color: white;
         }
-        
+
         .chip-category.active .ring-dot {
             border-color: white;
             background: radial-gradient(circle, white 35%, transparent 35%);
         }
-        
+
         /* Dynamic category colors - examples */
         .chip-category[data-color="green"] { border-color: #4CAF50; color: #4CAF50; }
         .chip-category[data-color="green"].active { background: #4CAF50; color: white; }
-        
+
         .chip-category[data-color="orange"] { border-color: #FF9800; color: #FF9800; }
         .chip-category[data-color="orange"].active { background: #FF9800; color: white; }
-        
+
         .chip-category[data-color="red"] { border-color: #F44336; color: #F44336; }
         .chip-category[data-color="red"].active { background: #F44336; color: white; }
-        
+
         .chip-category[data-color="blue"] { border-color: #2196F3; color: #2196F3; }
         .chip-category[data-color="blue"].active { background: #2196F3; color: white; }
-        
+
         .chip-category[data-color="purple"] { border-color: #9C27B0; color: #9C27B0; }
         .chip-category[data-color="purple"].active { background: #9C27B0; color: white; }
-        
+
         .chip-category[data-color="yellow"] { border-color: #FFC107; color: #9A7B00; }
         .chip-category[data-color="yellow"].active { background: #FFC107; color: #5D4A00; }
-        
+
         /* ============================================
            4. CHIPS - Item Type Style (text color only)
            ============================================ */
-        
+
         .chip-type {
             background: var(--oat);
             gap: var(--space-sm);
             padding-left: 14px;
         }
-        
+
         .chip-type .ring-dot {
             width: 18px;
             height: 18px;
@@ -386,48 +386,48 @@
             background: white;
             flex-shrink: 0;
         }
-        
+
         .chip-type.active .ring-dot {
             background: radial-gradient(circle, currentColor 35%, white 35%);
         }
-        
+
         .chip-type[data-color="fresh"] { color: var(--leaf); }
         .chip-type[data-color="fresh"].active { background: var(--leaf); color: white; }
         .chip-type[data-color="fresh"].active .ring-dot { border-color: white; background: radial-gradient(circle, white 35%, transparent 35%); }
-        
+
         .chip-type[data-color="frozen"] { color: var(--status-info); }
         .chip-type[data-color="frozen"].active { background: var(--status-info); color: white; }
         .chip-type[data-color="frozen"].active .ring-dot { border-color: white; background: radial-gradient(circle, white 35%, transparent 35%); }
-        
+
         .chip-type[data-color="homemade"] { color: var(--terracotta); }
         .chip-type[data-color="homemade"].active { background: var(--terracotta); color: white; }
         .chip-type[data-color="homemade"].active .ring-dot { border-color: white; background: radial-gradient(circle, white 35%, transparent 35%); }
-        
+
         /* ============================================
            5. INPUTS
            ============================================ */
-        
+
         .input-group {
             display: flex;
             flex-direction: column;
             gap: var(--space-xs);
         }
-        
+
         .input-label {
             font-size: 0.875rem;
             font-weight: 600;
             color: var(--charcoal);
         }
-        
+
         .input-label .required {
             color: var(--status-critical);
         }
-        
+
         .input-hint {
             font-size: 0.8125rem;
             color: var(--stone);
         }
-        
+
         .input {
             width: 100%;
             padding: 14px 16px;
@@ -439,33 +439,33 @@
             color: var(--charcoal);
             transition: all 0.2s ease;
         }
-        
+
         .input::placeholder {
             color: var(--stone);
         }
-        
+
         .input:hover {
             border-color: var(--sage);
         }
-        
+
         .input:focus {
             outline: none;
             border-color: var(--fern);
             box-shadow: 0 0 0 3px rgba(74, 124, 89, 0.15);
         }
-        
+
         .input-search {
             padding-left: 48px;
             background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='%23A39E93'%3E%3Cpath d='M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z'/%3E%3C/svg%3E");
             background-repeat: no-repeat;
             background-position: 14px center;
         }
-        
+
         /* ============================================
            6. ITEM CARDS (Unified 3-Line Design)
            Verwendet für Vorrat UND Dashboard
            ============================================ */
-        
+
         .item-card {
             background: white;
             border-radius: var(--radius-lg);
@@ -479,25 +479,25 @@
             transition: all 0.2s ease;
             border-left: 4px solid var(--status-ok);
         }
-        
+
         .item-card:hover {
             box-shadow: var(--shadow-md);
             transform: translateY(-1px);
         }
-        
+
         .item-card.status-warning {
             border-left-color: var(--status-warning);
         }
-        
+
         .item-card.status-critical {
             border-left-color: var(--status-critical);
         }
-        
+
         /* With action button (Dashboard variant) */
         .item-card.with-action {
             grid-template-columns: 1fr auto auto;
         }
-        
+
         /* Left side: All info stacked */
         .item-card-left {
             display: flex;
@@ -505,7 +505,7 @@
             gap: 4px;
             min-width: 0;
         }
-        
+
         /* Row 1: Name */
         .item-card-name {
             font-weight: 600;
@@ -515,7 +515,7 @@
             overflow: hidden;
             text-overflow: ellipsis;
         }
-        
+
         /* Row 2: Meta (Menge · Typ) */
         .item-card-meta {
             font-size: 0.8rem;
@@ -525,11 +525,11 @@
             gap: 6px;
             flex-wrap: wrap;
         }
-        
+
         .item-card-meta .separator {
             color: var(--sage);
         }
-        
+
         /* Item Type Badge */
         .type-badge {
             font-size: 0.7rem;
@@ -538,11 +538,11 @@
             border-radius: 4px;
             white-space: nowrap;
         }
-        
+
         .type-badge.fresh { background: rgba(124, 179, 66, 0.15); color: var(--leaf); }
         .type-badge.frozen { background: rgba(91, 163, 198, 0.15); color: var(--status-info); }
         .type-badge.homemade { background: rgba(193, 127, 89, 0.15); color: var(--terracotta); }
-        
+
         /* Row 3: Location + Category */
         .item-card-tags {
             display: flex;
@@ -550,7 +550,7 @@
             gap: 8px;
             flex-wrap: wrap;
         }
-        
+
         .item-card-location {
             display: flex;
             align-items: center;
@@ -558,12 +558,12 @@
             font-size: 0.75rem;
             color: var(--stone);
         }
-        
+
         .item-card-location .material-icons {
             font-size: 14px;
             color: var(--terracotta);
         }
-        
+
         .category-tag {
             font-size: 0.7rem;
             font-weight: 500;
@@ -571,7 +571,7 @@
             border-radius: 10px;
             border: 1px solid currentColor;
         }
-        
+
         /* Right side: Expiry */
         .item-card-right {
             display: flex;
@@ -581,34 +581,34 @@
             text-align: right;
             min-width: 70px;
         }
-        
+
         .item-card-expiry-label {
             font-size: 0.65rem;
             color: var(--stone);
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
-        
+
         .item-card-expiry-date {
             font-weight: 700;
             font-size: 0.85rem;
             color: var(--status-ok);
         }
-        
+
         .item-card.status-warning .item-card-expiry-date {
             color: var(--status-warning);
         }
-        
+
         .item-card.status-critical .item-card-expiry-date {
             color: var(--status-critical);
         }
-        
+
         /* Action button area */
         .item-card-action {
             display: flex;
             align-items: center;
         }
-        
+
         .btn-small {
             padding: 6px 12px;
             font-size: 0.7rem;
@@ -620,41 +620,41 @@
             color: white;
             transition: background 0.2s ease;
         }
-        
+
         .btn-small:hover {
             background: var(--status-critical-dark);
         }
-        
+
         /* ============================================
            7. DASHBOARD CARDS
            ============================================ */
-        
+
         .dashboard-card {
             background: white;
             border-radius: var(--radius-lg);
             box-shadow: var(--shadow-sm);
             padding: var(--space-md);
         }
-        
+
         .dashboard-card-header {
             display: flex;
             align-items: center;
             gap: var(--space-sm);
             margin-bottom: var(--space-md);
         }
-        
+
         .dashboard-card-header .status-dot {
             width: 12px;
             height: 12px;
             border-radius: 50%;
         }
-        
+
         .dashboard-card-header h3 {
             font-family: var(--font-body);
             font-weight: 600;
             margin: 0;
         }
-        
+
         .dashboard-alert-item {
             display: flex;
             align-items: center;
@@ -665,34 +665,34 @@
             margin-bottom: var(--space-sm);
             border-left: 3px solid var(--status-critical);
         }
-        
+
         .dashboard-alert-item:last-child {
             margin-bottom: 0;
         }
-        
+
         .dashboard-alert-content {
             flex: 1;
         }
-        
+
         .dashboard-alert-name {
             font-weight: 600;
             display: flex;
             align-items: center;
             gap: var(--space-sm);
         }
-        
+
         .dashboard-alert-name .status-dot {
             width: 10px;
             height: 10px;
             border-radius: 50%;
             background: var(--status-critical);
         }
-        
+
         .dashboard-alert-info {
             font-size: 0.875rem;
             color: var(--status-critical);
         }
-        
+
         .dashboard-alert-location {
             font-size: 0.8125rem;
             color: var(--stone);
@@ -700,12 +700,12 @@
             align-items: center;
             gap: 4px;
         }
-        
+
         .dashboard-alert-location .material-icons {
             font-size: 14px;
             color: var(--terracotta);
         }
-        
+
         /* Stats Card */
         .stats-card {
             background: white;
@@ -713,37 +713,37 @@
             box-shadow: var(--shadow-sm);
             padding: var(--space-lg);
         }
-        
+
         .stats-row {
             display: flex;
             justify-content: space-around;
             text-align: center;
         }
-        
+
         .stats-item {
             padding: var(--space-sm);
         }
-        
+
         .stats-number {
             font-size: 2rem;
             font-weight: 700;
             line-height: 1;
             margin-bottom: var(--space-xs);
         }
-        
+
         .stats-number.primary { color: var(--fern); }
         .stats-number.warning { color: var(--status-warning); }
         .stats-number.success { color: var(--status-ok); }
-        
+
         .stats-label {
             font-size: 0.875rem;
             color: var(--stone);
         }
-        
+
         /* ============================================
            8. BOTTOM NAVIGATION
            ============================================ */
-        
+
         .bottom-nav {
             display: flex;
             background: white;
@@ -751,7 +751,7 @@
             border-top: 1px solid var(--sage-light);
             height: 64px;
         }
-        
+
         .bottom-nav-item {
             flex: 1;
             display: flex;
@@ -764,25 +764,25 @@
             transition: all 0.2s ease;
             position: relative;
         }
-        
+
         .bottom-nav-item .material-icons {
             font-size: 24px;
         }
-        
+
         .bottom-nav-item span {
             font-size: 0.75rem;
             font-weight: 500;
         }
-        
+
         .bottom-nav-item:hover {
             color: var(--moss);
             background: var(--oat);
         }
-        
+
         .bottom-nav-item.active {
             color: var(--fern);
         }
-        
+
         .bottom-nav-item.active::before {
             content: '';
             position: absolute;
@@ -794,12 +794,12 @@
             background: var(--fern);
             border-radius: 0 0 3px 3px;
         }
-        
+
         /* Floating Add Button variant */
         .bottom-nav-item.add-btn {
             position: relative;
         }
-        
+
         .bottom-nav-item.add-btn .icon-circle {
             width: 48px;
             height: 48px;
@@ -812,15 +812,15 @@
             box-shadow: var(--shadow-md);
             margin-bottom: -8px;
         }
-        
+
         .bottom-nav-item.add-btn span {
             color: var(--fern);
         }
-        
+
         /* ============================================
            9. PAGE HEADER
            ============================================ */
-        
+
         .page-header {
             display: flex;
             align-items: center;
@@ -829,13 +829,13 @@
             background: white;
             border-bottom: 1px solid var(--sage-light);
         }
-        
+
         .page-header-left {
             display: flex;
             align-items: center;
             gap: var(--space-sm);
         }
-        
+
         .page-header-back {
             width: 40px;
             height: 40px;
@@ -847,28 +847,28 @@
             cursor: pointer;
             transition: background 0.2s ease;
         }
-        
+
         .page-header-back:hover {
             background: var(--oat);
         }
-        
+
         .page-header-title {
             font-family: var(--font-display);
             font-size: 1.5rem;
             font-weight: 600;
             color: var(--fern);
         }
-        
+
         .page-header-right {
             display: flex;
             align-items: center;
             gap: var(--space-sm);
         }
-        
+
         /* ============================================
            10. ADMIN LIST ITEMS
            ============================================ */
-        
+
         .admin-list-item {
             display: flex;
             align-items: center;
@@ -879,29 +879,29 @@
             box-shadow: var(--shadow-sm);
             margin-bottom: var(--space-sm);
         }
-        
+
         .admin-list-item-drag {
             color: var(--sage);
             cursor: grab;
         }
-        
+
         .admin-list-item-color {
             width: 24px;
             height: 24px;
             border-radius: 50%;
             flex-shrink: 0;
         }
-        
+
         .admin-list-item-name {
             flex: 1;
             font-weight: 500;
         }
-        
+
         .admin-list-item-actions {
             display: flex;
             gap: var(--space-xs);
         }
-        
+
         .admin-list-item-actions button {
             width: 36px;
             height: 36px;
@@ -914,36 +914,36 @@
             justify-content: center;
             transition: background 0.2s ease;
         }
-        
+
         .admin-list-item-actions button:hover {
             background: var(--oat);
         }
-        
+
         .admin-list-item-actions .edit { color: var(--stone); }
         .admin-list-item-actions .delete { color: var(--status-critical); }
-        
+
         /* ============================================
            11. SUMMARY BOX (for wizard)
            ============================================ */
-        
+
         .summary-box {
             background: var(--oat);
             border-radius: var(--radius-md);
             padding: var(--space-md);
             border-left: 4px solid var(--sage);
         }
-        
+
         .summary-box-title {
             font-size: 0.8125rem;
             color: var(--stone);
             margin-bottom: var(--space-xs);
         }
-        
+
         .summary-box-content {
             font-weight: 500;
             color: var(--charcoal);
         }
-        
+
         .summary-box-content small {
             display: block;
             font-size: 0.875rem;
@@ -951,26 +951,26 @@
             font-weight: 400;
             margin-top: 2px;
         }
-        
+
         /* ============================================
            12. STEP INDICATOR
            ============================================ */
-        
+
         .step-indicator {
             font-size: 0.875rem;
             color: var(--stone);
         }
-        
+
         /* ============================================
            13. TOGGLE / SWITCH
            ============================================ */
-        
+
         .toggle-wrapper {
             display: flex;
             align-items: center;
             gap: var(--space-sm);
         }
-        
+
         .toggle {
             width: 52px;
             height: 28px;
@@ -980,7 +980,7 @@
             cursor: pointer;
             transition: background 0.2s ease;
         }
-        
+
         .toggle::after {
             content: '';
             position: absolute;
@@ -993,24 +993,24 @@
             box-shadow: var(--shadow-sm);
             transition: transform 0.2s ease;
         }
-        
+
         .toggle.active {
             background: var(--fern);
         }
-        
+
         .toggle.active::after {
             transform: translateX(24px);
         }
-        
+
         .toggle-label {
             font-size: 0.875rem;
             color: var(--charcoal);
         }
-        
+
         /* ============================================
            14. SELECT / DROPDOWN
            ============================================ */
-        
+
         .select {
             appearance: none;
             width: 100%;
@@ -1027,21 +1027,21 @@
             background-position: right 12px center;
             transition: all 0.2s ease;
         }
-        
+
         .select:hover {
             border-color: var(--sage);
         }
-        
+
         .select:focus {
             outline: none;
             border-color: var(--fern);
             box-shadow: 0 0 0 3px rgba(74, 124, 89, 0.15);
         }
-        
+
         /* ============================================
            15. QUICK FILTER CHIPS (outlined, for dashboard)
            ============================================ */
-        
+
         .quick-filter-chip {
             display: inline-flex;
             align-items: center;
@@ -1055,22 +1055,22 @@
             cursor: pointer;
             transition: all 0.2s ease;
         }
-        
+
         .quick-filter-chip:hover {
             background: var(--oat);
             border-color: var(--fern);
         }
-        
+
         .quick-filter-chip.active {
             background: var(--fern);
             border-color: var(--fern);
             color: white;
         }
-        
+
         /* ============================================
            16. BOTTOM SHEET
            ============================================ */
-        
+
         .bottom-sheet {
             background: white;
             border-radius: var(--radius-xl) var(--radius-xl) 0 0;
@@ -1079,7 +1079,7 @@
             margin: 0 auto;
             box-shadow: var(--shadow-lg);
         }
-        
+
         .bottom-sheet-handle {
             width: 40px;
             height: 4px;
@@ -1087,20 +1087,20 @@
             border-radius: 2px;
             margin: 0 auto var(--space-md);
         }
-        
+
         .bottom-sheet-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
             margin-bottom: var(--space-md);
         }
-        
+
         .bottom-sheet-title {
             font-weight: 600;
             font-size: 1.125rem;
             color: var(--charcoal);
         }
-        
+
         .bottom-sheet-close {
             width: 36px;
             height: 36px;
@@ -1114,51 +1114,51 @@
             color: var(--stone);
             transition: all 0.2s ease;
         }
-        
+
         .bottom-sheet-close:hover {
             background: var(--parchment);
             color: var(--charcoal);
         }
-        
+
         .bottom-sheet-body {
             padding: var(--space-md) 0;
             border-top: 1px solid var(--sage-light);
             border-bottom: 1px solid var(--sage-light);
         }
-        
+
         .bottom-sheet-info-row {
             display: flex;
             align-items: flex-start;
             gap: var(--space-sm);
             padding: var(--space-sm) 0;
         }
-        
+
         .bottom-sheet-info-row .material-icons {
             color: var(--fern);
             font-size: 20px;
             margin-top: 2px;
         }
-        
+
         .bottom-sheet-info-label {
             font-size: 0.8125rem;
             color: var(--stone);
         }
-        
+
         .bottom-sheet-info-value {
             font-weight: 500;
         }
-        
+
         .bottom-sheet-actions {
             padding-top: var(--space-md);
             display: flex;
             flex-direction: column;
             gap: var(--space-sm);
         }
-        
+
         /* ============================================
            PHONE MOCKUP
            ============================================ */
-        
+
         .phone-mockup {
             max-width: 375px;
             margin: 0 auto;
@@ -1168,7 +1168,7 @@
             overflow: hidden;
             box-shadow: var(--shadow-lg);
         }
-        
+
         .phone-notch {
             width: 120px;
             height: 24px;
@@ -1176,19 +1176,19 @@
             border-radius: 0 0 12px 12px;
             margin: 0 auto;
         }
-        
+
         .phone-content {
             min-height: 600px;
             display: flex;
             flex-direction: column;
         }
-        
+
         .phone-body {
             flex: 1;
             padding: var(--space-md);
             overflow-y: auto;
         }
-        
+
         /* Dark background demo */
         .demo-dark {
             background: #2D3B2D;
@@ -1202,7 +1202,7 @@
         <h1>🌿 Füllhorn UI Components</h1>
         <p>Solarpunk Design System</p>
     </header>
-    
+
     <nav class="styleguide-nav">
         <a href="#buttons">Buttons</a>
         <a href="#chips">Chips</a>
@@ -1216,13 +1216,13 @@
         <a href="#css-export">CSS Integration</a>
         <a href="#nicegui">NiceGUI Code</a>
     </nav>
-    
+
     <div class="container">
-        
+
         <!-- BUTTONS -->
         <section id="buttons">
             <h2><span class="material-icons">touch_app</span> Buttons</h2>
-            
+
             <div class="component-group">
                 <h3>Button Varianten</h3>
                 <div class="component-row">
@@ -1244,7 +1244,7 @@
                     .btn-primary (Fern) | .btn-secondary (Outline) | .btn-accent (Amber) | .btn-ghost
                 </div>
             </div>
-            
+
             <div class="component-group">
                 <h3>Danger & Disabled</h3>
                 <div class="component-row">
@@ -1255,7 +1255,7 @@
                     <button class="btn btn-primary" disabled>Disabled</button>
                 </div>
             </div>
-            
+
             <div class="component-group">
                 <h3>Icon Buttons</h3>
                 <div class="component-row">
@@ -1271,11 +1271,11 @@
                 </div>
             </div>
         </section>
-        
+
         <!-- CHIPS -->
         <section id="chips">
             <h2><span class="material-icons">label</span> Chips</h2>
-            
+
             <div class="component-group">
                 <h3>Unit Chips (einfacher Toggle)</h3>
                 <div class="component-row">
@@ -1288,7 +1288,7 @@
                 </div>
                 <div class="code-hint">.chip-unit – Active: Fern BG, White Text</div>
             </div>
-            
+
             <div class="component-group">
                 <h3>Category Chips (mit Ring-Dot, dynamische Farben)</h3>
                 <div class="component-row" style="flex-wrap: wrap;">
@@ -1319,7 +1319,7 @@
                 </div>
                 <div class="code-hint">.chip-category[data-color="..."] – Farbe aus DB, Ring-Dot zeigt Selection</div>
             </div>
-            
+
             <div class="component-group">
                 <h3>Item Type Chips (Artikel-Typ)</h3>
                 <div class="component-row" style="flex-wrap: wrap;">
@@ -1337,7 +1337,7 @@
                     </span>
                 </div>
             </div>
-            
+
             <div class="component-group">
                 <h3>Quick Filter Chips (für Dashboard)</h3>
                 <div class="component-row">
@@ -1347,11 +1347,11 @@
                 </div>
             </div>
         </section>
-        
+
         <!-- INPUTS -->
         <section id="inputs">
             <h2><span class="material-icons">edit</span> Inputs</h2>
-            
+
             <div class="component-demo">
                 <div class="component-group">
                     <div class="input-group" style="max-width: 400px;">
@@ -1359,14 +1359,14 @@
                         <input type="text" class="input" placeholder="z.B. Tomaten aus Garten">
                     </div>
                 </div>
-                
+
                 <div class="component-group">
                     <div class="input-group" style="max-width: 400px;">
                         <label class="input-label">Suchen</label>
                         <input type="text" class="input input-search" placeholder="Artikel suchen...">
                     </div>
                 </div>
-                
+
                 <div class="component-group">
                     <div class="input-group" style="max-width: 400px;">
                         <label class="input-label">Lagerort</label>
@@ -1378,7 +1378,7 @@
                         </select>
                     </div>
                 </div>
-                
+
                 <div class="component-group">
                     <div class="toggle-wrapper">
                         <div class="toggle active"></div>
@@ -1387,16 +1387,16 @@
                 </div>
             </div>
         </section>
-        
+
         <!-- ITEM CARDS -->
         <section id="cards">
             <h2><span class="material-icons">inventory_2</span> Item Cards (Unified)</h2>
-            
+
             <div class="component-group">
                 <h3>Standard Card (Vorrat-Ansicht)</h3>
                 <div class="component-demo" style="background: var(--cream);">
                     <div style="display: flex; flex-direction: column; gap: 0; max-width: 500px;">
-                        
+
                         <!-- OK Status -->
                         <div class="item-card">
                             <div class="item-card-left">
@@ -1419,7 +1419,7 @@
                                 <div class="item-card-expiry-date">30.11.25</div>
                             </div>
                         </div>
-                        
+
                         <!-- Warning Status -->
                         <div class="item-card status-warning">
                             <div class="item-card-left">
@@ -1442,7 +1442,7 @@
                                 <div class="item-card-expiry-date">in 5 Tagen</div>
                             </div>
                         </div>
-                        
+
                         <!-- Critical Status -->
                         <div class="item-card status-critical">
                             <div class="item-card-left">
@@ -1465,16 +1465,16 @@
                                 <div class="item-card-expiry-date">Morgen</div>
                             </div>
                         </div>
-                        
+
                     </div>
                 </div>
             </div>
-            
+
             <div class="component-group">
                 <h3>Card mit Action-Button (Dashboard-Ansicht)</h3>
                 <div class="component-demo" style="background: var(--cream);">
                     <div style="display: flex; flex-direction: column; gap: 0; max-width: 500px;">
-                        
+
                         <div class="item-card status-critical with-action">
                             <div class="item-card-left">
                                 <div class="item-card-name">Milch</div>
@@ -1499,7 +1499,7 @@
                                 <button class="btn-small">ENTN.</button>
                             </div>
                         </div>
-                        
+
                         <div class="item-card status-critical with-action">
                             <div class="item-card-left">
                                 <div class="item-card-name">Hackfleisch (TK)</div>
@@ -1524,11 +1524,11 @@
                                 <button class="btn-small">ENTN.</button>
                             </div>
                         </div>
-                        
+
                     </div>
                 </div>
             </div>
-            
+
             <div class="component-group">
                 <h3>Item-Type Badges</h3>
                 <div class="component-row">
@@ -1542,17 +1542,17 @@
                     .type-badge.fresh (Leaf) | .type-badge.frozen (Info-Blau) | .type-badge.homemade (Terracotta)
                 </div>
             </div>
-            
+
             <div class="code-hint" style="margin-top: 16px;">
                 <strong>Card-Struktur:</strong> Zeile 1: Name | Zeile 2: Menge · Type-Badge | Zeile 3: 📍Lagerort + Kategorie-Tag<br>
                 <strong>Modifiers:</strong> .status-warning | .status-critical | .with-action (für Dashboard)
             </div>
         </section>
-        
+
         <!-- DASHBOARD -->
         <section id="dashboard">
             <h2><span class="material-icons">dashboard</span> Dashboard Components</h2>
-            
+
             <div class="component-group">
                 <h3>Alert Section (mit Unified Cards)</h3>
                 <div class="component-demo" style="max-width: 500px; background: var(--cream);">
@@ -1561,7 +1561,7 @@
                         <span class="status-dot" style="background: var(--status-critical); width: 10px; height: 10px; border-radius: 50%;"></span>
                         <h3 style="color: var(--status-critical); font-size: 0.95rem; margin: 0;">Bald abgelaufen (3)</h3>
                     </div>
-                    
+
                     <!-- Unified Cards with Action -->
                     <div class="item-card status-critical with-action">
                         <div class="item-card-left">
@@ -1587,7 +1587,7 @@
                             <button class="btn-small">ENTN.</button>
                         </div>
                     </div>
-                    
+
                     <div class="item-card status-critical with-action">
                         <div class="item-card-left">
                             <div class="item-card-name">Joghurt</div>
@@ -1617,7 +1617,7 @@
                     Dashboard verwendet dieselbe .item-card Komponente mit .with-action Modifier
                 </div>
             </div>
-            
+
             <div class="component-group">
                 <h3>Statistics Card</h3>
                 <div class="component-demo" style="max-width: 400px;">
@@ -1643,7 +1643,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <div class="component-group">
                 <h3>Summary Box (Wizard)</h3>
                 <div class="component-demo" style="max-width: 500px;">
@@ -1657,11 +1657,11 @@
                 </div>
             </div>
         </section>
-        
+
         <!-- NAVIGATION -->
         <section id="navigation">
             <h2><span class="material-icons">menu</span> Navigation</h2>
-            
+
             <div class="component-group">
                 <h3>Page Header</h3>
                 <div class="component-demo" style="padding: 0; overflow: hidden;">
@@ -1681,7 +1681,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <div class="component-group">
                 <h3>Bottom Navigation</h3>
                 <div class="component-demo" style="padding: 0; overflow: hidden; max-width: 400px;">
@@ -1704,11 +1704,11 @@
                 </div>
             </div>
         </section>
-        
+
         <!-- ADMIN -->
         <section id="admin">
             <h2><span class="material-icons">settings</span> Admin Components</h2>
-            
+
             <div class="component-demo" style="max-width: 500px;">
                 <div class="admin-list-item">
                     <span class="material-icons admin-list-item-drag">drag_indicator</span>
@@ -1719,7 +1719,7 @@
                         <button class="delete"><span class="material-icons">delete</span></button>
                     </div>
                 </div>
-                
+
                 <div class="admin-list-item">
                     <span class="material-icons admin-list-item-drag">drag_indicator</span>
                     <span class="admin-list-item-color" style="background: #FF9800;"></span>
@@ -1729,7 +1729,7 @@
                         <button class="delete"><span class="material-icons">delete</span></button>
                     </div>
                 </div>
-                
+
                 <div class="admin-list-item">
                     <span class="material-icons admin-list-item-drag">drag_indicator</span>
                     <span class="admin-list-item-color" style="background: #F44336;"></span>
@@ -1741,11 +1741,11 @@
                 </div>
             </div>
         </section>
-        
+
         <!-- BOTTOM SHEET -->
         <section id="bottomsheet">
             <h2><span class="material-icons">expand_less</span> Bottom Sheet</h2>
-            
+
             <div class="component-demo" style="background: rgba(0,0,0,0.3); padding: var(--space-xl);">
                 <div class="bottom-sheet">
                     <div class="bottom-sheet-handle"></div>
@@ -1798,11 +1798,11 @@
                 </div>
             </div>
         </section>
-        
+
         <!-- FULLSCREEN DEMO -->
         <section id="fullscreen">
             <h2><span class="material-icons">smartphone</span> Fullscreen Demo</h2>
-            
+
             <div class="phone-mockup">
                 <div class="phone-notch"></div>
                 <div class="phone-content">
@@ -1816,7 +1816,7 @@
                             <span style="font-size: 0.875rem; color: var(--stone);">admin</span>
                         </div>
                     </div>
-                    
+
                     <!-- Body -->
                     <div class="phone-body">
                         <!-- Alert Section -->
@@ -1824,7 +1824,7 @@
                             <span style="width: 10px; height: 10px; border-radius: 50%; background: var(--status-critical);"></span>
                             <h3 style="color: var(--status-critical); font-size: 0.9rem; margin: 0;">Bald abgelaufen (2)</h3>
                         </div>
-                        
+
                         <!-- Unified Cards -->
                         <div class="item-card status-critical with-action">
                             <div class="item-card-left">
@@ -1850,7 +1850,7 @@
                                 <button class="btn-small">ENTN.</button>
                             </div>
                         </div>
-                        
+
                         <div class="item-card status-critical with-action" style="margin-bottom: 20px;">
                             <div class="item-card-left">
                                 <div class="item-card-name">Joghurt</div>
@@ -1875,13 +1875,13 @@
                                 <button class="btn-small">ENTN.</button>
                             </div>
                         </div>
-                        
+
                         <!-- Stats -->
                         <div class="dashboard-card-header" style="margin-bottom: 8px;">
                             <span class="material-icons" style="color: var(--fern); font-size: 18px;">bar_chart</span>
                             <h3 style="font-size: 0.9rem; margin: 0; color: var(--charcoal);">Vorrats-Statistik</h3>
                         </div>
-                        
+
                         <div class="stats-card" style="margin-bottom: 20px;">
                             <div class="stats-row">
                                 <div class="stats-item">
@@ -1898,20 +1898,20 @@
                                 </div>
                             </div>
                         </div>
-                        
+
                         <!-- Quick Filters -->
                         <div class="dashboard-card-header" style="margin-bottom: 8px;">
                             <span class="material-icons" style="color: var(--amber); font-size: 18px;">label</span>
                             <h3 style="font-size: 0.9rem; margin: 0; color: var(--charcoal);">Schnellfilter</h3>
                         </div>
-                        
+
                         <div class="component-row" style="margin-bottom: 80px;">
                             <span class="quick-filter-chip">Kühlschrank</span>
                             <span class="quick-filter-chip">Keller</span>
                             <span class="quick-filter-chip">Gefriertruhe</span>
                         </div>
                     </div>
-                    
+
                     <!-- Bottom Nav -->
                     <div class="bottom-nav">
                         <a href="#" class="bottom-nav-item active">
@@ -1932,13 +1932,13 @@
                 </div>
             </div>
         </section>
-        
+
     </div>
-    
+
         <!-- CSS EXPORT SECTION -->
         <section id="css-export">
             <h2><span class="material-icons">code</span> CSS Integration</h2>
-            
+
             <div class="component-group">
                 <h3>Tailwind Config (tailwind.config.js)</h3>
                 <div class="component-demo" style="background: #1e1e1e; color: #d4d4d4; font-family: monospace; font-size: 0.8rem; overflow-x: auto;">
@@ -1994,7 +1994,7 @@
 }</pre>
                 </div>
             </div>
-            
+
             <div class="component-group">
                 <h3>NiceGUI Custom CSS (static/solarpunk.css)</h3>
                 <div class="component-demo" style="background: #1e1e1e; color: #d4d4d4; font-family: monospace; font-size: 0.75rem; overflow-x: auto; max-height: 400px;">
@@ -2013,24 +2013,24 @@
   --leaf: #7CB342;
   --sage: #9CAF88;
   --sage-light: #B8C9A8;
-  
+
   /* Secondary - Earth & Gold */
   --amber: #E6A832;
   --honey: #DAA520;
   --terracotta: #C17F59;
-  
+
   /* Neutrals */
   --cream: #FAF7F0;
   --oat: #F5F0E6;
   --parchment: #EDE8DB;
   --stone: #A39E93;
   --charcoal: #3D3D3D;
-  
+
   /* Status */
   --status-ok: #7CB342;
   --status-warning: #E6A832;
   --status-critical: #E07A5F;
-  
+
   /* Quasar Primary Override */
   --q-primary: #4A7C59;
   --q-secondary: #E6A832;
@@ -2154,7 +2154,7 @@ body {
 }</pre>
                 </div>
             </div>
-            
+
             <div class="component-group">
                 <h3>Farb-Mapping: Alt → Solarpunk</h3>
                 <table style="width: 100%; border-collapse: collapse; font-size: 0.875rem;">
@@ -2210,11 +2210,11 @@ body {
                 </table>
             </div>
         </section>
-        
+
         <!-- NiceGUI Component Examples -->
         <section id="nicegui">
             <h2><span class="material-icons">integration_instructions</span> NiceGUI Beispiele</h2>
-            
+
             <div class="component-group">
                 <h3>Button (Python)</h3>
                 <div class="component-demo" style="background: #1e1e1e; color: #d4d4d4; font-family: monospace; font-size: 0.8rem;">
@@ -2239,7 +2239,7 @@ ui.button('Löschen', icon='delete').classes(
 )</pre>
                 </div>
             </div>
-            
+
             <div class="component-group">
                 <h3>Chip Components (Python)</h3>
                 <div class="component-demo" style="background: #1e1e1e; color: #d4d4d4; font-family: monospace; font-size: 0.8rem;">
@@ -2259,7 +2259,7 @@ def category_chip(name: str, color: str, selected: bool = False):
         ui.label(name)</pre>
                 </div>
             </div>
-            
+
             <div class="component-group">
                 <h3>Item Card (Python)</h3>
                 <div class="component-demo" style="background: #1e1e1e; color: #d4d4d4; font-family: monospace; font-size: 0.8rem;">
@@ -2267,14 +2267,14 @@ def category_chip(name: str, color: str, selected: bool = False):
     # Status based on days until expiry
     status = 'status-critical' if item.days_left < 3 else \
              'status-warning' if item.days_left < 7 else ''
-    
+
     with ui.card().classes(f'item-card {status} w-full mb-2'):
         with ui.row().classes('items-start gap-3'):
             # Status dot
             ui.element('span').classes(
                 'w-3 h-3 rounded-full mt-1'
             ).style(f'background: var(--{status or "status-ok"})')
-            
+
             # Content
             with ui.column().classes('flex-1 gap-1'):
                 ui.label(item.name).classes('font-semibold')
@@ -2284,7 +2284,7 @@ def category_chip(name: str, color: str, selected: bool = False):
                 with ui.row().classes('items-center gap-1'):
                     ui.icon('place', size='16px').classes('text-terracotta')
                     ui.label(item.location).classes('text-xs text-stone')
-            
+
             # Expiry
             with ui.column().classes('text-right'):
                 ui.label('Ablauf:').classes('text-xs text-stone')
@@ -2294,9 +2294,9 @@ def category_chip(name: str, color: str, selected: bool = False):
                 </div>
             </div>
         </section>
-        
+
     </div>
-    
+
     <script>
         // Simple interactivity for demo
         document.querySelectorAll('.chip').forEach(chip => {
@@ -2308,13 +2308,13 @@ def category_chip(name: str, color: str, selected: bool = False):
                 this.classList.toggle('active');
             });
         });
-        
+
         document.querySelectorAll('.toggle').forEach(toggle => {
             toggle.addEventListener('click', function() {
                 this.classList.toggle('active');
             });
         });
-        
+
         document.querySelectorAll('.quick-filter-chip').forEach(chip => {
             chip.addEventListener('click', function() {
                 this.classList.toggle('active');

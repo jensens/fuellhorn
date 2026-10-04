@@ -27,9 +27,9 @@ from ..theme import get_contrast_text_color
 from ..theme.icons import create_icon
 from ..utils.quantity import format_quantity
 from .swipe_card import create_swipe_card
+from collections.abc import Callable
 from datetime import date
 from nicegui import ui
-from typing import Callable
 
 
 # Location type to icon name mapping (Issue #197)

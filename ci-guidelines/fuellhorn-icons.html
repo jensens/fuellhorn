@@ -13,33 +13,33 @@
             --stone: #A39E93;
             --charcoal: #3D3D3D;
         }
-        
+
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        
+
         body {
             font-family: 'Nunito', system-ui, sans-serif;
             background: var(--cream);
             color: var(--charcoal);
             padding: 40px 20px;
         }
-        
+
         h1 {
             text-align: center;
             color: var(--fern);
             margin-bottom: 8px;
         }
-        
+
         .subtitle {
             text-align: center;
             color: var(--stone);
             margin-bottom: 40px;
         }
-        
+
         .section {
             max-width: 1200px;
             margin: 0 auto 40px;
         }
-        
+
         .section h2 {
             color: var(--fern);
             font-size: 1.25rem;
@@ -47,13 +47,13 @@
             padding-bottom: 8px;
             border-bottom: 2px solid var(--oat);
         }
-        
+
         .icon-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
             gap: 16px;
         }
-        
+
         .icon-card {
             background: white;
             border-radius: 12px;
@@ -62,32 +62,32 @@
             box-shadow: 0 2px 8px rgba(74, 124, 89, 0.1);
             transition: all 0.2s ease;
         }
-        
+
         .icon-card:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 16px rgba(74, 124, 89, 0.15);
         }
-        
+
         .icon-card svg {
             width: 32px;
             height: 32px;
             color: var(--fern);
             margin-bottom: 8px;
         }
-        
+
         .icon-card .name {
             font-size: 0.75rem;
             color: var(--stone);
             word-break: break-word;
         }
-        
+
         .icon-card .id {
             font-size: 0.65rem;
             color: #ccc;
             font-family: monospace;
             margin-top: 4px;
         }
-        
+
         /* Preview sizes */
         .size-preview {
             display: flex;
@@ -99,22 +99,22 @@
             background: white;
             border-radius: 12px;
         }
-        
+
         .size-preview .icon-size {
             text-align: center;
         }
-        
+
         .size-preview .icon-size svg {
             color: var(--fern);
         }
-        
+
         .size-preview .icon-size span {
             display: block;
             font-size: 0.7rem;
             color: var(--stone);
             margin-top: 4px;
         }
-        
+
         /* Color variants */
         .color-preview {
             display: flex;
@@ -122,40 +122,40 @@
             justify-content: center;
             margin: 20px 0;
         }
-        
+
         .color-preview .variant {
             padding: 16px 24px;
             border-radius: 12px;
             text-align: center;
         }
-        
+
         .color-preview .variant svg {
             width: 32px;
             height: 32px;
         }
-        
+
         .color-preview .variant span {
             display: block;
             font-size: 0.7rem;
             margin-top: 8px;
         }
-        
+
         .variant.light {
             background: white;
         }
-        
+
         .variant.dark {
             background: #2D3B2D;
         }
-        
+
         .variant.dark svg {
             color: white;
         }
-        
+
         .variant.dark span {
             color: white;
         }
-        
+
         .stats {
             text-align: center;
             padding: 20px;
@@ -163,7 +163,7 @@
             border-radius: 12px;
             margin-bottom: 40px;
         }
-        
+
         .stats strong {
             color: var(--fern);
             font-size: 2rem;
@@ -173,12 +173,12 @@
 <body>
     <h1>🌿 Füllhorn Icon Set</h1>
     <p class="subtitle">Solarpunk Outline Style – 82 Icons</p>
-    
+
     <div class="stats">
         <strong>82</strong> Icons<br>
         <span style="color: var(--stone);">24×24 viewBox · stroke-width: 1.5 · currentColor</span>
     </div>
-    
+
     <!-- SIZE PREVIEW -->
     <div class="section">
         <h2>Größen-Vorschau</h2>
@@ -213,7 +213,7 @@
             </div>
         </div>
     </div>
-    
+
     <!-- COLOR VARIANTS -->
     <div class="section">
         <h2>Farbvarianten</h2>
@@ -234,12 +234,12 @@
             </div>
         </div>
     </div>
-    
+
     <!-- ==================== KATEGORIEN ==================== -->
     <div class="section">
         <h2>Kategorien – Gemüse & Obst (4)</h2>
         <div class="icon-grid">
-            
+
             <!-- Gemüse -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -251,7 +251,7 @@
                 <div class="name">Gemüse</div>
                 <div class="id">vegetable</div>
             </div>
-            
+
             <!-- Kräuter -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -266,7 +266,7 @@
                 <div class="name">Kräuter</div>
                 <div class="id">herbs</div>
             </div>
-            
+
             <!-- Obst -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -278,7 +278,7 @@
                 <div class="name">Obst</div>
                 <div class="id">fruit</div>
             </div>
-            
+
             <!-- Beeren -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -291,14 +291,14 @@
                 <div class="name">Beeren</div>
                 <div class="id">berries</div>
             </div>
-            
+
         </div>
     </div>
-    
+
     <div class="section">
         <h2>Kategorien – Fleisch & Fisch (8)</h2>
         <div class="icon-grid">
-            
+
             <!-- Fleisch allgemein -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -310,7 +310,7 @@
                 <div class="name">Fleisch</div>
                 <div class="id">meat</div>
             </div>
-            
+
             <!-- Rindfleisch -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -323,7 +323,7 @@
                 <div class="name">Rindfleisch</div>
                 <div class="id">beef</div>
             </div>
-            
+
             <!-- Schweinefleisch -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -338,7 +338,7 @@
                 <div class="name">Schwein</div>
                 <div class="id">pork</div>
             </div>
-            
+
             <!-- Geflügel -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -351,7 +351,7 @@
                 <div class="name">Geflügel</div>
                 <div class="id">poultry</div>
             </div>
-            
+
             <!-- Hackfleisch -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -366,7 +366,7 @@
                 <div class="name">Hackfleisch</div>
                 <div class="id">ground-meat</div>
             </div>
-            
+
             <!-- Fisch -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -377,7 +377,7 @@
                 <div class="name">Fisch</div>
                 <div class="id">fish</div>
             </div>
-            
+
             <!-- Fisch fett (Lachs) -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -389,7 +389,7 @@
                 <div class="name">Fettfisch</div>
                 <div class="id">fish-fatty</div>
             </div>
-            
+
             <!-- Wurst -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -404,14 +404,14 @@
                 <div class="name">Wurst</div>
                 <div class="id">sausage</div>
             </div>
-            
+
         </div>
     </div>
-    
+
     <div class="section">
         <h2>Kategorien – Backwaren (3)</h2>
         <div class="icon-grid">
-            
+
             <!-- Backwaren -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -422,7 +422,7 @@
                 <div class="name">Backwaren</div>
                 <div class="id">bakery</div>
             </div>
-            
+
             <!-- Brot -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -436,7 +436,7 @@
                 <div class="name">Brot</div>
                 <div class="id">bread</div>
             </div>
-            
+
             <!-- Kuchen -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -450,14 +450,14 @@
                 <div class="name">Kuchen</div>
                 <div class="id">cake</div>
             </div>
-            
+
         </div>
     </div>
-    
+
     <div class="section">
         <h2>Kategorien – Milchprodukte (4)</h2>
         <div class="icon-grid">
-            
+
             <!-- Milchprodukte -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -469,7 +469,7 @@
                 <div class="name">Milch</div>
                 <div class="id">milk</div>
             </div>
-            
+
             <!-- Butter -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -480,7 +480,7 @@
                 <div class="name">Butter</div>
                 <div class="id">butter</div>
             </div>
-            
+
             <!-- Käse -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -492,7 +492,7 @@
                 <div class="name">Käse</div>
                 <div class="id">cheese</div>
             </div>
-            
+
             <!-- Joghurt -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -504,14 +504,14 @@
                 <div class="name">Joghurt</div>
                 <div class="id">yogurt</div>
             </div>
-            
+
         </div>
     </div>
-    
+
     <div class="section">
         <h2>Kategorien – Fertiggerichte (2)</h2>
         <div class="icon-grid">
-            
+
             <!-- Fertiggerichte -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -525,7 +525,7 @@
                 <div class="name">Fertiggericht</div>
                 <div class="id">ready-meal</div>
             </div>
-            
+
             <!-- Suppen -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -538,14 +538,14 @@
                 <div class="name">Suppe</div>
                 <div class="id">soup</div>
             </div>
-            
+
         </div>
     </div>
-    
+
     <div class="section">
         <h2>Kategorien – Eingemachtes süß (5)</h2>
         <div class="icon-grid">
-            
+
             <!-- Marmelade -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -557,7 +557,7 @@
                 <div class="name">Marmelade</div>
                 <div class="id">jam</div>
             </div>
-            
+
             <!-- Gelee -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -569,7 +569,7 @@
                 <div class="name">Gelee</div>
                 <div class="id">jelly</div>
             </div>
-            
+
             <!-- Kompott -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -582,7 +582,7 @@
                 <div class="name">Kompott</div>
                 <div class="id">compote</div>
             </div>
-            
+
             <!-- Obstmus -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -595,7 +595,7 @@
                 <div class="name">Obstmus</div>
                 <div class="id">puree</div>
             </div>
-            
+
             <!-- Sirup -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -608,14 +608,14 @@
                 <div class="name">Sirup</div>
                 <div class="id">syrup</div>
             </div>
-            
+
         </div>
     </div>
-    
+
     <div class="section">
         <h2>Kategorien – Eingemachtes herzhaft (8)</h2>
         <div class="icon-grid">
-            
+
             <!-- Eingelegtes -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -629,7 +629,7 @@
                 <div class="name">Eingelegtes</div>
                 <div class="id">pickles</div>
             </div>
-            
+
             <!-- Chutney -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -643,7 +643,7 @@
                 <div class="name">Chutney</div>
                 <div class="id">chutney</div>
             </div>
-            
+
             <!-- Relish -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -657,7 +657,7 @@
                 <div class="name">Relish</div>
                 <div class="id">relish</div>
             </div>
-            
+
             <!-- Tomatensoße -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -671,7 +671,7 @@
                 <div class="name">Tomatensoße</div>
                 <div class="id">tomato-sauce</div>
             </div>
-            
+
             <!-- Ketchup -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -683,7 +683,7 @@
                 <div class="name">Ketchup</div>
                 <div class="id">ketchup</div>
             </div>
-            
+
             <!-- Pesto -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -696,7 +696,7 @@
                 <div class="name">Pesto</div>
                 <div class="id">pesto</div>
             </div>
-            
+
             <!-- Senf -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -708,7 +708,7 @@
                 <div class="name">Senf</div>
                 <div class="id">mustard</div>
             </div>
-            
+
             <!-- Sauerkraut -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -721,15 +721,15 @@
                 <div class="name">Sauerkraut</div>
                 <div class="id">sauerkraut</div>
             </div>
-            
+
         </div>
     </div>
-    
+
     <!-- ==================== LAGERORTE ==================== -->
     <div class="section">
         <h2>Lagerorte (5)</h2>
         <div class="icon-grid">
-            
+
             <!-- Kühlschrank -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -741,7 +741,7 @@
                 <div class="name">Kühlschrank</div>
                 <div class="id">fridge</div>
             </div>
-            
+
             <!-- Gefriertruhe -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -756,7 +756,7 @@
                 <div class="name">Gefriertruhe</div>
                 <div class="id">freezer-chest</div>
             </div>
-            
+
             <!-- Gefrierfach -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -770,7 +770,7 @@
                 <div class="name">Gefrierfach</div>
                 <div class="id">freezer</div>
             </div>
-            
+
             <!-- Keller -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -784,7 +784,7 @@
                 <div class="name">Keller</div>
                 <div class="id">cellar</div>
             </div>
-            
+
             <!-- Vorratsschrank -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -802,15 +802,15 @@
                 <div class="name">Vorratsschrank</div>
                 <div class="id">pantry</div>
             </div>
-            
+
         </div>
     </div>
-    
+
     <!-- ==================== NAVIGATION ==================== -->
     <div class="section">
         <h2>Navigation (5)</h2>
         <div class="icon-grid">
-            
+
             <!-- Home -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -821,7 +821,7 @@
                 <div class="name">Übersicht</div>
                 <div class="id">home</div>
             </div>
-            
+
             <!-- Add -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -832,7 +832,7 @@
                 <div class="name">Erfassen</div>
                 <div class="id">add</div>
             </div>
-            
+
             <!-- Inventory -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -846,7 +846,7 @@
                 <div class="name">Vorrat</div>
                 <div class="id">inventory</div>
             </div>
-            
+
             <!-- Forward -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -856,7 +856,7 @@
                 <div class="name">Weiter</div>
                 <div class="id">forward</div>
             </div>
-            
+
             <!-- Chevron Right -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -865,15 +865,15 @@
                 <div class="name">Pfeil rechts</div>
                 <div class="id">chevron-right</div>
             </div>
-            
+
         </div>
     </div>
-    
+
     <!-- ==================== ACTIONS ==================== -->
     <div class="section">
         <h2>Actions (14)</h2>
         <div class="icon-grid">
-            
+
             <!-- Entnehmen -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -884,7 +884,7 @@
                 <div class="name">Entnehmen</div>
                 <div class="id">take-out</div>
             </div>
-            
+
             <!-- Bearbeiten -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -894,7 +894,7 @@
                 <div class="name">Bearbeiten</div>
                 <div class="id">edit</div>
             </div>
-            
+
             <!-- Löschen -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -907,7 +907,7 @@
                 <div class="name">Löschen</div>
                 <div class="id">delete</div>
             </div>
-            
+
             <!-- Speichern -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -918,7 +918,7 @@
                 <div class="name">Speichern</div>
                 <div class="id">save</div>
             </div>
-            
+
             <!-- Zurück -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -928,7 +928,7 @@
                 <div class="name">Zurück</div>
                 <div class="id">back</div>
             </div>
-            
+
             <!-- Schließen -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -938,7 +938,7 @@
                 <div class="name">Schließen</div>
                 <div class="id">close</div>
             </div>
-            
+
             <!-- Suchen -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -948,7 +948,7 @@
                 <div class="name">Suchen</div>
                 <div class="id">search</div>
             </div>
-            
+
             <!-- Filter -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -959,7 +959,7 @@
                 <div class="name">Filter</div>
                 <div class="id">filter</div>
             </div>
-            
+
             <!-- Sortieren -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -971,7 +971,7 @@
                 <div class="name">Sortieren</div>
                 <div class="id">sort</div>
             </div>
-            
+
             <!-- Arrow Up -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -981,7 +981,7 @@
                 <div class="name">Pfeil hoch</div>
                 <div class="id">arrow-up</div>
             </div>
-            
+
             <!-- Arrow Down -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -991,7 +991,7 @@
                 <div class="name">Pfeil runter</div>
                 <div class="id">arrow-down</div>
             </div>
-            
+
             <!-- Reorder -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -1004,7 +1004,7 @@
                 <div class="name">Reihenfolge</div>
                 <div class="id">reorder</div>
             </div>
-            
+
             <!-- Save Next -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -1017,7 +1017,7 @@
                 <div class="name">Speichern+Weiter</div>
                 <div class="id">save-next</div>
             </div>
-            
+
             <!-- Minus -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -1027,15 +1027,15 @@
                 <div class="name">Minus/Entfernen</div>
                 <div class="id">minus</div>
             </div>
-            
+
         </div>
     </div>
-    
+
     <!-- ==================== ITEM TYPES ==================== -->
     <div class="section">
         <h2>Item Types (5)</h2>
         <div class="icon-grid">
-            
+
             <!-- Frisch -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -1046,7 +1046,7 @@
                 <div class="name">Frisch</div>
                 <div class="id">fresh</div>
             </div>
-            
+
             <!-- TK-Ware -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -1059,7 +1059,7 @@
                 <div class="name">TK-Ware</div>
                 <div class="id">frozen-bought</div>
             </div>
-            
+
             <!-- Eingefroren -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -1073,7 +1073,7 @@
                 <div class="name">Eingefr.</div>
                 <div class="id">frozen-home</div>
             </div>
-            
+
             <!-- Selbst eingefroren -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -1089,7 +1089,7 @@
                 <div class="name">Selbst eingefr.</div>
                 <div class="id">frozen-self</div>
             </div>
-            
+
             <!-- Eingemacht -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -1102,15 +1102,15 @@
                 <div class="name">Eingemacht</div>
                 <div class="id">preserved</div>
             </div>
-            
+
         </div>
     </div>
-    
+
     <!-- ==================== STATUS ==================== -->
     <div class="section">
         <h2>Status (9)</h2>
         <div class="icon-grid">
-            
+
             <!-- Kalender -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -1127,7 +1127,7 @@
                 <div class="name">Haltbarkeit</div>
                 <div class="id">calendar</div>
             </div>
-            
+
             <!-- Warnung -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -1138,7 +1138,7 @@
                 <div class="name">Warnung</div>
                 <div class="id">warning</div>
             </div>
-            
+
             <!-- OK -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -1148,7 +1148,7 @@
                 <div class="name">OK</div>
                 <div class="id">ok</div>
             </div>
-            
+
             <!-- Kritisch -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -1159,7 +1159,7 @@
                 <div class="name">Kritisch</div>
                 <div class="id">critical</div>
             </div>
-            
+
             <!-- Abgelaufen -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -1170,7 +1170,7 @@
                 <div class="name">Abgelaufen</div>
                 <div class="id">expired</div>
             </div>
-            
+
             <!-- Info -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -1181,7 +1181,7 @@
                 <div class="name">Info</div>
                 <div class="id">info</div>
             </div>
-            
+
             <!-- Search Off -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -1193,7 +1193,7 @@
                 <div class="name">Keine Ergebnisse</div>
                 <div class="id">search-off</div>
             </div>
-            
+
             <!-- History -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -1205,7 +1205,7 @@
                 <div class="name">Historie</div>
                 <div class="id">history</div>
             </div>
-            
+
             <!-- Lock -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -1216,15 +1216,15 @@
                 <div class="name">Passwort</div>
                 <div class="id">lock</div>
             </div>
-            
+
         </div>
     </div>
-    
+
     <!-- ==================== MISC ==================== -->
     <div class="section">
         <h2>Sonstige (10)</h2>
         <div class="icon-grid">
-            
+
             <!-- Einstellungen -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -1241,7 +1241,7 @@
                 <div class="name">Einstellungen</div>
                 <div class="id">settings</div>
             </div>
-            
+
             <!-- Benutzer -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -1251,7 +1251,7 @@
                 <div class="name">Benutzer</div>
                 <div class="id">user</div>
             </div>
-            
+
             <!-- Logout -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -1262,7 +1262,7 @@
                 <div class="name">Logout</div>
                 <div class="id">logout</div>
             </div>
-            
+
             <!-- Menge -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -1276,7 +1276,7 @@
                 <div class="name">Menge</div>
                 <div class="id">scale</div>
             </div>
-            
+
             <!-- Notizen -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -1288,7 +1288,7 @@
                 <div class="name">Notizen</div>
                 <div class="id">notes</div>
             </div>
-            
+
             <!-- Category -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -1300,7 +1300,7 @@
                 <div class="name">Kategorie</div>
                 <div class="id">category</div>
             </div>
-            
+
             <!-- Place -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -1310,7 +1310,7 @@
                 <div class="name">Ort/Standort</div>
                 <div class="id">place</div>
             </div>
-            
+
             <!-- People -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -1322,7 +1322,7 @@
                 <div class="name">Benutzer (Mehrzahl)</div>
                 <div class="id">people</div>
             </div>
-            
+
             <!-- Person Off -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -1333,7 +1333,7 @@
                 <div class="name">Benutzer deaktiv.</div>
                 <div class="id">person-off</div>
             </div>
-            
+
             <!-- Kitchen -->
             <div class="icon-card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -1347,10 +1347,10 @@
                 <div class="name">Küche</div>
                 <div class="id">kitchen</div>
             </div>
-            
+
         </div>
     </div>
-    
+
     <div class="stats" style="margin-top: 40px;">
         <p style="color: var(--stone);">
             <strong>Format:</strong> SVG, 24×24 viewBox<br>
@@ -1358,6 +1358,6 @@
             <strong>Kompatibel:</strong> CSS color inheritance, alle Größen
         </p>
     </div>
-    
+
 </body>
 </html>

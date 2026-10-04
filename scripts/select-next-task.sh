@@ -127,7 +127,7 @@ Arbeitsschritte:
 3. TDD: Tests zuerst schreiben
 4. Qualitätsprüfung vor Commit:
    uv run pytest
-   uv run mypy app/
+   uv run ty check app/
    uv run ruff check app/
    uv run ruff format app/
 5. PR erstellen mit "closes #$issue_num" im Body:

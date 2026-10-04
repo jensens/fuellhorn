@@ -12,8 +12,8 @@ from ...models.item import Item
 from ...services import item_service
 from ...services.errors import ServiceError
 from ..utils.quantity import format_quantity
+from collections.abc import Callable
 from nicegui import ui
-from typing import Callable
 
 
 def confirm_consume_all(item: Item, on_done: Callable[[], None]) -> None:

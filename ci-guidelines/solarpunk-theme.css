@@ -1,9 +1,9 @@
 /* ========================================
    FÜLLHORN SOLARPUNK THEME
    Version 1.0
-   
+
    NiceGUI / Quasar Override Styles
-   
+
    Usage: Include after Quasar CSS
    <link href="/static/solarpunk-theme.css" rel="stylesheet">
    ======================================== */
@@ -24,14 +24,14 @@
   --sp-leaf-light: #9DC46A;
   --sp-sage: #9CAF88;
   --sp-sage-light: #B8C9A8;
-  
+
   /* Secondary - Earth & Gold */
   --sp-amber: #E6A832;
   --sp-amber-dark: #D49A28;
   --sp-amber-light: #F0BC52;
   --sp-honey: #DAA520;
   --sp-terracotta: #C17F59;
-  
+
   /* Neutrals */
   --sp-cream: #FAF7F0;
   --sp-oat: #F5F0E6;
@@ -39,30 +39,30 @@
   --sp-stone: #A39E93;
   --sp-stone-dark: #7D796F;
   --sp-charcoal: #3D3D3D;
-  
+
   /* Status Colors */
   --sp-status-ok: #7CB342;
   --sp-status-warning: #E6A832;
   --sp-status-critical: #E07A5F;
   --sp-status-critical-dark: #C96A4F;
   --sp-status-info: #5BA3C6;
-  
+
   /* Shadows */
   --sp-shadow-sm: 0 1px 3px rgba(74, 124, 89, 0.08);
   --sp-shadow-md: 0 4px 12px rgba(74, 124, 89, 0.12);
   --sp-shadow-lg: 0 8px 24px rgba(74, 124, 89, 0.16);
-  
+
   /* Border Radius */
   --sp-radius-sm: 8px;
   --sp-radius-md: 12px;
   --sp-radius-lg: 16px;
   --sp-radius-xl: 20px;
   --sp-radius-full: 9999px;
-  
+
   /* Typography */
   --sp-font-display: 'Cormorant Garamond', Georgia, serif;
   --sp-font-body: 'Nunito', system-ui, sans-serif;
-  
+
   /* Quasar Variable Overrides */
   --q-primary: #4A7C59;
   --q-secondary: #9CAF88;

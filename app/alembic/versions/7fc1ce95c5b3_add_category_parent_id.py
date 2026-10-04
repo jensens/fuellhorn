@@ -17,16 +17,15 @@ Eltern der neuen Gruppen (Gekochtes, Fruchtaufstriche, Soßen, Würziges) setzt.
 """
 
 from alembic import op
+from collections.abc import Sequence
 import sqlalchemy as sa
-from typing import Sequence
-from typing import Union
 
 
 # revision identifiers, used by Alembic.
 revision: str = "7fc1ce95c5b3"
-down_revision: Union[str, Sequence[str], None] = "d34a94a28640"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | Sequence[str] | None = "d34a94a28640"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 # Kinder, deren Eltern im alten Seed bereits als eigene Kategorie existierten.

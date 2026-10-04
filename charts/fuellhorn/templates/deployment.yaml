@@ -85,6 +85,11 @@ spec:
           env:
             {{- include "fuellhorn.databaseEnv" . | nindent 12 }}
             {{- include "fuellhorn.secretEnv" . | nindent 12 }}
+            {{- with .Values.timezone }}
+            # Naive lokale Zeitstempel (Sperrzeiten, Erfassungszeit) gelten in dieser Zone (#401)
+            - name: TZ
+              value: {{ . | quote }}
+            {{- end }}
             {{- if or $migrateInit $migrationJob }}
             # Migrationen laufen im Init-Container bzw. Hook-Job, nicht in jedem Pod (#377)
             - name: FUELLHORN_SKIP_MIGRATIONS

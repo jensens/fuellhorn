@@ -26,17 +26,19 @@ env/
 *.swo
 *~
 
-# Testing
+# Testing / Tooling-Caches
 .pytest_cache/
+.ruff_cache/
+.mypy_cache/
 .coverage
 .coverage.*
 coverage.xml
 htmlcov/
 .tox/
 
-# Database
-data/*.db
-data/*.db-journal
+# Database (auch versehentlich im Root angelegte Test-/Seed-Datenbanken)
+*.db
+*.db-journal
 *.sqlite
 *.sqlite3
 
@@ -46,12 +48,6 @@ data/*.db-journal
 
 # Alembic
 app/alembic/versions/*.pyc
-
-# Generated version file
-app/_version.py
-
-# Generated version file
-app/_version.py
 
 # Generated version file
 app/_version.py
@@ -73,8 +69,10 @@ Thumbs.db
 *.tmp
 *.bak
 
-# Agent Worktrees
+# Agent Worktrees (scripts/dev-server.sh erkennt .worktrees/<name>; Claude Code nutzt .claude/worktrees/)
+.worktrees/
 worktrees/
+.claude/worktrees/
 
 # MCP-Konfiguration (enthielt frueher Secrets, nie committen)
 .mcp.json

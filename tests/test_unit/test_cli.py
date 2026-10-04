@@ -1,6 +1,5 @@
 """Tests für app.cli: Migrationen, run_app, create-admin, dispatch (vorher auf zwei Dateien verteilt, #392)."""
 
-import app.cli
 from app.models.user import Role
 from app.services.auth_service import get_user_by_username
 from pathlib import Path
@@ -540,12 +539,3 @@ class TestDispatchCommand:
         output = captured_output.getvalue()
 
         assert "seed" in output
-
-
-class TestCreateAdminScript:
-    """Das Wurzel-Skript create_admin.py ist nur ein Re-Export des CLI (vorher 4 doppelte Tests)."""
-
-    def test_script_reexports_cli_function(self) -> None:
-        import create_admin
-
-        assert create_admin.create_admin_user is app.cli.create_admin_user

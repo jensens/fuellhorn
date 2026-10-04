@@ -25,9 +25,9 @@ from ..theme.icons import create_icon
 from ..utils.quantity import format_quantity
 from .errors import show_service_error
 from .item_card import get_expiry_badge_class
+from collections.abc import Callable
 from datetime import date
 from nicegui import ui
-from typing import Callable
 
 
 def _badge_classes(expiry_view: ExpiryView) -> str:

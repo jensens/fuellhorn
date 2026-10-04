@@ -216,9 +216,9 @@ async def test_items_location_filter_and_sort_direction(
     await logged_in_user.should_see("Kürbissuppe")
     assert _card_names(logged_in_user) == ["Kürbissuppe", "Butter", "Joghurt"]
 
-    (location_select,) = [
+    (location_select,) = (
         s for s in logged_in_user.find(kind=ui.select).elements if s._props.get("label") == "Lagerort"
-    ]
+    )
     location_select.set_value(world["freezer"])
     await logged_in_user.should_see("Kürbissuppe")
     assert _card_names(logged_in_user) == ["Kürbissuppe"]
@@ -306,7 +306,7 @@ async def test_items_type_filter_category_chip_and_reset(
     await logged_in_user.open("/items")
     assert sorted(_card_names(logged_in_user)) == ["Joghurt", "Kürbissuppe"]
 
-    (type_select,) = [s for s in logged_in_user.find(kind=ui.select).elements if s._props.get("label") == "Artikel-Typ"]
+    (type_select,) = (s for s in logged_in_user.find(kind=ui.select).elements if s._props.get("label") == "Artikel-Typ")
     type_select.set_value(ItemType.HOMEMADE_FROZEN.value)
     await logged_in_user.should_see("Kürbissuppe")
     assert _card_names(logged_in_user) == ["Kürbissuppe"]

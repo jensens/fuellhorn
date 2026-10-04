@@ -41,7 +41,7 @@ pytest_plugins = ["nicegui.testing.plugin"]
 
 
 @pytest.fixture(name="session")
-def session_fixture() -> Generator[Session, None, None]:
+def session_fixture() -> Generator[Session]:
     """Leere In-Memory-Datenbank pro Test für Service- und Unit-Tests.
 
     Bewusst eine eigene Engine neben ``isolated_test_database``: Service-Tests legen ihre

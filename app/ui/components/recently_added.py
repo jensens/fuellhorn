@@ -19,11 +19,11 @@ from ..theme import Colors
 from ..theme.icons import create_icon
 from ..utils.date_utils import format_relative_date
 from .item_card import get_location_icon_name
+from collections.abc import Callable
 from nicegui import ui
 from sqlmodel import Session
 from sqlmodel import col
 from sqlmodel import select
-from typing import Callable
 
 
 # Location type abbreviations (German)

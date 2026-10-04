@@ -337,6 +337,7 @@ Siehe [charts/fuellhorn/README.md](charts/fuellhorn/README.md) für vollständig
 | `HOST` | Bind-Adresse | `0.0.0.0` |
 | `PORT` | Port | `8080` |
 | `APP_PORT` | Externer Port (docker-compose) | `8080` |
+| `TZ` | Zeitzone des Containers. Die App speichert und zeigt Zeitstempel (Sperre „bis HH:MM“, Erfassungszeit) als naive lokale Zeit; ohne `TZ` ist das die UTC des Images (#401) | `Europe/Vienna` (docker-compose) |
 
 ### Session-Konfiguration
 
