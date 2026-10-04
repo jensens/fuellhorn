@@ -5,6 +5,7 @@ Only loaded when TESTING=true environment variable is set.
 """
 
 from ...database import get_session
+from ...models.category import Category
 from ...services import category_service
 from ...services import item_service
 from ...services import location_service
@@ -127,6 +128,21 @@ def test_category_chips_preselected_page() -> None:
             value=preselected_id,
             on_change=on_change,
         )
+
+
+@ui.page("/test/category-chips-grouped")
+def test_category_chips_grouped_page() -> None:
+    """Test page for Category chips with groups and ungrouped categories (#457)."""
+    _reset_test_state()
+
+    grouped: list[tuple[str | None, list[Category]]] = [
+        ("Fleisch", [Category(id=2, name="Rindfleisch", parent_id=1, created_by=1)]),
+        (None, [Category(id=3, name="Gemüse", created_by=1)]),
+    ]
+
+    with ui.column().classes("p-4"):
+        ui.label("Category Chips Test (Grouped)").classes("text-h6")
+        create_grouped_category_chip_group(grouped_categories=grouped)
 
 
 @ui.page("/test/location-overview")

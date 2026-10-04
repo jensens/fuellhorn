@@ -108,8 +108,13 @@ def create_grouped_category_chip_group(
                 dot_refs[cat_id] = dot
                 ui.label(category.name).classes("text-sm font-medium whitespace-nowrap")
 
+    # Ungruppierte Kategorien bekommen eine eigene Überschrift, sonst wirken sie wie Teil der letzten Gruppe (#457)
+    has_groups = any(group_name for group_name, _ in grouped_categories)
+
     with ui.column().classes("gap-3 w-full") as container:
         for group_name, cats in grouped_categories:
+            if not group_name and has_groups:
+                group_name = "Sonstiges"
             if group_name:
                 ui.label(group_name).classes("text-xs font-bold uppercase tracking-wide text-stone-500 mt-1")
             with ui.row().classes("flex-wrap gap-2"):
