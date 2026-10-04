@@ -43,8 +43,9 @@ SOURCES = {
 
 # Format: (name, color, parent_name, [(storage_type, min, max, source_key), ...])
 # parent_name = None for top-level/standalone categories.
+# Leere Haltbarkeitsliste = nur für frisch Gekauftes (z. B. Nudeln, Getränke).
 # Parents MUST appear before their children in this list.
-CATEGORIES_WITH_SHELF_LIFE: list[tuple[str, str | None, str | None, list[tuple[StorageType, int, int, str]]]] = [
+CATEGORIES: list[tuple[str, str | None, str | None, list[tuple[StorageType, int, int, str]]]] = [
     # === FROZEN — Standalone ===
     ("Gemüse", "#4CAF50", None, [(StorageType.FROZEN, 6, 12, "vsz_be")]),
     ("Kräuter", "#8BC34A", None, [(StorageType.FROZEN, 3, 4, "vsz_be")]),
@@ -102,22 +103,18 @@ CATEGORIES_WITH_SHELF_LIFE: list[tuple[str, str | None, str | None, list[tuple[S
     ("Antipasti", "#FFA726", None, [(StorageType.AMBIENT, 3, 6, "nchfp")]),
     ("Fruchtsirup", "#AB47BC", None, [(StorageType.AMBIENT, 12, 12, "vz_de")]),
     ("Sauerkraut", "#C5E1A5", None, [(StorageType.AMBIENT, 6, 12, "nchfp")]),
-]
-
-# Categories without shelf-life, for general item classification (PURCHASED_FRESH etc.)
-# Format: (name, color)
-CATEGORIES_FRESH_ONLY: list[tuple[str, str]] = [
-    ("Nudeln & Pasta", "#FFCC80"),
-    ("Reis & Getreide", "#D7CCC8"),
-    ("Backzutaten", "#FFECB3"),
-    ("Konserven", "#90A4AE"),
-    ("Gewürze", "#A1887F"),
-    ("Öle & Essig", "#C8E6C9"),
-    ("Getränke", "#81D4FA"),
-    ("Snacks", "#FFE082"),
-    ("Eier", "#FFF3E0"),
-    ("Aufschnitt", "#FFAB91"),
-    ("Milchprodukte (frisch)", "#E1BEE7"),
+    # === Nur frisch (ohne Haltbarkeit) ===
+    ("Nudeln & Pasta", "#FFCC80", None, []),
+    ("Reis & Getreide", "#D7CCC8", None, []),
+    ("Backzutaten", "#FFECB3", None, []),
+    ("Konserven", "#90A4AE", None, []),
+    ("Gewürze", "#A1887F", None, []),
+    ("Öle & Essig", "#C8E6C9", None, []),
+    ("Getränke", "#81D4FA", None, []),
+    ("Snacks", "#FFE082", None, []),
+    ("Eier", "#FFF3E0", None, []),
+    ("Aufschnitt", "#FFAB91", None, []),
+    ("Milchprodukte (frisch)", "#E1BEE7", None, []),
 ]
 
 
@@ -265,7 +262,7 @@ def seed_shelf_life_defaults(session: Session) -> tuple[int, int]:
     # Nutzer womöglich selbst geordnet (#460).
     new_groups: set[str] = set()
 
-    for name, color, parent_name, shelf_lives in CATEGORIES_WITH_SHELF_LIFE:
+    for name, color, parent_name, shelf_lives in CATEGORIES:
         parent_id = category_by_name[parent_name].id if parent_name else None
         existed = session.exec(select(Category.id).where(Category.name == name)).first() is not None
         category = get_or_create_category(
@@ -290,11 +287,6 @@ def seed_shelf_life_defaults(session: Session) -> tuple[int, int]:
                 source_url,
             )
             shelf_lives_created += 1
-
-    # Fresh-only categories (no shelf-life)
-    for name, color in CATEGORIES_FRESH_ONLY:
-        get_or_create_category(session, name, color, admin_id)
-        categories_created += 1
 
     return categories_created, shelf_lives_created
 
