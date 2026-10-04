@@ -7,6 +7,7 @@ ring-dot indicator. Designed for mobile-first touch interaction.
 from ...models.item import ItemType
 from ...services import item_types
 from collections.abc import Callable
+from collections.abc import Sequence
 from nicegui import ui
 
 
@@ -33,12 +34,15 @@ ITEM_TYPE_COLORS: dict[str, str] = {
 def create_item_type_chip_group(
     value: ItemType | None = None,
     on_change: Callable[[ItemType], None] | None = None,
+    available: Sequence[ItemType] | None = None,
 ) -> ui.element:
     """Create a chip group for selecting item types.
 
     Args:
         value: Initially selected item type (optional)
         on_change: Callback when selection changes
+        available: Nur diese Typen anbieten; ``None`` = alle. Die Schnellerfassung kennt den
+            Lagerort schon und zeigt nur, was dort stehen kann (Issue #463).
 
     Returns:
         The container element with all chips
@@ -70,8 +74,10 @@ def create_item_type_chip_group(
                 on_change(item_type)
 
     # Container with flex-wrap for responsive layout
+    offered = list(ItemType) if available is None else list(available)
+
     with ui.row().classes("flex-wrap gap-2") as container:
-        for item_type in ItemType:
+        for item_type in offered:
             is_selected = item_type == value
             label_text = ITEM_TYPE_LABELS.get(item_type, item_type.value)
             data_type = ITEM_TYPE_DATA_TYPES.get(item_type, "fresh")

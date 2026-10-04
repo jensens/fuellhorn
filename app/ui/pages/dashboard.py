@@ -46,6 +46,19 @@ def dashboard() -> None:
             expiring_count = len(expiring_items)
             _, warning_days = get_expiry_thresholds(session)
 
+            # Schnellerfassung für den Keller: nur Name, Menge, Einheit, Typ (Issue #463)
+            with (
+                ui.card()
+                .classes("sp-dashboard-card w-full mb-4 cursor-pointer hover:shadow-sp-md transition-shadow")
+                .on("click", lambda: ui.navigate.to("/items/quick"))
+                .mark("dashboard-quick")
+            ):
+                with ui.row().classes("w-full items-center justify-between gap-2"):
+                    with ui.column().classes("gap-1"):
+                        ui.label("Schnell erfassen").classes("text-base font-medium text-charcoal")
+                        ui.label("Nur Name, Menge und Ort - den Rest später").classes("text-sm text-stone")
+                    create_icon("navigation/add", size="24px")
+
             # Schnell erfasste Artikel warten auf die fehlenden Angaben (Issue #463). Der
             # Einstieg steht oben, weil das Nachpflegen im Warmen die Fortsetzung des
             # Erfassens im Keller ist; ohne Lücken bleibt die Zeile weg.
