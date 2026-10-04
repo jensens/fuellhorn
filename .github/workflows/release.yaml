@@ -60,6 +60,8 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           repository-url: https://test.pypi.org/legacy/
+          # Re-Runs auf main scheitern sonst an bereits hochgeladenen Dateien (#377)
+          skip-existing: true
 
   publish-pypi:
     name: Publish to PyPI
@@ -236,7 +238,8 @@ jobs:
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
-            type=raw,value=latest
+            # latest nur für stabile Releases, nie für Prereleases (#377)
+            type=raw,value=latest,enable=${{ github.event.release.prerelease == false }}
             type=raw,value=${{ steps.version.outputs.version }}
 
       - name: Create manifest list and push
@@ -247,7 +250,8 @@ jobs:
 
   helm-publish:
     name: Publish Helm Chart
-    needs: [qa, tests]
+    # Chart erst veröffentlichen, wenn das zugehörige Image (Manifest) existiert (#377)
+    needs: [qa, tests, docker-manifest]
     if: github.event.action == 'published'
     runs-on: ubuntu-latest
     permissions:
@@ -262,7 +266,12 @@ jobs:
           # Get Python version from tag (e.g., v1.0.0a5 -> 1.0.0a5)
           pyversion="${GITHUB_REF_NAME#v}"
           echo "pyversion=$pyversion" >> $GITHUB_OUTPUT
-          # Convert PEP 440 to SemVer for Helm (1.0.0a5 -> 1.0.0-alpha.5)
+          # Nur Tags, die sich eindeutig nach SemVer übersetzen lassen (#377):
+          # X.Y.Z, X.Y.ZaN -> X.Y.Z-alpha.N, X.Y.ZbN -> -beta.N, X.Y.ZrcN -> -rc.N
+          if [[ ! "$pyversion" =~ ^[0-9]+\.[0-9]+\.[0-9]+(a[0-9]+|b[0-9]+|rc[0-9]+)?$ ]]; then
+            echo "::error::Tag v$pyversion ergibt keine gültige Chart-Version (erlaubt: X.Y.Z, X.Y.ZaN, X.Y.ZbN, X.Y.ZrcN; kein .devN/.postN)"
+            exit 1
+          fi
           semver=$(echo "$pyversion" | sed -E 's/([0-9]+\.[0-9]+\.[0-9]+)a([0-9]+)/\1-alpha.\2/; s/([0-9]+\.[0-9]+\.[0-9]+)b([0-9]+)/\1-beta.\2/; s/([0-9]+\.[0-9]+\.[0-9]+)rc([0-9]+)/\1-rc.\2/')
           echo "semver=$semver" >> $GITHUB_OUTPUT
 
