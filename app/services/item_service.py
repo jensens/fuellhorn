@@ -43,6 +43,18 @@ def effective_best_before_date(item_type: ItemType, best_before_date: date, free
     return best_before_date
 
 
+def effective_best_before_month_only(
+    item_type: ItemType,
+    best_before_month_only: bool,
+    freeze_date: date | None,
+    freeze_date_month_only: bool,
+) -> bool:
+    """Die Genauigkeit spiegelt mit dem Datum (Issues #387, #347)."""
+    if item_type == ItemType.PURCHASED_THEN_FROZEN and freeze_date is not None:
+        return freeze_date_month_only
+    return best_before_month_only
+
+
 # Nullable-Felder (notes, freeze_date, category_id) brauchen den Unterschied zwischen
 # "nicht angefasst" (UNSET) und "auf None setzen" (Issue #386); Sentinel in services/sentinels.py
 
@@ -131,6 +143,8 @@ def create_item(
     category_id: int | None = None,
     freeze_date: date | None = None,
     notes: str | None = None,
+    best_before_month_only: bool = False,
+    freeze_date_month_only: bool = False,
 ) -> Item:
     """Create a new item.
 
@@ -172,7 +186,11 @@ def create_item(
     item = Item(
         product_name=product_name,
         best_before_date=effective_best_before_date(item_type, best_before_date, freeze_date),
+        best_before_month_only=effective_best_before_month_only(
+            item_type, best_before_month_only, freeze_date, freeze_date_month_only
+        ),
         freeze_date=freeze_date,
+        freeze_date_month_only=freeze_date_month_only,
         quantity=quantity,
         unit=unit,
         item_type=item_type,
@@ -284,6 +302,8 @@ def update_item(
     category_id: int | None | Unset = UNSET,
     item_type: ItemType | None = None,
     notes: str | None | Unset = UNSET,
+    best_before_month_only: bool | None = None,
+    freeze_date_month_only: bool | None = None,
 ) -> Item:
     """Update item.
 
@@ -303,6 +323,8 @@ def update_item(
         category_id: New category ID
         item_type: New item type
         notes: New notes
+        best_before_month_only: Genauigkeit des MHD/Herstellungsdatums; ``None`` lässt sie unverändert
+        freeze_date_month_only: Genauigkeit des Einfrierdatums; ``None`` lässt sie unverändert
 
     Returns:
         Updated item
@@ -345,8 +367,16 @@ def update_item(
         best_before_date if best_before_date is not None else item.best_before_date,
         new_freeze_date,
     )
+    new_freeze_month_only = item.freeze_date_month_only if freeze_date_month_only is None else freeze_date_month_only
+    item.best_before_month_only = effective_best_before_month_only(
+        new_item_type,
+        item.best_before_month_only if best_before_month_only is None else best_before_month_only,
+        new_freeze_date,
+        new_freeze_month_only,
+    )
 
     item.freeze_date = new_freeze_date
+    item.freeze_date_month_only = new_freeze_month_only
 
     if location_id is not None:
         item.location_id = location_id
@@ -582,9 +612,9 @@ def get_item_expiry_info(
     # Determine storage type for this item type
     storage_type = expiry_calculator.get_storage_type_for_item_type(item.item_type)
 
-    # If storage_type is None, this item uses MHD directly
+    # If storage_type is None, this item uses MHD directly; monatsgenau heißt Monatsende (#347)
     if storage_type is None:
-        return (None, None, item.best_before_date)
+        return (None, None, expiry_calculator.effective_deadline(item.best_before_date, item.best_before_month_only))
 
     # Get shelf life config for this category and storage type
     if item.category_id is None:

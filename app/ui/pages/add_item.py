@@ -16,6 +16,7 @@ from ...services import item_types
 from ...services import location_service
 from ...services import preferences_service
 from ..components import create_bottom_nav
+from ..components import create_date_field
 from ..components import create_grouped_category_chip_group
 from ..components import create_item_type_chip_group
 from ..components import create_location_chip_group
@@ -29,8 +30,7 @@ from ..smart_defaults import get_default_item_type
 from ..smart_defaults import get_default_location
 from ..smart_defaults import get_default_unit
 from ..theme.icons import create_icon
-from ..utils.date_utils import format_german_date
-from ..utils.date_utils import parse_german_date
+from ..utils.date_utils import format_date_value
 from ..utils.quantity import format_quantity
 from ..validation import validate_step1
 from ..validation import validate_step2
@@ -61,6 +61,10 @@ def _store_last_entry(smart_defaults: dict[str, Any]) -> None:
             preferences_service.save_last_item_entry(session, user, smart_defaults)
 
 
+# Kennzeichen-Schlüssel je Datumsfeld (Issue #347)
+MONTH_ONLY_KEYS = {"best_before_date": "best_before_month_only", "freeze_date": "freeze_date_month_only"}
+
+
 @ui.page("/items/add")
 @require_auth
 def add_item() -> None:
@@ -79,7 +83,9 @@ def add_item() -> None:
         "quantity": None,
         "unit": default_unit,
         "best_before_date": date_type.today(),
+        "best_before_month_only": False,
         "freeze_date": None,
+        "freeze_date_month_only": False,
         "notes": "",
         "location_id": default_location_id,
         "category_id": default_category_id,
@@ -294,52 +300,45 @@ def add_item() -> None:
                 date_field = "best_before_date"
 
             date_error_field = "freeze_date" if date_field == "freeze_date" else "best_before"
-            ui.label(f"{date_label} *").classes("text-sm font-medium mb-1 mt-4")
             date_value = form_data.get(date_field) or date_type.today()
             form_data[date_field] = date_value  # Ensure it's set
 
-            with (
-                ui.input(value=format_german_date(date_value))
-                .classes("w-full")
-                .props('outlined mask="##.##.####"')
-                .style("max-width: 500px")
-                .mark("wizard-date-input") as date_input
-            ):
-                with date_input.add_slot("append"):
-                    with ui.element("div").classes("cursor-pointer"):
-                        create_icon("status/calendar", size="24px")
-                        with ui.menu() as date_menu:
-                            date_picker = ui.date().bind_value(date_input).props('locale="de" mask="DD.MM.YYYY"')
-                            date_picker.on_value_change(lambda _: date_menu.close())
-            # Typed or picked dates reach form_data only through this binding (Issue #362)
-            date_input.bind_value(form_data, date_field, forward=parse_german_date, backward=format_german_date)
-            date_input.on_value_change(lambda _: touched(date_error_field, update_step2_validation))
+            def on_date_change(
+                value: date_type | None,
+                month_only: bool,
+                key: str = date_field,
+                error: str = date_error_field,
+            ) -> None:
+                form_data[key] = value
+                form_data[MONTH_ONLY_KEYS[key]] = month_only
+                touched(error, update_step2_validation)
+
+            create_date_field(
+                label=f"{date_label} *",
+                value=date_value,
+                month_only=form_data[MONTH_ONLY_KEYS[date_field]],
+                marker="wizard-date-input",
+                on_change=on_date_change,
+            )
             field_errors.slot(date_error_field)
 
             # Zusätzliches Einfrierdatum, wenn der Typ Herstellungs- und Einfrierdatum erfasst (homemade_frozen)
             if spec.uses_freeze_date and date_field != "freeze_date":
-                ui.label("Eingefroren am *").classes("text-sm font-medium mb-1 mt-4")
                 freeze_date_value = form_data.get("freeze_date") or date_type.today()
                 form_data["freeze_date"] = freeze_date_value
-                with (
-                    ui.input(value=format_german_date(freeze_date_value))
-                    .classes("w-full")
-                    .props('outlined mask="##.##.####"')
-                    .style("max-width: 500px")
-                    .mark("wizard-freeze-date-input") as freeze_date_input
-                ):
-                    with freeze_date_input.add_slot("append"):
-                        with ui.element("div").classes("cursor-pointer"):
-                            create_icon("status/calendar", size="24px")
-                            with ui.menu() as freeze_date_menu:
-                                freeze_date_picker = (
-                                    ui.date().bind_value(freeze_date_input).props('locale="de" mask="DD.MM.YYYY"')
-                                )
-                                freeze_date_picker.on_value_change(lambda _: freeze_date_menu.close())
-                freeze_date_input.bind_value(
-                    form_data, "freeze_date", forward=parse_german_date, backward=format_german_date
+
+                def on_freeze_date_change(value: date_type | None, month_only: bool) -> None:
+                    form_data["freeze_date"] = value
+                    form_data["freeze_date_month_only"] = month_only
+                    touched("freeze_date", update_step2_validation)
+
+                create_date_field(
+                    label="Eingefroren am *",
+                    value=freeze_date_value,
+                    month_only=form_data["freeze_date_month_only"],
+                    marker="wizard-freeze-date-input",
+                    on_change=on_freeze_date_change,
                 )
-                freeze_date_input.on_value_change(lambda _: touched("freeze_date", update_step2_validation))
                 field_errors.slot("freeze_date")
 
             # Notes (optional)
@@ -424,9 +423,13 @@ def add_item() -> None:
                 best_before_label = item_types.get_best_before_label(item_type)
                 if best_before_label is not None:
                     short = "MHD" if best_before_label == item_types.LABEL_MHD else "Hergestellt"
-                    date_parts.append(f"{short}: {form_data['best_before_date'].strftime('%d.%m.%Y')}")
+                    shown = format_date_value(
+                        form_data["best_before_date"], month_only=form_data["best_before_month_only"]
+                    )
+                    date_parts.append(f"{short}: {shown}")
                 if form_data.get("freeze_date"):
-                    date_parts.append(f"Eingefroren: {form_data['freeze_date'].strftime('%d.%m.%Y')}")
+                    frozen = format_date_value(form_data["freeze_date"], month_only=form_data["freeze_date_month_only"])
+                    date_parts.append(f"Eingefroren: {frozen}")
                 ui.label(" • ".join(date_parts)).classes("sp-summary-content")
 
             # Fetch locations filtered by item type
@@ -567,6 +570,8 @@ def add_item() -> None:
                     category_id=form_data["category_id"],
                     freeze_date=form_data.get("freeze_date"),
                     notes=form_data.get("notes"),
+                    best_before_month_only=form_data["best_before_month_only"],
+                    freeze_date_month_only=form_data["freeze_date_month_only"],
                 )
             return True
         except Exception as e:

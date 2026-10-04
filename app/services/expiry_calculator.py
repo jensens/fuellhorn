@@ -17,6 +17,20 @@ def get_storage_type_for_item_type(item_type: ItemType) -> StorageType | None:
     return item_types.get_storage_type_for_item_type(item_type)
 
 
+def end_of_month(value: date) -> date:
+    """Letzter Tag des Monats von ``value`` (Issue #347)."""
+    return value + relativedelta(day=31)
+
+
+def effective_deadline(best_before_date: date, month_only: bool) -> date:
+    """Wirksames MHD: ein nur monatsgenaues Datum gilt bis Monatsende (Issue #347).
+
+    Nur für Typen, deren MHD die Frist selbst ist. Rechenbasen (Herstellungs- und
+    Einfrierdatum) bleiben beim gespeicherten 1., damit die Haltbarkeit früher endet.
+    """
+    return end_of_month(best_before_date) if month_only else best_before_date
+
+
 def calculate_expiry_dates(
     item_type: ItemType,
     base_date: date,
