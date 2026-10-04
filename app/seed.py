@@ -43,6 +43,9 @@ SOURCES = {
     "oekotest_milch": "https://www.oekotest.de/essen-trinken/Milch-einfrieren-So-bleibt-Milch-lange-haltbar_11630_1.html",
     "utopia_sahne": "https://utopia.de/ratgeber/sahne-einfrieren-so-klappt-es/",
     "vz_nrw_einfrieren": "https://www.verbraucherzentrale.nrw/9-lebensmittel-die-man-einfrieren-kann-butter-eier-rohen-teig-mehr-99308",
+    "csu_drying_fruits": "https://extension.colostate.edu/resource/drying-fruits/",
+    "csu_drying_vegetables": "https://extension.colostate.edu/resource/drying-vegetables/",
+    "osu_drying_herbs": "https://extension.oregonstate.edu/food/preservation/drying-herbs",
 }
 
 # Format: (name, color, parent_name, [(storage_type, min, max, source_key), ...])
@@ -115,6 +118,12 @@ CATEGORIES: list[tuple[str, str | None, str | None, list[tuple[StorageType, int,
     ("Senf", "#FFCA28", "Würzsaucen", [(StorageType.AMBIENT, 3, 6, "vz_de")]),
     ("Chutney", "#E64A19", "Würzsaucen", [(StorageType.AMBIENT, 6, 12, "foodwissen_chutney")]),
     ("Relish", "#8D6E63", "Würzsaucen", [(StorageType.AMBIENT, 6, 12, "nchfp")]),
+    # === Getrocknetes: selbst gedörrt, Raumtemperatur, luftdicht (#476); Werte = Qualität, nicht Sicherheit ===
+    ("Getrocknetes", "#BF8F5B", None, []),
+    ("Trockenobst", "#C0763A", "Getrocknetes", [(StorageType.AMBIENT, 6, 12, "csu_drying_fruits")]),
+    ("Trockengemüse", "#8A9A5B", "Getrocknetes", [(StorageType.AMBIENT, 6, 12, "csu_drying_vegetables")]),
+    ("Getrocknete Pilze", "#7B5E4A", "Getrocknetes", [(StorageType.AMBIENT, 6, 12, "csu_drying_vegetables")]),
+    ("Getrocknete Kräuter & Tee", "#6B8E23", "Getrocknetes", [(StorageType.AMBIENT, 6, 12, "osu_drying_herbs")]),
     # === Vorrat (nur frisch gekauft, ohne Haltbarkeit) ===
     ("Vorrat", "#6D4C41", None, []),
     ("Nudeln & Pasta", "#FFCC80", "Vorrat", []),
