@@ -3,6 +3,7 @@
 Liest Environment-Variablen und stellt Konfigurations-Objekte bereit.
 """
 
+from collections.abc import Mapping
 from dotenv import load_dotenv
 import os
 from pathlib import Path
@@ -12,9 +13,51 @@ from typing import Literal
 # Lade .env Datei wenn vorhanden
 load_dotenv()
 
-# Projekt-Root
-ROOT_DIR = Path(__file__).parent.parent
-DATA_DIR = ROOT_DIR / "data"
+SQLITE_FILE_PREFIX = "sqlite:///"
+
+
+def resolve_data_dir(env: Mapping[str, str] | None = None, cwd: Path | None = None) -> Path:
+    """Bestimmt das Datenverzeichnis: ``FUELLHORN_DATA_DIR`` oder ``<Arbeitsverzeichnis>/data``.
+
+    Bewusst nicht relativ zum Paket: Im installierten Wheel läge das Verzeichnis
+    in ``site-packages`` und damit außerhalb eines gemounteten Volumes (Issue #371).
+    """
+    environment = os.environ if env is None else env
+    configured = environment.get("FUELLHORN_DATA_DIR", "").strip()
+    if configured:
+        return Path(configured)
+    return (cwd or Path.cwd()) / "data"
+
+
+def ensure_sqlite_directory(url: str) -> None:
+    """Legt das Verzeichnis der SQLite-Datei an; In-Memory-URLs werden ignoriert.
+
+    Raises:
+        RuntimeError: Wenn das Verzeichnis nicht angelegt werden kann oder nicht beschreibbar ist.
+    """
+    if not url.startswith(SQLITE_FILE_PREFIX):
+        return
+    file_part = url.removeprefix(SQLITE_FILE_PREFIX).split("?", 1)[0]
+    if not file_part or file_part.startswith(":memory:"):
+        return
+
+    directory = Path(file_part).parent
+    try:
+        directory.mkdir(parents=True, exist_ok=True)
+    except OSError as exc:
+        raise RuntimeError(
+            f"Datenverzeichnis {directory} kann nicht angelegt werden ({exc.strerror}). "
+            "FUELLHORN_DATA_DIR auf ein beschreibbares Verzeichnis setzen oder DATABASE_URL anpassen."
+        ) from exc
+    if not os.access(directory, os.W_OK):
+        raise RuntimeError(
+            f"Datenverzeichnis {directory} ist nicht beschreibbar. "
+            "FUELLHORN_DATA_DIR auf ein beschreibbares Verzeichnis setzen oder DATABASE_URL anpassen."
+        )
+
+
+# Datenverzeichnis (SQLite-Datei, später evtl. Uploads)
+DATA_DIR = resolve_data_dir()
 
 
 def parse_trusted_proxies(value: str) -> frozenset[str]:
@@ -34,7 +77,7 @@ class Config:
     DB_TYPE: Literal["sqlite", "postgresql"] = os.getenv("DB_TYPE", "sqlite")  # type: ignore
     DATABASE_URL: str = os.getenv(
         "DATABASE_URL",
-        f"sqlite:///{DATA_DIR / 'fuellhorn.db'}",
+        f"{SQLITE_FILE_PREFIX}{DATA_DIR / 'fuellhorn.db'}",
     )
 
     # Sicherheit / Security
@@ -63,12 +106,12 @@ class Config:
     def get_database_url(cls) -> str:
         """Gibt die Datenbank-URL zurück.
 
+        Für SQLite wird das Verzeichnis der Datenbankdatei angelegt.
         Für PostgreSQL wird automatisch der psycopg3 Dialekt verwendet.
         URLs mit postgresql:// werden zu postgresql+psycopg:// konvertiert.
         """
         if cls.DB_TYPE == "sqlite":
-            # Stelle sicher, dass das data/ Verzeichnis existiert
-            DATA_DIR.mkdir(exist_ok=True)
+            ensure_sqlite_directory(cls.DATABASE_URL)
             return cls.DATABASE_URL
 
         # PostgreSQL: Sicherstellen dass psycopg3 Dialekt verwendet wird
