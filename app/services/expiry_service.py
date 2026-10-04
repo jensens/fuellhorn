@@ -17,8 +17,8 @@ from ..models.category import Category
 from ..models.category_shelf_life import CategoryShelfLife
 from ..models.category_shelf_life import StorageType
 from ..models.item import Item
-from ..models.item import ItemType
 from . import item_service
+from . import item_types
 from . import shelf_life_service
 from .expiry_calculator import calculate_expiry_dates
 from .expiry_calculator import get_expiry_status_minmax
@@ -33,14 +33,14 @@ from typing import Literal
 
 ExpiryViewStatus = Literal["ok", "warning", "critical", "unknown"]
 
-LABEL_MHD = "MHD"
+LABEL_MHD = item_types.LABEL_MHD
 LABEL_OPTIMAL = "Ideal bis"
 LABEL_UNKNOWN = "Keine Haltbarkeitsdaten"
 
 # (critical_days, warning_days) – entspricht preferences_service.HARDCODED_DEFAULTS
 DEFAULT_THRESHOLDS: tuple[int, int] = (3, 7)
 
-FREEZE_DATE_TYPES = {ItemType.PURCHASED_THEN_FROZEN, ItemType.HOMEMADE_FROZEN}
+FREEZE_DATE_TYPES = item_types.FREEZE_DATE_TYPES
 
 
 @dataclass(frozen=True)
@@ -54,8 +54,8 @@ class ExpiryView:
 
 UNKNOWN_VIEW = ExpiryView(status="unknown", display_date=None, label=LABEL_UNKNOWN)
 
-LABEL_PRODUCED = "Hergestellt am"
-LABEL_FROZEN = "Eingefroren am"
+LABEL_PRODUCED = item_types.LABEL_PRODUCED
+LABEL_FROZEN = item_types.LABEL_FROZEN
 
 
 def get_entered_dates(item: Item) -> list[tuple[str, date]]:
@@ -70,13 +70,11 @@ def get_entered_dates(item: Item) -> list[tuple[str, date]]:
     Returns:
         Liste von (Beschriftung, Datum), fehlende Einfrierdaten werden ausgelassen.
     """
-    if item.item_type in (ItemType.PURCHASED_FRESH, ItemType.PURCHASED_FROZEN):
-        return [(LABEL_MHD, item.best_before_date)]
-
+    spec = item_types.spec_for(item.item_type)
     entries: list[tuple[str, date]] = []
-    if item.item_type != ItemType.PURCHASED_THEN_FROZEN:
-        entries.append((LABEL_PRODUCED, item.best_before_date))
-    if item.item_type in FREEZE_DATE_TYPES and item.freeze_date is not None:
+    if spec.best_before_label is not None:
+        entries.append((spec.best_before_label, item.best_before_date))
+    if spec.uses_freeze_date and item.freeze_date is not None:
         entries.append((LABEL_FROZEN, item.freeze_date))
     return entries
 

@@ -19,6 +19,7 @@ Card Structure (3-zone layout):
 from ...models.item import Item
 from ...models.item import ItemType
 from ...models.location import LocationType
+from ...services import item_types
 from ...services.item_rows import ItemRow
 from ..theme import ITEM_TYPE_COLORS
 from ..theme import get_contrast_text_color
@@ -108,14 +109,8 @@ def _get_progress_color(percentage: int) -> str:
     return "negative"  # Coral
 
 
-# Item-Type Badge short labels (German)
-ITEM_TYPE_SHORT_LABELS = {
-    ItemType.PURCHASED_FRESH: "Frisch",
-    ItemType.PURCHASED_FROZEN: "TK gekauft",
-    ItemType.PURCHASED_THEN_FROZEN: "Eingefr.",
-    ItemType.HOMEMADE_FROZEN: "Selbst eingefr.",
-    ItemType.HOMEMADE_PRESERVED: "Eingemacht",
-}
+# Item-Type Badge short labels (eine Quelle: services/item_types, Issue #398)
+ITEM_TYPE_SHORT_LABELS = item_types.ITEM_TYPE_SHORT_LABELS
 
 
 def get_status_css_class(status: str) -> str:

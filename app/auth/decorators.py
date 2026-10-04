@@ -5,9 +5,9 @@ Bietet Decorators für UI-Pages und Helper-Funktionen.
 
 from .dependencies import AuthenticationError
 from .dependencies import AuthorizationError
-from .dependencies import check_permission
 from .dependencies import get_current_user
 from .permissions import Permission
+from .permissions import check_permission
 from .permissions import get_permissions_for_user
 from collections.abc import Callable
 from functools import wraps
@@ -154,8 +154,9 @@ def with_permission_check(
         def wrapper(*args: P.args, **kwargs: P.kwargs) -> R | None:
             try:
                 user = get_current_user(require_auth=True)
+                assert user is not None  # require_auth=True wirft AuthenticationError statt None zu liefern
 
-                if not check_permission(permission, user):
+                if not check_permission(user, permission):
                     ui.notify(
                         f"Keine Berechtigung für diese Aktion ({permission.value})",
                         type="negative",

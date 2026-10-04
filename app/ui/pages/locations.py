@@ -13,21 +13,19 @@ from ...auth.dependencies import get_current_user
 from ...database import get_session
 from ...models.location import Location
 from ...models.location import LocationType
+from ...services import item_types
 from ...services import location_service
 from ..components import create_mobile_page_container
+from ..components.color_picker import create_color_picker
+from ..components.confirm_delete import open_confirm_delete_dialog
 from ..components.errors import show_service_error
 from ..theme.icons import create_icon
 from nicegui import ui
 
 
 def _get_location_type_label(location_type: LocationType) -> str:
-    """Get German label for location type."""
-    labels = {
-        LocationType.FROZEN: "Gefroren",
-        LocationType.CHILLED: "Gekühlt",
-        LocationType.AMBIENT: "Raumtemperatur",
-    }
-    return labels.get(location_type, str(location_type.value))
+    """Get German label for location type (eine Quelle: services/item_types, #398)."""
+    return item_types.LOCATION_TYPE_LABELS.get(location_type, str(location_type.value))
 
 
 def _get_location_type_color(location_type: LocationType) -> str:
@@ -149,11 +147,7 @@ def locations_page() -> None:
 def _open_edit_dialog(location: Location) -> None:
     """Open dialog to edit an existing location."""
     # Location type options
-    type_options = {
-        LocationType.FROZEN: "Gefroren",
-        LocationType.CHILLED: "Gekühlt",
-        LocationType.AMBIENT: "Raumtemperatur",
-    }
+    type_options = dict(item_types.LOCATION_TYPE_LABELS)
 
     with ui.dialog() as dialog, ui.card().classes("sp-dashboard-card w-full max-w-md"):
         ui.label("Lagerort bearbeiten").classes("text-h6 font-semibold mb-4 text-fern")
@@ -190,21 +184,7 @@ def _open_edit_dialog(location: Location) -> None:
             .props("outlined")
         )
 
-        # Color input with preview (optional, pre-filled)
-        initial_color = location.color or ""
-        with ui.row().classes("w-full items-center gap-2 mb-2"):
-            color_input = ui.color_input(label="Farbe", value=initial_color).classes("flex-1").mark("color-input")
-            color_preview = (
-                ui.element("div")
-                .classes("w-10 h-10 rounded-lg border-2 border-gray-300")
-                .style(f"background-color: {initial_color}" if initial_color else "background-color: #E5E7EB")
-                .mark("color-preview")
-            )
-            color_input.on_value_change(
-                lambda e: color_preview.style(
-                    f"background-color: {e.value}" if e.value else "background-color: #E5E7EB"
-                )
-            )
+        color_input = create_color_picker(location.color)
 
         # Active status checkbox (pre-filled)
         is_active_checkbox = ui.checkbox(
@@ -267,11 +247,7 @@ def _open_edit_dialog(location: Location) -> None:
 def _open_create_dialog() -> None:
     """Open dialog to create a new location."""
     # Location type options
-    type_options = {
-        LocationType.FROZEN: "Gefroren",
-        LocationType.CHILLED: "Gekühlt",
-        LocationType.AMBIENT: "Raumtemperatur",
-    }
+    type_options = dict(item_types.LOCATION_TYPE_LABELS)
 
     with ui.dialog() as dialog, ui.card().classes("sp-dashboard-card w-full max-w-md"):
         ui.label("Neuen Lagerort erstellen").classes("text-h6 font-semibold mb-4 text-fern")
@@ -308,20 +284,7 @@ def _open_create_dialog() -> None:
             .props("outlined")
         )
 
-        # Color input with preview (optional)
-        with ui.row().classes("w-full items-center gap-2 mb-4"):
-            color_input = ui.color_input(label="Farbe").classes("flex-1").mark("color-input")
-            color_preview = (
-                ui.element("div")
-                .classes("w-10 h-10 rounded-lg border-2 border-gray-300")
-                .style("background-color: #E5E7EB")
-                .mark("color-preview")
-            )
-            color_input.on_value_change(
-                lambda e: color_preview.style(
-                    f"background-color: {e.value}" if e.value else "background-color: #E5E7EB"
-                )
-            )
+        color_input = create_color_picker()
 
         # Error label (hidden by default)
         error_label = ui.label("").classes("text-red-600 text-sm mb-2")
@@ -376,34 +339,17 @@ def _open_create_dialog() -> None:
 
 def _open_delete_dialog(location_id: int, location_name: str) -> None:
     """Open confirmation dialog to delete a location."""
-    with ui.dialog() as dialog, ui.card().classes("sp-dashboard-card w-full max-w-md"):
-        ui.label("Lagerort löschen").classes("text-h6 font-semibold mb-4 text-fern")
 
-        # Warning message
-        ui.label(f"Möchten Sie den Lagerort '{location_name}' wirklich löschen?").classes("mb-2")
-        ui.label("Diese Aktion kann nicht rückgängig gemacht werden.").classes("text-sm text-red-600 mb-4")
+    def delete() -> None:
+        with next(get_session()) as session:
+            # Referenz-Prüfung liegt im Service (#379)
+            location_service.delete_location(session=session, id=location_id)
 
-        # Error label (hidden by default)
-        error_label = ui.label("").classes("text-red-600 text-sm mb-2")
-        error_label.set_visibility(False)
-
-        # Buttons (Solarpunk theme)
-        with ui.row().classes("w-full justify-end gap-2"):
-            ui.button("Abbrechen", on_click=dialog.close).classes("sp-btn-ghost").props("flat")
-
-            @with_permission_check(Permission.CONFIG_MANAGE)
-            def confirm_delete() -> None:
-                """Perform the deletion."""
-                try:
-                    with next(get_session()) as session:
-                        # Referenz-Prüfung liegt im Service (#379)
-                        location_service.delete_location(session=session, id=location_id)
-                    ui.notify("Lagerort gelöscht", type="positive")
-                    dialog.close()
-                    ui.navigate.to("/admin/locations")
-                except Exception as e:
-                    show_service_error(e, error_label)
-
-            ui.button("Löschen", on_click=confirm_delete).classes("sp-btn-danger")
-
-    dialog.open()
+    open_confirm_delete_dialog(
+        title="Lagerort löschen",
+        question=f"Möchten Sie den Lagerort '{location_name}' wirklich löschen?",
+        permission=Permission.CONFIG_MANAGE,
+        on_confirm=delete,
+        success_message="Lagerort gelöscht",
+        redirect="/admin/locations",
+    )

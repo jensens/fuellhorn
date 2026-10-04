@@ -5,9 +5,9 @@ from ..models.category_shelf_life import CategoryShelfLife
 from ..models.category_shelf_life import StorageType
 from ..models.item import Item
 from ..models.item import ItemType
+from ..services import item_types
 from ..services.errors import DuplicateNameError
 from ..services.errors import ServiceValidationError
-from ..services.expiry_calculator import get_storage_type_for_item_type
 from ..services.sentinels import UNSET
 from ..services.sentinels import Unset
 from ..services.validation import require_non_empty
@@ -257,14 +257,12 @@ def update_category_order(session: Session, category_ids: list[int]) -> None:
 
 
 def _get_storage_type_for_filtering(item_type: ItemType) -> StorageType | None:
-    """Get storage type for category filtering.
+    """Lagerart für den Kategoriefilter (Spec in item_types, #398).
 
-    PURCHASED_FROZEN filters to FROZEN categories (unlike expiry calculation
-    where it uses MHD directly). PURCHASED_FRESH shows all categories.
+    PURCHASED_FROZEN filtert absichtlich auf FROZEN-Kategorien, obwohl es per MHD abläuft;
+    PURCHASED_FRESH zeigt alle Kategorien.
     """
-    if item_type == ItemType.PURCHASED_FROZEN:
-        return StorageType.FROZEN
-    return get_storage_type_for_item_type(item_type)
+    return item_types.get_filter_storage_type(item_type)
 
 
 def get_categories_for_item_type(session: Session, item_type: ItemType) -> list[Category]:

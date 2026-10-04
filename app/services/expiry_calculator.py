@@ -2,6 +2,7 @@
 
 from ..models.category_shelf_life import StorageType
 from ..models.item import ItemType
+from . import item_types
 from datetime import date
 from dateutil.relativedelta import relativedelta
 from typing import Literal
@@ -12,22 +13,8 @@ ExpiryStatus = Literal["critical", "warning", "ok"]
 
 
 def get_storage_type_for_item_type(item_type: ItemType) -> StorageType | None:
-    """Get the storage type for shelf life calculation.
-
-    Maps item types to storage types for looking up CategoryShelfLife data.
-    Returns None for item types that use best_before_date directly (MHD).
-
-    Args:
-        item_type: The type of item
-
-    Returns:
-        StorageType for shelf life lookup, or None if item uses MHD directly
-    """
-    if item_type in [ItemType.PURCHASED_THEN_FROZEN, ItemType.HOMEMADE_FROZEN]:
-        return StorageType.FROZEN
-    elif item_type == ItemType.HOMEMADE_PRESERVED:
-        return StorageType.AMBIENT
-    return None  # PURCHASED_FRESH, PURCHASED_FROZEN use MHD directly
+    """Lagerart für die Haltbarkeits-Berechnung; ``None`` = MHD gilt direkt (Spec in item_types, #398)."""
+    return item_types.get_storage_type_for_item_type(item_type)
 
 
 def calculate_expiry_dates(
@@ -169,12 +156,7 @@ def calculate_expiry_date(
 
     # Only self-frozen items use freeze_date as base
     # PURCHASED_FROZEN uses best_before_date (MHD on package)
-    self_frozen_types = {
-        ItemType.PURCHASED_THEN_FROZEN,
-        ItemType.HOMEMADE_FROZEN,
-    }
-
-    if item_type in self_frozen_types:
+    if item_type in item_types.FREEZE_DATE_TYPES:
         if freeze_date is None:
             raise ValueError("Self-frozen items must have a freeze_date")
 
