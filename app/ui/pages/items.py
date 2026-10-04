@@ -25,6 +25,7 @@ from ..components import create_bottom_sheet
 from ..components import create_item_card
 from ..components import create_mobile_page_container
 from ..components.consume_all import confirm_consume_all
+from ..theme import Colors
 from ..theme import get_contrast_text_color
 from ..theme.icons import create_icon
 from collections import defaultdict
@@ -430,7 +431,7 @@ def items_page(filter: str | None = None, location: int | None = None) -> None: 
     def update_chip_style(cat_id: int) -> None:
         """Update chip appearance based on selection state and category color."""
         chip = chip_elements.get(cat_id)
-        color = category_colors.get(cat_id, "#6B7280")  # Default gray if no color
+        color = category_colors.get(cat_id, Colors.DEFAULT_GRAY)  # Default gray if no color
         text_color = get_contrast_text_color(color)
         if chip:
             if cat_id in selected_categories:
@@ -441,7 +442,8 @@ def items_page(filter: str | None = None, location: int | None = None) -> None: 
             else:
                 # Not selected: Gray background, colored border
                 chip.style(
-                    "background-color: #E5E7EB !important; border: 2px solid " + color + "; color: #374151 !important;"
+                    f"background-color: {Colors.NEUTRAL_LIGHT} !important; border: 2px solid {color}; "
+                    f"color: {Colors.NEUTRAL_TEXT} !important;"
                 )
 
     def toggle_category(cat_id: int) -> None:
@@ -541,7 +543,8 @@ def items_page(filter: str | None = None, location: int | None = None) -> None: 
                     icon="arrow_upward",
                     on_click=toggle_sort_direction,
                 )
-                .props("flat dense")
+                .props("flat")
+                .style("min-width: 44px; min-height: 44px")
                 .mark("sort-direction")
             )
 
@@ -558,20 +561,21 @@ def items_page(filter: str | None = None, location: int | None = None) -> None: 
             def render_chip(cat: Category, *, is_group: bool = False) -> None:
                 if cat.id is None:
                     return
-                color = cat.color or "#6B7280"  # Default gray
+                color = cat.color or Colors.DEFAULT_GRAY  # Default gray
                 category_colors[cat.id] = color
                 chip = (
                     ui.button(
                         f"● {cat.name}",
                         on_click=lambda _, cid=cat.id: toggle_category(cid),
                     )
-                    .classes("rounded-full px-4 py-1 text-sm" + (" font-semibold" if is_group else ""))
+                    .classes("rounded-full px-4 min-h-[44px] text-sm" + (" font-semibold" if is_group else ""))
                     .props("flat no-caps")
                     .mark(f"filter-category-{cat.id}")
                 )
                 # Apply initial unselected style with category color (!important to override defaults)
                 chip.style(
-                    f"background-color: #E5E7EB !important; border: 2px solid {color}; color: #374151 !important;"
+                    f"background-color: {Colors.NEUTRAL_LIGHT} !important; border: 2px solid {color}; "
+                    f"color: {Colors.NEUTRAL_TEXT} !important;"
                 )
                 chip_elements[cat.id] = chip
 

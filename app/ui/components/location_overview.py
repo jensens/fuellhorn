@@ -5,6 +5,7 @@ Issue #246: Horizontal scrollable location chips with icons and item counts.
 
 from ...models.location import Location
 from ...models.location import LocationType
+from ..theme import Colors
 from collections.abc import Sequence
 from nicegui import ui
 
@@ -52,7 +53,7 @@ def create_location_overview_chips(
             loc_id: int = location.id
             count = item_counts.get(loc_id, 0)
             icon = get_location_type_icon(location.location_type)
-            color = location.color or "#6B7280"
+            color = location.color or Colors.DEFAULT_GRAY
 
             # Location chip card
             with (

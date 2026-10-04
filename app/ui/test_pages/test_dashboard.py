@@ -280,7 +280,7 @@ def _render_dashboard_content() -> None:
                 ui.label(f"{item.product_name}: {status_text}")
 
             # "Alle anzeigen" link (Issue #244)
-            ui.link("Alle anzeigen", "/items?filter=expiring").classes("text-sm text-leaf hover:text-leaf-dark mt-2")
+            ui.link("Alle anzeigen", "/items?filter=expiring").classes("text-sm text-leaf hover:text-fern-dark mt-2")
         else:
             # Improved empty state (Issue #244)
             with ui.card().classes("sp-dashboard-card w-full p-6 text-center"):

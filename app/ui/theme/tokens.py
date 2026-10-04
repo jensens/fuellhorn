@@ -4,7 +4,7 @@ This module defines all design tokens (colors, spacing, etc.) used in the app.
 These values mirror the CSS custom properties in solarpunk-theme.css.
 
 Usage:
-    from app.ui.theme import COLORS, ITEM_TYPE_COLORS, STATUS_COLORS
+    from app.ui.theme import COLORS, ITEM_TYPE_COLORS
 """
 
 from ...models.item import ItemType
@@ -50,8 +50,11 @@ class Colors:
     STATUS_CRITICAL = "#E07A5F"
     STATUS_INFO = "#5BA3C6"
 
-    # Default fallback
+    # Neutrals für Chips, Vorschauen und Kontrasttext (entsprechen Tailwind gray-200/500/700/800)
+    NEUTRAL_LIGHT = "#E5E7EB"
     DEFAULT_GRAY = "#6B7280"
+    NEUTRAL_TEXT = "#374151"
+    NEUTRAL_DARK = "#1F2937"
 
 
 # Singleton instance for convenience
@@ -68,22 +71,4 @@ ITEM_TYPE_COLORS: dict[ItemType, str] = {
     ItemType.PURCHASED_THEN_FROZEN: Colors.STATUS_INFO,  # Info blue
     ItemType.HOMEMADE_FROZEN: Colors.TERRACOTTA,  # Terracotta
     ItemType.HOMEMADE_PRESERVED: Colors.TERRACOTTA,  # Terracotta
-}
-
-
-# =============================================================================
-# Status Colors (Tailwind class names for backward compatibility)
-# =============================================================================
-
-STATUS_COLORS: dict[str, str] = {
-    "critical": "red-500",
-    "warning": "orange-500",
-    "ok": "green-500",
-}
-
-# Status colors as hex values
-STATUS_HEX_COLORS: dict[str, str] = {
-    "critical": Colors.STATUS_CRITICAL,
-    "warning": Colors.STATUS_WARNING,
-    "ok": Colors.STATUS_OK,
 }

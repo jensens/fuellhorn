@@ -15,6 +15,7 @@ from ...models.location import Location
 from ...models.location import LocationType
 from ...services import item_service
 from ...services.expiry_service import get_entered_dates
+from ..theme import Colors
 from ..theme.icons import create_icon
 from ..utils.date_utils import format_relative_date
 from .item_card import get_location_icon_name
@@ -56,14 +57,15 @@ def create_recently_added_row(
         location: The item's storage location
         on_click: Optional callback when row is clicked
     """
-    location_color = location.color or "#6B7280"
+    location_color = location.color or Colors.DEFAULT_GRAY
     icon_name = get_location_icon_name(location.location_type)
     location_abbr = get_location_abbreviation(location)
     relative_date = format_relative_date(item.created_at)
 
     # Row container with click handler
     row_classes = (
-        "flex items-center justify-between py-2 px-3 cursor-pointer hover:bg-gray-50 rounded-lg transition-colors"
+        "flex items-center justify-between min-h-[44px] py-2 px-3 cursor-pointer hover:bg-gray-50 rounded-lg "
+        "transition-colors"
     )
 
     with (

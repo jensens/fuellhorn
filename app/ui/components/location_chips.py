@@ -6,6 +6,7 @@ Locations are loaded dynamically from the database.
 """
 
 from ...models.location import Location
+from ..theme import Colors
 from ..theme import get_contrast_text_color
 from collections.abc import Callable
 from collections.abc import Sequence
@@ -38,7 +39,7 @@ def create_location_chip_group(
         for location_id, chip in chip_refs.items():
             is_selected = location_id == current_value[0]
             dot = dot_refs[location_id]
-            color = location_colors.get(location_id, "#6B7280")
+            color = location_colors.get(location_id, Colors.DEFAULT_GRAY)
             text_color = get_contrast_text_color(color)
             # Dot border color: white for dark backgrounds, use location color for light
             dot_color = "white" if text_color == "white" else color
@@ -76,7 +77,7 @@ def create_location_chip_group(
                 continue
             loc_id: int = location.id
             is_selected = loc_id == value
-            color = location.color or "#6B7280"  # Default gray if no color
+            color = location.color or Colors.DEFAULT_GRAY  # Default gray if no color
             text_color = get_contrast_text_color(color)
 
             # Store color for update_chip_styles

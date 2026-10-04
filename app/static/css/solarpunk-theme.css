@@ -39,6 +39,11 @@
   --sp-stone: #A39E93;
   --sp-stone-dark: #7D796F;
   --sp-charcoal: #3D3D3D;
+  /* Neutrals für Chips, Vorschauen und Kontrasttext (siehe theme/tokens.py) */
+  --sp-neutral-light: #E5E7EB;
+  --sp-default-gray: #6B7280;
+  --sp-neutral-text: #374151;
+  --sp-neutral-dark: #1F2937;
   
   /* Status Colors */
   --sp-status-ok: #7CB342;
@@ -373,18 +378,18 @@ h1, h2, h3 {
 }
 
 .expiry-badge.expired {
-  background: linear-gradient(135deg, #C44536, #D85545);
+  background: linear-gradient(135deg, var(--sp-status-critical-dark), var(--sp-status-critical));
   color: white;
 }
 
 .expiry-badge.warning {
-  background: linear-gradient(135deg, #E8985A, #F0A86A);
+  background: linear-gradient(135deg, var(--sp-status-warning), var(--sp-amber-light));
   color: white;
 }
 
 .expiry-badge.soon {
-  background: linear-gradient(135deg, #D4A853, #E8C97B);
-  color: #5A4520;
+  background: linear-gradient(135deg, var(--sp-honey), var(--sp-amber-light));
+  color: var(--sp-charcoal);
 }
 
 .expiry-badge.ok {
@@ -602,6 +607,14 @@ h1, h2, h3 {
 /* ----------------------------------------
    ADMIN LIST ITEMS
    ---------------------------------------- */
+/* Lagerort-Kachel in der Dashboard-Übersicht (location_overview.py) */
+.sp-location-chip {
+  background: white;
+  border-radius: var(--sp-radius-md);
+  box-shadow: var(--sp-shadow-sm);
+  min-height: 44px;
+}
+
 .sp-admin-list-item {
   display: flex;
   align-items: center;
@@ -729,6 +742,8 @@ h1, h2, h3 {
 /* Text colors */
 .text-fern { color: var(--sp-fern) !important; }
 .text-fern-dark { color: var(--sp-fern-dark) !important; }
+.hover\:text-fern-dark:hover { color: var(--sp-fern-dark) !important; }
+.text-leaf { color: var(--sp-leaf) !important; }
 .text-amber { color: var(--sp-amber) !important; }
 .text-stone { color: var(--sp-stone) !important; }
 .text-charcoal { color: var(--sp-charcoal) !important; }
@@ -889,6 +904,11 @@ h1, h2, h3 {
 .swipe-card-container.swiped-left .swipe-card-content,
 .swipe-card-container.swiped-right .swipe-card-content {
   box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Weit nach links gezogen: 'Alles entnehmen' steht an (JS setzt swiped-left-full) */
+.swipe-card-container.swiped-left-full .swipe-card-content {
+  box-shadow: -4px 0 12px rgba(0, 0, 0, 0.18);
 }
 
 /* Dwell progress ring */

@@ -6,48 +6,11 @@ Supports grouped display via parent categories.
 """
 
 from ...models.category import Category
+from ..theme import Colors
 from ..theme import get_contrast_text_color
 from collections.abc import Callable
 from collections.abc import Sequence
 from nicegui import ui
-
-
-def _group_by_parent(categories: Sequence[Category]) -> list[tuple[str | None, list[Category]]]:
-    """Gruppiert eine flache Liste nach parent_id; Gruppenname ist der Name des Parents, falls er in der Liste ist.
-
-    Gruppen zuerst (in Reihenfolge des ersten Kindes), danach eigenständige Kategorien unter "Weitere",
-    sobald es mindestens eine Gruppe gibt.
-    """
-    names = {cat.id: cat.name for cat in categories if cat.id is not None}
-    grouped: dict[int | None, list[Category]] = {}
-    for cat in categories:
-        grouped.setdefault(cat.parent_id, []).append(cat)
-
-    result: list[tuple[str | None, list[Category]]] = []
-    for parent_id, cats in grouped.items():
-        if parent_id is not None:
-            result.append((names.get(parent_id), cats))
-    standalone = grouped.get(None, [])
-    if standalone:
-        result.append(("Weitere" if result else None, standalone))
-    return result
-
-
-def create_category_chip_group(
-    categories: Sequence[Category],
-    value: int | None = None,
-    on_change: Callable[[int], None] | None = None,
-) -> ui.element:
-    """Chip-Gruppe aus einer flachen Kategorienliste; Kinder werden unter ihrem Parent gruppiert.
-
-    Dünne Hülle um ``create_grouped_category_chip_group`` (eine Implementierung, Issue #398).
-
-    Args:
-        categories: Kategorien (nur Blätter)
-        value: vorausgewählte category_id
-        on_change: Callback bei Auswahl (erhält die category_id)
-    """
-    return create_grouped_category_chip_group(_group_by_parent(categories), value=value, on_change=on_change)
 
 
 def create_grouped_category_chip_group(
@@ -75,7 +38,7 @@ def create_grouped_category_chip_group(
         for category_id, chip in chip_refs.items():
             is_selected = category_id == current_value[0]
             dot = dot_refs[category_id]
-            color = category_colors.get(category_id, "#6B7280")
+            color = category_colors.get(category_id, Colors.DEFAULT_GRAY)
             text_color = get_contrast_text_color(color)
             dot_color = "white" if text_color == "white" else color
 
@@ -105,7 +68,7 @@ def create_grouped_category_chip_group(
         if category.id is None:
             return
         cat_id: int = category.id
-        color = category.color or "#6B7280"
+        color = category.color or Colors.DEFAULT_GRAY
         text_color = get_contrast_text_color(color)
         category_colors[cat_id] = color
 
