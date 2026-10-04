@@ -340,8 +340,12 @@ Siehe [charts/fuellhorn/README.md](charts/fuellhorn/README.md) für vollständig
 
 | Variable | Beschreibung | Default |
 |----------|--------------|---------|
-| `SESSION_MAX_AGE` | Session-Dauer in Sekunden (ohne "Angemeldet bleiben") | `86400` (24h) |
-| `REMEMBER_ME_MAX_AGE` | Session-Dauer mit "Angemeldet bleiben" | `2592000` (30 Tage) |
+| `SESSION_MAX_AGE` | Ohne "Angemeldet bleiben": Abmeldung nach so vielen Sekunden ohne Aktivität | `86400` (24h) |
+| `REMEMBER_ME_MAX_AGE` | Laufzeit des Sitzungs-Cookies in Sekunden (gleitend, gilt mit "Angemeldet bleiben") | `2592000` (30 Tage) |
+
+Eine Passwortänderung (selbst, durch einen Admin oder per `create-admin --reset-password`) meldet alle anderen
+Sitzungen dieses Benutzers beim nächsten Aufruf ab. Sitzungsdaten liegen serverseitig im NiceGUI-Storage
+(`.nicegui/`, konfigurierbar über `NICEGUI_STORAGE_PATH`); im Browser liegt nur ein signiertes Cookie.
 
 ---
 

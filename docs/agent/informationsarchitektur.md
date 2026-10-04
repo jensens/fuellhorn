@@ -80,9 +80,10 @@ Login-Seite
     └── → Dashboard
 ```
 
-**Session-Länge:**
-- Mit "Angemeldet bleiben": 30 Tage
-- Ohne: 24 Stunden
+**Session-Länge** (`app/auth/session.py`, Issue #384):
+- Mit "Angemeldet bleiben": 30 Tage (`REMEMBER_ME_MAX_AGE`, Cookie-Laufzeit, verlängert sich bei jedem Aufruf)
+- Ohne: 24 Stunden ohne Aktivität (`SESSION_MAX_AGE`)
+- Passwortänderung meldet alle anderen Sitzungen des Benutzers ab; die Login-Seite nennt den Grund
 
 ### 3.2 Artikel erfassen (3-Schritt-Wizard)
 
