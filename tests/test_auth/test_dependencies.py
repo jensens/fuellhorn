@@ -1,7 +1,7 @@
 """Tests for auth dependencies."""
 
-from app.auth.dependencies import check_permission
 from app.auth.permissions import Permission
+from app.auth.permissions import check_permission
 from app.models.user import Role
 from app.models.user import User
 
@@ -20,10 +20,10 @@ class TestCheckPermission:
             is_active=True,
         )
 
-        assert check_permission(Permission.ITEMS_READ, admin_user) is True
-        assert check_permission(Permission.ITEMS_WRITE, admin_user) is True
-        assert check_permission(Permission.USER_MANAGE, admin_user) is True
-        assert check_permission(Permission.ADMIN_FULL, admin_user) is True
+        assert check_permission(admin_user, Permission.ITEMS_READ) is True
+        assert check_permission(admin_user, Permission.ITEMS_WRITE) is True
+        assert check_permission(admin_user, Permission.USER_MANAGE) is True
+        assert check_permission(admin_user, Permission.ADMIN_FULL) is True
 
     def test_user_has_limited_permissions(self) -> None:
         """Regular user should have limited permissions."""
@@ -36,11 +36,11 @@ class TestCheckPermission:
             is_active=True,
         )
 
-        assert check_permission(Permission.ITEMS_READ, regular_user) is True
-        assert check_permission(Permission.ITEMS_WRITE, regular_user) is True
+        assert check_permission(regular_user, Permission.ITEMS_READ) is True
+        assert check_permission(regular_user, Permission.ITEMS_WRITE) is True
         # Regular user should not have admin permissions
-        assert check_permission(Permission.ADMIN_FULL, regular_user) is False
-        assert check_permission(Permission.USER_MANAGE, regular_user) is False
+        assert check_permission(regular_user, Permission.ADMIN_FULL) is False
+        assert check_permission(regular_user, Permission.USER_MANAGE) is False
 
     def test_inactive_user_has_no_permissions(self) -> None:
         """Inactive user should have no permissions (checks are done at higher level)."""
@@ -55,4 +55,4 @@ class TestCheckPermission:
 
         # Even admin role, but user is inactive - permissions still granted by role
         # (is_active check happens at authentication level, not permission level)
-        assert check_permission(Permission.ITEMS_READ, inactive_user) is True
+        assert check_permission(inactive_user, Permission.ITEMS_READ) is True

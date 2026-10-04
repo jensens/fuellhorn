@@ -7,7 +7,7 @@ from ..database import get_session
 from ..models.user import User
 from ..services.auth_service import get_user
 from .permissions import Permission
-from .permissions import get_permissions_for_user
+from .permissions import check_permission
 from .session import end_session
 from .session import session_problem
 from .session import touch_session
@@ -116,29 +116,6 @@ def clear_current_user_cache() -> None:
     _current_user_cache.set(None)
 
 
-def check_permission(permission: Permission, user: User | None = None) -> bool:
-    """Check ob current user eine bestimmte Permission hat.
-
-    Args:
-        permission: Die zu pruefende Permission.
-        user: Optional user object (wird gefetched wenn nicht angegeben).
-
-    Returns:
-        True wenn user die Permission hat, False sonst.
-    """
-    if user is None:
-        try:
-            user = get_current_user(require_auth=True)
-        except AuthenticationError:
-            return False
-
-    if user is None:
-        return False
-
-    user_permissions = get_permissions_for_user(user)
-    return permission in user_permissions
-
-
 def require_permission(permission: Permission, user: User | None = None) -> User:
     """Require dass current user eine bestimmte Permission hat.
 
@@ -159,7 +136,7 @@ def require_permission(permission: Permission, user: User | None = None) -> User
     # user is guaranteed to be not None here because require_auth=True
     assert user is not None
 
-    if not check_permission(permission, user):
+    if not check_permission(user, permission):
         raise AuthorizationError(f"Fehlende Permission: {permission.value}")
 
     return user
@@ -225,7 +202,7 @@ def require_api_permission(permission: Permission) -> Callable[[User], Any]:
         user: User = Depends(get_current_user_from_request),
     ) -> User:
         """Check permission for API endpoint."""
-        if not check_permission(permission, user):
+        if not check_permission(user, permission):
             raise HTTPException(status_code=403, detail=f"Fehlende Permission: {permission.value}")
         return user
 
