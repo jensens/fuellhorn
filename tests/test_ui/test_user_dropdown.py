@@ -7,7 +7,6 @@ Tests the user dropdown functionality:
 """
 
 from nicegui.testing import User as TestUser
-import pytest
 
 
 async def test_header_shows_username(logged_in_user: TestUser) -> None:
@@ -69,16 +68,10 @@ async def test_bottom_nav_no_mehr(logged_in_user: TestUser) -> None:
 
 
 async def test_old_settings_route_returns_404(logged_in_user: TestUser) -> None:
-    """Test that old /settings route returns 404 (route was removed)."""
-    # Navigate to old /settings route - should get 404
-    # We use try/except because open() raises on non-200 status
-    try:
-        await logged_in_user.open("/settings")
-        # If we get here, the route exists which is wrong
-        pytest.fail("Expected /settings to return 404")
-    except AssertionError as e:
-        # Expected: route returns 404
-        assert "404" in str(e)
+    """Die alte Route /settings existiert nicht mehr (HTTP 404 statt Fehlertext-Parsing, Issue #392)."""
+    response = await logged_in_user.http_client.get("/settings")
+
+    assert response.status_code == 404
 
 
 async def test_dropdown_on_add_item_page(logged_in_user: TestUser) -> None:
