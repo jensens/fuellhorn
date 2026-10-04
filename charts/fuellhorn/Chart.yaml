@@ -3,7 +3,8 @@ name: fuellhorn
 description: Self-hosted food inventory management
 type: application
 version: 0.1.0
-appVersion: "0.1.0"
+# Wird vom Release-Workflow auf die veröffentlichte Version gesetzt; Default-Image-Tag (image.tag leer)
+appVersion: "1.0.0a9"
 keywords:
   - inventory
   - food

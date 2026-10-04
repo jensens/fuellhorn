@@ -51,12 +51,65 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/*
-Database URL for PostgreSQL
+Image reference: image.tag, sonst appVersion des Charts (#377)
+*/}}
+{{- define "fuellhorn.image" -}}
+{{- printf "%s:%s" .Values.image.repository (.Values.image.tag | default .Chart.AppVersion) }}
+{{- end }}
+
+{{/*
+Database URL for PostgreSQL (Passwort URL-kodiert, #377)
 */}}
 {{- define "fuellhorn.databaseUrl" -}}
-{{- if .Values.database.external.existingSecret }}
-{{- /* Will be populated from existing secret */ -}}
+{{- $host := required "database.external.host muss gesetzt sein (oder database.external.existingSecret verwenden)" .Values.database.external.host }}
+{{- $password := required "database.external.password muss gesetzt sein (oder database.external.existingSecret verwenden)" .Values.database.external.password }}
+{{- printf "postgresql://%s:%s@%s:%d/%s" .Values.database.external.username ($password | urlquery) $host (int .Values.database.external.port) .Values.database.external.database }}
+{{- end }}
+
+{{/*
+"true", wenn Migrationen als Helm-Hook-Job laufen (nur PostgreSQL; SQLite nutzt den Init-Container am RWO-Volume)
+*/}}
+{{- define "fuellhorn.migrationJobEnabled" -}}
+{{- if and .Values.migrations.job.enabled (eq .Values.database.type "postgresql") }}true{{- end }}
+{{- end }}
+
+{{/*
+Datenbank-Umgebung für App- und Init-Container
+*/}}
+{{- define "fuellhorn.databaseEnv" -}}
+- name: DB_TYPE
+  value: {{ .Values.database.type | quote }}
+{{- if eq .Values.database.type "postgresql" }}
+- name: DATABASE_URL
+  valueFrom:
+    secretKeyRef:
+      name: {{ .Values.database.external.existingSecret | default (printf "%s-db" (include "fuellhorn.fullname" .)) }}
+      key: url
 {{- else }}
-{{- printf "postgresql://%s:%s@%s:%d/%s" .Values.database.external.username .Values.database.external.password .Values.database.external.host (int .Values.database.external.port) .Values.database.external.database }}
+# SQLite-Datei explizit ins Volume, sonst landet sie im site-packages des Containers (#371)
+- name: FUELLHORN_DATA_DIR
+  value: /app/data
+{{- end }}
+{{- end }}
+
+{{/*
+Session-Secret der App (signiert Cookies)
+*/}}
+{{- define "fuellhorn.secretEnv" -}}
+- name: FUELLHORN_SECRET
+  valueFrom:
+    secretKeyRef:
+      name: {{ .Values.secrets.existingSecret | default (printf "%s-secrets" (include "fuellhorn.fullname" .)) }}
+      key: fuellhorn-secret
+{{- end }}
+
+{{/*
+Volume-Mount für die SQLite-Daten
+*/}}
+{{- define "fuellhorn.dataVolumeMount" -}}
+{{- if eq .Values.database.type "sqlite" }}
+volumeMounts:
+  - name: data
+    mountPath: /app/data
 {{- end }}
 {{- end }}

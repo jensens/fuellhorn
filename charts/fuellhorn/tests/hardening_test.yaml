@@ -1,0 +1,149 @@
+suite: deployment hardening (#377)
+templates:
+  - templates/deployment.yaml
+  - templates/secret.yaml
+tests:
+  - it: should run as non-root with a restrictive security context
+    template: templates/deployment.yaml
+    set:
+      secrets.fuellhornSecret: test-secret
+      database.type: sqlite
+    asserts:
+      - equal:
+          path: spec.template.spec.securityContext.runAsNonRoot
+          value: true
+      - equal:
+          path: spec.template.spec.securityContext.fsGroup
+          value: 1000
+      - equal:
+          path: spec.template.spec.containers[0].securityContext.allowPrivilegeEscalation
+          value: false
+      - contains:
+          path: spec.template.spec.containers[0].securityContext.capabilities.drop
+          content: ALL
+      - equal:
+          path: spec.template.spec.initContainers[0].securityContext.allowPrivilegeEscalation
+          value: false
+
+  - it: should use Recreate strategy for SQLite (RWO volume)
+    template: templates/deployment.yaml
+    set:
+      secrets.fuellhornSecret: test-secret
+      database.type: sqlite
+    asserts:
+      - equal:
+          path: spec.strategy.type
+          value: Recreate
+
+  - it: should keep the default rolling strategy for PostgreSQL
+    template: templates/deployment.yaml
+    set:
+      secrets.fuellhornSecret: test-secret
+      database.type: postgresql
+      database.external.host: postgres.example.com
+      database.external.password: testpass
+    asserts:
+      - isNull:
+          path: spec.strategy
+
+  - it: should fail for SQLite with more than one replica
+    template: templates/deployment.yaml
+    set:
+      secrets.fuellhornSecret: test-secret
+      database.type: sqlite
+      replicaCount: 2
+    asserts:
+      - failedTemplate:
+          errorPattern: replicaCount
+
+  - it: should default the image tag to the chart appVersion
+    template: templates/deployment.yaml
+    chart:
+      appVersion: 9.9.9
+    set:
+      secrets.fuellhornSecret: test-secret
+      database.type: sqlite
+      image.tag: ""
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: ghcr.io/jensens/fuellhorn:9.9.9
+      - equal:
+          path: spec.template.spec.initContainers[0].image
+          value: ghcr.io/jensens/fuellhorn:9.9.9
+
+  - it: should annotate the pod with the secret checksum so rotated secrets restart pods
+    template: templates/deployment.yaml
+    set:
+      secrets.fuellhornSecret: test-secret
+      database.type: sqlite
+    asserts:
+      - isNotNull:
+          path: spec.template.metadata.annotations["checksum/secret"]
+
+  - it: should tell the app not to migrate on start when the chart handles migrations
+    template: templates/deployment.yaml
+    set:
+      secrets.fuellhornSecret: test-secret
+      database.type: sqlite
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: FUELLHORN_SKIP_MIGRATIONS
+            value: "true"
+
+  - it: should use the migration job instead of the init container for PostgreSQL
+    template: templates/deployment.yaml
+    set:
+      secrets.fuellhornSecret: test-secret
+      database.type: postgresql
+      database.external.host: postgres.example.com
+      database.external.password: testpass
+    asserts:
+      - isNull:
+          path: spec.template.spec.initContainers
+
+  - it: should fail when the admin init container has no existing secret
+    template: templates/deployment.yaml
+    set:
+      secrets.fuellhornSecret: test-secret
+      database.type: sqlite
+      initContainers.adminUser.enabled: true
+    asserts:
+      - failedTemplate:
+          errorPattern: adminUser.existingSecret
+
+  - it: should fail without any app secret
+    template: templates/secret.yaml
+    set:
+      database.type: sqlite
+      secrets.fuellhornSecret: ""
+    asserts:
+      - failedTemplate:
+          errorPattern: fuellhornSecret
+
+  - it: should fail for PostgreSQL without a database host
+    template: templates/secret.yaml
+    set:
+      secrets.fuellhornSecret: test-secret
+      database.type: postgresql
+      database.external.host: ""
+      database.external.password: testpass
+    asserts:
+      - failedTemplate:
+          errorPattern: database.external.host
+
+  - it: should url-encode the database password in the connection URL
+    template: templates/secret.yaml
+    set:
+      secrets.fuellhornSecret: test-secret
+      database.type: postgresql
+      database.external.host: postgres.example.com
+      database.external.password: "p@ss/wörd#1"
+    asserts:
+      - equal:
+          path: data.url
+          # postgresql://fuellhorn:p%40ss%2Fw%C3%B6rd%231@postgres.example.com:5432/fuellhorn
+          value: cG9zdGdyZXNxbDovL2Z1ZWxsaG9ybjpwJTQwc3MlMkZ3JUMzJUI2cmQlMjMxQHBvc3RncmVzLmV4YW1wbGUuY29tOjU0MzIvZnVlbGxob3Ju
+        documentIndex: 1

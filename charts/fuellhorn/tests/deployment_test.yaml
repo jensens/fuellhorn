@@ -17,6 +17,7 @@ tests:
   - it: should use correct image
     set:
       secrets.fuellhornSecret: test-secret
+      database.type: sqlite
       image.repository: ghcr.io/jensens/fuellhorn
       image.tag: "1.0.0"
     asserts:
@@ -96,7 +97,7 @@ tests:
       secrets.fuellhornSecret: test-secret
       database.type: sqlite
       initContainers.adminUser.enabled: true
-      initContainers.adminUser.password: test-admin
+      initContainers.adminUser.existingSecret: admin-secret
     asserts:
       - contains:
           path: spec.template.spec.containers[0].env
@@ -126,11 +127,6 @@ tests:
           content:
             name: FUELLHORN_DATA_DIR
             value: /app/data
-      - notContains:
-          path: spec.template.spec.initContainers[0].env
-          content:
-            name: FUELLHORN_DATA_DIR
-            value: /app/data
 
   - it: should not mount data volume for PostgreSQL
     set:
@@ -147,6 +143,7 @@ tests:
   - it: should set resource limits and requests
     set:
       secrets.fuellhornSecret: test-secret
+      database.type: sqlite
       resources.limits.cpu: 500m
       resources.limits.memory: 512Mi
       resources.requests.cpu: 100m
@@ -162,6 +159,7 @@ tests:
   - it: should configure liveness and readiness probes
     set:
       secrets.fuellhornSecret: test-secret
+      database.type: sqlite
     asserts:
       - equal:
           path: spec.template.spec.containers[0].livenessProbe.httpGet.path
@@ -184,9 +182,12 @@ tests:
                 name: my-app-secrets
                 key: fuellhorn-secret
 
-  - it: should scale replicas when replicaCount is set
+  - it: should scale replicas when replicaCount is set (PostgreSQL)
     set:
       secrets.fuellhornSecret: test-secret
+      database.type: postgresql
+      database.external.host: postgres.example.com
+      database.external.password: testpass
       replicaCount: 3
     asserts:
       - equal:
@@ -199,7 +200,7 @@ tests:
       secrets.fuellhornSecret: test-secret
       database.type: sqlite
       initContainers.adminUser.enabled: true
-      initContainers.adminUser.password: test-admin
+      initContainers.adminUser.existingSecret: admin-secret
     asserts:
       - notContains:
           path: spec.template.spec.containers[0].env
@@ -241,7 +242,7 @@ tests:
       secrets.fuellhornSecret: test-secret
       database.type: sqlite
       initContainers.adminUser.enabled: true
-      initContainers.adminUser.password: test-admin
+      initContainers.adminUser.existingSecret: admin-secret
     asserts:
       - equal:
           path: spec.template.spec.initContainers[1].name

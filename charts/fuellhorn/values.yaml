@@ -4,8 +4,28 @@ replicaCount: 1
 
 image:
   repository: ghcr.io/jensens/fuellhorn
-  tag: "latest"
+  # Leer = appVersion des Charts (immer die zum Chart passende, unveränderliche Version).
+  # "latest" zeigt auf das zuletzt veröffentlichte stabile Release und ist für Produktion ungeeignet.
+  tag: ""
   pullPolicy: IfNotPresent
+
+# Sicherheitskontext für Pods (App, Init-Container, Migrations-Job)
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+  seccompProfile:
+    type: RuntimeDefault
+
+# Sicherheitskontext für Container
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+  # NiceGUI schreibt Session-Storage nach /app/.nicegui, daher kein readOnlyRootFilesystem
+  readOnlyRootFilesystem: false
 
 imagePullSecrets: []
 nameOverride: ""
@@ -50,9 +70,17 @@ secrets:
   # Rotation meldet alle Nutzer ab, Passwörter bleiben gültig.
   fuellhornSecret: ""
 
+# Migrationen (Alembic)
+migrations:
+  # PostgreSQL: einmal pro Install/Upgrade als Helm-Hook-Job (pre-install, pre-upgrade)
+  # statt in jedem Pod. Für SQLite (RWO-Volume) läuft stattdessen der Init-Container.
+  job:
+    enabled: true
+
 # Init Containers
 initContainers:
-  # Database migrations (Alembic)
+  # Database migrations (Alembic) als Init-Container; bei aktivem Migrations-Job
+  # (PostgreSQL) automatisch übersprungen
   migrations:
     enabled: true
 
@@ -61,10 +89,9 @@ initContainers:
     enabled: false  # Opt-in, disabled by default
     username: admin
     email: admin@fuellhorn.local
-    # Use existing secret with key "admin-password"
+    # Pflicht, wenn enabled: bestehendes Secret mit Key "admin-password".
+    # Klartext-Passwörter in Values werden nicht unterstützt (landen sonst in der Pod-Spec).
     existingSecret: ""
-    # Or set password directly (not recommended for production)
-    password: ""
 
 # SQLite Persistence (nur wenn database.type: sqlite)
 persistence:

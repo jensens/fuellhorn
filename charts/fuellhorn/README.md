@@ -97,10 +97,12 @@ helm install fuellhorn oci://ghcr.io/jensens/fuellhorn \
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| `replicaCount` | Number of replicas | `1` |
+| `replicaCount` | Number of replicas (must be `1` with SQLite) | `1` |
 | `image.repository` | Image repository | `ghcr.io/jensens/fuellhorn` |
-| `image.tag` | Image tag | `latest` |
+| `image.tag` | Image tag; empty uses the chart's `appVersion` (immutable, matches the chart). `latest` points to the newest stable release only | `""` |
 | `image.pullPolicy` | Image pull policy | `IfNotPresent` |
+| `podSecurityContext` | Pod security context (non-root uid/gid 1000, `fsGroup` for the data volume, `RuntimeDefault` seccomp) | see values.yaml |
+| `securityContext` | Container security context (no privilege escalation, all capabilities dropped) | see values.yaml |
 | `imagePullSecrets` | Image pull secrets | `[]` |
 | `nameOverride` | Override chart name | `""` |
 | `fullnameOverride` | Override full name | `""` |
@@ -145,12 +147,12 @@ helm install fuellhorn oci://ghcr.io/jensens/fuellhorn \
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| `initContainers.migrations.enabled` | Run Alembic migrations on startup | `true` |
+| `migrations.job.enabled` | PostgreSQL: run Alembic migrations once per install/upgrade as a Helm hook job (`pre-install,pre-upgrade`) instead of in every pod. The app pods then start with `FUELLHORN_SKIP_MIGRATIONS=true`. Without `database.external.existingSecret` the job receives the connection URL as a plain env value, because the chart-managed secret does not exist yet at `pre-install` | `true` |
+| `initContainers.migrations.enabled` | Run Alembic migrations in an init container (SQLite; skipped automatically for PostgreSQL while the migration job is enabled) | `true` |
 | `initContainers.adminUser.enabled` | Create initial admin user | `false` |
 | `initContainers.adminUser.username` | Admin username | `admin` |
 | `initContainers.adminUser.email` | Admin email | `admin@fuellhorn.local` |
-| `initContainers.adminUser.password` | Admin password (not recommended for production) | `""` |
-| `initContainers.adminUser.existingSecret` | Secret name with key `admin-password` | `""` |
+| `initContainers.adminUser.existingSecret` | **Required when enabled.** Secret name with key `admin-password`; plain-text passwords in values are rejected | `""` |
 
 ### Persistence (SQLite only)
 
