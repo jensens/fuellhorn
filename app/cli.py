@@ -22,7 +22,7 @@ def run_migrations() -> None:
     command.upgrade(alembic_cfg, "head")
 
 
-def create_admin_user(session: Session) -> bool:
+def create_admin_user(session: Session, reset_existing: bool = False) -> bool:
     """Create initial admin user from environment variables.
 
     Supports environment variables for Kubernetes init container usage:
@@ -32,9 +32,11 @@ def create_admin_user(session: Session) -> bool:
 
     Args:
         session: Database session
+        reset_existing: Recovery (Issue #380): bestehenden Benutzer auf Admin, aktiv
+            und das Passwort aus ADMIN_PASSWORD zurücksetzen
 
     Returns:
-        True if user was created, False if user already exists
+        True if user was created or reset, False if user already exists
 
     Raises:
         ValueError: If ADMIN_PASSWORD environment variable is not set
@@ -52,8 +54,17 @@ def create_admin_user(session: Session) -> bool:
 
     # Check if admin already exists
     existing = get_user_by_username(session, username)
+    if existing and reset_existing:
+        existing.role = Role.ADMIN.value
+        existing.is_active = True
+        existing.set_password(password)
+        session.add(existing)
+        session.commit()
+        print(f"Admin user reset (role admin, active, new password): {existing.username}")
+        return True
     if existing:
         print(f"Admin user already exists: {existing.username}")
+        print("Recovery (Passwort, Rolle, Aktiv-Status zurücksetzen): fuellhorn create-admin --reset-password")
         return False
 
     # Create admin user
@@ -82,17 +93,22 @@ def cli_migrate() -> int:
     return 0
 
 
-def cli_create_admin() -> int:
+def cli_create_admin(options: list[str] | None = None) -> int:
     """CLI command to create admin user.
+
+    Args:
+        options: weitere Argumente, z.B. ``--reset-password`` (Recovery, Issue #380)
 
     Returns:
         0 on success, 1 on error
     """
     from app.database import get_session
 
+    reset_existing = "--reset-password" in (options or [])
+
     with next(get_session()) as session:
         try:
-            created = create_admin_user(session)
+            created = create_admin_user(session, reset_existing=reset_existing)
             if created:
                 print("\nAdmin user created successfully.")
             else:
@@ -214,7 +230,7 @@ def dispatch_command(args: list[str]) -> int:
     if command == "migrate":
         return cli_migrate()
     elif command == "create-admin":
-        return cli_create_admin()
+        return cli_create_admin(args[1:])
     elif command == "seed":
         subcommand = args[1] if len(args) > 1 else None
         return cli_seed(subcommand, args[2:])

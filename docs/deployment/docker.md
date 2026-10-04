@@ -177,6 +177,12 @@ fuellhorn migrate
 # Admin-Benutzer erstellen (benötigt ADMIN_PASSWORD Env-Variable)
 fuellhorn create-admin
 
+# Recovery: Admin ausgesperrt (Passwort vergessen, versehentlich degradiert/deaktiviert)?
+# Setzt den Benutzer aus ADMIN_USERNAME (Default admin) auf Rolle Admin, aktiv,
+# Passwort aus ADMIN_PASSWORD. Die App verhindert zwar, dass sich der letzte
+# aktive Admin selbst aussperrt, nicht aber vergessene Passwörter.
+ADMIN_PASSWORD=neues-passwort fuellhorn create-admin --reset-password
+
 # Standard-Kategorien mit Haltbarkeiten importieren (idempotent).
 # Nach dem Update auf die Kategorie-Hierarchie einmal ausführen: Die Migration
 # ordnet nur bestehende Kategorien zu, neue Gruppen (z.B. Gekochtes,

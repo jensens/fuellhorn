@@ -104,7 +104,8 @@ def _render_users_list() -> None:
                                     un=username,
                                     em=email,
                                     ro=role,
-                                    ia=is_active: _open_edit_dialog(uid, un, em, ro, ia),
+                                    ia=is_active,
+                                    me=(user_id == current_user_id): _open_edit_dialog(uid, un, em, ro, ia, is_self=me),
                                 )
                                 .props("flat round size=sm")
                                 .classes("edit")
@@ -254,8 +255,13 @@ def _open_edit_dialog(
     current_email: str,
     current_role: str,
     current_is_active: bool,
+    is_self: bool = False,
 ) -> None:
-    """Open dialog to edit an existing user."""
+    """Open dialog to edit an existing user.
+
+    Für das eigene Konto sind Rolle und Aktiv-Status gesperrt (Issue #380); der
+    Service verweigert solche Änderungen zusätzlich.
+    """
     with ui.dialog() as dialog, ui.card().classes("sp-dashboard-card w-full max-w-md"):
         ui.label("Benutzer bearbeiten").classes("text-h6 font-semibold mb-4 text-fern")
 
@@ -287,6 +293,12 @@ def _open_edit_dialog(
 
         # Active status toggle
         is_active_switch = ui.switch("Aktiv", value=current_is_active).classes("mb-4").mark("edit-is-active")
+        if is_self:
+            role_select.disable()
+            is_active_switch.disable()
+            ui.label("Die eigene Rolle und der eigene Aktiv-Status lassen sich hier nicht ändern.").classes(
+                "text-xs text-stone mb-2"
+            )
 
         # Password change section (optional)
         ui.label("Passwort ändern (optional)").classes("text-sm text-gray-600 mb-2")
@@ -342,6 +354,7 @@ def _open_edit_dialog(
 
                 # Map role value to Role enum
                 role = Role.ADMIN if role_value == Role.ADMIN.value else Role.USER
+                acting_user = get_current_user(require_auth=True)
 
                 try:
                     with next(get_session()) as session:
@@ -353,6 +366,7 @@ def _open_edit_dialog(
                             password=password if password else None,
                             role=role if role_value != current_role else None,
                             is_active=is_active if is_active != current_is_active else None,
+                            acting_user_id=acting_user.id if acting_user else None,
                         )
                     ui.notify(f"Benutzer '{username}' aktualisiert", type="positive")
                     dialog.close()
@@ -395,9 +409,12 @@ def _open_delete_dialog(user_id: int, username: str) -> None:
 
             def confirm_delete() -> None:
                 """Perform the deletion."""
+                acting_user = get_current_user(require_auth=True)
                 try:
                     with next(get_session()) as session:
-                        auth_service.delete_user(session=session, user_id=user_id)
+                        auth_service.delete_user(
+                            session=session, user_id=user_id, acting_user_id=acting_user.id if acting_user else None
+                        )
                     ui.notify("Benutzer gelöscht", type="positive")
                     dialog.close()
                     ui.navigate.to("/admin/users")

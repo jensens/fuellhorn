@@ -89,6 +89,40 @@ class TestCLICreateAdmin:
         admin = get_user_by_username(session, "admin")
         assert admin.email == "existing@example.com"
 
+    def test_create_admin_reset_password_recovers_locked_out_admin(self, session: Session, monkeypatch) -> None:
+        """--reset-password macht einen degradierten/deaktivierten Admin wieder nutzbar (Issue #380)."""
+        from app.models.user import User
+
+        monkeypatch.setenv("ADMIN_PASSWORD", "recovered-password")
+        locked_out = User(username="admin", email="admin@example.com", role=Role.USER, is_active=False)
+        locked_out.set_password("forgotten")
+        session.add(locked_out)
+        session.commit()
+
+        from app.cli import create_admin_user
+
+        result = create_admin_user(session, reset_existing=True)
+
+        assert result is True
+        admin = get_user_by_username(session, "admin")
+        assert admin.role == Role.ADMIN
+        assert admin.is_active is True
+        assert admin.check_password("recovered-password")
+
+    def test_cli_create_admin_passes_reset_flag(self, session: Session, monkeypatch) -> None:
+        monkeypatch.setenv("ADMIN_PASSWORD", "testpass")
+
+        with (
+            patch("app.database.get_session") as mock_get_session,
+            patch("app.cli.create_admin_user", return_value=True) as mock_create,
+        ):
+            mock_get_session.return_value = iter([session])
+            from app.cli import dispatch_command
+
+            assert dispatch_command(["create-admin", "--reset-password"]) == 0
+
+        assert mock_create.call_args.kwargs["reset_existing"] is True
+
     def test_create_admin_fails_without_password(self, session: Session, monkeypatch) -> None:
         """Create-admin raises error when ADMIN_PASSWORD not set."""
         monkeypatch.delenv("ADMIN_PASSWORD", raising=False)
