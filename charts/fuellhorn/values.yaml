@@ -44,10 +44,10 @@ database:
 
 # Secrets (MÜSSEN gesetzt werden!)
 secrets:
-  # Für Production: existingSecret verwenden
+  # Für Production: existingSecret mit dem Key "fuellhorn-secret" verwenden
   existingSecret: ""
-  # Oder direkt setzen (nur für Testing)
-  secretKey: ""
+  # Oder direkt setzen (nur für Testing). Signiert die Session-Cookies;
+  # Rotation meldet alle Nutzer ab, Passwörter bleiben gültig.
   fuellhornSecret: ""
 
 # Init Containers

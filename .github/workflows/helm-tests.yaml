@@ -37,7 +37,6 @@ jobs:
       - name: Validate default PostgreSQL configuration
         run: |
           helm template test charts/fuellhorn/ \
-            --set secrets.secretKey=test-secret-key \
             --set secrets.fuellhornSecret=test-fuellhorn-secret \
             --set database.external.host=postgres.example.com \
             --set database.external.password=testpass \
@@ -46,7 +45,6 @@ jobs:
       - name: Validate SQLite configuration
         run: |
           helm template test charts/fuellhorn/ \
-            --set secrets.secretKey=test-secret-key \
             --set secrets.fuellhornSecret=test-fuellhorn-secret \
             --set database.type=sqlite \
             | kubeconform -strict -kubernetes-version 1.29.0 -summary
@@ -54,7 +52,6 @@ jobs:
       - name: Validate HA configuration (replicaCount > 1)
         run: |
           helm template test charts/fuellhorn/ \
-            --set secrets.secretKey=test-secret-key \
             --set secrets.fuellhornSecret=test-fuellhorn-secret \
             --set database.external.host=postgres.example.com \
             --set database.external.password=testpass \
@@ -64,7 +61,6 @@ jobs:
       - name: Validate with Ingress enabled
         run: |
           helm template test charts/fuellhorn/ \
-            --set secrets.secretKey=test-secret-key \
             --set secrets.fuellhornSecret=test-fuellhorn-secret \
             --set database.external.host=postgres.example.com \
             --set database.external.password=testpass \

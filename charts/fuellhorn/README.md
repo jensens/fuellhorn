@@ -17,7 +17,6 @@ The chart is published to GitHub Container Registry:
 ```bash
 # Install latest version
 helm install fuellhorn oci://ghcr.io/jensens/fuellhorn \
-  --set secrets.secretKey="your-secret-key-min-32-chars-here" \
   --set secrets.fuellhornSecret="your-fuellhorn-secret-min-32-chars"
 
 # Install specific version
@@ -32,7 +31,6 @@ helm install fuellhorn oci://ghcr.io/jensens/fuellhorn -f my-values.yaml
 ```bash
 git clone https://github.com/jensens/fuellhorn.git
 helm install fuellhorn ./fuellhorn/charts/fuellhorn \
-  --set secrets.secretKey="your-secret-key-min-32-chars-here" \
   --set secrets.fuellhornSecret="your-fuellhorn-secret-min-32-chars"
 ```
 
@@ -83,7 +81,6 @@ metadata:
   name: my-fuellhorn-secrets
 type: Opaque
 data:
-  secret-key: <base64-encoded-secret-key>
   fuellhorn-secret: <base64-encoded-fuellhorn-secret>
 ```
 
@@ -141,9 +138,8 @@ helm install fuellhorn oci://ghcr.io/jensens/fuellhorn \
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| `secrets.existingSecret` | Name of existing secret | `""` |
-| `secrets.secretKey` | Flask secret key (required if no existingSecret) | `""` |
-| `secrets.fuellhornSecret` | Fuellhorn secret (required if no existingSecret) | `""` |
+| `secrets.existingSecret` | Name of an existing secret with key `fuellhorn-secret` | `""` |
+| `secrets.fuellhornSecret` | Signs the session cookies (NiceGUI `storage_secret`); rotating it logs every user out. Required if no existingSecret | `""` |
 
 ### Init Containers
 
@@ -207,7 +203,6 @@ ingress:
         - fuellhorn.example.com
 
 secrets:
-  secretKey: "your-secret-key-must-be-at-least-32-characters-long"
   fuellhornSecret: "your-fuellhorn-secret-must-be-at-least-32-chars"
 ```
 

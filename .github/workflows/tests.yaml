@@ -27,7 +27,6 @@ jobs:
       - name: Run unit & service tests (parallel)
         run: uv run pytest tests/test_services tests/test_api tests/test_unit tests/test_auth tests/test_utils tests/test_cli.py tests/test_config.py tests/test_database_isolation.py -n auto --cov=app --cov-report=xml
         env:
-          SECRET_KEY: test-secret-key-for-ci-only
           FUELLHORN_SECRET: test-fuellhorn-secret-for-ci-only
 
       - name: Upload coverage artifact
@@ -60,7 +59,6 @@ jobs:
       - name: Run UI tests
         run: uv run pytest tests/test_ui --cov=app --cov-report=xml --cov-report=term
         env:
-          SECRET_KEY: test-secret-key-for-ci-only
           FUELLHORN_SECRET: test-fuellhorn-secret-for-ci-only
 
       - name: Upload coverage artifact

@@ -4,7 +4,6 @@ templates:
 tests:
   - it: should create a Deployment resource
     set:
-      secrets.secretKey: test-key
       secrets.fuellhornSecret: test-secret
       database.external.host: postgres.example.com
       database.external.password: testpass
@@ -17,7 +16,6 @@ tests:
 
   - it: should use correct image
     set:
-      secrets.secretKey: test-key
       secrets.fuellhornSecret: test-secret
       image.repository: ghcr.io/jensens/fuellhorn
       image.tag: "1.0.0"
@@ -28,7 +26,6 @@ tests:
 
   - it: should set DATABASE_URL env for PostgreSQL
     set:
-      secrets.secretKey: test-key
       secrets.fuellhornSecret: test-secret
       database.type: postgresql
       database.external.host: postgres.example.com
@@ -50,7 +47,6 @@ tests:
 
   - it: should use existing DB secret when configured
     set:
-      secrets.secretKey: test-key
       secrets.fuellhornSecret: test-secret
       database.type: postgresql
       database.external.existingSecret: my-db-secret
@@ -66,7 +62,6 @@ tests:
 
   - it: should not set DATABASE_URL env for SQLite
     set:
-      secrets.secretKey: test-key
       secrets.fuellhornSecret: test-secret
       database.type: sqlite
     asserts:
@@ -82,7 +77,6 @@ tests:
 
   - it: should mount data volume for SQLite
     set:
-      secrets.secretKey: test-key
       secrets.fuellhornSecret: test-secret
       database.type: sqlite
     asserts:
@@ -99,7 +93,6 @@ tests:
   # Ohne expliziten Pfad landet die SQLite-Datei im site-packages des Containers statt im Volume (#371)
   - it: should point the SQLite data directory at the mounted volume
     set:
-      secrets.secretKey: test-key
       secrets.fuellhornSecret: test-secret
       database.type: sqlite
       initContainers.adminUser.enabled: true
@@ -123,7 +116,6 @@ tests:
 
   - it: should not set the SQLite data directory for PostgreSQL
     set:
-      secrets.secretKey: test-key
       secrets.fuellhornSecret: test-secret
       database.type: postgresql
       database.external.host: postgres.example.com
@@ -142,7 +134,6 @@ tests:
 
   - it: should not mount data volume for PostgreSQL
     set:
-      secrets.secretKey: test-key
       secrets.fuellhornSecret: test-secret
       database.type: postgresql
       database.external.host: postgres.example.com
@@ -155,7 +146,6 @@ tests:
 
   - it: should set resource limits and requests
     set:
-      secrets.secretKey: test-key
       secrets.fuellhornSecret: test-secret
       resources.limits.cpu: 500m
       resources.limits.memory: 512Mi
@@ -171,7 +161,6 @@ tests:
 
   - it: should configure liveness and readiness probes
     set:
-      secrets.secretKey: test-key
       secrets.fuellhornSecret: test-secret
     asserts:
       - equal:
@@ -189,15 +178,14 @@ tests:
       - contains:
           path: spec.template.spec.containers[0].env
           content:
-            name: SECRET_KEY
+            name: FUELLHORN_SECRET
             valueFrom:
               secretKeyRef:
                 name: my-app-secrets
-                key: secret-key
+                key: fuellhorn-secret
 
   - it: should scale replicas when replicaCount is set
     set:
-      secrets.secretKey: test-key
       secrets.fuellhornSecret: test-secret
       replicaCount: 3
     asserts:
@@ -205,24 +193,40 @@ tests:
           path: spec.replicas
           value: 3
 
-  # fuellhorn migrate importiert app.config, das ohne SECRET_KEY beim Import abbricht (#370)
+  # SECRET_KEY wurde von der App nie gelesen und ist aus Chart und Config entfernt (#374)
+  - it: should not pass the removed SECRET_KEY to any container
+    set:
+      secrets.fuellhornSecret: test-secret
+      database.type: sqlite
+      initContainers.adminUser.enabled: true
+      initContainers.adminUser.password: test-admin
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: SECRET_KEY
+          any: true
+      - notContains:
+          path: spec.template.spec.initContainers[0].env
+          content:
+            name: SECRET_KEY
+          any: true
+      - notContains:
+          path: spec.template.spec.initContainers[1].env
+          content:
+            name: SECRET_KEY
+          any: true
+
+  # fuellhorn migrate importiert app.config, das FUELLHORN_SECRET erst zur Laufzeit liest;
+  # die Init-Container bekommen dasselbe Secret wie die App (#370)
   - it: should pass app secrets to the migrate init container
     set:
-      secrets.secretKey: test-key
       secrets.fuellhornSecret: test-secret
       database.type: sqlite
     asserts:
       - equal:
           path: spec.template.spec.initContainers[0].name
           value: migrate
-      - contains:
-          path: spec.template.spec.initContainers[0].env
-          content:
-            name: SECRET_KEY
-            valueFrom:
-              secretKeyRef:
-                name: RELEASE-NAME-fuellhorn-secrets
-                key: secret-key
       - contains:
           path: spec.template.spec.initContainers[0].env
           content:
@@ -234,7 +238,6 @@ tests:
 
   - it: should pass app secrets to the create-admin init container
     set:
-      secrets.secretKey: test-key
       secrets.fuellhornSecret: test-secret
       database.type: sqlite
       initContainers.adminUser.enabled: true
@@ -243,14 +246,6 @@ tests:
       - equal:
           path: spec.template.spec.initContainers[1].name
           value: create-admin
-      - contains:
-          path: spec.template.spec.initContainers[1].env
-          content:
-            name: SECRET_KEY
-            valueFrom:
-              secretKeyRef:
-                name: RELEASE-NAME-fuellhorn-secrets
-                key: secret-key
       - contains:
           path: spec.template.spec.initContainers[1].env
           content:
@@ -265,14 +260,6 @@ tests:
       secrets.existingSecret: my-app-secrets
       database.type: sqlite
     asserts:
-      - contains:
-          path: spec.template.spec.initContainers[0].env
-          content:
-            name: SECRET_KEY
-            valueFrom:
-              secretKeyRef:
-                name: my-app-secrets
-                key: secret-key
       - contains:
           path: spec.template.spec.initContainers[0].env
           content:
