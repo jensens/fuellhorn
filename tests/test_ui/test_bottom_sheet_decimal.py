@@ -47,14 +47,14 @@ async def test_withdraw_dialog_shows_decimal_available_quantity(user: User, flou
     await user.should_see("Verfügbar: 2.5 kg")
 
 
-async def test_withdraw_half_kilogram(user: User, isolated_test_database, flour_item_id: int) -> None:
+async def test_withdraw_half_kilogram(logged_in_user: User, isolated_test_database, flour_item_id: int) -> None:
     """0,5 kg entnehmen → Toast '0.5 kg entnommen' und Rest 2,0 kg in der DB."""
-    await user.open(f"/test/bottom-sheet/{flour_item_id}")
-    user.find("Teilentnahme").click()
-    number_input = user.find(kind=ui.number).elements.pop()
+    await logged_in_user.open(f"/test/bottom-sheet/{flour_item_id}")
+    logged_in_user.find("Teilentnahme").click()
+    number_input = logged_in_user.find(kind=ui.number).elements.pop()
     number_input.set_value(0.5)
-    user.find("Bestätigen").click()
-    await user.should_see("0.5 kg entnommen")
+    logged_in_user.find("Bestätigen").click()
+    await logged_in_user.should_see("0.5 kg entnommen")
 
     with Session(isolated_test_database) as session:
         item = session.get(Item, flour_item_id)

@@ -73,8 +73,8 @@ def create_swipe_card(
     # Generate unique ID if not provided
     unique_id = card_id or f"swipe-card-{uuid.uuid4().hex[:8]}"
 
-    # Create container with swipe structure
-    container = ui.element("div").classes("swipe-card-container")
+    # Create container with swipe structure (marker = id so tests can trigger "swipeaction")
+    container = ui.element("div").classes("swipe-card-container").mark(unique_id)
     container._props["id"] = unique_id
 
     with container:

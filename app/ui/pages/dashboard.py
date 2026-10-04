@@ -17,6 +17,7 @@ from ..components import create_bottom_sheet
 from ..components import create_item_card
 from ..components import create_mobile_page_container
 from ..components import create_user_dropdown
+from ..components.consume_all import confirm_consume_all
 from ..components.location_overview import create_location_overview_chips
 from ..components.recently_added import create_recently_added_section
 from nicegui import ui
@@ -169,8 +170,5 @@ def handle_consume(item: Item) -> None:
 
 
 def handle_consume_all(item: Item) -> None:
-    """Handle consuming all of an item via swipe action (Issue #226)."""
-    with next(get_session()) as session:
-        item_service.mark_item_consumed(session, item.id)  # type: ignore[arg-type]
-        ui.notify(f"{item.product_name} komplett entnommen", type="positive")
-    ui.navigate.to("/dashboard")
+    """Handle consuming all of an item via swipe action (Issue #226, #367: with confirmation + user)."""
+    confirm_consume_all(item, lambda: ui.navigate.to("/dashboard"))
