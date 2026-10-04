@@ -17,13 +17,33 @@ from .models import User  # noqa: F401
 from .models import Withdrawal  # noqa: F401
 from collections.abc import Generator
 from sqlalchemy import Engine
+from sqlalchemy import event
+from sqlalchemy.pool import StaticPool
 from sqlmodel import Session
 from sqlmodel import SQLModel
 from sqlmodel import create_engine
+from typing import Any
 
 
 # Globale Engine-Variable (wird lazy initialisiert)
 _engine: Engine | None = None
+
+
+def _enable_sqlite_foreign_keys(engine: Engine) -> Engine:
+    """SQLite erzwingt Fremdschlüssel nur mit ``PRAGMA foreign_keys=ON`` pro Verbindung.
+
+    Ohne das Pragma ließen sich in Dev und Tests referenzierte Zeilen still löschen
+    und Waisen anlegen, während PostgreSQL (Produktion) Fehler wirft (Issue #378).
+    """
+    if engine.dialect.name == "sqlite":
+
+        @event.listens_for(engine, "connect")
+        def _set_sqlite_pragma(dbapi_connection: Any, _connection_record: Any) -> None:
+            cursor = dbapi_connection.cursor()
+            cursor.execute("PRAGMA foreign_keys=ON")
+            cursor.close()
+
+    return engine
 
 
 def create_app_engine(settings: Config | None = None) -> Engine:
@@ -33,11 +53,26 @@ def create_app_engine(settings: Config | None = None) -> Engine:
     samt Parametern (Passwort-Hashes, Tokens, IPs) ins Log (Issue #374).
     """
     settings = config if settings is None else settings
-    return create_engine(
+    engine = create_engine(
         settings.get_database_url(),
         echo=settings.SQL_ECHO,
         connect_args=({"check_same_thread": False} if settings.DB_TYPE == "sqlite" else {}),
     )
+    return _enable_sqlite_foreign_keys(engine)
+
+
+def create_sqlite_test_engine() -> Engine:
+    """In-Memory-SQLite mit StaticPool und Fremdschlüsseln (nur für Tests).
+
+    Dieselbe Fremdschlüssel-Durchsetzung wie die Anwendungs-Engine, damit sich
+    Tests bei Löschungen und toten Referenzen wie PostgreSQL verhalten (Issue #378).
+    """
+    engine = create_engine(
+        "sqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    return _enable_sqlite_foreign_keys(engine)
 
 
 def get_engine() -> Engine:
