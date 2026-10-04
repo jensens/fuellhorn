@@ -748,8 +748,8 @@ async def test_create_dialog_color_preview_updates_on_selection(
     # The preview should reflect the color
     preview = user.find(marker="color-preview")
     preview_element = list(preview.elements)[0]
-    # Check that the style contains the color
-    assert "background" in preview_element._style or preview_element._style.get("background-color") == "#FF5733"
+    # Die Vorschau übernimmt genau die gewählte Farbe (vorher reichte irgendein 'background')
+    assert preview_element._style["background-color"] == "#FF5733"
 
 
 async def test_edit_dialog_shows_color_preview(
@@ -782,6 +782,5 @@ async def test_edit_dialog_color_preview_shows_existing_color(
     # The preview should show the existing color
     preview = logged_in_user.find(marker="color-preview")
     preview_element = list(preview.elements)[0]
-    # Check that the style contains the existing color
-    style = preview_element._style
-    assert "00FF00" in str(style).upper() or "background" in str(style)
+    # Die Vorschau zeigt genau die gespeicherte Farbe von Gemüse
+    assert preview_element._style["background-color"].upper() == "#00FF00"

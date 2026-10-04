@@ -43,24 +43,39 @@ class TestGetStorageSecret:
 class TestConfigClass:
     """Tests for Config class."""
 
-    def test_debug_false_by_default(self) -> None:
-        """DEBUG should be False by default."""
-        from app.config import Config
+    @pytest.mark.parametrize(
+        ("raw", "expected"),
+        [("true", True), ("TRUE", True), (" true ", True), ("1", False), ("yes", False), ("false", False), ("", False)],
+    )
+    def test_env_flag_parses_truthy_strings(self, monkeypatch: pytest.MonkeyPatch, raw: str, expected: bool) -> None:
+        """DEBUG/SQL_ECHO/FUELLHORN_SKIP_MIGRATIONS: nur "true" (Groß-/Kleinschreibung, Leerraum egal) ist wahr."""
+        from app.config import _env_flag
 
-        # Default is "false"
-        assert Config.DEBUG is False or isinstance(Config.DEBUG, bool)
+        monkeypatch.setenv("FUELLHORN_TEST_FLAG", raw)
+        assert _env_flag("FUELLHORN_TEST_FLAG") is expected
 
-    def test_default_host(self) -> None:
-        """HOST should default to 0.0.0.0."""
-        from app.config import Config
+    def test_env_flag_defaults_to_false(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        from app.config import _env_flag
 
-        assert Config.HOST == "0.0.0.0"
+        monkeypatch.delenv("FUELLHORN_TEST_FLAG", raising=False)
+        assert _env_flag("FUELLHORN_TEST_FLAG") is False
 
-    def test_default_port(self) -> None:
-        """PORT should default to 8080."""
-        from app.config import Config
+    def test_defaults_without_environment(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Ohne DEBUG/HOST/PORT in der Umgebung gelten false, 0.0.0.0 und 8080 (Reload wie in test_data_dir)."""
+        import app.config
+        import importlib
 
-        assert Config.PORT == 8080 or isinstance(Config.PORT, int)
+        monkeypatch.setattr("dotenv.load_dotenv", lambda *args, **kwargs: False)
+        for name in ("DEBUG", "HOST", "PORT"):
+            monkeypatch.delenv(name, raising=False)
+        importlib.reload(app.config)
+        try:
+            assert app.config.Config.DEBUG is False
+            assert app.config.Config.HOST == "0.0.0.0"
+            assert app.config.Config.PORT == 8080
+        finally:
+            monkeypatch.undo()
+            importlib.reload(app.config)
 
     def test_session_max_age_is_int(self) -> None:
         """SESSION_MAX_AGE should be an integer."""
