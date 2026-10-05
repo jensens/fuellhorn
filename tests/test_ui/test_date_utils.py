@@ -5,9 +5,9 @@ freezegun (Issue #392): vorher rechneten die Erwartungen mit ``datetime.now()`` 
 konnten um Mitternacht kippen.
 """
 
-from app.ui.utils.date_utils import format_relative_date
 from datetime import datetime
 from freezegun import freeze_time
+import importlib
 import pytest
 
 
@@ -28,4 +28,8 @@ TODAY = "2026-10-04 12:00:00"  # ein Sonntag
 )
 def test_format_relative_date(value: datetime, expected: str) -> None:
     with freeze_time(TODAY):
+        # Erst hier aus dem aktuellen Modul holen: tests/conftest.py wirft app.ui.* nach UI-Tests aus
+        # sys.modules, freezegun patcht nur das neu geladene Modul. Ein Import beim Sammeln hinge am
+        # alten Modul mit echtem datetime und sähe das echte Datum (#478).
+        format_relative_date = importlib.import_module("app.ui.utils.date_utils").format_relative_date
         assert format_relative_date(value) == expected
