@@ -6,20 +6,50 @@ from sqlmodel import Session
 import sys
 
 
+def _current_revision(database_url: str) -> str | None:
+    """Revision in ``alembic_version`` der Datenbank, None bei leerer Datenbank."""
+    from alembic.runtime.migration import MigrationContext
+    from sqlalchemy import create_engine
+
+    engine = create_engine(database_url)
+    try:
+        with engine.connect() as connection:
+            return MigrationContext.configure(connection).get_current_revision()
+    finally:
+        engine.dispose()
+
+
 def run_migrations() -> None:
-    """Run alembic migrations from installed package."""
+    """Run alembic migrations from installed package.
+
+    Gibt den Stand vorher/nachher und jede angewendete Revision aus (Issue #475):
+    ohne ``alembic.ini`` hat der Logger ``alembic`` keinen Handler.
+    """
     from alembic import command
     from alembic.config import Config as AlembicConfig
+    from alembic.script import ScriptDirectory
     import app.alembic
     from app.config import Config
 
     alembic_dir = Path(app.alembic.__file__).parent
+    database_url = Config.get_database_url()
 
     alembic_cfg = AlembicConfig()
     alembic_cfg.set_main_option("script_location", str(alembic_dir))
-    alembic_cfg.set_main_option("sqlalchemy.url", Config.get_database_url())
+    alembic_cfg.set_main_option("sqlalchemy.url", database_url)
 
+    before = _current_revision(database_url)
     command.upgrade(alembic_cfg, "head")
+    after = _current_revision(database_url)
+
+    if before == after:
+        print(f"Datenbank ist aktuell ({after})")
+        return
+
+    print(f"Datenbank: {before or '(leer)'} -> {after}")
+    script = ScriptDirectory.from_config(alembic_cfg)
+    for revision in reversed(list(script.iterate_revisions(after, before))):
+        print(f"  angewendet: {revision.revision} {revision.doc}")
 
 
 def create_admin_user(session: Session, reset_existing: bool = False) -> bool:
