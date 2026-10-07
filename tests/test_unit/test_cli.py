@@ -214,6 +214,12 @@ class TestCLIMain:
 class TestRunMigrations:
     """Tests for run_migrations function."""
 
+    @pytest.fixture(autouse=True)
+    def _no_database(self):
+        """upgrade ist gemockt: Revision nicht aus einer echten Datenbank lesen (#475)."""
+        with patch("app.cli._current_revision", return_value="abc123"):
+            yield
+
     def test_creates_alembic_config_with_correct_script_location(self) -> None:
         """Should set script_location to alembic directory in package."""
         with (
