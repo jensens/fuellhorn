@@ -132,6 +132,9 @@ resources:
     cpu: 100m
     memory: 256Mi
 
+# PriorityClass of the app pods and the migrate Job; empty keeps the cluster default
+priorityClassName: ""
+
 nodeSelector: {}
 tolerations: []
 affinity: {}

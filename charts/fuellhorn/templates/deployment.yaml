@@ -115,6 +115,9 @@ spec:
           persistentVolumeClaim:
             claimName: {{ include "fuellhorn.dataClaimName" . }}
       {{- end }}
+      {{- with .Values.priorityClassName }}
+      priorityClassName: {{ . }}
+      {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

@@ -189,6 +189,7 @@ which is shared by all replicas and survives pod restarts (#434).
 | `resources.limits.memory` | Memory limit | `512Mi` |
 | `resources.requests.cpu` | CPU request | `100m` |
 | `resources.requests.memory` | Memory request | `256Mi` |
+| `priorityClassName` | PriorityClass of the app pods and the migrate Job (workload tier); empty keeps the cluster default | `""` |
 
 ### Health Checks
 

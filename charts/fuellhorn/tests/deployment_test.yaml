@@ -307,3 +307,21 @@ tests:
           content:
             name: TZ
           any: true
+
+  - it: should set priorityClassName when configured
+    set:
+      secrets.fuellhornSecret: test-secret
+      database.type: sqlite
+      priorityClassName: kup6s-low
+    asserts:
+      - equal:
+          path: spec.template.spec.priorityClassName
+          value: kup6s-low
+
+  - it: should omit priorityClassName by default
+    set:
+      secrets.fuellhornSecret: test-secret
+      database.type: sqlite
+    asserts:
+      - notExists:
+          path: spec.template.spec.priorityClassName

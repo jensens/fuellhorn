@@ -63,3 +63,23 @@ tests:
     asserts:
       - hasDocuments:
           count: 0
+
+  - it: should set priorityClassName on the job pod when configured
+    set:
+      secrets.fuellhornSecret: test-secret
+      database.type: postgresql
+      database.external.existingSecret: my-db-secret
+      priorityClassName: kup6s-low
+    asserts:
+      - equal:
+          path: spec.template.spec.priorityClassName
+          value: kup6s-low
+
+  - it: should omit priorityClassName on the job pod by default
+    set:
+      secrets.fuellhornSecret: test-secret
+      database.type: postgresql
+      database.external.existingSecret: my-db-secret
+    asserts:
+      - notExists:
+          path: spec.template.spec.priorityClassName
